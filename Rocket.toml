@@ -1,8 +1,17 @@
 [default]
 secret_key = "rzqmcGmlN8LuIelc5KlHEug/x+14Ap9c4T7oxJPFE2s="
 
+[debug]
+port = 5545
+
 [default.oauth.github]
 provider = "GitHub"
 client_id = "750bcd88906f9aab698f"
 client_secret = "5044bbf667e4aec0beb8bf2912614d24e1f88be9"
 redirect_uri = "https://sogrim.herokuapp.com/auth/github"
+
+[default.oauth.google]
+provider = "Google"
+client_id = "975044710627-7cbs1u99ena5mi3oc1ro12j84apqcgbk.apps.googleusercontent.com" 
+client_secret = "nQ7DZ1QXRylFvydWfpdADK02"
+redirect_uri = "https://sogrim.herokuapp.com/auth/google"
