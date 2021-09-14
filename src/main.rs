@@ -27,6 +27,20 @@ fn github_login(oauth2: OAuth2<GitHubUserInfo>, cookies: &CookieJar<'_>) -> Redi
 
 #[get("/auth/github")]
 async fn github_callback( token: TokenResponse<GitHubUserInfo>, cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
+
+    let response = reqwest::Client::builder()
+        .build()
+        .context("failed to build reqwest client")?
+        .get("https://api.github.com/user")
+        .header(AUTHORIZATION, format!("token {}", token.access_token()))
+        .header(ACCEPT, "application/vnd.github.v3+json")
+        .header(USER_AGENT, "rocket_oauth2 demo application")
+        .send()
+        .await
+        .context("failed to complete request")?;
+
+    let respone_txt = response.text().await.unwrap_or("couldn't unwrap response".to_string());
+    println!("{}", respone_txt);
     // Use the token to retrieve the user's GitHub account information.
     let user_info: GitHubUserInfo = reqwest::Client::builder()
         .build()
