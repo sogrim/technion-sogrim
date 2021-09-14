@@ -11,7 +11,7 @@ use serde_json::{self, Value};
 #[derive(serde::Deserialize)]
 struct GitHubUserInfo {
     #[serde(default)]
-    name: String,
+    login: String,
 }
 
 /// User information to be retrieved from the Google People API.
@@ -58,7 +58,7 @@ async fn github_callback( token: TokenResponse<GitHubUserInfo>, cookies: &Cookie
 
     // Set a private cookie with the user's name, and redirect to the home page.
     cookies.add_private(
-        Cookie::build("username", user_info.name)
+        Cookie::build("username", user_info.login)
             .same_site(SameSite::Lax)
             .finish(),
     );
