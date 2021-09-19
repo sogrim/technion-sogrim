@@ -1,8 +1,34 @@
 [default]
+address = "0.0.0.0"
+workers = 16
+keep_alive = 5
+ident = "Rocket"
+log_level = "normal"
+temp_dir = "/tmp"
+cli_colors = true
 secret_key = "rzqmcGmlN8LuIelc5KlHEug/x+14Ap9c4T7oxJPFE2s="
+
+[default.limits]
+forms = "64 kB"
+json = "1 MiB"
+msgpack = "2 MiB"
+"file/jpg" = "5 MiB"
+
+[default.shutdown]
+ctrlc = true
+signals = ["term", "hup"]
+grace = 5
+mercy = 5
 
 [debug]
 port = 5545
+limits = { json = "10MiB" }
+
+[debug.databases.Sogrim]
+url = "mongodb+srv://nbl_admin:HQuCFetuff1DYXSa@sogrimdev.7tmyn.mongodb.net/Development?retryWrites=true&w=majority"
+
+[release.databases.Sogrim]
+url = "mongodb+srv://nbl_admin:HQuCFetuff1DYXSa@sogrimdev.7tmyn.mongodb.net/Production?retryWrites=true&w=majority"
 
 [default.oauth.github]
 provider = "GitHub"

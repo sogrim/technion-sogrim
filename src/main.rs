@@ -1,123 +1,24 @@
+extern crate rocket_db_pools;
+extern crate my_internet_ip;
 #[macro_use] extern crate rocket;
-use anyhow::{Context, Error};
-use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
-use rocket::http::{Cookie, CookieJar, SameSite};
-use rocket::{routes};
-use rocket::response::{Debug, Redirect};
-use rocket_oauth2::{OAuth2, TokenResponse};
-use serde_json::{self, Value};
 
-/// User information to be retrieved from the GitHub API.
-#[derive(serde::Deserialize)]
-struct GitHubUserInfo {
-    #[serde(default)]
-    login: String,
-}
+mod oauth2;
+mod db;
+mod course;
+mod user;
 
-/// User information to be retrieved from the Google People API.
-#[derive(serde::Deserialize)]
-struct GoogleUserInfo {
-    names: Vec<Value>,
-}
+use oauth2::{GitHubUserInfo, GoogleUserInfo};
+use db::Db;
 
-#[get("/login/github")]
-fn github_login(oauth2: OAuth2<GitHubUserInfo>, cookies: &CookieJar<'_>) -> Redirect {
-    oauth2.get_redirect(cookies, &["user:read"]).unwrap()
-}
+pub use rocket::{Rocket, Build, State};
+pub use rocket::http::{CookieJar, Status};
+use rocket::figment::providers::Env;
+use rocket_db_pools::Database;
+use rocket_oauth2::OAuth2;
+use rocket::{get, routes};
 
-#[get("/auth/github")]
-async fn github_callback( token: TokenResponse<GitHubUserInfo>, cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
-
-    let response = reqwest::Client::builder()
-        .build()
-        .context("failed to build reqwest client")?
-        .get("https://api.github.com/user")
-        .header(AUTHORIZATION, format!("token {}", token.access_token()))
-        .header(ACCEPT, "application/vnd.github.v3+json")
-        .header(USER_AGENT, "rocket_oauth2 demo application")
-        .send()
-        .await
-        .context("failed to complete request")?;
-
-    let respone_txt = response.text().await.unwrap_or("couldn't unwrap response".to_string());
-    println!("{}", respone_txt);
-    // Use the token to retrieve the user's GitHub account information.
-    let user_info: GitHubUserInfo = reqwest::Client::builder()
-        .build()
-        .context("failed to build reqwest client")?
-        .get("https://api.github.com/user")
-        .header(AUTHORIZATION, format!("token {}", token.access_token()))
-        .header(ACCEPT, "application/vnd.github.v3+json")
-        .header(USER_AGENT, "rocket_oauth2 demo application")
-        .send()
-        .await
-        .context("failed to complete request")?
-        .json()
-        .await
-        .context("failed to deserialize response")?;
-
-    // Set a private cookie with the user's name, and redirect to the home page.
-    cookies.add_private(
-        Cookie::build("username", user_info.login)
-            .same_site(SameSite::Lax)
-            .finish(),
-    );
-    Ok(Redirect::to("/login"))
-}
-
-#[get("/login/google")]
-fn google_login(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Redirect {
-    oauth2.get_redirect(cookies, &["profile"]).unwrap()
-}
-
-#[get("/auth/google")]
-async fn google_callback(
-    token: TokenResponse<GoogleUserInfo>,
-    cookies: &CookieJar<'_>,
-) -> Result<Redirect, Debug<Error>> {
-    // Use the token to retrieve the user's Google account information.
-    let response = reqwest::Client::builder()
-        .build()
-        .context("failed to build reqwest client")?
-        .get("https://people.googleapis.com/v1/people/me?personFields=names")
-        .header(AUTHORIZATION, format!("Bearer {}", token.access_token()))
-        .send()
-        .await
-        .context("failed to complete request")?;
-
-    let respone_txt = response.text().await.unwrap_or("couldn't unwrap response".to_string());
-    println!("{}", respone_txt);
-
-    let user_info : GoogleUserInfo = reqwest::Client::builder()
-        .build()
-        .context("failed to build reqwest client")?
-        .get("https://people.googleapis.com/v1/people/me?personFields=names")
-        .header(AUTHORIZATION, format!("Bearer {}", token.access_token()))
-        .send()
-        .await
-        .context("failed to complete request")?   
-        .json()
-        .await
-        .context("failed to deserialize response")?;   
-
-    let real_name = user_info
-        .names
-        .first()
-        .and_then(|n| n.get("displayName"))
-        .and_then(|s| s.as_str())
-        .unwrap_or("");
-
-    // Set a private cookie with the user's name, and redirect to the home page.
-    cookies.add_private(
-        Cookie::build("username", real_name.to_string())
-            .same_site(SameSite::Lax)
-            .finish(),
-    );
-    Ok(Redirect::to("/login"))
-}
-
-#[get("/login")]
-fn successful_login (cookies: &CookieJar<'_>) -> String{
+#[get("/")]
+async fn home_page(cookies: &CookieJar<'_>) -> String{
     let token = cookies.get_private("username");
     match token{
         Some(cookie) => {
@@ -126,23 +27,34 @@ fn successful_login (cookies: &CookieJar<'_>) -> String{
         },
         None => "Bad token".into(),
     }
-    
 }
 
-#[get("/")]
-fn index () -> &'static str{
-    "index"
+pub fn rocket_build() -> Rocket<Build> {
+
+    let env = Env::var("ROCKET_PROFILE").unwrap_or("debug".into());
+    if env == "debug" {
+        let external_ip_addr = my_internet_ip::get().unwrap().to_string();
+        println!("Starting rocket app at http://{}:{}", external_ip_addr, 5545);   
+    }
+    
+    rocket::build()
+        .manage(env)
+        .attach(Db::init())
+        .mount("/", 
+        routes![
+            oauth2::github_callback, 
+            oauth2::github_login, 
+            oauth2::google_callback, 
+            oauth2::google_login, 
+            course::get_courses,
+            user::fetch_or_insert_user,
+            home_page,
+            ])
+        .attach(OAuth2::<GitHubUserInfo>::fairing("github"))
+        .attach(OAuth2::<GoogleUserInfo>::fairing("google"))
 }
 
 #[launch]
-fn rocket() -> _ {
-
-    let external_ip_addr = my_internet_ip::get().unwrap().to_string();
-    println!("Starting rocket app at http://{}:{}", external_ip_addr, std::env::var("ROCKET_PORT").unwrap_or("no port".to_string()));
-
-    rocket::build()
-        .mount("/", routes![github_callback, github_login, 
-        google_callback, google_login, successful_login, index])
-        .attach(OAuth2::<GitHubUserInfo>::fairing("github"))
-        .attach(OAuth2::<GoogleUserInfo>::fairing("google"))
+fn rocket() -> Rocket<Build> {
+    rocket_build()
 }
