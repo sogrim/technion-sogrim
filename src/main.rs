@@ -25,7 +25,7 @@ async fn home_page(cookies: &CookieJar<'_>) -> String{
             let username : String = cookie.to_string().strip_prefix("username=").unwrap().into();
             format!("Hello {}, welcome to Sogrim!", username)
         },
-        None => "Bad token".into(),
+        None => "Hello guest (you are logged out), welcome to Sogrim!".into(),
     }
 }
 
@@ -34,7 +34,9 @@ pub fn rocket_build() -> Rocket<Build> {
     let env = Env::var("ROCKET_PROFILE").unwrap_or("debug".into());
     if env == "debug" {
         let external_ip_addr = my_internet_ip::get().unwrap().to_string();
-        println!("Starting rocket app at http://{}:{}", external_ip_addr, 5545);   
+        println!("Starting rocket app at http://localhost:{}", 5545);   
+        println!("Try github oauth2 at http://localhost:{}/login/github", 5545);   
+        println!("URL with external ip address at http://{}:{}", external_ip_addr, 5545);   
     }
     
     rocket::build()
@@ -45,9 +47,14 @@ pub fn rocket_build() -> Rocket<Build> {
             oauth2::github_callback, 
             oauth2::github_login, 
             oauth2::google_callback, 
-            oauth2::google_login, 
+            oauth2::google_login,
+            oauth2::logout, 
             course::get_courses,
             user::fetch_or_insert_user,
+            user::update_user_details,
+            user::user_login_redirect,
+            user::user_greet,
+            user::user_request_redirect,
             home_page,
             ])
         .attach(OAuth2::<GitHubUserInfo>::fairing("github"))

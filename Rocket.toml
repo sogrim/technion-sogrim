@@ -30,13 +30,19 @@ url = "mongodb+srv://nbl_admin:HQuCFetuff1DYXSa@sogrimdev.7tmyn.mongodb.net/Deve
 [release.databases.Sogrim]
 url = "mongodb+srv://nbl_admin:HQuCFetuff1DYXSa@sogrimdev.7tmyn.mongodb.net/Production?retryWrites=true&w=majority"
 
-[default.oauth.github]
+[debug.oauth.github]
+provider = "GitHub"
+client_id = "750bcd88906f9aab698f"
+client_secret = "5044bbf667e4aec0beb8bf2912614d24e1f88be9"
+redirect_uri = "http://localhost:5545/auth/github"
+
+[release.oauth.github]
 provider = "GitHub"
 client_id = "750bcd88906f9aab698f"
 client_secret = "5044bbf667e4aec0beb8bf2912614d24e1f88be9"
 redirect_uri = "https://sogrim.herokuapp.com/auth/github"
 
-[default.oauth.google]
+[default.oauth.google] # login with Google works only in release mode anyway
 provider = "Google"
 client_id = "975044710627-7cbs1u99ena5mi3oc1ro12j84apqcgbk.apps.googleusercontent.com" 
 client_secret = "nQ7DZ1QXRylFvydWfpdADK02"

@@ -26,21 +26,6 @@ pub fn github_login(oauth2: OAuth2<GitHubUserInfo>, cookies: &CookieJar<'_>) -> 
 #[get("/auth/github")]
 pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
 
-    // FOR DEBUG:
-    // let response = reqwest::Client::builder()
-    //     .build()
-    //     .context("failed to build reqwest client")?
-    //     .get("https://api.github.com/user")
-    //     .header(AUTHORIZATION, format!("token {}", token.access_token()))
-    //     .header(ACCEPT, "application/vnd.github.v3+json")
-    //     .header(USER_AGENT, "rocket_oauth2 demo application")
-    //     .send()
-    //     .await
-    //     .context("failed to complete request")?;
-
-    // let respone_txt = response.text().await.unwrap_or("couldn't unwrap response".to_string());
-    // println!("{}", respone_txt);
-
     // Use the token to retrieve the user's GitHub account information.
     let user_info: GitHubUserInfo = reqwest::Client::builder()
         .build()
@@ -62,7 +47,13 @@ pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &Coo
             .same_site(SameSite::Lax)
             .finish(),
     );
-    Ok(Redirect::to("/user"))
+
+    let original_request_uri = cookies
+                                .get("origin-req-uri")
+                                .map(|cookie| cookie.value().to_string())
+                                .unwrap_or("/user".into());
+
+    Ok(Redirect::to(format!("{}", original_request_uri.to_string())))
 }
 
 #[get("/login/google")]
@@ -73,19 +64,6 @@ pub fn google_login(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> 
 #[get("/auth/google")]
 pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
 
-    // FOR DEBUG:
-    // let response = reqwest::Client::builder()
-    //     .build()
-    //     .context("failed to build reqwest client")?
-    //     .get("https://people.googleapis.com/v1/people/me?personFields=names")
-    //     .header(AUTHORIZATION, format!("Bearer {}", token.access_token()))
-    //     .send()
-    //     .await
-    //     .context("failed to complete request")?;
-    
-    // let respone_txt = response.text().await.unwrap_or("couldn't unwrap response".to_string());
-    // println!("{}", respone_txt);
-    
     // Use the token to retrieve the user's Google account information.
     let user_info : GoogleUserInfo = reqwest::Client::builder()
         .build()
@@ -113,6 +91,12 @@ pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, cookies: &Coo
             .finish(),
     );
     Ok(Redirect::to("/user"))
+}
+
+#[get("/logout")]
+pub async fn logout(cookies: &CookieJar<'_>) -> Redirect {
+    cookies.remove(Cookie::named("username"));
+    Redirect::to("/")
 }
 
 // #[get("/login")]
