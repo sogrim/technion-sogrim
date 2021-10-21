@@ -1,7 +1,4 @@
 packages/server/Cargo.lock
-packages/server/Rocket.toml
 debug_text.txt
 pacakges/server/private/
 pacakges/server/target/
-pacakges/server/Rocket.toml
-Rocket.toml

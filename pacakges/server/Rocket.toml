@@ -6,7 +6,7 @@ ident = "Rocket"
 log_level = "normal"
 temp_dir = "/tmp"
 cli_colors = true
-secret_key = "rzqmcGmlN8LuIelc5KlHEug/x+14Ap9c4T7oxJPFE2s="
+secret_key = "XpyjtMXvKi2Flb8ULl5IIWjlGZTOxUtUkjgbeIZy1yc="
 
 [default.limits]
 forms = "64 kB"
@@ -25,25 +25,25 @@ port = 5545
 limits = { json = "10MiB" }
 
 [debug.databases.Sogrim]
-url = "mongodb+srv://nbl_admin:HQuCFetuff1DYXSa@sogrimdev.7tmyn.mongodb.net/Development?retryWrites=true&w=majority"
+url = "mongodb+srv://nbl_admin:sm3sw0rFjzMcQeW3@sogrimdev.7tmyn.mongodb.net/Development?retryWrites=true&w=majority"
 
 [release.databases.Sogrim]
-url = "mongodb+srv://nbl_admin:HQuCFetuff1DYXSa@sogrimdev.7tmyn.mongodb.net/Production?retryWrites=true&w=majority"
+url = "mongodb+srv://nbl_admin:sm3sw0rFjzMcQeW3@sogrimdev.7tmyn.mongodb.net/Production?retryWrites=true&w=majority"
 
 [debug.oauth.github]
 provider = "GitHub"
 client_id = "750bcd88906f9aab698f"
-client_secret = "5044bbf667e4aec0beb8bf2912614d24e1f88be9"
+client_secret = "20937f6ec037d2d86e9fe74788e0029e52f6b33d"
 redirect_uri = "http://localhost:5545/auth/github"
 
 [release.oauth.github]
 provider = "GitHub"
 client_id = "750bcd88906f9aab698f"
-client_secret = "5044bbf667e4aec0beb8bf2912614d24e1f88be9"
+client_secret = "20937f6ec037d2d86e9fe74788e0029e52f6b33d"
 redirect_uri = "https://sogrim.herokuapp.com/auth/github"
 
 [default.oauth.google] # login with Google works only in release mode anyway
 provider = "Google"
 client_id = "975044710627-7cbs1u99ena5mi3oc1ro12j84apqcgbk.apps.googleusercontent.com" 
-client_secret = "nQ7DZ1QXRylFvydWfpdADK02"
+client_secret = "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"
 redirect_uri = "https://sogrim.herokuapp.com/auth/google"
