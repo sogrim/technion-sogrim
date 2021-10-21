@@ -1,1 +1,1 @@
-web: ROCKET_PORT=$PORT ROCKET_ADDRESS="0.0.0.0" ROCKET_PROFILE=release ./target/release/server-dep-sort
+web: ROCKET_PORT=$PORT ROCKET_ADDRESS="0.0.0.0" ROCKET_PROFILE=release ./target/release/server-dep-sort.exe
