@@ -1,24 +1,25 @@
-import React from 'react';
-import './App.css';
+import { useMemo, useState } from 'react';
+import { CssBaseline, ThemeProvider } from '@mui/material';
 
-const App = () => {
-  return (
-    <div className="App">
-      <header className="App-header">        
-        <p>
-          אלוף ישראל בבוקס
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+import { Layout } from '../Layout/Layout';
+
+
+import { getAppTheme } from '../../themes/theme';
+import { DARK_MODE_THEME, LIGHT_MODE_THEME } from '../../themes/constants';
+
+const AppComp: React.FC = () => {
+  const [mode, setMode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(LIGHT_MODE_THEME);
+
+  const theme = useMemo(() => getAppTheme(mode), [mode]);
+ 
+
+  return (    
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Layout>
+          </Layout>
+        </ThemeProvider>     
   );
 }
 
-export default App;
+export const App = AppComp;
