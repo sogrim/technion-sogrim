@@ -6,6 +6,7 @@ mod oauth2;
 mod db;
 mod course;
 mod user;
+mod core;
 
 use oauth2::{GitHubUserInfo, GoogleUserInfo};
 use db::Db;
@@ -51,7 +52,7 @@ pub fn rocket_build() -> Rocket<Build> {
             oauth2::logout, 
             course::get_courses,
             user::fetch_or_insert_user,
-            user::update_user_details,
+            //user::update_user_details, <<< Broken
             user::user_login_redirect,
             user::user_greet,
             user::user_request_redirect,

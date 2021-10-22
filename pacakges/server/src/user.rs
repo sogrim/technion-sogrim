@@ -4,18 +4,8 @@ use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModificati
 use rocket::{Request, http::{Cookie, SameSite}, outcome::IntoOutcome, request::{Outcome, FromRequest}, response::Redirect};
 use crate::db::{Connection, Db, Json, doc};
 use crate::{State, Status};
+use crate::core::*;
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct UserDetails{
-    courses: Vec<u32>,
-}
-    
-#[derive(Default, Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct User {
-    _id : bson::oid::ObjectId,
-    name: String,
-    details : Option<UserDetails>,
-}
 //TODO think about this!!!
 pub struct Username(String);
 
@@ -77,7 +67,10 @@ pub async fn fetch_or_insert_user(conn: Connection<Db>, db_name : &State<String>
                                                     .await
     {
         Ok(user) => Ok(Json(user.unwrap())), // We can safely unwrap here thanks to upsert=true and ReturnDocument::After
-        Err(_) => Err(Status::ServiceUnavailable),
+        Err(err) => {
+            eprintln!("{}", err);
+            Err(Status::ServiceUnavailable)
+        },
     }
 }
 
@@ -86,22 +79,23 @@ pub async fn user_greet(username: Username) -> String{
     format!("Hello {}, welcome to Sogrim!", username.0)
 }
 
-#[post("/user/details", data = "<details>")]
-pub async fn update_user_details(conn: Connection<Db>, db_name : &State<String>, username: Username, details: Json<UserDetails>) -> Result<Json<User>, Status>{
+//TODO this doesn't work right now
+// #[post("/user/details", data = "<details>")]
+// pub async fn update_user_details(conn: Connection<Db>, db_name : &State<String>, username: Username, details: Json<UserDetails>) -> Result<Json<User>, Status>{
     
-    //let username : String = "benny-n".into();
+//     //let username : String = "benny-n".into();
 
-    match conn.database(db_name)
-        .collection::<User>("Users")
-        .find_one_and_update(
-            doc!{"name" : &username.0}, 
-            UpdateModifications::Document(doc! { "$set" : {"details" : {"courses" : &details.courses}}}), 
-            Some(FindOneAndUpdateOptions::builder()
-                                                    .return_document(ReturnDocument::After)
-                                                    .build()))
-                                                    .await
-    {
-        Ok(user) => Ok(Json(user.ok_or(Status::NotFound)?)), 
-        Err(_) => Err(Status::ServiceUnavailable),
-    }
-}
+//     match conn.database(db_name)
+//         .collection::<User>("Users")
+//         .find_one_and_update(
+//             doc!{"name" : &username.0}, 
+//             UpdateModifications::Document(doc! { "$set" : {"details" : {"courses" : &details.courses}}}), 
+//             Some(FindOneAndUpdateOptions::builder()
+//                                                     .return_document(ReturnDocument::After)
+//                                                     .build()))
+//                                                     .await
+//     {
+//         Ok(user) => Ok(Json(user.ok_or(Status::NotFound)?)), 
+//         Err(_) => Err(Status::ServiceUnavailable),
+//     }
+// }

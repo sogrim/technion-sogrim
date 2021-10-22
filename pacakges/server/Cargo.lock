@@ -1792,23 +1792,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "server-dep-sort"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "attohttpc",
- "bson",
- "mongodb",
- "my_internet_ip",
- "reqwest",
- "rocket",
- "rocket_db_pools",
- "rocket_oauth2",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "sha-1"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1874,6 +1857,23 @@ checksum = "765f090f0e423d2b55843402a07915add955e7d60657db13707a159727326cad"
 dependencies = [
  "libc",
  "winapi",
+]
+
+[[package]]
+name = "sogrim-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "attohttpc",
+ "bson",
+ "mongodb",
+ "my_internet_ip",
+ "reqwest",
+ "rocket",
+ "rocket_db_pools",
+ "rocket_oauth2",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
