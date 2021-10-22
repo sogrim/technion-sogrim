@@ -1,6 +1,7 @@
 use std::time::Duration;
 use std::ops::Deref;
 use mongodb::{Client, options::ClientOptions};
+use crate::core::*;
 pub use bson::{Document, doc};
 pub use rocket_db_pools::{Config, Connection, Database, Error as PoolsError, Pool};
 pub use rocket::{State, http::Status, figment::Figment, serde::json::Json};
@@ -38,6 +39,25 @@ impl Pool for ClientUnit {
 #[derive(Database)]
 #[database("Sogrim")]
 pub struct Db(ClientUnit);
+
+pub mod services{
+    use super::*;
+
+    pub async fn get_catalog(catalog_oid : bson::oid::ObjectId, conn: &Connection<Db>) -> Result<Catalog, Status>{
+        match conn
+            .database(std::env::var("ROCKET_PROFILE").unwrap().as_str())
+            .collection::<Catalog>("Catalogs")
+            .find_one(doc!{"_id:" : catalog_oid}, None)
+            .await
+            {
+                Ok(maybe_catalog) => maybe_catalog.ok_or(Status::InternalServerError),
+                Err(err) => {
+                    eprintln!("{}", err);
+                    Err(Status::ServiceUnavailable)
+                },
+            }
+    }
+}
 
 
 // TODO : consider this as "insert" via POST template.

@@ -9,7 +9,8 @@ pub struct UserDetails{
     
 #[derive(Default, Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct User {
-    pub _id : bson::oid::ObjectId,
+    #[serde(rename(serialize = "_id", deserialize = "id"))]
+    pub id : bson::oid::ObjectId,
     pub name: String,
     pub details : Option<UserDetails>,
 }
@@ -72,12 +73,16 @@ pub struct DegreeStatus {
     pub total_credit: f32,   
 }
 
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Catalog{
-    pub _id : bson::oid::ObjectId,
+    #[serde(rename(serialize = "_id", deserialize = "id"))]
+    pub id : bson::oid::ObjectId,
     pub name: String,
     pub course_banks: Vec<CourseBanks>,
     pub courses_table: Vec<CourseTableRow>
 }
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct CourseBanks{
     pub name: String, // for example, Hova, Rshima A.
     pub rules: Rules,
@@ -97,6 +102,7 @@ pub enum Logic {
     AND,
 }
 
+#[derive(Default, Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct CourseTableRow {
     pub number: u32,
     pub course_banks: Vec<String> // שמות הבנקים. שימו לב לקבוצת ההתמחות
