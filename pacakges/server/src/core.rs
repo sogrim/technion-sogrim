@@ -1,6 +1,9 @@
 use rocket::http::Status;
 use rocket_db_pools::Connection;
 use crate::db::{Db, services::get_catalog};
+use bson::{Bson, doc};
+
+//
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct UserDetails {
@@ -51,27 +54,37 @@ pub enum CourseState{
     InProgress,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct CourseStatus {
-    pub course: Course,
-    pub semester : Option<f32>,
-    pub grade : Option<u8>,
-}
-
 impl CourseStatus {
     pub fn passed(&self) -> bool {
-        match self.grade {
-            Some(grade) => grade >= 55,
+        match &self.grade {
+            Some(grade) => {
+                match grade{
+                    Grade::Grade(grade) => grade >= &55,
+                    Grade::Binary(val) => *val,
+                    Grade::ExemptionWithoutCredit => true,
+                    Grade::ExemptionWithCredit => true,
+                } 
+            },
             None => false,
         }
     }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct CourseDisplay {
-    pub course_status : CourseStatus,
-    pub course_state : CourseState,
-    pub r#type: Option<String>, // if none, nissan cries 
+pub enum Grade{
+    Grade(u8),
+    Binary(bool),
+    ExemptionWithoutCredit,
+    ExemptionWithCredit,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct CourseStatus{
+    pub course: Course,
+    pub state: Option<CourseState>,
+    pub semester : Option<String>,
+    pub grade : Option<Grade>,
+    pub r#type : Option<String>, // if none, nissan cries 
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -88,7 +101,7 @@ pub struct Requirement{
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct DegreeStatus {
-    pub course_statuses: Vec<CourseDisplay>,
+    pub course_statuses: Vec<CourseStatus>,
     pub course_bank_requirements: Vec<Requirement>, // 
     pub credit_overflow: Option<Vec<String>>, // זליגות של נקז ואיך טיפלנו בהם
     pub total_credit: f32,   
@@ -160,27 +173,27 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
     let mut sum_credits = 0.0;
     for course_number in course_list {
         match user.find_course_by_number(course_number.clone()) {
-                Some(course) => {
-                    degree_status.course_statuses.push(CourseDisplay {
-                        course_status : course.clone(),
-                        course_state : if course.passed() { CourseState::Complete } else { CourseState::NotComplete },
-                        r#type : Some(bank_name.clone()),
-                    });
-                    if course.passed() {
-                        sum_credits += course.course.credit;
-                    }
-                },
-                None => {
-                    degree_status.course_statuses.push(CourseDisplay {
-                        course_status : CourseStatus {
-                            course : get_course(course_number.clone(), conn).await?,
-                            semester : None,
-                            grade : None,
-                        },
-                        course_state : CourseState::NotComplete,
-                        r#type : Some(bank_name.clone()),
-                    });
-                },
+            Some(course_status) => {
+                degree_status.course_statuses.push(CourseStatus {
+                    course: course_status.course.clone(),
+                    r#type : Some(bank_name.clone()),
+                    state: if course_status.passed() { Some(CourseState::Complete) } else { Some(CourseState::NotComplete) },
+                    semester: course_status.semester.clone(),
+                    grade: course_status.grade.clone(),
+                });
+                if course_status.passed() {
+                    sum_credits += course_status.course.credit;
+                }
+            },
+            None => {
+                degree_status.course_statuses.push(CourseStatus {
+                    course : get_course(course_number.clone(), conn).await?,
+                    r#type : Some(bank_name.clone()),
+                    state : Some(CourseState::NotComplete),
+                    semester : None,
+                    grade : None,
+                });
+            },
         }
     }
     Ok(sum_credits)
@@ -190,7 +203,7 @@ pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) 
     let catalog = get_catalog(user.catalog, conn).await?;
     let course_banks = set_order(&catalog.course_banks);
     let mut degree_status = DegreeStatus {
-        course_statuses: Vec::<CourseDisplay>::new(),
+        course_statuses: Vec::<CourseStatus>::new(),
         course_bank_requirements: Vec::<Requirement>::new(),
         credit_overflow: None,
         total_credit: 0.0,
@@ -198,7 +211,7 @@ pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) 
     for bank in course_banks {
         let course_list_for_bank = catalog.get_course_list_for_bank(&bank.name);
         match &bank.rule {
-            ALL => { 
+            Rule::All => { 
                 let sum_credits = handle_bank_rule_all(&bank.name, &mut degree_status, &course_list_for_bank, &user, &conn).await?;
                 degree_status.course_bank_requirements.push(Requirement {
                     course_bank_name: bank.name.clone(),
@@ -208,7 +221,9 @@ pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) 
                 });
 
             }
+            _ => todo!()
         }
     }
     Ok(())
+    
 }
