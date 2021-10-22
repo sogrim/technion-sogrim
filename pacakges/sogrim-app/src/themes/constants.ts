@@ -1,6 +1,6 @@
 // APP TEXT
 export const APP_TITLE = 'Welcome, Developer App';
-export const APP_DESCRIPTION = 'React TypeScript Material-UI boilerplate by Welcome, Developer.';
+export const APP_DESCRIPTION = ' React TypeScript Material-UI boilerplate by Welcome, Developer.';
 export const FOOTER_TEXT = `NISSO`;
 // PAGES TITLE
 export const PAGE_TITLE_HOME = 'Home';
