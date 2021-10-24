@@ -1,4 +1,5 @@
-use rocket::http::Status;
+use std::collections::HashMap;
+use rocket::{futures::future::Map, http::Status};
 use rocket_db_pools::Connection;
 use crate::db::{Db, services::get_catalog};
 
@@ -100,7 +101,8 @@ pub struct Catalog{
     pub id : bson::oid::ObjectId,
     pub name: String,
     pub course_banks: Vec<CourseBank>,
-    pub course_table: Vec<CourseTableRow>
+    pub course_table: Vec<CourseTableRow>,
+    pub rules_of_credit_overflow: Vec<(String,String)>, // Tuples of (bank_name1, bank_name2) where credits overflow from bank_name1 transfer to bank_name2.
 }
 
 impl Catalog {
@@ -143,7 +145,14 @@ pub struct CourseTableRow {
 }
 
 pub fn set_order(course_banks_type: &Vec::<CourseBank>) -> &Vec::<CourseBank> {
+    // TODO: implement this function, should order the banks in catalog in the correct calculations order
     course_banks_type
+}
+
+pub fn sum_credits_overflow(bank_name:&String, credits_overflow:&mut HashMap<String,f32>) -> f32 {
+    // TODO: implement this function, should calculate credits overflow for bank_name
+    // the function needs more arguments
+    0.0
 }
 
 // dummy function, need to be implmeneted by Benny
@@ -155,9 +164,9 @@ pub async fn get_course(course_id : u32, conn: &Connection<Db>) -> Result<Course
     })
 }
 
-pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut DegreeStatus,
-                                  course_list: &Vec<u32>, user: &UserDetails, conn: &Connection<Db>) -> Result<f32,Status> {
-    let mut sum_credits = 0.0;
+pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut DegreeStatus, course_list: &Vec<u32>,
+                                  user: &UserDetails, conn: &Connection<Db>, credit_overflow: f32) -> Result<f32,Status> {
+    let mut sum_credits = credit_overflow;
     for course_number in course_list {
         match user.find_course_by_number(course_number.clone()) {
                 Some(course) => {
@@ -195,18 +204,30 @@ pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) 
         credit_overflow: None,
         total_credit: 0.0,
     };
-    for bank in course_banks {
-        let course_list_for_bank = catalog.get_course_list_for_bank(&bank.name);
-        match &bank.rule {
-            ALL => { 
-                let sum_credits = handle_bank_rule_all(&bank.name, &mut degree_status, &course_list_for_bank, &user, &conn).await?;
-                degree_status.course_bank_requirements.push(Requirement {
-                    course_bank_name: bank.name.clone(),
-                    credit_requirment: bank.credit,
-                    credit_complete: sum_credits,
-                    message: None,
-                });
-
+    let mut credits_overflow_map = HashMap::new();
+    match catalog.id { // TODO: distinguish between catalogs
+        _ => { // For now this code is for 2018 tlat shnati
+            for bank in course_banks {
+                let course_list_for_bank = catalog.get_course_list_for_bank(&bank.name);
+                match &bank.rule {
+                    Rule::All => {
+                        let sum_credits = handle_bank_rule_all(&bank.name, &mut degree_status, &course_list_for_bank, &user, &conn, 
+                                                              sum_credits_overflow(&bank.name, &credits_overflow_map)).await?;
+                        degree_status.course_bank_requirements.push(Requirement {
+                            course_bank_name: bank.name.clone(),
+                            credit_requirment: bank.credit,
+                            credit_complete: match sum_credits {
+                                sum_credits if sum_credits <= bank.credit => { sum_credits }
+                                _ => {
+                                    credits_overflow_map.insert(bank.name.clone(), bank.credit - sum_credits);
+                                    bank.credit
+                                }
+                            },
+                            message: None,
+                        });
+                    }
+                    _ => todo!()
+                }
             }
         }
     }
