@@ -7,9 +7,9 @@ use crate::Status;
 use crate::core::{self, *};
 
 //TODO think about this!!!
-pub struct Username(pub String);
+pub struct UserEmail(pub String);
 
-impl Deref for Username{
+impl Deref for UserEmail{
     type Target = String;
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -17,14 +17,14 @@ impl Deref for Username{
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for Username {
+impl<'r> FromRequest<'r> for UserEmail {
     type Error = ();
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
 
         req.cookies()
             .get_private("email")
-            .map(|cookie| Username(cookie.value().into()))
+            .map(|cookie| UserEmail(cookie.value().into()))
             .or_forward(())
     }
 }
@@ -53,13 +53,19 @@ pub async fn user_request_redirect(_ctx: Context) -> Redirect{
 }
 
 #[get("/user")] 
-pub async fn fetch_or_insert_user(conn: Connection<Db>, username: Username) -> Result<Json<User>, Status> {
+pub async fn fetch_or_insert_user(conn: Connection<Db>, email: UserEmail) -> Result<Json<User>, Status> {
     
+    let user_doc = doc!{
+        "$setOnInsert" : {
+            "email" : &email.0,
+        }
+    };
+
     match conn.database(std::env::var("ROCKET_PROFILE").unwrap_or("debug".into()).as_str())
         .collection::<User>("Users")
         .find_one_and_update(
-        doc!{"name" : &username.0}, 
-        UpdateModifications::Document(doc! { "$setOnInsert" : {"name" : &username.0, "details" : null}}), 
+        doc!{"email" : &email.0}, 
+        UpdateModifications::Document(user_doc), 
         Some(
                 FindOneAndUpdateOptions::builder()
                 .upsert(true)
@@ -89,7 +95,7 @@ pub async fn compute_degree_status_for_user(user: User, conn: Connection<Db>) ->
 
 #[get("/user/hello")]
 pub async fn user_greet(user: User) -> String{
-    format!("Hello {}, welcome to Sogrim!", user.name)
+    format!("Hello {}, welcome to Sogrim!", user.email)
 }
 
 //TODO this doesn't work right now

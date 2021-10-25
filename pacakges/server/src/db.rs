@@ -77,23 +77,23 @@ pub mod services{
     }
 
     impl_get!(
-        fn_name : get_catalog, 
+        fn_name : get_catalog_by_id, 
         db_item : Catalog, 
         db_key_type: ObjectId, 
         db_key_name: "_id"
     );
 
     impl_get!(
-        fn_name : get_course, 
+        fn_name : get_course_by_id, 
         db_item : Course, 
         db_key_type: u32, 
         db_key_name: "_id"
     );
 
     impl_get!(
-        fn_name : get_user, 
+        fn_name : get_user_by_email, 
         db_item : User, 
         db_key_type: String, 
-        db_key_name: "name"
+        db_key_name: "email"
     );
 }

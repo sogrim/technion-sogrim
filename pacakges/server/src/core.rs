@@ -2,9 +2,7 @@ use rocket::{Request, http::Status, outcome::{IntoOutcome, try_outcome}, request
 use rocket_db_pools::Connection;
 use bson::doc;
 use serde::{Serialize, Deserialize};
-use crate::{db::{self, Db}, user::Username};
-
-//
+use crate::{db::{self, Db}, user::UserEmail};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
@@ -27,8 +25,8 @@ impl UserDetails {
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct User {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub token : bson::oid::ObjectId,
-    pub name: String,
+    pub id : bson::oid::ObjectId,
+    pub email: String,
     pub details : Option<UserDetails>,
 }
 
@@ -44,15 +42,15 @@ impl<'r> FromRequest<'r> for User {
             Outcome::Forward(_) => return Outcome::Forward(()),
         };
 
-        let username = try_outcome!(req.cookies()
-                            .get_private("username")
-                            .map(|cookie| Username(cookie.value().into()))
+        let email = try_outcome!(req.cookies()
+                            .get_private("email")
+                            .map(|cookie| UserEmail(cookie.value().into()))
                             .ok_or(Status::NetworkAuthenticationRequired)
                             .or_forward(())
                         );
 
 
-        db::services::get_user(username.0.into(), &conn).await.into_outcome(Status::ServiceUnavailable)
+        db::services::get_user_by_email(email.0.into(), &conn).await.into_outcome(Status::ServiceUnavailable)
     }
 }
     
@@ -205,7 +203,7 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
             },
             None => {
                 degree_status.course_statuses.push(CourseStatus {
-                    course : db::services::get_course(course_number.clone(), conn).await?,
+                    course : db::services::get_course_by_id(course_number.clone(), conn).await?,
                     r#type : Some(bank_name.clone()),
                     state : Some(CourseState::NotComplete),
                     semester : None,
@@ -218,7 +216,7 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
 }
 
 pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) -> Result<(),Status> {
-    let catalog = db::services::get_catalog(user.catalog, conn).await?;
+    let catalog = db::services::get_catalog_by_id(user.catalog, conn).await?;
     let course_banks = set_order(&catalog.course_banks);
     let mut degree_status = DegreeStatus {
         course_statuses: Vec::<CourseStatus>::new(),
