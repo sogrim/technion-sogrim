@@ -76,7 +76,7 @@ pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &Coo
 
 #[get("/login/google")]
 pub fn google_login(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Redirect {
-    oauth2.get_redirect(cookies, &["profile, email"]).unwrap()
+    oauth2.get_redirect(cookies, &["profile", "email"]).unwrap()
 }
 
 #[get("/auth/google")]

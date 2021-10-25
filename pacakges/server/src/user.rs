@@ -58,6 +58,7 @@ pub async fn fetch_or_insert_user(conn: Connection<Db>, email: UserEmail) -> Res
     let user_doc = doc!{
         "$setOnInsert" : {
             "email" : &email.0,
+            "details" : null
         }
     };
 
