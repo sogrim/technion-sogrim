@@ -23,7 +23,7 @@ impl<'r> FromRequest<'r> for Username {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
 
         req.cookies()
-            .get_private("username")
+            .get_private("email")
             .map(|cookie| Username(cookie.value().into()))
             .or_forward(())
     }
@@ -55,7 +55,7 @@ pub async fn user_request_redirect(_ctx: Context) -> Redirect{
 #[get("/user")] 
 pub async fn fetch_or_insert_user(conn: Connection<Db>, username: Username) -> Result<Json<User>, Status> {
     
-    match conn.database(std::env::var("ROCKET_PROFILE").unwrap().as_str())
+    match conn.database(std::env::var("ROCKET_PROFILE").unwrap_or("debug".into()).as_str())
         .collection::<User>("Users")
         .find_one_and_update(
         doc!{"name" : &username.0}, 

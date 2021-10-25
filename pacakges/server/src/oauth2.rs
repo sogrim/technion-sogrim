@@ -6,34 +6,53 @@ use rocket_oauth2::{OAuth2, TokenResponse};
 use serde_json::{self, Value};
 
 /// User information to be retrieved from the GitHub API.
-#[derive(serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
+#[serde(transparent)]
 pub struct GitHubUserInfo {
-    #[serde(default)]
-    login: String,
+    emails: Vec<Value>,
 }
 
 /// User information to be retrieved from the Google People API.
 #[derive(serde::Deserialize)]
 pub struct GoogleUserInfo {
-    names: Vec<Value>,
+    picture : String,
+    verified_email : bool,
+    id : String,
+    email : String,
+    
 }
 
 #[get("/login/github")]
 pub fn github_login(oauth2: OAuth2<GitHubUserInfo>, cookies: &CookieJar<'_>) -> Redirect {
-    oauth2.get_redirect(cookies, &["user:read"]).unwrap()
+    oauth2.get_redirect(cookies, &["user:email"]).unwrap()
 }
 
 #[get("/auth/github")]
 pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
 
+    //FOR DEBUG:
+    // let response = reqwest::Client::builder()
+    //     .build()
+    //     .context("failed to build reqwest client")?
+    //     .get("https://api.github.com/user/emails")
+    //     .header(AUTHORIZATION, format!("token {}", token.access_token()))
+    //     .header(ACCEPT, "application/vnd.github.v3+json")
+    //     .header(USER_AGENT, "Sogrim-App-Server")
+    //     .send()
+    //     .await
+    //     .context("failed to complete request")?;
+    
+    // let respone_txt = response.text().await.unwrap_or("couldn't unwrap response".to_string());
+    // println!("{}", respone_txt);
+    
     // Use the token to retrieve the user's GitHub account information.
     let user_info: GitHubUserInfo = reqwest::Client::builder()
         .build()
         .context("failed to build reqwest client")?
-        .get("https://api.github.com/user")
+        .get("https://api.github.com/user/emails")
         .header(AUTHORIZATION, format!("token {}", token.access_token()))
         .header(ACCEPT, "application/vnd.github.v3+json")
-        .header(USER_AGENT, "rocket_oauth2 demo application")
+        .header(USER_AGENT, "Sogrim-App-Server")
         .send()
         .await
         .context("failed to complete request")?
@@ -41,19 +60,36 @@ pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &Coo
         .await
         .context("failed to deserialize response")?;
 
+    //Extract user email from response
+    let email = user_info
+        .emails
+        .first()
+        .and_then(|json_obj| json_obj.get("email"))
+        .and_then(|field| field.as_str())
+        .context("failed to parse email from response")?;
+
     // Set a private cookie with the user's name, and redirect to the home page.
     cookies.add_private(
-        Cookie::build("username", user_info.login)
+        Cookie::build("email", email.to_string())
             .same_site(SameSite::Lax)
             .finish(),
     );
 
+    // Get the original URI which the user requested or redirect him to /user if he just logged in.
     let original_request_uri = cookies
                                 .get("origin-req-uri")
                                 .map(|cookie| cookie.value().to_string())
+                                .and_then(|uri| Some({
+                                    if uri.starts_with("/login") {
+                                        "/user".to_string()
+                                    }
+                                    else{
+                                        uri
+                                    }
+                                }))
                                 .unwrap_or("/user".into());
 
-    Ok(Redirect::to(format!("{}", original_request_uri.to_string())))
+    Ok(Redirect::to(format!("{}", original_request_uri)))
 }
 
 #[get("/login/google")]
@@ -64,11 +100,24 @@ pub fn google_login(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> 
 #[get("/auth/google")]
 pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
 
+    //FOR DEBUG:
+    let response =  reqwest::Client::builder()
+        .build()
+        .context("failed to build reqwest client")?
+        .get("https://www.googleapis.com/oauth2/v2/userinfo")
+        .header(AUTHORIZATION, format!("Bearer {}", token.access_token()))
+        .send()
+        .await
+        .context("failed to complete request")?;
+    
+    let respone_txt = response.text().await.unwrap_or("couldn't unwrap response".to_string());
+    println!("{}", respone_txt);
+
     // Use the token to retrieve the user's Google account information.
     let user_info : GoogleUserInfo = reqwest::Client::builder()
         .build()
         .context("failed to build reqwest client")?
-        .get("https://people.googleapis.com/v1/people/me?personFields=names")
+        .get("https://www.googleapis.com/oauth2/v2/userinfo")
         .header(AUTHORIZATION, format!("Bearer {}", token.access_token()))
         .send()
         .await
@@ -77,16 +126,9 @@ pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, cookies: &Coo
         .await
         .context("failed to deserialize response")?;   
 
-    let real_name = user_info
-        .names
-        .first()
-        .and_then(|n| n.get("displayName"))
-        .and_then(|s| s.as_str())
-        .unwrap_or("");
-
     // Set a private cookie with the user's name, and redirect to the home page.
     cookies.add_private(
-        Cookie::build("username", real_name.to_string())
+        Cookie::build("email", user_info.email)
             .same_site(SameSite::Lax)
             .finish(),
     );
