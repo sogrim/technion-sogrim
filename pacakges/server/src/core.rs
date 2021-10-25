@@ -1,11 +1,12 @@
-use rocket::http::Status;
+use rocket::{Request, http::Status, outcome::{IntoOutcome, try_outcome}, request::{self, FromRequest, Outcome}};
 use rocket_db_pools::Connection;
-use crate::db::{Db, services::get_catalog};
-use bson::{Bson, doc};
+use bson::doc;
+use serde::{Serialize, Deserialize};
+use crate::{db::{self, Db}, user::Username};
 
 //
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
     pub courses: Vec<CourseStatus>, //from parser
     pub catalog : bson::oid::ObjectId,
@@ -22,16 +23,41 @@ impl UserDetails {
         None
     }
 }
-    
-#[derive(Default, Clone, Debug, serde::Deserialize, serde::Serialize)]
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct User {
-    #[serde(rename(serialize = "_id", deserialize = "id"))]
-    pub id : bson::oid::ObjectId,
+    #[serde(rename(serialize = "_id", deserialize = "_id"))]
+    pub token : bson::oid::ObjectId,
     pub name: String,
     pub details : Option<UserDetails>,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for User {
+    type Error = Status;
+
+    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+
+        let conn = match req.guard::<Connection<Db>>().await{
+            Outcome::Success(conn) => conn,
+            Outcome::Failure(_) => return Outcome::Failure((Status::ServiceUnavailable, Status::ServiceUnavailable)),
+            Outcome::Forward(_) => return Outcome::Forward(()),
+        };
+
+        let username = try_outcome!(req.cookies()
+                            .get_private("username")
+                            .map(|cookie| Username(cookie.value().into()))
+                            .ok_or(Status::NetworkAuthenticationRequired)
+                            .or_forward(())
+                        );
+
+
+        db::services::get_user(username.0.into(), &conn).await.into_outcome(Status::ServiceUnavailable)
+    }
+}
+    
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Rule {
     All, //  כמו חובה פקולטית.
     Accumulate(u8), // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
@@ -40,14 +66,15 @@ pub enum Rule {
     Wildcard(bool), // קלף משוגע עבור להתמודד עם   
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Course {
+    #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub number : u32,
     pub credit: f32,
     pub name: String,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum CourseState{
     Complete,
     NotComplete,
@@ -70,7 +97,7 @@ impl CourseStatus {
     }
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Grade{
     Grade(u8),
     Binary(bool),
@@ -78,7 +105,7 @@ pub enum Grade{
     ExemptionWithCredit,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CourseStatus{
     pub course: Course,
     pub state: Option<CourseState>,
@@ -87,7 +114,7 @@ pub struct CourseStatus{
     pub r#type : Option<String>, // if none, nissan cries 
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Requirement{
     /*
     בזין הזה יש את כל הבנקים והאם בוצעו או לא בכל קטלוג
@@ -99,7 +126,7 @@ pub struct Requirement{
     pub message: Option<String>,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DegreeStatus {
     pub course_statuses: Vec<CourseStatus>,
     pub course_bank_requirements: Vec<Requirement>, // 
@@ -107,9 +134,9 @@ pub struct DegreeStatus {
     pub total_credit: f32,   
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Catalog{
-    #[serde(rename(serialize = "_id", deserialize = "id"))]
+    #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id : bson::oid::ObjectId,
     pub name: String,
     pub course_banks: Vec<CourseBank>,
@@ -128,7 +155,7 @@ impl Catalog {
     }
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CourseBank{
     pub name: String, // for example, Hova, Rshima A.
     pub rule: Rule,
@@ -136,20 +163,20 @@ pub struct CourseBank{
     pub messege: String, //
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
     pub credit: f32,
     pub mandatory: Option<(Vec<u32>, Logic)>,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Logic {
     OR,
     AND,
 }
 
-#[derive(Default, Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct CourseTableRow {
     pub number: u32,
     pub course_banks: Vec<String> // שמות הבנקים. שימו לב לקבוצת ההתמחות
@@ -157,15 +184,6 @@ pub struct CourseTableRow {
 
 pub fn set_order(course_banks_type: &Vec::<CourseBank>) -> &Vec::<CourseBank> {
     course_banks_type
-}
-
-// dummy function, need to be implmeneted by Benny
-pub async fn get_course(course_id : u32, conn: &Connection<Db>) -> Result<Course, Status> {
-    Ok(Course {
-        number: 111111,
-        credit: 0.0,
-        name: String::from("temp"),
-    })
 }
 
 pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut DegreeStatus,
@@ -187,7 +205,7 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
             },
             None => {
                 degree_status.course_statuses.push(CourseStatus {
-                    course : get_course(course_number.clone(), conn).await?,
+                    course : db::services::get_course(course_number.clone(), conn).await?,
                     r#type : Some(bank_name.clone()),
                     state : Some(CourseState::NotComplete),
                     semester : None,
@@ -200,7 +218,7 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
 }
 
 pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) -> Result<(),Status> {
-    let catalog = get_catalog(user.catalog, conn).await?;
+    let catalog = db::services::get_catalog(user.catalog, conn).await?;
     let course_banks = set_order(&catalog.course_banks);
     let mut degree_status = DegreeStatus {
         course_statuses: Vec::<CourseStatus>::new(),

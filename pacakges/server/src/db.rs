@@ -41,76 +41,59 @@ impl Pool for ClientUnit {
 pub struct Db(ClientUnit);
 
 pub mod services{
+
     use super::*;
+    use bson::oid::ObjectId;
 
-    pub async fn get_catalog(catalog_oid : bson::oid::ObjectId, conn: &Connection<Db>) -> Result<Catalog, Status>{
-        match conn
-            .database(std::env::var("ROCKET_PROFILE").unwrap().as_str())
-            .collection::<Catalog>("Catalogs")
-            .find_one(doc!{"_id:" : catalog_oid}, None)
-            .await
-            {
-                Ok(maybe_catalog) => maybe_catalog.ok_or(Status::InternalServerError),
-                Err(err) => {
-                    eprintln!("{}", err);
-                    Err(Status::ServiceUnavailable)
-                },
+    #[macro_export]
+    macro_rules! impl_get {
+        (
+            fn_name : $fn_name:ident, 
+            db_item : $db_item:ty, 
+            db_key_type : $db_key_type:ty, 
+            db_key_name : $db_key_name:literal
+
+        ) => {
+            pub async fn $fn_name(item : $db_key_type, conn: &Connection<Db>) -> Result<$db_item, Status>{
+                match conn
+                    .database(std::env::var("ROCKET_PROFILE").unwrap_or("debug".into()).as_str())
+                    .collection::<$db_item>(format!("{}s", stringify!($db_item)).as_str())
+                    .find_one(doc!{$db_key_name : &item}, None)
+                    .await
+                    {
+                        Ok(maybe_item) => {  
+                            maybe_item.ok_or_else(||{
+                                eprintln!("{} <{:?}> does not exist!", stringify!($db_item), item);
+                                Status::InternalServerError
+                            })
+                        },
+                        Err(err) => {
+                            eprintln!("{}", err);
+                            Err(Status::InternalServerError)
+                        },
+                    }
             }
+        };
     }
 
-    pub async fn get_course(course_number : u32, conn: &Connection<Db>) -> Result<Course, Status>{
-        match conn
-            .database(std::env::var("ROCKET_PROFILE").unwrap().as_str())
-            .collection::<Course>("Courses")
-            .find_one(doc!{"_id:" : course_number}, None)
-            .await
-            {
-                Ok(maybe_course) => maybe_course.ok_or(Status::InternalServerError),
-                Err(err) => {
-                    eprintln!("{}", err);
-                    Err(Status::ServiceUnavailable)
-                },
-            }
-    }
+    impl_get!(
+        fn_name : get_catalog, 
+        db_item : Catalog, 
+        db_key_type: ObjectId, 
+        db_key_name: "_id"
+    );
+
+    impl_get!(
+        fn_name : get_course, 
+        db_item : Course, 
+        db_key_type: u32, 
+        db_key_name: "_id"
+    );
+
+    impl_get!(
+        fn_name : get_user, 
+        db_item : User, 
+        db_key_type: String, 
+        db_key_name: "name"
+    );
 }
-
-
-// TODO : consider this as "insert" via POST template.
-//
-// #[derive(Clone, Debug, Deserialize, Serialize)]
-// struct Item<'r>{
-//     _id : u32,
-//     name : &'r str,
-// }
-
-// #[post("/<item_name>")]
-// async fn add(item_name: &str, conn: Connection<Db>, db_name: &State<String>) -> Result<Json<String>, Status>{
-//     conn.database(db_name)
-//         .collection::<Item>("hello_world")
-//         .insert_one(Item { _id : 3141523, name: item_name}, None)
-//         .await
-//         .map(|res| {Json(res.inserted_id.to_string())})
-//         .map_err(|_| {Status::InternalServerError})
-// }
-// enum CourseType{
-//     Mandatory,
-//     Choice,
-//     FreeChoice,
-//     Malag,
-//     ReshimaA,
-//     ReshimaB
-// }
-// struct Course{
-//     id            : u32,
-//     name          : String,
-//     credit_points : u8,
-//     r#type        : CourseType 
-// }
-// struct Manager{
-//     courses : HashMap<u32, Course>,
-// }
-// impl Manager{
-//     pub fn new() -> Self{
-//         Manager { courses: HashMap::new() }
-//     }
-// }
