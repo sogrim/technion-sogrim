@@ -32,7 +32,7 @@ pub struct User {
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub enum Rule {
     All, //  כמו חובה פקולטית.
-    Accumulate(u8), // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
+    Accumulate, // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
     Chain(Vec<Vec<Course>>), // למשל שרשרת מדעית.
     SpecializationGroups(Vec<SpecializationGroup>),
     Wildcard(bool), // קלף משוגע עבור להתמודד עם   
