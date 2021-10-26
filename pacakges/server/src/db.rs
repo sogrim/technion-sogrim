@@ -57,6 +57,21 @@ pub mod services{
                 },
             }
     }
+
+    pub async fn get_course(course_number : u32, conn: &Connection<Db>) -> Result<Course, Status>{
+        match conn
+            .database(std::env::var("ROCKET_PROFILE").unwrap().as_str())
+            .collection::<Course>("Courses")
+            .find_one(doc!{"_id:" : course_number}, None)
+            .await
+            {
+                Ok(maybe_course) => maybe_course.ok_or(Status::InternalServerError),
+                Err(err) => {
+                    eprintln!("{}", err);
+                    Err(Status::ServiceUnavailable)
+                },
+            }
+    }
 }
 
 
