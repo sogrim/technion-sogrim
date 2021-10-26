@@ -91,7 +91,7 @@ pub struct Requirement{
 pub struct DegreeStatus {
     pub course_statuses: Vec<CourseDisplay>,
     pub course_bank_requirements: Vec<Requirement>, // 
-    pub credit_overflow: Option<Vec<String>>, // זליגות של נקז ואיך טיפלנו בהם
+    pub credit_overflow_msgs: Vec<String>, // זליגות של נקז ואיך טיפלנו בהם
     pub total_credit: f32,   
 }
 
@@ -102,7 +102,7 @@ pub struct Catalog{
     pub name: String,
     pub course_banks: Vec<CourseBank>,
     pub course_table: Vec<CourseTableRow>,
-    pub rules_of_credit_overflow: Vec<(String,String)>, // Tuples of (bank_name1, bank_name2) where credits overflow from bank_name1 transfer to bank_name2.
+    pub credits_overflow_rules: Vec<(String,String)>, // Tuples of (bank_name1, bank_name2) where credits overflow from bank_name1 transfer to bank_name2.
 }
 
 impl Catalog {
@@ -114,6 +114,25 @@ impl Catalog {
             }
         }
         course_list_for_bank
+    }
+    pub fn calculate_credits_overflow_for_bank(&self, bank_name:&String, credits_overflow:&mut HashMap<String,f32>, credit_overflow_msgs: &mut Vec::<String>) -> f32 {
+        let mut sum_credits = 0.0;
+        for rule in &self.credits_overflow_rules {
+            if &rule.1 == bank_name {
+                sum_credits += if credits_overflow.contains_key(&rule.0) {
+                    let credits = credits_overflow[&rule.0];
+                    if credits > 0.0 {
+                        credit_overflow_msgs.push(["עברו ", &credits.to_string(), " נקודות מ-", &rule.0, " ל-", &rule.1].concat());
+                    }
+                    *credits_overflow.get_mut(&rule.0).unwrap() = 0.0;
+                    credits
+                }
+                else {
+                    0_f32
+                };
+            }
+        }
+        sum_credits
     }
 }
 
@@ -149,12 +168,6 @@ pub fn set_order(course_banks_type: &Vec::<CourseBank>) -> &Vec::<CourseBank> {
     course_banks_type
 }
 
-pub fn sum_credits_overflow(bank_name:&String, credits_overflow:&mut HashMap<String,f32>) -> f32 {
-    // TODO: implement this function, should calculate credits overflow for bank_name
-    // the function needs more arguments
-    0.0
-}
-
 // dummy function, need to be implmeneted by Benny
 pub async fn get_course(course_id : u32, conn: &Connection<Db>) -> Result<Course, Status> {
     Ok(Course {
@@ -168,7 +181,7 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
                                   user: &UserDetails, conn: &Connection<Db>, credit_overflow: f32) -> Result<f32,Status> {
     let mut sum_credits = credit_overflow;
     for course_number in course_list {
-        match user.find_course_by_number(course_number.clone()) {
+        match user.find_course_by_number(*course_number) {
                 Some(course) => {
                     degree_status.course_statuses.push(CourseDisplay {
                         course_status : course.clone(),
@@ -195,41 +208,82 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
     Ok(sum_credits)
 }
 
+pub fn handle_bank_rule_accumulate(bank_name: &String, degree_status: &mut DegreeStatus, course_list: &Vec<u32>,
+                                   user: &UserDetails, credit_overflow: f32) -> f32{
+    let mut sum_credits = credit_overflow;
+    for course_number in course_list {
+        match user.find_course_by_number(*course_number) {
+                Some(course) => {
+                    degree_status.course_statuses.push(CourseDisplay {
+                        course_status : course.clone(),
+                        course_state : if course.passed() { CourseState::Complete } else { CourseState::NotComplete },
+                        r#type : Some(bank_name.clone()),
+                    });
+                    if course.passed() {
+                        sum_credits += course.course.credit;
+                    }
+                },
+                None => {},
+        }
+    }
+    sum_credits
+}
+
 pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) -> Result<(),Status> {
     let catalog = get_catalog(user.catalog, conn).await?;
     let course_banks = set_order(&catalog.course_banks);
     let mut degree_status = DegreeStatus {
         course_statuses: Vec::<CourseDisplay>::new(),
         course_bank_requirements: Vec::<Requirement>::new(),
-        credit_overflow: None,
+        credit_overflow_msgs: Vec::<String>::new(),
         total_credit: 0.0,
     };
     let mut credits_overflow_map = HashMap::new();
-    match catalog.id { // TODO: distinguish between catalogs
-        _ => { // For now this code is for 2018 tlat shnati
-            for bank in course_banks {
-                let course_list_for_bank = catalog.get_course_list_for_bank(&bank.name);
-                match &bank.rule {
-                    Rule::All => {
-                        let sum_credits = handle_bank_rule_all(&bank.name, &mut degree_status, &course_list_for_bank, &user, &conn, 
-                                                              sum_credits_overflow(&bank.name, &credits_overflow_map)).await?;
-                        degree_status.course_bank_requirements.push(Requirement {
-                            course_bank_name: bank.name.clone(),
-                            credit_requirment: bank.credit,
-                            credit_complete: match sum_credits {
-                                sum_credits if sum_credits <= bank.credit => { sum_credits }
-                                _ => {
-                                    credits_overflow_map.insert(bank.name.clone(), bank.credit - sum_credits);
-                                    bank.credit
-                                }
-                            },
-                            message: None,
-                        });
-                    }
-                    _ => todo!()
-                }
+    for bank in course_banks {
+        let course_list_for_bank = catalog.get_course_list_for_bank(&bank.name);
+        let credits_overflow = catalog.calculate_credits_overflow_for_bank(&bank.name, &mut credits_overflow_map, &mut degree_status.credit_overflow_msgs);
+        match &bank.rule {
+            Rule::All => {
+                let sum_credits = handle_bank_rule_all(&bank.name, &mut degree_status, &course_list_for_bank, &user, &conn, credits_overflow).await?;
+                degree_status.course_bank_requirements.push(Requirement {
+                    course_bank_name: bank.name.clone(),
+                    credit_requirment: bank.credit,
+                    credit_complete: match sum_credits {
+                        sum_credits if sum_credits <= bank.credit => {
+                            degree_status.total_credit += sum_credits;
+                            sum_credits
+                        }
+                        _ => {
+                            credits_overflow_map.insert(bank.name.clone(), bank.credit - sum_credits);
+                            degree_status.total_credit += bank.credit;
+                            bank.credit
+                        }
+                    },
+                    message: None,
+                });
             }
+            Rule::Accumulate => {
+                let sum_credits = handle_bank_rule_accumulate(&bank.name, &mut degree_status, &course_list_for_bank, &user, credits_overflow);
+                degree_status.course_bank_requirements.push(Requirement {
+                    course_bank_name: bank.name.clone(),
+                    credit_requirment: bank.credit,
+                    credit_complete: match sum_credits {
+                        sum_credits if sum_credits <= bank.credit => {
+                            degree_status.total_credit += sum_credits;
+                            sum_credits
+                        }
+                        _ => {
+                            credits_overflow_map.insert(bank.name.clone(), bank.credit - sum_credits);
+                            degree_status.total_credit += bank.credit;
+                            bank.credit
+                        }
+                    },
+                    message: None,
+                });
+            }
+            _ => todo!()
         }
     }
+
     Ok(())
 }
