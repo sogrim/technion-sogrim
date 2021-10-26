@@ -13,12 +13,16 @@ fn contains_course_number(str : &str) -> bool{
     false
 }
 
-pub fn parse_copy_paste_from_ug(ug_data: String) -> Vec<CourseStatus>{
+pub fn validate_copy_paste_from_ug(ug_data: &str) -> Result<(), rocket::http::Status>{
+    todo!("{}", ug_data)
+}
+
+pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
     let mut courses = HashMap::<u32, CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter = 0;
     
-    for line_ref in ug_data.split_terminator('\n'){
+    for line_ref in ug_data.split_terminator("\r\n"){
         let line = line_ref.to_string();
         
         semester = if line.contains("אביב") || line.contains("חורף") || line.contains("קיץ"){
@@ -77,11 +81,20 @@ fn test(){
     
     let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
         .expect("Something went wrong reading the file");
-    let mut courses_display = parse_copy_paste_from_ug(contents);
+    let mut courses_display = parse_copy_paste_from_ug(&contents);
     courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap() );
     for course_display in courses_display{
         println!("{:?}", course_display);
     };
+}
+#[test]
+fn test1(){
+    
+    let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
+        .expect("Something went wrong reading the file");
+    for line_ref in contents.split_terminator("\r\n"){
+        println!("LINE: {}", line_ref);
+    }
 }
 
 #[test]
@@ -98,4 +111,11 @@ fn test2(){
     println!("{}", doc);
     let deserialized  = bson::from_document::<Course>(doc).unwrap();
     println!("{:?}", deserialized);
+    
+    let vec = vec![course.clone(), course];
+    let serialized_vec = bson::to_bson(&vec).unwrap();
+    println!("{}", serialized_vec);
+    let doc_vec = bson::doc!{"vec" : serialized_vec};
+    println!("{}", doc_vec);
+
 }

@@ -84,7 +84,7 @@ pub mod services{
     );
 
     impl_get!(
-        fn_name : get_course_by_id, 
+        fn_name : get_course_by_number, 
         db_item : Course, 
         db_key_type: u32, 
         db_key_name: "_id"

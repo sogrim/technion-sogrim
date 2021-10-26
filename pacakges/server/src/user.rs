@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications};
 use rocket::{Request, http::{Cookie, SameSite}, outcome::IntoOutcome, request::{Outcome, FromRequest}, response::Redirect};
-use crate::db::{Connection, Db, Json, doc};
+use crate::{course, db::{Connection, Db, Json, doc}};
 use crate::Status;
 use crate::core::{self, *};
 
@@ -47,7 +47,7 @@ pub async fn user_login_redirect(_ctx: Context) -> Redirect{
     Redirect::to(uri!("/login/github"))
 }
 
-#[get("/user/<_..>")]
+#[get("/user/<_..>", rank = 3)]
 pub async fn user_request_redirect(_ctx: Context) -> Redirect{
     Redirect::to(uri!("/login/github"))
 }
@@ -84,6 +84,11 @@ pub async fn fetch_or_insert_user(conn: Connection<Db>, email: UserEmail) -> Res
     }
 }
 
+#[get("/user/hello")]
+pub async fn user_greet(user: User) -> String{
+    format!("Hello {}, welcome to Sogrim!", user.email)
+}
+
 #[get("/user/compute")]
 pub async fn compute_degree_status_for_user(user: User, conn: Connection<Db>) -> Result<(), Status>{
     core::calculate_degree_status(
@@ -94,28 +99,24 @@ pub async fn compute_degree_status_for_user(user: User, conn: Connection<Db>) ->
     ).await
 }
 
-#[get("/user/hello")]
-pub async fn user_greet(user: User) -> String{
-    format!("Hello {}, welcome to Sogrim!", user.email)
+#[post("/user/parse", data = "<ug_data>")]
+pub async fn update_user_courses_from_ug(user: User, conn: Connection<Db>, ug_data: String) -> Result<(), Status>{
+    course::validate_copy_paste_from_ug(&ug_data)?;
+    let user_courses = course::parse_copy_paste_from_ug(&ug_data);
+    let user_courses_serialized = bson::to_bson(&user_courses).map_err(|_| Status::InternalServerError)?;
+    match conn
+        .database(std::env::var("ROCKET_PROFILE").unwrap_or("debug".into()).as_str())
+        .collection::<User>("Users")
+        .find_one_and_update(
+            doc!{"email" : user.email},
+            doc!{ "$set" : {"details" : {"courses" : user_courses_serialized}}},
+            None    
+        )
+        .await{
+            Ok(_) => Ok(()),
+            Err(err) => {
+                eprintln!("{}", err);
+                Err(Status::InternalServerError)
+            },
+        }
 }
-
-//TODO this doesn't work right now
-// #[post("/user/details", data = "<details>")]
-// pub async fn update_user_details(conn: Connection<Db>, db_name : &State<String>, username: Username, details: Json<UserDetails>) -> Result<Json<User>, Status>{
-    
-//     //let username : String = "benny-n".into();
-
-//     match conn.database(db_name)
-//         .collection::<User>("Users")
-//         .find_one_and_update(
-//             doc!{"name" : &username.0}, 
-//             UpdateModifications::Document(doc! { "$set" : {"details" : {"courses" : &details.courses}}}), 
-//             Some(FindOneAndUpdateOptions::builder()
-//                                                     .return_document(ReturnDocument::After)
-//                                                     .build()))
-//                                                     .await
-//     {
-//         Ok(user) => Ok(Json(user.ok_or(Status::NotFound)?)), 
-//         Err(_) => Err(Status::ServiceUnavailable),
-//     }
-// }

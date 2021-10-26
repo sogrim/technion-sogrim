@@ -56,6 +56,7 @@ pub fn rocket_build() -> Rocket<Build> {
             user::user_greet,
             user::user_request_redirect,
             user::compute_degree_status_for_user,
+            user::update_user_courses_from_ug,
             home_page,
             ])
         .attach(OAuth2::<GitHubUserInfo>::fairing("github"))

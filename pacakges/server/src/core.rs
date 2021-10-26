@@ -203,7 +203,7 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
             },
             None => {
                 degree_status.course_statuses.push(CourseStatus {
-                    course : db::services::get_course_by_id(course_number.clone(), conn).await?,
+                    course : db::services::get_course_by_number(course_number.clone(), conn).await?,
                     r#type : Some(bank_name.clone()),
                     state : Some(CourseState::NotComplete),
                     semester : None,
