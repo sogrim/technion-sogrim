@@ -50,12 +50,12 @@ pub fn rocket_build() -> Rocket<Build> {
             oauth2::google_callback, 
             oauth2::google_login,
             oauth2::logout, 
-            course::get_courses,
             user::fetch_or_insert_user,
             //user::update_user_details, <<< Broken
             user::user_login_redirect,
             user::user_greet,
             user::user_request_redirect,
+            user::compute_degree_status_for_user,
             home_page,
             ])
         .attach(OAuth2::<GitHubUserInfo>::fairing("github"))
