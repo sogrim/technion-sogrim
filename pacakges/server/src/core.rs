@@ -36,7 +36,7 @@ pub struct User {
 pub enum Rule {
     All, //  כמו חובה פקולטית.
     Accumulate, // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
-    Chain(Vec<Vec<Course>>), // למשל שרשרת מדעית.
+    Chain(Vec<Vec<u32>>), // למשל שרשרת מדעית.
     SpecializationGroups(Vec<SpecializationGroup>),
     Wildcard(bool), // קלף משוגע עבור להתמודד עם   
 }
@@ -150,7 +150,7 @@ impl Catalog {
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct CourseBank{
+pub struct CourseBank {
     pub name: String, // for example, Hova, Rshima A.
     pub rule: Rule,
     pub credit: f32,
@@ -221,27 +221,78 @@ pub async fn handle_bank_rule_all(bank_name: &String, degree_status: &mut Degree
     Ok(sum_credits)
 }
 
-pub fn handle_bank_rule_accumulate(bank_name: &String, degree_status: &mut DegreeStatus, course_list: &Vec<u32>,
-                                   user: &UserDetails, credit_overflow: f32) -> f32{
+pub fn handle_bank_rule_accumulate(bank_name: &String,
+                                   degree_status: &mut DegreeStatus,
+                                   course_list: &Vec<u32>,
+                                   user: &UserDetails,
+                                   credit_overflow: f32)
+                                   -> f32 {
     let mut sum_credits = credit_overflow;
     for course_number in course_list {
         match user.find_course_by_number(*course_number) {
-                Some(course_status) => {
-                    degree_status.course_statuses.push(CourseStatus {
-                        course: course_status.course.clone(),
-                        r#type : Some(bank_name.clone()),
-                        state: if course_status.passed() { Some(CourseState::Complete) } else { Some(CourseState::NotComplete) },
-                        semester: course_status.semester.clone(),
-                        grade: course_status.grade.clone(),
-                    });
-                    if course_status.passed() {
+            Some(course_status) => {
+                degree_status.course_statuses.push(CourseStatus {
+                    course: course_status.course.clone(),
+                    r#type : Some(bank_name.clone()),
+                    state: if course_status.passed() {
                         sum_credits += course_status.course.credit;
-                    }
-                },
-                None => {},
+                        Some(CourseState::Complete)
+                    } else {
+                        Some(CourseState::NotComplete)
+                    },
+                    semester: course_status.semester.clone(),
+                    grade: course_status.grade.clone(),
+                });
+            },
+            None => {},
         }
     }
     sum_credits
+}
+
+pub fn handle_bank_rule_chain(bank_name: &String,
+                              degree_status: &mut DegreeStatus,
+                              course_list: &Vec<u32>,
+                              chains: &Vec<Vec<u32>>,
+                              user: &UserDetails, 
+                              credit_overflow: f32)
+                              -> (f32, bool) {
+    let mut sum_credits = credit_overflow;
+    for course_number in course_list {
+        match user.find_course_by_number(*course_number) {
+            Some(course_status) => {
+                degree_status.course_statuses.push(CourseStatus {
+                    course: course_status.course.clone(),
+                    r#type : Some(bank_name.clone()),
+                    state: if course_status.passed() {
+                        sum_credits += course_status.course.credit;
+                        Some(CourseState::Complete)
+                    } else {
+                        Some(CourseState::NotComplete)
+                    },
+                    semester: course_status.semester.clone(),
+                    grade: course_status.grade.clone(),
+                });
+            },
+            None => {},
+        }
+    }
+    for chain in chains { //check if the user completed one of the chains.
+        let mut completed_chain = true;
+        for course_number in chain {
+            let course = user.find_course_by_number(*course_number);
+            if course.is_none() {
+                completed_chain = false;
+            }
+            else if !course.unwrap().passed() {
+                completed_chain = false;
+            }
+        }
+        if completed_chain {
+            return (sum_credits, true);
+        }
+    }
+    (sum_credits, false)
 }
 
 pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) -> Result<(),Status> {
@@ -294,6 +345,29 @@ pub async fn calculate_degree_status(user: &UserDetails, conn: &Connection<Db>) 
                         }
                     },
                     message: None,
+                });
+            }
+            Rule::Chain(chains) => {
+                let (sum_credits, completed_chain) = handle_bank_rule_chain(&bank.name, &mut degree_status, &course_list_for_bank, &chains, &user, credits_overflow);
+                degree_status.course_bank_requirements.push(Requirement {
+                    course_bank_name: bank.name.clone(),
+                    credit_requirment: bank.credit,
+                    credit_complete: match sum_credits {
+                        sum_credits if sum_credits <= bank.credit => {
+                            degree_status.total_credit += sum_credits;
+                            sum_credits
+                        }
+                        _ => {
+                            credits_overflow_map.insert(bank.name.clone(), bank.credit - sum_credits);
+                            degree_status.total_credit += bank.credit;
+                            bank.credit
+                        }
+                    },
+                    message: if completed_chain {
+                        Some(String::from("The user completed a full chain"))
+                    } else {
+                        Some(String::from("The user didn't complete a full chain"))
+                    },
                 });
             }
             _ => todo!()
