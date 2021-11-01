@@ -1,7 +1,5 @@
-use std::collections::{HashMap, hash_map::Entry};
-use rocket::http::{Status, ext::IntoCollection};
-
-use crate::core::{Course, CourseState, CourseStatus, Grade};
+use std::collections::HashMap;
+use crate::core::{Course, CourseStatus, Grade};
 
 fn contains_course_number(str : &str) -> bool{
     for word in str.split_whitespace(){
@@ -13,35 +11,6 @@ fn contains_course_number(str : &str) -> bool{
         }
     }
     false
-}
-
-fn parse_ug_courses(data: &str) -> String {
-    let mut course_list_response = String::new();
-    let mut lines_iter = data.lines();
-    let mut course_id_to_grade : HashMap<String, String> = HashMap::new();
-    while let Some(line) = lines_iter.next() {
-        if contains_course_number(line){
-            let line_vec : Vec<&str> = line.split_whitespace().collect();
-            if line_vec[0].parse::<u32>().is_err() {
-                course_id_to_grade
-                    .insert(line_vec.last().unwrap().to_string(), "Exemption Without Credit".into());
-            }
-            else{
-                course_id_to_grade
-                    .insert(line_vec.last().unwrap().to_string(), line_vec[0].into());
-            }
-        }
-    }
-    for (course, grade) in course_id_to_grade{
-        course_list_response += &format!("Course: {}, Grade: {}\n", course, grade);
-    }
-    course_list_response
-}
-
-#[post("/ug_courses", data = "<data>")]
-pub async fn get_courses(data : Vec<u8>) -> Result<String, Status>{
-    let decoded = String::from_utf8_lossy(&data).into_owned();
-    Ok(parse_ug_courses(&decoded))
 }
 
 pub fn parse_copy_paste_from_ug(ug_data: String) -> Vec<CourseStatus>{
@@ -73,7 +42,7 @@ pub fn parse_copy_paste_from_ug(ug_data: String) -> Vec<CourseStatus>{
                     Some(Grade::ExemptionWithoutCredit)
                 }
                 else if grade_str == "פטור עם ניקוד"{
-                    Some(Grade::ExemptionWithoutCredit)
+                    Some(Grade::ExemptionWithCredit)
                 }
                 else if grade_str == "-"{
                     None
@@ -105,6 +74,7 @@ pub fn parse_copy_paste_from_ug(ug_data: String) -> Vec<CourseStatus>{
 
 #[test]
 fn test(){
+    
     let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
         .expect("Something went wrong reading the file");
     let mut courses_display = parse_copy_paste_from_ug(contents);
@@ -112,4 +82,20 @@ fn test(){
     for course_display in courses_display{
         println!("{:?}", course_display);
     };
+}
+
+#[test]
+fn test2(){
+    
+    let course = Course{
+        number: 234,
+        credit: 2.5,
+        name: "some_course".into(),
+    };
+    let serialized = bson::to_bson(&course).unwrap();
+    println!("{}", serialized);
+    let doc = bson::to_document(&serialized).unwrap();
+    println!("{}", doc);
+    let deserialized  = bson::from_document::<Course>(doc).unwrap();
+    println!("{:?}", deserialized);
 }

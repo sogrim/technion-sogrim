@@ -1,1 +1,1 @@
-web: ROCKET_PORT=$PORT ROCKET_ADDRESS="0.0.0.0" ROCKET_PROFILE=release ./pacakges/server/target/release/sogrim-server
+web: ROCKET_PORT=$PORT ROCKET_ADDRESS="0.0.0.0" ROCKET_PROFILE=debug ./pacakges/server/target/release/sogrim-server
