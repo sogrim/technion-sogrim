@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use rocket::{futures::future::Map, http::Status};
 use rocket::{Request, http::Status, outcome::{IntoOutcome, try_outcome}, request::{self, FromRequest, Outcome}};
 use rocket_db_pools::Connection;
 use bson::doc;
