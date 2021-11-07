@@ -35,8 +35,3 @@ const ContentWrapper = styled('div')`
   display: flex;
   min-height: calc(30vh - ${FOOTER_HEIGHT}px);
 `;
-
-const DrawerHeader = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
-}));

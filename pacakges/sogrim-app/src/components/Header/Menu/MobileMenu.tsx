@@ -1,7 +1,9 @@
 import React from 'react';
+import { observer} from 'mobx-react-lite';
 import { Box, Menu, MenuItem } from '@mui/material';
+import { SignIn, SignOut, Settings } from '../Actions/Actions';
+import { useAuth } from '../../../hooks/useAuth';
 
-import { Messages, Notifications, SignOut, Settings } from '../Actions/Actions';
 
 interface MobileMenuProps {
   isMenuOpen: boolean;
@@ -10,7 +12,9 @@ interface MobileMenuProps {
   anchorEl: HTMLElement | null;
 }
 
-export const MobileMenu = ({ isMenuOpen, handleMenuOpen, handleMenuClose, anchorEl }: MobileMenuProps) => {
+ const MobileMenuComp = ({ isMenuOpen, handleMenuOpen, handleMenuClose, anchorEl }: MobileMenuProps) => {
+
+  const { isAuthenticated, logout, setDummyAuthenticated } = useAuth();
 
   return (
     <Menu
@@ -28,16 +32,26 @@ export const MobileMenu = ({ isMenuOpen, handleMenuOpen, handleMenuClose, anchor
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <Box sx={{ textAlign: 'center' }}>                
+      <Box sx={{ textAlign: 'center' }}> 
+        { isAuthenticated ? 
+        <>
         <MenuItem onClick={handleMenuClose}>
           <Settings disableTooltip />
           הגדרות
         </MenuItem>
         <MenuItem onClick={handleMenuClose}>
-          <SignOut disableTooltip onClick={() => alert('Signing out...')} />
+          <SignOut disableTooltip onClick={logout} />
           התנתקות
         </MenuItem>
+        </> : 
+        <MenuItem onClick={handleMenuClose}>
+          <SignIn disableTooltip onClick={setDummyAuthenticated} />
+          התחבר
+        </MenuItem>}        
+        
       </Box>
     </Menu>
   );
 };
+
+export const MobileMenu = observer(MobileMenuComp);

@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
+import { observer } from 'mobx-react-lite';
 import { AppBar, Box, Theme, Toolbar } from '@mui/material';
 
 import { AppTitle } from './AppTitle/AppTitle';
 import { More, UserAccount } from './Actions/Actions';
 import { DefaultMenu, MobileMenu } from './Menu';
+import { useAuth } from '../../hooks/useAuth';
+import { SogrimButton } from '../Commom/SogrimButton';
 
 interface HeaderProps {
   toggleNavigation: () => void;
 }
 
-export const Header = ({ toggleNavigation }: HeaderProps) => {
+const HeaderComp = ({ toggleNavigation }: HeaderProps) => {
+  
+  const { isAuthenticated, setDummyAuthenticated } = useAuth();
+  
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState<null | HTMLElement>(null);
 
+  
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -25,6 +32,8 @@ export const Header = ({ toggleNavigation }: HeaderProps) => {
     handleMobileMenuClose();
   };
 
+
+
   return (
     <>
       <AppBar position="fixed" sx={sxAppBar}>
@@ -32,7 +41,7 @@ export const Header = ({ toggleNavigation }: HeaderProps) => {
           <AppTitle />
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: { xs: 'none', md: 'flex', alignItems: 'center', margin: '80px' } }}>            
-            <UserAccount onClick={handleProfileMenuOpen} />
+            { isAuthenticated ? <UserAccount onClick={handleProfileMenuOpen} /> : null }
           </Box>
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
             <More onClick={handleMobileMenuOpen} />
@@ -50,6 +59,8 @@ export const Header = ({ toggleNavigation }: HeaderProps) => {
   );
 };
 
+export const Header = observer(HeaderComp);
+
 const sxAppBar = {   
   zIndex: (theme: Theme) => theme.zIndex.drawer + 1,
   bgcolor: (theme: Theme) => theme.palette.common.white,  
@@ -57,3 +68,5 @@ const sxAppBar = {
   display: 'flex',  
   justifyContent: 'center',
  }
+
+ 

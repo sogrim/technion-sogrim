@@ -6,8 +6,8 @@ import {
   Fingerprint as FingerprintIcon,
   Logout as LogoutIcon,
   Settings as SettingsIcon,
+  Login as LoginIcon,
 } from '@mui/icons-material';
-import {Avatar} from '@mui/material';
 import { ActionItem } from './ActionItem';
 
 interface ActionProps {
@@ -41,7 +41,11 @@ export const Notifications = ({ total, onClick, disableTooltip = false }: Action
 );
 
 export const UserAccount = ({ onClick, disableTooltip = false }: ActionProps) => (
-  <ActionItem title="My Account" avatar icon={FingerprintIcon} onClick={onClick} disableTooltip={disableTooltip} />
+  <ActionItem title="החשבון שלי" avatar icon={FingerprintIcon} onClick={onClick} disableTooltip={disableTooltip} />
+);
+
+export const SignIn = ({ onClick, disableTooltip = false }: ActionProps) => (
+  <ActionItem title="Sign In" icon={LoginIcon} onClick={onClick} disableTooltip={disableTooltip} />
 );
 
 export const SignOut = ({ onClick, disableTooltip = false }: ActionProps) => (
