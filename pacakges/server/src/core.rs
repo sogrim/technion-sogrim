@@ -1,4 +1,4 @@
-use rocket::{Request, http::Status, outcome::{IntoOutcome, try_outcome}, request::{self, FromRequest, Outcome}};
+use rocket::{Request, http::Status, outcome::{IntoOutcome, try_outcome}, request::{self, FromRequest}};
 use rocket_db_pools::Connection;
 use bson::doc;
 use serde::{Serialize, Deserialize};
@@ -32,25 +32,22 @@ pub struct User {
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
-    type Error = Status;
+    type Error = String;
 
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
 
-        let conn = match req.guard::<Connection<Db>>().await{
-            Outcome::Success(conn) => conn,
-            Outcome::Failure(_) => return Outcome::Failure((Status::ServiceUnavailable, Status::ServiceUnavailable)),
-            Outcome::Forward(_) => return Outcome::Forward(()),
-        };
+        let conn = try_outcome!(
+            req.guard::<Connection<Db>>()
+            .await
+            .map_failure(|_| (Status::ServiceUnavailable, "Can't connect to database".into()))
+        );
 
-        let email = try_outcome!(req.cookies()
-                            .get_private("email")
-                            .map(|cookie| UserEmail(cookie.value().into()))
-                            .ok_or(Status::NetworkAuthenticationRequired)
-                            .or_forward(())
-                        );
+        let email = try_outcome!(req.guard::<UserEmail>().await);
 
-
-        db::services::get_user_by_email(email.0.into(), &conn).await.into_outcome(Status::ServiceUnavailable)
+        db::services::get_user_by_email(email.0.into(), &conn)
+            .await
+            .map_err(|err| err.to_string())
+            .into_outcome(Status::ServiceUnavailable)
     }
 }
     

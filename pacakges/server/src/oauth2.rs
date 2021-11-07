@@ -3,7 +3,45 @@ use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::response::{Debug, Redirect};
 use rocket_oauth2::{OAuth2, TokenResponse};
+use rocket::figment::providers::{Format, Toml};
+use rocket::figment::Figment;
 use serde_json::{self, Value};
+use hmac::{Hmac, NewMac};
+use jwt::{SignWithKey, ToBase64, VerifyWithKey};
+use serde::Deserialize;
+use sha2::Sha256;
+use crate::core::User;
+
+//TODO vvv move these to a new module or rename 'oauth2' module to 'auth'.
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct Secret{
+    pub secret_key : String,
+}
+
+pub fn get_secret_from_rocket_toml() -> String{
+    let secret = Figment::from(Toml::file("./../../Rocket.toml").nested())
+        .select("default")
+        .extract::<Secret>()
+        .unwrap()
+        .secret_key;
+    secret
+}
+
+fn get_secret_key() -> Hmac<Sha256>{
+    Hmac::new_from_slice(get_secret_from_rocket_toml().as_bytes()).unwrap()
+}
+
+pub fn verify_jwt(jwt: String) -> Result<User, jwt::Error>{
+    let key = get_secret_key();
+    jwt.verify_with_key(&key)
+}
+
+pub fn generate_jwt<'a, T: 'a + Deserialize<'a> + ToBase64>(resource: T) -> Result<String, jwt::Error>{
+    let key = get_secret_key();
+    resource.sign_with_key(&key)
+}
+//TODO ^^^ move these to a new module or rename 'oauth2' module to 'auth'
+
 
 /// User information to be retrieved from the GitHub API.
 #[derive(Debug, serde::Deserialize)]

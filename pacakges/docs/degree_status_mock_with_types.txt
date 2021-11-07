@@ -1,0 +1,124 @@
+Document({
+    "course_statuses": Array([
+        Document({
+            "course": Document({
+                "_id": Int64(
+                    234125,
+                ),
+                "credit": Double(
+                    5.5,
+                ),
+                "name": String(
+                    "אינפי 1 לניסנים",
+                ),
+            }),
+            "state": String(
+                "Complete",
+            ),
+            "semester": String(
+                "חורף_1",
+            ),
+            "grade": Document({
+                "Grade": Int32(
+                    98,
+                ),
+            }),
+            "type": String(
+                "חובה",
+            ),
+        }),
+        Document({
+            "course": Document({
+                "_id": Int64(
+                    234126,
+                ),
+                "credit": Double(
+                    5.0,
+                ),
+                "name": String(
+                    "אינפי 2 לניסנים",
+                ),
+            }),
+            "state": String(
+                "NotComplete",
+            ),
+            "semester": String(
+                "אביב_2",
+            ),
+            "grade": Document({
+                "Grade": Int32(
+                    45,
+                ),
+            }),
+            "type": String(
+                "חובה",
+            ),
+        }),
+        Document({
+            "course": Document({
+                "_id": Int64(
+                    234125,
+                ),
+                "credit": Double(
+                    4.0,
+                ),
+                "name": String(
+                    "אינפי 3 לניסנים",
+                ),
+            }),
+            "state": String(
+                "Complete",
+            ),
+            "semester": String(
+                "חורף_3",
+            ),
+            "grade": Document({
+                "Binary": Boolean(
+                    true,
+                ),
+            }),
+            "type": String(
+                "חובה",
+            ),
+        }),
+    ]),
+    "course_bank_requirements": Array([
+        Document({
+            "course_bank_name": String(
+                "חובה",
+            ),
+            "credit_requirment": Double(
+                84.0,
+            ),
+            "credit_complete": Double(
+                9.5,
+            ),
+            "message": String(
+                "תראה את ניסן הגבר הזה כמה אינפים הוא עשה",
+            ),
+        }),
+        Document({
+            "course_bank_name": String(
+                "בחירה חופשית",
+            ),
+            "credit_requirment": Double(
+                2.0,
+            ),
+            "credit_complete": Double(
+                0.0,
+            ),
+            "message": Null,
+        }),
+    ]),
+    "credit_overflow": Array([
+        String(
+            "2.5 נק\"ז עובר משרשרת מדעית לרשימה ב'",
+        ),
+        String(
+            "2.0 נק\"ז עובר מרשימה ב' לבחירה חופשית",
+        ),
+    ]),
+    "total_credit": Double(
+        76.5,
+    ),
+})

@@ -4,3 +4,4 @@ pacakges/server/private/
 pacakges/server/target/
 pacakges/server/.vscode/settings.json
 pacakges/server/*.txt
+pacakges/server/Cargo.lock
