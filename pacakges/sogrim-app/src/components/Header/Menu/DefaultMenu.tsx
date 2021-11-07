@@ -1,5 +1,6 @@
 import { Menu, MenuItem } from '@mui/material';
-
+import { useAuth } from '../../../hooks/useAuth';
+import { observer } from 'mobx-react-lite'
 import { Settings, SignOut } from '../Actions/Actions';
 
 interface DefaultMenuProps {
@@ -8,15 +9,23 @@ interface DefaultMenuProps {
   anchorEl: HTMLElement | null;
 }
 
-export const DefaultMenu = ({ isMenuOpen, handleMenuClose, anchorEl }: DefaultMenuProps) => (
+const DefaultMenuComp = ({ isMenuOpen, handleMenuClose, anchorEl }: DefaultMenuProps) =>  {
+  
+ const { isAuthenticated, logout } = useAuth();
+
+ console.log(isAuthenticated);
+  
+  return (  
   <Menu anchorEl={anchorEl} id="primary-search-account-menu" keepMounted open={isMenuOpen} onClose={handleMenuClose}>
     <MenuItem onClick={handleMenuClose}>
       <Settings disableTooltip />
       הגדרות
     </MenuItem>    
     <MenuItem onClick={handleMenuClose}>
-      <SignOut disableTooltip />
+      <SignOut disableTooltip onClick={logout} />
       התנתקות
     </MenuItem>
   </Menu>
-);
+)};
+
+export const DefaultMenu = observer(DefaultMenuComp);

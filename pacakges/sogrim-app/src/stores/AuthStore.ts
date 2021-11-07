@@ -23,6 +23,8 @@ export class AuthStore {
 
   logout = () => {
       localStorage.removeItem('access_token');
+      this.setAuthenticated(false);
+      window.location.reload();      
   }
 
   private setAuthenticated(authenticated: boolean) {
@@ -30,11 +32,16 @@ export class AuthStore {
   }
 
   get accessToken() {
-    return localStorage.getItem("access_token");
+    return localStorage.getItem('access_token');
   }
 
   get isAuthenticated() {
     return this.authenticated;
+  }
+
+  // TODO: remove it
+  setDummyAuthenticated = () => {
+    this.setAuthenticated(true);
   }
 
   get currentUser() {    

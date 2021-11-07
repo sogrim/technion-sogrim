@@ -10,5 +10,9 @@ export class UIStore {
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
   }
+
+  get showDegreeStatusCard() {
+    return this.rootStore.dataStore.userHasDegreeStatus;
+  }
   
 }

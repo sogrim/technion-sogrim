@@ -5,8 +5,6 @@ interface AuthProviderProps {
   authStore: AuthStore;
 }
 
-
-
 export const AuthContext = React.createContext({} as AuthStore);
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({
