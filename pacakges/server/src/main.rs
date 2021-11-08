@@ -17,6 +17,8 @@ use rocket::figment::providers::Env;
 use rocket_db_pools::Database;
 use rocket_oauth2::OAuth2;
 use rocket::{get, routes};
+use rocket::fairing::{Fairing, Info, Kind};
+use rocket::{Request, Response};
 
 #[get("/")]
 async fn home_page(cookies: &CookieJar<'_>) -> String{
@@ -27,6 +29,28 @@ async fn home_page(cookies: &CookieJar<'_>) -> String{
             format!("Hello {}, welcome to Sogrim!", username)
         },
         None => "Hello guest (you are logged out), welcome to Sogrim!".into(),
+    }
+}
+
+
+
+pub struct CORS;
+
+#[rocket::async_trait]
+impl Fairing for CORS {
+    fn info(&self) -> Info {
+        Info {
+            name: "Add CORS headers to responses",
+            kind: Kind::Response
+        }
+    }
+
+    async fn on_response<'r>(&self, _: &'r Request<'_>, response: &mut Response<'r>) {
+        response.set_raw_header("Access-Control-Allow-Origin", "*");
+        response.set_raw_header("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS");
+        response.set_raw_header("Access-Control-Allow-Headers", "*");
+        response.set_raw_header("Access-Control-Allow-Credentials", "true");
+        println!("{:#?}", response);
     }
 }
 
@@ -43,6 +67,7 @@ pub fn rocket_build() -> Rocket<Build> {
     rocket::build()
         .manage(env)
         .attach(Db::init())
+        .attach(CORS)
         .mount("/", 
         routes![
             oauth2::github_callback, 
