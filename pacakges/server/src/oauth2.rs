@@ -19,16 +19,14 @@ pub struct Secret{
 }
 
 pub fn get_secret_from_rocket_toml() -> String{
-    //let profile = std::env::var("ROCKET_PROFILE").unwrap_or("debug".into());
-    //let path_to_rocket_toml = if profile == "debug" {"./../../Rocket.toml"} else {"Rocket.toml"};
-    let path_to_rocket_toml = "./Rocket.toml";
-    // println!("{:#?}", std::env::current_dir().unwrap());
-    // let paths = std::fs::read_dir("./").unwrap();
 
-    // println!("{:#?}", std::fs::read_to_string("./Rocket.toml"));
-    // for path in paths {
-    //     println!("Name: {}", path.unwrap().path().display());
-    // }
+    let path_to_rocket_toml = if std::env::var("DEPLOY").is_ok(){
+        "./Rocket.toml"
+    }
+    else{
+        "./../../Rocket.toml"
+    };
+
     let secret = Figment::from(Toml::file(path_to_rocket_toml).nested())
         .select("default")
         .extract::<Secret>()
@@ -134,7 +132,7 @@ pub fn google_login(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> 
 }
 
 #[get("/auth/google")]
-pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
+pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, _cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
 
     // Use the token to retrieve the user's Google account information.
     let user_info : GoogleUserInfo = reqwest::Client::builder()
