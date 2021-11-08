@@ -19,7 +19,17 @@ pub struct Secret{
 }
 
 pub fn get_secret_from_rocket_toml() -> String{
-    let secret = Figment::from(Toml::file("./../../Rocket.toml").nested())
+    //let profile = std::env::var("ROCKET_PROFILE").unwrap_or("debug".into());
+    //let path_to_rocket_toml = if profile == "debug" {"./../../Rocket.toml"} else {"Rocket.toml"};
+    let path_to_rocket_toml = "./Rocket.toml";
+    // println!("{:#?}", std::env::current_dir().unwrap());
+    // let paths = std::fs::read_dir("./").unwrap();
+
+    // println!("{:#?}", std::fs::read_to_string("./Rocket.toml"));
+    // for path in paths {
+    //     println!("Name: {}", path.unwrap().path().display());
+    // }
+    let secret = Figment::from(Toml::file(path_to_rocket_toml).nested())
         .select("default")
         .extract::<Secret>()
         .unwrap()
@@ -51,7 +61,7 @@ pub struct GitHubUserInfo {
 }
 
 /// User information to be retrieved from the Google People API.
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct GoogleUserInfo {
     picture : String,
     email : String,    
@@ -87,8 +97,14 @@ pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &Coo
         .and_then(|json_obj| json_obj.get("email"))
         .and_then(|field| field.as_str())
         .context("failed to parse email from response")?;
-
+    
     // Set a private cookie with the user's name, and redirect to the home page.
+    cookies.add(
+        Cookie::build("email-decrypted", email.to_string())
+            .same_site(SameSite::Lax)
+            .finish(),
+    );
+
     cookies.add_private(
         Cookie::build("email", email.to_string())
             .same_site(SameSite::Lax)
@@ -96,20 +112,20 @@ pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &Coo
     );
 
     // Get the original URI which the user requested or redirect him to /user if he just logged in.
-    let original_request_uri = cookies
-        .get("origin-req-uri")
-        .map(|cookie| cookie.value().to_string())
-        .and_then(|uri| Some({
-            if uri.starts_with("/login") {
-                "/user".to_string()
-            }
-            else{
-                uri
-            }
-        }))
-        .unwrap_or("/user".into());
+    // let original_request_uri = cookies
+    //     .get("origin-req-uri")
+    //     .map(|cookie| cookie.value().to_string())
+    //     .and_then(|uri| Some({
+    //         if uri.starts_with("/login") {
+    //             "/user".to_string()
+    //         }
+    //         else{
+    //             uri
+    //         }
+    //     }))
+    //     .unwrap_or("/user".into());
 
-    Ok(Redirect::to(format!("{}", original_request_uri)))
+    Ok(Redirect::to(format!("{}", "http://localhost:3000")))
 }
 
 #[get("/login/google")]
@@ -134,34 +150,40 @@ pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, cookies: &Coo
         .context("failed to deserialize response")?;   
 
     // Set a private cookie with the user's email.
-    cookies.add_private(
-        Cookie::build("email", user_info.email)
-            .same_site(SameSite::Lax)
-            .finish(),
-    );
+    // cookies.add(
+    //     Cookie::build("email", user_info.email.clone())
+    //         .same_site(SameSite::None)
+    //         .secure(true)
+    //         .finish(),
+    // );
 
-    // Set a private cookie with the user's picture from Google.
-    cookies.add_private(
-        Cookie::build("avatar", user_info.picture)
-            .same_site(SameSite::Lax)
-            .finish(),
-    );
+    // // Set a private cookie with the user's picture from Google.
+    // cookies.add(
+    //     Cookie::build("avatar", user_info.picture)
+    //         .same_site(SameSite::None)
+    //         .secure(true)
+    //         .finish(),
+    // );
 
     // Get the original URI which the user requested or redirect him to /user if he just logged in.
-    let original_request_uri = cookies
-        .get("origin-req-uri")
-        .map(|cookie| cookie.value().to_string())
-        .and_then(|uri| Some({
-            if uri.starts_with("/login") {
-                "/user".to_string()
-            }
-            else{
-                uri
-            }
-        }))
-        .unwrap_or("/user".into());
-
-    Ok(Redirect::to(format!("{}", original_request_uri)))
+    // let original_request_uri = cookies
+    //     .get("origin-req-uri")
+    //     .map(|cookie| cookie.value().to_string())
+    //     .and_then(|uri| Some({
+    //         if uri.starts_with("/login") {
+    //             "/user".to_string()
+    //         }
+    //         else{
+    //             uri
+    //         }
+    //     }))
+    //     .unwrap_or("/user".into());
+    //println!("{}", get_secret_from_rocket_toml());
+    match generate_jwt(user_info.clone()){
+        Ok(jwt) => Ok(Redirect::to(format!("http://localhost:3000/?jwt={}", jwt))),
+        Err(err) => Ok(Redirect::to(format!("http://localhost:3000/?err={}", err.to_string()))),
+    }
+    // Ok(Redirect::to(format!("http://localhost:3000/?email={}", user_info.email)))
 }
 
 #[get("/logout")]
