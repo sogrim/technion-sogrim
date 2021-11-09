@@ -152,10 +152,10 @@ fn test1(){
                 message: None
             }
         ],
-        credit_overflow: Some(vec![
+        credit_overflow_msgs: vec![
             r#"2.5 נק"ז עובר משרשרת מדעית לרשימה ב'"#.to_string(),
             r#"2.0 נק"ז עובר מרשימה ב' לבחירה חופשית"#.to_string(),
-        ]),
+        ],
         total_credit: 76.5,
     };
 
