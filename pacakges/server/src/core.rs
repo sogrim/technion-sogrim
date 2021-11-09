@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use rocket::{Request, http::Status, outcome::{IntoOutcome, try_outcome}, request::{self, FromRequest, Outcome}};
+use rocket::{Request, http::Status, outcome::{IntoOutcome, try_outcome}, request::{self, FromRequest}};
 use rocket_db_pools::Connection;
 use bson::doc;
 use serde::{Serialize, Deserialize};
@@ -46,7 +46,7 @@ impl<'r> FromRequest<'r> for User {
 
         let email = try_outcome!(req.guard::<UserEmail>().await);
 
-        db::services::get_user_by_email(email.0.into(), &conn)
+        db::services::get_user_by_email(email.0.as_str(), &conn)
             .await
             .map_err(|err| err.to_string())
             .into_outcome(Status::ServiceUnavailable)
@@ -63,7 +63,7 @@ pub enum Rule {
     Wildcard(bool), // קלף משוגע עבור להתמודד עם   
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Course {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub number : u32,
@@ -252,15 +252,6 @@ pub struct CourseTableRow {
     pub course_banks: Vec<String> // שמות הבנקים. שימו לב לקבוצת ההתמחות
 }
 
-// dummy function, need to be implemented by Benny
-fn get_course_by_id(number: u32) -> Course {
-    Course {
-        number,
-        credit: 3.0,
-        name: "dummy".to_string(),
-    }
-}
-
 pub fn set_order(course_banks_type: &Vec::<CourseBank>) -> &Vec::<CourseBank> {
     // TODO: implement this function, should order the banks in catalog in the correct calculations order
     course_banks_type
@@ -299,7 +290,10 @@ pub fn handle_bank_rule_all(
             },
             None => {
                 user.degree_status.course_statuses.push(CourseStatus {
-                    course : get_course_by_id(course_number.clone()),
+                    course : Course{
+                        number : course_number.clone(),
+                        ..Default::default()
+                    },
                     r#type : Some(bank_name.clone().to_string()),
                     state : Some(CourseState::NotComplete),
                     semester : None,
@@ -358,8 +352,7 @@ pub fn handle_bank_rule_chain( // TODO: notify the user about courses he has lef
     (sum_credits, false)
 }
 
-pub async fn calculate_degree_status(user: &mut UserDetails, conn: &Connection<Db>) -> Result<(),Status> {
-    let catalog = db::services::get_catalog_by_id(user.catalog.unwrap(), conn).await?;
+pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
     let course_banks = set_order(&catalog.course_banks);
     user.degree_status = DegreeStatus {
         course_statuses: Vec::<CourseStatus>::new(),
@@ -405,7 +398,6 @@ pub async fn calculate_degree_status(user: &mut UserDetails, conn: &Connection<D
         }
     }
 
-    Ok(())
     
 }
 

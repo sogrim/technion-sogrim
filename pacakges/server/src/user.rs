@@ -115,13 +115,35 @@ pub async fn user_greet(user: User) -> String{
 }
 
 #[get("/user/compute")]
-pub async fn compute_degree_status_for_user(user: User, conn: Connection<Db>) -> Result<(), Status>{
-    core::calculate_degree_status(
-        &mut user.details.ok_or_else(||{
+pub async fn compute_degree_status_for_user(mut user: User, conn: Connection<Db>) -> Result<(), Status>{
+    
+    let mut user_details = user
+        .details
+        .as_mut()
+        .ok_or_else(||{
+            eprintln!("No data exists for user"); //Shouldn't get here..
+            Status::InternalServerError
+    })?;
+
+    let catalog_id = user_details
+        .catalog
+        .ok_or_else(||{
             eprintln!("The user has not yet selected a catalog");
-            Status::BadRequest
-        })?, &conn
-    ).await
+            Status::InternalServerError
+        })?;
+
+    let catalog = crate::db::services::get_catalog_by_id(&catalog_id, &conn).await?;
+    core::calculate_degree_status(&catalog, &mut user_details);
+
+    for course_status in user_details.course_statuses.iter_mut() {
+        // Fill in courses without information
+        let course = &mut course_status.course;
+        if course.name.is_empty(){
+            *course = crate::db::services::get_course_by_number(course.number, &conn).await?;
+        }
+    }
+
+    Ok(())
 }
 
 #[post("/user/parse", data = "<ug_data>")]

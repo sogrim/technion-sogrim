@@ -58,7 +58,7 @@ pub mod services{
                 match conn
                     .database(std::env::var("ROCKET_PROFILE").unwrap_or("debug".into()).as_str())
                     .collection::<$db_item>(format!("{}s", stringify!($db_item)).as_str())
-                    .find_one(doc!{$db_key_name : &item}, None)
+                    .find_one(doc!{$db_key_name : item}, None)
                     .await
                     {
                         Ok(maybe_item) => {  
@@ -79,7 +79,7 @@ pub mod services{
     impl_get!(
         fn_name : get_catalog_by_id, 
         db_item : Catalog, 
-        db_key_type: ObjectId, 
+        db_key_type: &ObjectId, 
         db_key_name: "_id"
     );
 
@@ -93,7 +93,7 @@ pub mod services{
     impl_get!(
         fn_name : get_user_by_email, 
         db_item : User, 
-        db_key_type: String, 
+        db_key_type: &str, 
         db_key_name: "email"
     );
 }
