@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardActions, CardContent, Typography } from '@mui/material';
+import { Button, Card, CardContent, Typography } from '@mui/material';
 import { DegreeStatusBar } from './DegreeStatusBar';
 
 

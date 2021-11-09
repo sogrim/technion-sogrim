@@ -117,7 +117,7 @@ pub async fn user_greet(user: User) -> String{
 #[get("/user/compute")]
 pub async fn compute_degree_status_for_user(user: User, conn: Connection<Db>) -> Result<(), Status>{
     core::calculate_degree_status(
-        &user.details.ok_or_else(||{
+        &mut user.details.ok_or_else(||{
             eprintln!("The user has not yet selected a catalog");
             Status::BadRequest
         })?, &conn
