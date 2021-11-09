@@ -87,7 +87,7 @@ pub async fn fetch_or_insert_user(conn: Connection<Db>, email: UserEmail) -> Res
 #[get("/user/compute")]
 pub async fn compute_degree_status_for_user(user: User, conn: Connection<Db>) -> Result<(), Status>{
     core::calculate_degree_status(
-        &user.details.ok_or_else(||{
+        &mut user.details.ok_or_else(||{
             eprintln!("The user has not yet selected a catalog");
             Status::BadRequest
         })?, &conn
