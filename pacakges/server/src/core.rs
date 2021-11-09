@@ -127,7 +127,7 @@ pub struct Requirement {
 }
 
 impl Requirement {
-    fn create_requirement(bank_name: String, credit_requirment: f32) -> Requirement {
+    fn create(bank_name: String, credit_requirment: f32) -> Requirement {
         Requirement {
             course_bank_name: bank_name,
             credit_requirment,
@@ -139,7 +139,7 @@ impl Requirement {
         self.credit_complete = credit_complete;
         self
     }
-    fn add_message(mut self, msg: String) -> Requirement {
+    fn with_message(mut self, msg: String) -> Requirement {
         self.message = Some(msg);
         self
     }
@@ -172,7 +172,8 @@ impl DegreeStatus {
             state: if course_status.passed() {
                 *sum_credits += course_status.course.credit;
                 Some(CourseState::Complete)
-            } else {
+            }
+            else {
                 Some(CourseState::NotComplete)
             },
             semester: course_status.semester,
@@ -217,7 +218,8 @@ impl Catalog {
                     }
                     *credit_overflows_map.get_mut(&credit_overflow.from).unwrap() = 0.0;
                     credits
-                } else {
+                }
+                else {
                     0.0
                 };
             }
@@ -377,7 +379,7 @@ pub async fn calculate_degree_status(user: &mut UserDetails, conn: &Connection<D
                 let sum_credits = handle_bank_rule_all(user, &bank.name, &course_list_for_bank, credits_overflow);
                 let credit_complete = calculate_credit_complete_and_handle_overflow(bank, sum_credits, &mut user.degree_status.total_credit, &mut credits_overflow_map);
                 user.degree_status.course_bank_requirements.push(
-                    Requirement::create_requirement(bank.name.clone(), bank.credit)
+                    Requirement::create(bank.name.clone(), bank.credit)
                     .with_credits(credit_complete));
                     
             }
@@ -385,7 +387,7 @@ pub async fn calculate_degree_status(user: &mut UserDetails, conn: &Connection<D
                 let sum_credits = handle_bank_rule_accumulate(user, &bank.name, &course_list_for_bank, credits_overflow);
                 let credit_complete = calculate_credit_complete_and_handle_overflow(bank, sum_credits, &mut user.degree_status.total_credit, &mut credits_overflow_map);
                 user.degree_status.course_bank_requirements.push(
-                    Requirement::create_requirement(bank.name.clone(), bank.credit)
+                    Requirement::create(bank.name.clone(), bank.credit)
                     .with_credits(credit_complete));
             }
             Rule::Chains(chains) => {
@@ -393,13 +395,14 @@ pub async fn calculate_degree_status(user: &mut UserDetails, conn: &Connection<D
                 let credit_complete = calculate_credit_complete_and_handle_overflow(bank, sum_credits, &mut user.degree_status.total_credit, &mut credits_overflow_map);
                 let msg = if completed_chain {
                     String::from("The user completed a full chain")
-                } else {
+                }
+                else {
                     String::from("The user didn't complete a full chain")
                 };
                 user.degree_status.course_bank_requirements.push(
-                    Requirement::create_requirement(bank.name.clone(), bank.credit)
+                    Requirement::create(bank.name.clone(), bank.credit)
                     .with_credits(credit_complete)
-                    .add_message(msg));
+                    .with_message(msg));
             }
             _ => todo!()
         }
