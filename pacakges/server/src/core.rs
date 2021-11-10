@@ -1,58 +1,23 @@
 use std::collections::HashMap;
-use rocket::{Request, http::Status, outcome::{IntoOutcome, try_outcome}, request::{self, FromRequest}};
-use rocket_db_pools::Connection;
 use bson::doc;
 use serde::{Serialize, Deserialize};
-use crate::{db::{self, Db}, user::UserEmail};
+use crate::user::UserDetails;
+use crate::course::{Course, CourseState, CourseStatus, CourseBank, CourseTableRow};
+
 type Chain = Vec<u32>;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct UserDetails {
-    pub course_statuses: Vec<CourseStatus>, //from parser
-    pub catalog : Option<bson::oid::ObjectId>,
-    pub degree_status: DegreeStatus,
+pub enum Logic {
+    OR,
+    AND,
 }
 
-impl UserDetails {
-    fn find_course_by_number(&self, number: u32) -> Option<CourseStatus>{
-        for course_status in &self.course_statuses {
-            if course_status.course.number == number {
-                return Some(course_status.clone());
-            }
-        }
-        None
-    }
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SpecializationGroup {
+    pub name: String,
+    pub credit: f32,
+    pub mandatory: Option<(Vec<u32>, Logic)>,
 }
-
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
-pub struct User {
-    #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub id : bson::oid::ObjectId,
-    pub email: String,
-    pub details : Option<UserDetails>,
-}
-
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for User {
-    type Error = String;
-
-    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
-
-        let conn = try_outcome!(
-            req.guard::<Connection<Db>>()
-            .await
-            .map_failure(|_| (Status::ServiceUnavailable, "Can't connect to database".into()))
-        );
-
-        let email = try_outcome!(req.guard::<UserEmail>().await);
-
-        db::services::get_user_by_email(email.0.as_str(), &conn)
-            .await
-            .map_err(|err| err.to_string())
-            .into_outcome(Status::ServiceUnavailable)
-    }
-}
-    
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Rule {
@@ -61,37 +26,6 @@ pub enum Rule {
     Chains(Vec<Chain>), // למשל שרשרת מדעית.
     SpecializationGroups(Vec<SpecializationGroup>),
     Wildcard(bool), // קלף משוגע עבור להתמודד עם   
-}
-
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
-pub struct Course {
-    #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub number : u32,
-    pub credit: f32,
-    pub name: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum CourseState {
-    Complete,
-    NotComplete,
-    InProgress,
-}
-
-impl CourseStatus {
-    fn passed(&self) -> bool {
-        match &self.grade {
-            Some(grade) => {
-                match grade{
-                    Grade::Grade(grade) => grade >= &55,
-                    Grade::Binary(val) => *val,
-                    Grade::ExemptionWithoutCredit => true,
-                    Grade::ExemptionWithCredit => true,
-                } 
-            },
-            None => false,
-        }
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -103,12 +37,18 @@ pub enum Grade{
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct CourseStatus {
-    pub course: Course,
-    pub state: Option<CourseState>,
-    pub semester : Option<String>,
-    pub grade : Option<Grade>,
-    pub r#type : Option<String>, // if none, nissan cries 
+pub struct CreditOverflow {
+    pub from : String,
+    pub to : String,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Catalog {
+    #[serde(rename(serialize = "_id", deserialize = "_id"))]
+    pub id : bson::oid::ObjectId,
+    pub name: String,
+    pub course_banks: Vec<CourseBank>,
+    pub course_table: Vec<CourseTableRow>,
+    pub credit_overflows: Vec<CreditOverflow>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -189,47 +129,6 @@ impl DegreeStatus {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct CreditOverflow {
-    pub from : String,
-    pub to : String,
-}
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Catalog {
-    #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub id : bson::oid::ObjectId,
-    pub name: String,
-    pub course_banks: Vec<CourseBank>,
-    pub course_table: Vec<CourseTableRow>,
-    pub credit_overflows: Vec<CreditOverflow>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct CourseBank {
-    pub name: String, // for example, Hova, Rshima A.
-    pub rule: Rule,
-    pub credit: f32,
-    pub messege: String, //
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SpecializationGroup {
-    pub name: String,
-    pub credit: f32,
-    pub mandatory: Option<(Vec<u32>, Logic)>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum Logic {
-    OR,
-    AND,
-}
-
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
-pub struct CourseTableRow {
-    pub number: u32,
-    pub course_banks: Vec<String> // שמות הבנקים. שימו לב לקבוצת ההתמחות
-}
 
 pub fn set_order(course_banks_type: &Vec::<CourseBank>) -> &Vec::<CourseBank> {
     // TODO: implement this function, should order the banks in catalog in the correct calculations order

@@ -10,7 +10,7 @@ use hmac::{Hmac, NewMac};
 use jwt::{SignWithKey, ToBase64, VerifyWithKey};
 use serde::Deserialize;
 use sha2::Sha256;
-use crate::core::User;
+use crate::user::User;
 
 //TODO vvv move these to a new module or rename 'oauth2' module to 'auth'.
 #[derive(Debug, PartialEq, Deserialize)]

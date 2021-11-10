@@ -1,11 +1,61 @@
 use std::ops::Deref;
-
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications};
-use rocket::{Request, http::{Cookie, SameSite}, request::{Outcome, FromRequest}, response::Redirect};
-use crate::{course, db::{Connection, Db, doc}};
+use rocket::{Request, http::{Cookie, SameSite}, outcome::{IntoOutcome, try_outcome}, request::{self, Outcome, FromRequest}, response::Redirect};
+use rocket_db_pools::Connection;
+use serde::{Serialize, Deserialize};
+use crate::{course, db::{Db, doc}};
 use crate::Status;
+use crate::course::CourseStatus;
 use crate::core::{self, *};
+use crate::db::{self};
 use crate::oauth2;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UserDetails {
+    pub course_statuses: Vec<CourseStatus>, //from parser
+    pub catalog : Option<bson::oid::ObjectId>,
+    pub degree_status: DegreeStatus,
+}
+
+impl UserDetails {
+    pub fn find_course_by_number(&self, number: u32) -> Option<CourseStatus>{
+        for course_status in &self.course_statuses {
+            if course_status.course.number == number {
+                return Some(course_status.clone());
+            }
+        }
+        None
+    }
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct User {
+    #[serde(rename(serialize = "_id", deserialize = "_id"))]
+    pub id : bson::oid::ObjectId,
+    pub email: String,
+    pub details : Option<UserDetails>,
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for User {
+    type Error = String;
+
+    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+
+        let conn = try_outcome!(
+            req.guard::<Connection<Db>>()
+            .await
+            .map_failure(|_| (Status::ServiceUnavailable, "Can't connect to database".into()))
+        );
+
+        let email = try_outcome!(req.guard::<UserEmail>().await);
+
+        db::services::get_user_by_email(email.0.as_str(), &conn)
+            .await
+            .map_err(|err| err.to_string())
+            .into_outcome(Status::ServiceUnavailable)
+    }
+}
 
 //TODO think about this!!!
 pub struct UserEmail(pub String);

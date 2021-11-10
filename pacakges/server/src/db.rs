@@ -2,6 +2,8 @@ use std::time::Duration;
 use std::ops::Deref;
 use mongodb::{Client, options::ClientOptions};
 use crate::core::*;
+use crate::user::User;
+use crate::course::Course;
 pub use bson::{Document, doc};
 pub use rocket_db_pools::{Config, Connection, Database, Error as PoolsError, Pool};
 pub use rocket::{State, http::Status, figment::Figment, serde::json::Json};

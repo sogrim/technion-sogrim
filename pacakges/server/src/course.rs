@@ -1,5 +1,60 @@
 use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
 use crate::core::*;
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct Course {
+    #[serde(rename(serialize = "_id", deserialize = "_id"))]
+    pub number : u32,
+    pub credit: f32,
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum CourseState {
+    Complete,
+    NotComplete,
+    InProgress,
+}
+
+impl CourseStatus {
+    pub fn passed(&self) -> bool {
+        match &self.grade {
+            Some(grade) => {
+                match grade{
+                    Grade::Grade(grade) => grade >= &55,
+                    Grade::Binary(val) => *val,
+                    Grade::ExemptionWithoutCredit => true,
+                    Grade::ExemptionWithCredit => true,
+                } 
+            },
+            None => false,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CourseStatus {
+    pub course: Course,
+    pub state: Option<CourseState>,
+    pub semester : Option<String>,
+    pub grade : Option<Grade>,
+    pub r#type : Option<String>, // if none, nissan cries 
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CourseBank {
+    pub name: String, // for example, Hova, Rshima A.
+    pub rule: Rule,
+    pub credit: f32,
+    pub messege: String, //
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct CourseTableRow {
+    pub number: u32,
+    pub course_banks: Vec<String> // שמות הבנקים. שימו לב לקבוצת ההתמחות
+}
 
 fn contains_course_number(str : &str) -> bool{
     for word in str.split_whitespace(){
