@@ -2,6 +2,8 @@ use std::time::Duration;
 use std::ops::Deref;
 use mongodb::{Client, options::ClientOptions};
 use crate::core::*;
+use crate::user::User;
+use crate::course::Course;
 pub use bson::{Document, doc};
 pub use rocket_db_pools::{Config, Connection, Database, Error as PoolsError, Pool};
 pub use rocket::{State, http::Status, figment::Figment, serde::json::Json};
@@ -58,7 +60,7 @@ pub mod services{
                 match conn
                     .database(std::env::var("ROCKET_PROFILE").unwrap_or("debug".into()).as_str())
                     .collection::<$db_item>(format!("{}s", stringify!($db_item)).as_str())
-                    .find_one(doc!{$db_key_name : &item}, None)
+                    .find_one(doc!{$db_key_name : item}, None)
                     .await
                     {
                         Ok(maybe_item) => {  
@@ -79,12 +81,12 @@ pub mod services{
     impl_get!(
         fn_name : get_catalog_by_id, 
         db_item : Catalog, 
-        db_key_type: ObjectId, 
+        db_key_type: &ObjectId, 
         db_key_name: "_id"
     );
 
     impl_get!(
-        fn_name : get_course_by_id, 
+        fn_name : get_course_by_number, 
         db_item : Course, 
         db_key_type: u32, 
         db_key_name: "_id"
@@ -93,7 +95,7 @@ pub mod services{
     impl_get!(
         fn_name : get_user_by_email, 
         db_item : User, 
-        db_key_type: String, 
+        db_key_type: &str, 
         db_key_name: "email"
     );
 }

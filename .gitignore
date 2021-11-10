@@ -1,4 +1,9 @@
-packages/server/Cargo.lock
 debug_text.txt
+packages/server/Cargo.lock
 pacakges/server/private/
 pacakges/server/target/
+pacakges/server/.vscode/settings.json
+pacakges/server/*.txt
+pacakges/server/Rocket.toml
+pacakges/server/private_key.gpg
+pacakges/server/Cargo.lock

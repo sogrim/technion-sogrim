@@ -3,7 +3,53 @@ use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::response::{Debug, Redirect};
 use rocket_oauth2::{OAuth2, TokenResponse};
+use rocket::figment::providers::{Format, Toml};
+use rocket::figment::Figment;
 use serde_json::{self, Value};
+use hmac::{Hmac, NewMac};
+use jwt::{SignWithKey, ToBase64, VerifyWithKey};
+use serde::Deserialize;
+use sha2::Sha256;
+use crate::user::User;
+
+//TODO vvv move these to a new module or rename 'oauth2' module to 'auth'.
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct Secret{
+    pub secret_key : String,
+}
+
+pub fn get_secret_from_rocket_toml() -> String{
+
+    let path_to_rocket_toml = if std::env::var("DEPLOY").is_ok(){
+        "./Rocket.toml"
+    }
+    else{
+        "./../../Rocket.toml"
+    };
+
+    let secret = Figment::from(Toml::file(path_to_rocket_toml).nested())
+        .select("default")
+        .extract::<Secret>()
+        .unwrap()
+        .secret_key;
+    secret
+}
+
+fn get_secret_key() -> Hmac<Sha256>{
+    Hmac::new_from_slice(get_secret_from_rocket_toml().as_bytes()).unwrap()
+}
+
+pub fn verify_jwt(jwt: String) -> Result<User, jwt::Error>{
+    let key = get_secret_key();
+    jwt.verify_with_key(&key)
+}
+
+pub fn generate_jwt<'a, T: 'a + Deserialize<'a> + ToBase64>(resource: T) -> Result<String, jwt::Error>{
+    let key = get_secret_key();
+    resource.sign_with_key(&key)
+}
+//TODO ^^^ move these to a new module or rename 'oauth2' module to 'auth'
+
 
 /// User information to be retrieved from the GitHub API.
 #[derive(Debug, serde::Deserialize)]
@@ -13,7 +59,7 @@ pub struct GitHubUserInfo {
 }
 
 /// User information to be retrieved from the Google People API.
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct GoogleUserInfo {
     picture : String,
     email : String,    
@@ -49,8 +95,14 @@ pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &Coo
         .and_then(|json_obj| json_obj.get("email"))
         .and_then(|field| field.as_str())
         .context("failed to parse email from response")?;
-
+    
     // Set a private cookie with the user's name, and redirect to the home page.
+    cookies.add(
+        Cookie::build("email-decrypted", email.to_string())
+            .same_site(SameSite::Lax)
+            .finish(),
+    );
+
     cookies.add_private(
         Cookie::build("email", email.to_string())
             .same_site(SameSite::Lax)
@@ -58,20 +110,20 @@ pub async fn github_callback(token: TokenResponse<GitHubUserInfo>, cookies: &Coo
     );
 
     // Get the original URI which the user requested or redirect him to /user if he just logged in.
-    let original_request_uri = cookies
-        .get("origin-req-uri")
-        .map(|cookie| cookie.value().to_string())
-        .and_then(|uri| Some({
-            if uri.starts_with("/login") {
-                "/user".to_string()
-            }
-            else{
-                uri
-            }
-        }))
-        .unwrap_or("/user".into());
+    // let original_request_uri = cookies
+    //     .get("origin-req-uri")
+    //     .map(|cookie| cookie.value().to_string())
+    //     .and_then(|uri| Some({
+    //         if uri.starts_with("/login") {
+    //             "/user".to_string()
+    //         }
+    //         else{
+    //             uri
+    //         }
+    //     }))
+    //     .unwrap_or("/user".into());
 
-    Ok(Redirect::to(format!("{}", original_request_uri)))
+    Ok(Redirect::to(format!("{}", "http://localhost:3000")))
 }
 
 #[get("/login/google")]
@@ -80,7 +132,7 @@ pub fn google_login(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> 
 }
 
 #[get("/auth/google")]
-pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
+pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, _cookies: &CookieJar<'_>) -> Result<Redirect, Debug<Error>> {
 
     // Use the token to retrieve the user's Google account information.
     let user_info : GoogleUserInfo = reqwest::Client::builder()
@@ -96,34 +148,40 @@ pub async fn google_callback(token: TokenResponse<GoogleUserInfo>, cookies: &Coo
         .context("failed to deserialize response")?;   
 
     // Set a private cookie with the user's email.
-    cookies.add_private(
-        Cookie::build("email", user_info.email)
-            .same_site(SameSite::Lax)
-            .finish(),
-    );
+    // cookies.add(
+    //     Cookie::build("email", user_info.email.clone())
+    //         .same_site(SameSite::None)
+    //         .secure(true)
+    //         .finish(),
+    // );
 
-    // Set a private cookie with the user's picture from Google.
-    cookies.add_private(
-        Cookie::build("avatar", user_info.picture)
-            .same_site(SameSite::Lax)
-            .finish(),
-    );
+    // // Set a private cookie with the user's picture from Google.
+    // cookies.add(
+    //     Cookie::build("avatar", user_info.picture)
+    //         .same_site(SameSite::None)
+    //         .secure(true)
+    //         .finish(),
+    // );
 
     // Get the original URI which the user requested or redirect him to /user if he just logged in.
-    let original_request_uri = cookies
-        .get("origin-req-uri")
-        .map(|cookie| cookie.value().to_string())
-        .and_then(|uri| Some({
-            if uri.starts_with("/login") {
-                "/user".to_string()
-            }
-            else{
-                uri
-            }
-        }))
-        .unwrap_or("/user".into());
-
-    Ok(Redirect::to(format!("{}", original_request_uri)))
+    // let original_request_uri = cookies
+    //     .get("origin-req-uri")
+    //     .map(|cookie| cookie.value().to_string())
+    //     .and_then(|uri| Some({
+    //         if uri.starts_with("/login") {
+    //             "/user".to_string()
+    //         }
+    //         else{
+    //             uri
+    //         }
+    //     }))
+    //     .unwrap_or("/user".into());
+    //println!("{}", get_secret_from_rocket_toml());
+    match generate_jwt(user_info.clone()){
+        Ok(jwt) => Ok(Redirect::to(format!("http://localhost:3000/?jwt={}", jwt))),
+        Err(err) => Ok(Redirect::to(format!("http://localhost:3000/?err={}", err.to_string()))),
+    }
+    // Ok(Redirect::to(format!("http://localhost:3000/?email={}", user_info.email)))
 }
 
 #[get("/logout")]
