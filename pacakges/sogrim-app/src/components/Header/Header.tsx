@@ -6,13 +6,11 @@ import { AppTitle } from './AppTitle/AppTitle';
 import { More, UserAccount } from './Actions/Actions';
 import { DefaultMenu, MobileMenu } from './Menu';
 import { useAuth } from '../../hooks/useAuth';
-import { SogrimButton } from '../Commom/SogrimButton';
 
 interface HeaderProps {
-  toggleNavigation: () => void;
 }
 
-const HeaderComp = ({ toggleNavigation }: HeaderProps) => {
+const HeaderComp: React.FC<HeaderProps> = () => {
   
   const { isAuthenticated, setDummyAuthenticated } = useAuth();
   

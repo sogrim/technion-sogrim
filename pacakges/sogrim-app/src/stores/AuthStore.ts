@@ -5,6 +5,7 @@ import jwtDecode from 'jwt-decode';
 
 export class AuthStore {
   private authenticated: boolean = false;
+  public userCredentialResponse: CredentialResponse = {};
 
   constructor(private readonly authService: AuthService) {
     makeAutoObservable(this);
@@ -25,6 +26,11 @@ export class AuthStore {
       localStorage.removeItem('access_token');
       this.setAuthenticated(false);
       window.location.reload();      
+  }
+
+  setCredential = (credential: CredentialResponse) => {
+      this.userCredentialResponse = credential;
+      this.setAuthenticated(true);
   }
 
   private setAuthenticated(authenticated: boolean) {
