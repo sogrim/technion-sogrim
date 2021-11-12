@@ -11,7 +11,7 @@ export class AuthStore {
     this.authenticated = !!this.accessToken;
   }
 
-  async login(loginRequest: LoginRequest) {
+  login = async (loginRequest: LoginRequest) => {
     try {
       const tokenPayloadDto = await this.authService.login(loginRequest);
       localStorage.setItem('access_token', tokenPayloadDto.access_token); // TODO check it
