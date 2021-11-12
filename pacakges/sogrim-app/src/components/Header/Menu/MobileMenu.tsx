@@ -14,9 +14,10 @@ interface MobileMenuProps {
 
  const MobileMenuComp = ({ isMenuOpen, handleMenuOpen, handleMenuClose, anchorEl }: MobileMenuProps) => {
 
-  const { isAuthenticated, logout, setDummyAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
 
   return (
+    isAuthenticated ? 
     <Menu
       anchorEl={anchorEl}
       anchorOrigin={{
@@ -32,8 +33,7 @@ interface MobileMenuProps {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <Box sx={{ textAlign: 'center' }}> 
-        { isAuthenticated ? 
+      <Box sx={{ textAlign: 'center' }}>         
         <>
         <MenuItem onClick={handleMenuClose}>
           <Settings disableTooltip />
@@ -43,14 +43,9 @@ interface MobileMenuProps {
           <SignOut disableTooltip onClick={logout} />
           התנתקות
         </MenuItem>
-        </> : 
-        <MenuItem onClick={handleMenuClose}>
-          <SignIn disableTooltip onClick={setDummyAuthenticated} />
-          התחבר
-        </MenuItem>}        
-        
-      </Box>
-    </Menu>
+        </>     
+        </Box>
+    </Menu> : null
   );
 };
 

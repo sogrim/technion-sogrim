@@ -2,6 +2,8 @@ import React, { ComponentType } from 'react';
 import { IconButton, Tooltip, Avatar } from '@mui/material';
 
 import { ActionIcon } from './ActionIcon';
+import { observer } from 'mobx-react-lite';
+import { useStore } from '../../../hooks/useStore';
 
 interface ActionItemProps {
   title: string;
@@ -12,8 +14,16 @@ interface ActionItemProps {
   avatar?: boolean;
 }
 
-export const ActionItem = ({ title, icon, onClick, badgeContent, disableTooltip = false, avatar = false, }: ActionItemProps) => {
-  const actionType = avatar ? <Avatar /> : <ActionIcon badgeContent={badgeContent} icon={icon} />
+const ActionItemComp = ({ title, icon, onClick, badgeContent, disableTooltip = false, avatar = false, }: ActionItemProps) => {
+
+    const { dataStore: {
+    userState,
+  }} = useStore();
+
+  const us = {...userState}
+  console.log(us.picture);
+
+  const actionType = avatar ? <Avatar src={us?.picture ?? ''}/> : <ActionIcon badgeContent={badgeContent} icon={icon} />
   const buttonIcon = <IconButton size="large" color="primary" onClick={onClick}> {actionType} </IconButton>
 
   return disableTooltip ? (
@@ -24,3 +34,5 @@ export const ActionItem = ({ title, icon, onClick, badgeContent, disableTooltip 
     </Tooltip>
   );
 };
+
+export const ActionItem = observer(ActionItemComp);

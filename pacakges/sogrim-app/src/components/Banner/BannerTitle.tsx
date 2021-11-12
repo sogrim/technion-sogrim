@@ -3,11 +3,14 @@ import React from "react";
 import { observer} from 'mobx-react-lite';
 import { FormModal } from "../Commom/FormModal";
 import { SogrimButton } from "../Commom/SogrimButton";
+import { useStore } from "../../hooks/useStore";
 
 export const BannerTitleComp: React.FC = () => {
-  const userName = 'בני'
-
   const [open, setOpen] = React.useState(false);  
+
+  const { dataStore: {
+    userState,
+  }} = useStore();
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -16,14 +19,13 @@ export const BannerTitleComp: React.FC = () => {
   const handleClose = () => {
     setOpen(false);
   };
+
+  console.log('state' , {...userState});
   
   return <Box>
     <Typography variant="h2" noWrap sx={sxAppTitle}> 
-             {`שלום ${userName}`}
-        </Typography>
-        <Typography variant="subtitle1" noWrap sx={sxAppTitle}> 
-             {`מה קורה פה בכלל? יש לנו הסבר קצר כאן`}
-        </Typography>
+             {`שלום ${userState?.given_name ?? ','}`}
+        </Typography>       
         <Box sx={{display: 'flex', flexDirection: 'row' ,marginTop: '10px', gap: '10px'}}> 
         <SogrimButton >
           סגור את התואר!

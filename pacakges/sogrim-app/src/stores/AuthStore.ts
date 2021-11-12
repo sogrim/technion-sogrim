@@ -14,20 +14,9 @@ export class AuthStore {
     this.authenticated = !!this.accessToken;
   }
 
-  login = async (loginRequest: LoginRequest) => {
-    try {
-      const tokenPayloadDto = await this.authService.login(loginRequest);
-      localStorage.setItem('access_token', tokenPayloadDto.access_token); // TODO check it
-      this.setAuthenticated(true);
-    } catch (err) {
-      this.setAuthenticated(false);
-    }
-  }
-
   logout = () => {
-      localStorage.removeItem('access_token');
-      this.setAuthenticated(false);
-      window.location.reload();      
+      window.google?.accounts.id.disableAutoSelect();
+      window.location.reload();
   }
 
   setCredential = (credential: CredentialResponse) => {
@@ -45,19 +34,6 @@ export class AuthStore {
 
   get isAuthenticated() {
     return this.authenticated;
-  }
-
-  // TODO: remove it
-  setDummyAuthenticated = () => {
-    this.setAuthenticated(true);
-  }
-
-  get currentUser() {    
-    const token = localStorage.getItem('access_token');
-    if (!!token) {
-        return jwtDecode(token);
-    }    
-    return 'no user'; // TODO  
   }
 
   setGoogleSession = (gss: GoogleClinetSession) => {
