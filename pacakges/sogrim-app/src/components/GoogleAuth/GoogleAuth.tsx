@@ -1,11 +1,12 @@
 import jwtDecode from "jwt-decode"
 import { useEffect, useState } from "react"
 import { useAuth } from "../../hooks/useAuth";
+import { GoogleClinetSession } from "../../types/auth-types";
 
 export default function GoogleAuth() {
-  const [gsiScriptLoaded, setGsiScriptLoaded] = useState(false)
-
-   const { setCredential } = useAuth();
+  
+  const [gsiScriptLoaded, setGsiScriptLoaded] = useState(false);  
+  const { googleSession, setGoogleSession, setCredential } = useAuth();
     
   useEffect(() => {      
     if (gsiScriptLoaded) return;
@@ -18,6 +19,8 @@ export default function GoogleAuth() {
           const user = jwtDecode(res.credential);
           console.log(user);                
       }
+      console.log('hi')
+      setGoogleSession(GoogleClinetSession.DONE);
     }
 
     const initializeGsi = () => {      
@@ -31,7 +34,7 @@ export default function GoogleAuth() {
         
       });
       window.google.accounts.id.renderButton(
-        document.getElementById("buttonDiv")!, 
+        document.getElementById("google-button-div")!, 
         { type: 'standard'},                
       );
     }
@@ -46,19 +49,20 @@ export default function GoogleAuth() {
     return () => {
       // Cleanup function that runs when component unmounts
       window.google?.accounts.id.cancel()
-      document.getElementById("google-client-script")?.remove()
+      document.getElementById("google-button-div")?.remove()
     }
-    }, [ gsiScriptLoaded]);
+    }, []);
 
 
+    const handle = (e: any) => console.log(e);
 
+    console.log(googleSession);
     return <> 
-        <div id="buttonDiv"></div>
-        {/* <div id="g_id_onload"
-          data-client_id='646752534395-ptsuv4l9b4vojdad2ruussj6mo22fc86.apps.googleusercontent.com'
-          data-ux_mode="popup"
+        <div id="g_id_onload"
+          data-client_id='646752534395-ptsuv4l9b4vojdad2ruussj6mo22fc86.apps.googleusercontent.com'          
           onClick={handle}>
-        </div> */}
+        </div>
+            
         </>
 
 }

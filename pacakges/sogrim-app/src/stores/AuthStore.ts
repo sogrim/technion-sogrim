@@ -2,10 +2,12 @@ import { makeAutoObservable } from 'mobx';
 import { LoginRequest } from '../services/auth';
 import { AuthService } from '../services/auth';
 import jwtDecode from 'jwt-decode';
+import { GoogleClinetSession } from '../types/auth-types';
 
 export class AuthStore {
   private authenticated: boolean = false;
   public userCredentialResponse: CredentialResponse = {};
+  public googleSession: GoogleClinetSession = GoogleClinetSession.LOAD; 
 
   constructor(private readonly authService: AuthService) {
     makeAutoObservable(this);
@@ -56,5 +58,9 @@ export class AuthStore {
         return jwtDecode(token);
     }    
     return 'no user'; // TODO  
+  }
+
+  setGoogleSession = (gss: GoogleClinetSession) => {
+    this.googleSession = gss;
   }
 }

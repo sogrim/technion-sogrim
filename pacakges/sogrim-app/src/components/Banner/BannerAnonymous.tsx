@@ -1,7 +1,5 @@
 import { Box, Theme, Typography } from "@mui/material";
 import React from "react";
-import { useAuth } from "../../hooks/useAuth";
-import GoogleAuth from "../GoogleAuth/GoogleAuth";
 
 export const BannerAnonymous: React.FC = () => {
   
@@ -9,7 +7,7 @@ export const BannerAnonymous: React.FC = () => {
     <Typography variant="h4" sx={sxAppTitle}> 
              {`רוצה לסגור את התואר? צריך להתחבר  🤓`}
     </Typography>
-       <GoogleAuth />       
+    <div id='google-button-div'></div>    
         </Box>
 }
 
