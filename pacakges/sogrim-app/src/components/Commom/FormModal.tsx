@@ -19,9 +19,12 @@ export const FormModal: React.FC<FormModalProps> = ({ handleClose, open}) => {
 
   // No debounce needed.
   const handleChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // TODO: check prevent.
+    e.preventDefault();
     setUgText(e.target.value)    
   }
   const handleSend = () => {       
+    // TODO:
     console.log(ugText.split('\n'));
     handleClose();
   }

@@ -14,5 +14,9 @@ export class DataStore {
   get userHasDegreeStatus() {
     return false;
   }
+
+  setUserState = (userState: any) => {
+    this.userState = userState;
+  }
  
 }

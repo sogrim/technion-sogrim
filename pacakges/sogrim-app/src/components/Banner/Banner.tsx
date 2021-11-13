@@ -9,6 +9,7 @@ import { BannerTitle } from "./BannerTitle";
 const BannerComp: React.FC = () => {
 
     const { isAuthenticated } = useAuth();
+
     return ( <Box sx={sxBanner} >     
                 <StyledBox >
                     { isAuthenticated ? 

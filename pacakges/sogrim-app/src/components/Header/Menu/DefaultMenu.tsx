@@ -11,9 +11,7 @@ interface DefaultMenuProps {
 
 const DefaultMenuComp = ({ isMenuOpen, handleMenuClose, anchorEl }: DefaultMenuProps) =>  {
   
- const { isAuthenticated, logout } = useAuth();
-
- console.log(isAuthenticated);
+  const { logout } = useAuth();
   
   return (  
   <Menu anchorEl={anchorEl} id="primary-search-account-menu" keepMounted open={isMenuOpen} onClose={handleMenuClose}>

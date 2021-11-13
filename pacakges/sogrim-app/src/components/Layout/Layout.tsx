@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { styled, Box } from '@mui/material';
 import { Header } from '../Header/Header';
 import { Footer } from '../Footer';
@@ -7,15 +6,13 @@ import { Banner } from '../Banner/Banner';
 import { FOOTER_HEIGHT } from '../../themes/constants';
 import { AppPages } from '../AppPages/AppPages';
 
-export const Layout: React.FC = ({ children }) => {
-  const [open, setOpen] = useState(false);
-  const toggleNavigation = () => setOpen((status) => !status);
+export const Layout: React.FC = ({ children }) => {  
 
   return (
     <LayoutWrapper>
       <ContentWrapper>
         <Box component="header">
-          <Header toggleNavigation={toggleNavigation} />
+          <Header />
         </Box>
         <Banner />             
       </ContentWrapper>
