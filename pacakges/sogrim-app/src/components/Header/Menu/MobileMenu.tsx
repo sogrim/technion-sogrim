@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer} from 'mobx-react-lite';
 import { Box, Menu, MenuItem } from '@mui/material';
-import { SignIn, SignOut, Settings } from '../Actions/Actions';
+import { SignOut, Settings } from '../Actions/Actions';
 import { useAuth } from '../../../hooks/useAuth';
 
 
@@ -39,7 +39,7 @@ interface MobileMenuProps {
           <Settings disableTooltip />
           הגדרות
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={ handleMenuClose}>
           <SignOut disableTooltip onClick={logout} />
           התנתקות
         </MenuItem>

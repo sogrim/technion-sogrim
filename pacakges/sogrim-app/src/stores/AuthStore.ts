@@ -1,7 +1,5 @@
 import { makeAutoObservable } from 'mobx';
-import { LoginRequest } from '../services/auth';
 import { AuthService } from '../services/auth';
-import jwtDecode from 'jwt-decode';
 import { GoogleClinetSession } from '../types/auth-types';
 
 export class AuthStore {
@@ -11,7 +9,7 @@ export class AuthStore {
 
   constructor(private readonly authService: AuthService) {
     makeAutoObservable(this);
-    this.authenticated = !!this.accessToken;
+    this.authenticated = false;
   }
 
   logout = () => {
@@ -26,10 +24,6 @@ export class AuthStore {
 
   private setAuthenticated(authenticated: boolean) {
     this.authenticated = authenticated;
-  }
-
-  get accessToken() {
-    return localStorage.getItem('access_token');
   }
 
   get isAuthenticated() {

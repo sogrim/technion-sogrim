@@ -14,7 +14,7 @@ import jwtDecode from 'jwt-decode';
 
 const AppComp: React.FC = () => {
   
-  const { googleSession, userCredentialResponse } = useAuth();
+  const { googleSession, userCredentialResponse, isAuthenticated } = useAuth();
 
   const { dataStore: {
     userState,
@@ -33,8 +33,6 @@ const AppComp: React.FC = () => {
   const [mode, setMode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(LIGHT_MODE_THEME);
 
   const theme = useMemo(() => getAppTheme(mode), [mode]);
-
-  console.log(googleSession, );
   
   return (            
     <ThemeProvider theme={theme}>

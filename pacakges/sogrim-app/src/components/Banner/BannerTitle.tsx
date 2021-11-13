@@ -19,8 +19,6 @@ export const BannerTitleComp: React.FC = () => {
   const handleClose = () => {
     setOpen(false);
   };
-
-  console.log('state' , {...userState});
   
   return <Box>
     <Typography variant="h2" noWrap sx={sxAppTitle}> 

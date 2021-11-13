@@ -21,7 +21,6 @@ const ActionItemComp = ({ title, icon, onClick, badgeContent, disableTooltip = f
   }} = useStore();
 
   const us = {...userState}
-  console.log(us.picture);
 
   const actionType = avatar ? <Avatar src={us?.picture ?? ''}/> : <ActionIcon badgeContent={badgeContent} icon={icon} />
   const buttonIcon = <IconButton size="large" color="primary" onClick={onClick}> {actionType} </IconButton>

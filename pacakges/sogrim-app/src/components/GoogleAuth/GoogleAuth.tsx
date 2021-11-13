@@ -12,14 +12,11 @@ export default function GoogleAuth() {
     if (gsiScriptLoaded) return;
 
     const handleGoogleSignIn = (res: CredentialResponse) => {        
-      console.log(res);
 
       if (res.credential) {
           setCredential(res);
           const user = jwtDecode(res.credential);
-          console.log(user);                
       }
-      console.log('hi')
       setGoogleSession(GoogleClinetSession.DONE);
     }
 
@@ -53,14 +50,9 @@ export default function GoogleAuth() {
     }
     }, []);
 
-
-    const handle = (e: any) => console.log(e);
-
-    console.log(googleSession);
     return <> 
         <div id="g_id_onload"
-          data-client_id='646752534395-ptsuv4l9b4vojdad2ruussj6mo22fc86.apps.googleusercontent.com'          
-          onClick={handle}>
+          data-client_id='646752534395-ptsuv4l9b4vojdad2ruussj6mo22fc86.apps.googleusercontent.com' >
         </div>
             
         </>
