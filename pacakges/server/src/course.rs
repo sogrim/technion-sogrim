@@ -17,6 +17,16 @@ pub enum CourseState {
     InProgress,
 }
 
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct CourseStatus {
+    pub course: Course,
+    pub state: Option<CourseState>,
+    pub semester : Option<String>,
+    pub grade : Option<Grade>,
+    pub r#type : Option<String>, // if none, nissan cries
+    pub additional_msg : Option<String>,
+}
+
 impl CourseStatus {
     pub fn passed(&self) -> bool {
         match &self.grade {
@@ -34,20 +44,11 @@ impl CourseStatus {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct CourseStatus {
-    pub course: Course,
-    pub state: Option<CourseState>,
-    pub semester : Option<String>,
-    pub grade : Option<Grade>,
-    pub r#type : Option<String>, // if none, nissan cries 
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CourseBank {
     pub name: String, // for example, Hova, Rshima A.
     pub rule: Rule,
     pub credit: f32,
-    pub messege: String, //
+    pub messege: String,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -123,8 +124,7 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
             },
             semester : Some(semester.clone()),
             grade : grade.clone(),
-            r#type: None,
-            state: None,
+            ..Default::default()
         };
         *courses.entry(number).or_insert(course) = course.clone();
     }
@@ -156,7 +156,8 @@ fn test1(){
                 state: Some(CourseState::Complete), 
                 semester: Some("חורף_1".into()), 
                 grade: Some(Grade::Grade(98)), 
-                r#type: Some("חובה".into()), 
+                r#type: Some("חובה".into()),
+                additional_msg: None,
             },
             CourseStatus{ 
                 course: Course{ 
@@ -167,7 +168,8 @@ fn test1(){
                 state: Some(CourseState::NotComplete), 
                 semester: Some("אביב_2".into()), 
                 grade: Some(Grade::Grade(45)), 
-                r#type: Some("חובה".into()), 
+                r#type: Some("חובה".into()),
+                additional_msg: None,
             },
             CourseStatus{ 
                 course: Course{ 
@@ -178,7 +180,8 @@ fn test1(){
                 state: Some(CourseState::Complete), 
                 semester: Some("חורף_3".into()), 
                 grade: Some(Grade::Binary(true)), 
-                r#type: Some("חובה".into()), 
+                r#type: Some("חובה".into()),
+                additional_msg: None, 
             },
             CourseStatus{ 
                 course: Course{ 
@@ -189,7 +192,8 @@ fn test1(){
                 state: Some(CourseState::Complete), 
                 semester: Some("חורף_3".into()), 
                 grade: Some(Grade::ExemptionWithCredit), 
-                r#type: Some("רשימה א'".into()), 
+                r#type: Some("רשימה א'".into()),
+                additional_msg: None, 
             },
 
         ],

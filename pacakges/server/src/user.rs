@@ -26,6 +26,13 @@ impl UserDetails {
         }
         None
     }
+
+    pub fn passed_course(&self, number: u32) -> bool {
+        if let Some(course) = self.find_course_by_number(number) {
+            return course.passed();
+        }
+        false
+    }
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
