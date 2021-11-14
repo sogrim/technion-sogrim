@@ -10,9 +10,7 @@ pub use bson::{Document, doc};
 pub mod services{
 
     use super::*;
-    use actix_web::error::ErrorInternalServerError;
     use bson::oid::ObjectId;
-    use mongodb::results::InsertOneResult;
 
     #[macro_export]
     macro_rules! impl_get {

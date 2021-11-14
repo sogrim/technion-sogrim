@@ -1,7 +1,7 @@
 use std::pin::Pin;
 use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
-use bson::doc;
+use bson::{Document, doc};
 use futures_util::Future;
 use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, web};
 use mongodb::Client;
@@ -38,10 +38,17 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(sub: String) -> Self{
-        User {
-            sub,
-            details: None,
+    pub fn new_document(sub: &str) -> bson::Document {
+        doc!{
+            "$setOnInsert" : {
+                "_id" : sub,
+                "details" : doc!{
+                    "course_statuses": null,
+                    "catalog": null,
+                    "degree_status": null,
+                    "modified": false,
+                }
+            }
         }
     }
 }
@@ -80,28 +87,16 @@ pub async fn user_login(
 ) -> Result<HttpResponse, Error> {
 
     let token = req_payload.as_str();
-    // let user_id = auth::get_decoded(token)
+    let user_id = token;
+    // let user_id: &str = &auth::get_decoded(token)
     //     .await
     //     .map_err(|err| ErrorInternalServerError(err.to_string()))?
     //     .sub;
-
-    let user_id = "lamalo";
-
-    // println!("{}", user_id);
-    // db::services::add_user(user_id, &client)
-    //     .await
-    //     .map(|res| 
-    //         HttpResponse::Ok().body(format!("Successfully inserted user {} to the database", res.inserted_id))
-    //     )
-    let user_doc = doc!{
-        "$setOnInsert" : {
-            "_id" : user_id,
-            "details" : null
-        }
-    };
+        
+    let user_doc = User::new_document(user_id);
 
     match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
-        .collection::<User>("Users")
+        .collection::<Document>("Users")
         .find_one_and_update(
         doc!{"_id" : user_id}, 
         UpdateModifications::Document(user_doc), 
@@ -126,9 +121,10 @@ pub async fn user_login(
 
 #[cfg(test)]
 mod tests{
-    use actix_web::{App, http::StatusCode, middleware::Logger, test::{self, TestRequest}, web};
+
+    use actix_web::{App, body::AnyBody, test::{self, TestRequest}, web::{self}};
     use mongodb::Client;
-    use crate::auth;
+    use crate::{user::User};
 
     #[actix_rt::test]
     async fn test_user_login(){
@@ -142,18 +138,26 @@ mod tests{
         App::new()
                 .app_data(web::Data::new(client.clone()))
                 .service(super::user_login)
-                .wrap(Logger::default())
         ).await;
     
         // Create request object
         let req = TestRequest::post()
             .uri("/user/login")
-            .set_payload( auth::tests::PLAYGROUND_TOKEN)
+            .set_payload( "bigo-the-debigo")
             .to_request();
     
         // Call application
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
+        if let AnyBody::Bytes(b)= resp.into_body() {
+            //TODO probably should eradicate this and make degree status an option..
+            if let Ok(user) = serde_json::from_slice::<User>(&b){
+                println!("logged in: {:#?}", user);
+            }
+            else{
+                println!("not logged in: {:#?}", std::str::from_utf8(&b));
+            }
+        }
     }
 }
 
