@@ -1,20 +1,22 @@
-use std::ops::Deref;
+use std::pin::Pin;
+use actix_web::dev::Payload;
+use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
+use bson::doc;
+use futures_util::Future;
+use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, web};
+use mongodb::Client;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications};
-use rocket::{Request, http::{Cookie, SameSite}, outcome::{IntoOutcome, try_outcome}, request::{self, Outcome, FromRequest}, response::Redirect};
-use rocket_db_pools::Connection;
 use serde::{Serialize, Deserialize};
-use crate::{course, db::{Db, doc}};
-use crate::Status;
-use crate::course::CourseStatus;
+use crate::course::{self, CourseStatus};
 use crate::core::{self, *};
-use crate::db::{self};
-use crate::oauth2;
+use crate::{auth, db};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
     pub course_statuses: Vec<CourseStatus>, //from parser
     pub catalog : Option<bson::oid::ObjectId>,
     pub degree_status: DegreeStatus,
+    pub modified: bool,
 }
 
 impl UserDetails {
@@ -31,109 +33,77 @@ impl UserDetails {
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct User {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub id : bson::oid::ObjectId,
-    pub email: String,
+    pub sub : String,
     pub details : Option<UserDetails>,
 }
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for User {
-    type Error = String;
-
-    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
-
-        let conn = try_outcome!(
-            req.guard::<Connection<Db>>()
-            .await
-            .map_failure(|_| (Status::ServiceUnavailable, "Can't connect to database".into()))
-        );
-
-        let email = try_outcome!(req.guard::<UserEmail>().await);
-
-        db::services::get_user_by_email(email.0.as_str(), &conn)
-            .await
-            .map_err(|err| err.to_string())
-            .into_outcome(Status::ServiceUnavailable)
-    }
-}
-
-//TODO think about this!!!
-pub struct UserEmail(pub String);
-
-impl Deref for UserEmail{
-    type Target = String;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for UserEmail {
-    type Error = String;
-
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-
-        let auth_from_cookie = req.cookies()
-            .get_private("email")
-            .map(|cookie| UserEmail(cookie.value().into()));
-        
-        if auth_from_cookie.is_some(){
-            return Outcome::Success(auth_from_cookie.unwrap());
+impl User {
+    pub fn new(sub: String) -> Self{
+        User {
+            sub,
+            details: None,
         }
+    }
+}
 
-        match req.headers()
-            .get_one("X-Auth-Token")
-            .map(|token| oauth2::verify_jwt(String::from(token)))
-            .map(|result| result
-                .map(|user| UserEmail(user.email.into())
-            )){
-                Some(res) => match res {
-                        Ok(user_email) => Outcome::Success(user_email),
-                        Err(jwt_err) => Outcome::Failure((Status::Unauthorized, jwt_err.to_string())),
-                    },
-                None => Outcome::Failure((Status::BadRequest, "Missing X-Auth-Token header in HTTP request".into())),
+impl FromRequest for User {
+    type Error = Error;
+    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
+
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let req = req.clone();
+        Box::pin(async move {
+            let client = match req.app_data::<web::Data<Client>>(){ 
+                Some(client) => client,
+                None => return Err(ErrorInternalServerError("Db client was not initialized!")),
+            };
+            match req.extensions().get::<String>() {
+                Some(user_id) => {
+                    db::services::get_user_by_id(user_id, &client)
+                        .await
+                        .map_err(|err| ErrorInternalServerError(err))
+                },
+                None => Err(ErrorUnauthorized("Authorization process did not complete successfully!"))
             }
+        })
     }
-}
-pub struct Context;
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for Context {
-    type Error = ();
-
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        req.cookies().add(Cookie::build("origin-req-uri", req.uri().path().to_string())
-            .same_site(SameSite::Lax)
-            .finish());
-        Outcome::Success(Context)
+    fn extract(req: &HttpRequest) -> Self::Future {
+        Self::from_request(req, &mut Payload::None)
     }
 }
 
-#[get("/user", rank = 2)]
-pub async fn user_login_redirect(_ctx: Context) -> Redirect{
-    Redirect::to(uri!("/login/github"))
-}
+#[post("/user/login")]
+pub async fn user_login(
+    client: web::Data<Client>,
+    req_payload: String,
+) -> Result<HttpResponse, Error> {
 
-#[get("/user/<_..>", rank = 3)]
-pub async fn user_request_redirect(_ctx: Context) -> Redirect{
-    Redirect::to(uri!("/login/github"))
-}
+    let token = req_payload.as_str();
+    // let user_id = auth::get_decoded(token)
+    //     .await
+    //     .map_err(|err| ErrorInternalServerError(err.to_string()))?
+    //     .sub;
 
-#[get("/user")] 
-pub async fn fetch_or_insert_user(conn: Connection<Db>, email: UserEmail) -> Result<String, Status> {
+    let user_id = "lamalo";
 
-    let db_name_from_profile = std::env::var("ROCKET_PROFILE").unwrap_or("debug".into());
+    // println!("{}", user_id);
+    // db::services::add_user(user_id, &client)
+    //     .await
+    //     .map(|res| 
+    //         HttpResponse::Ok().body(format!("Successfully inserted user {} to the database", res.inserted_id))
+    //     )
     let user_doc = doc!{
         "$setOnInsert" : {
-            "email" : &email.0,
+            "_id" : user_id,
             "details" : null
         }
     };
 
-    match conn.database(db_name_from_profile.as_str())
+    match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
         .collection::<User>("Users")
         .find_one_and_update(
-        doc!{"email" : &email.0}, 
+        doc!{"_id" : user_id}, 
         UpdateModifications::Document(user_doc), 
         Some(
                 FindOneAndUpdateOptions::builder()
@@ -144,78 +114,139 @@ pub async fn fetch_or_insert_user(conn: Connection<Db>, email: UserEmail) -> Res
         )
         .await
     {
-        Ok(user) => {
-            // We can safely unwrap 'user' thanks to upsert=true and ReturnDocument::After
-            oauth2::generate_jwt(user.unwrap()) 
-            .or_else(|jwt_err|{
-                eprintln!("Failed to generate jwt for user: {}", jwt_err);
-                Err(Status::InternalServerError)
-            })
-        }, 
+        // We can safely unwrap here thanks to upsert=true and ReturnDocument::After
+        Ok(user) => Ok(HttpResponse::Ok().json(user.unwrap())),
         Err(err) => {
+            let err = format!("monogdb driver error: {}", err);
             eprintln!("{}", err);
-            Err(Status::ServiceUnavailable)
+            Err(ErrorInternalServerError(err.to_string()))
         },
     }
 }
 
-#[get("/user/hello")]
-pub async fn user_greet(user: User) -> String{
-    format!("Hello {}, welcome to Sogrim!", user.email)
+#[cfg(test)]
+mod tests{
+    use actix_web::{App, http::StatusCode, middleware::Logger, test::{self, TestRequest}, web};
+    use mongodb::Client;
+    use crate::auth;
+
+    #[actix_rt::test]
+    async fn test_user_login(){
+    
+        std::env::set_var("RUST_LOG", "actix_server=info");
+        env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    
+        let client = Client::with_uri_str("mongodb+srv://nbl_admin:sm3sw0rFjzMcQeW3@sogrimdev.7tmyn.mongodb.net/Development?retryWrites=true&w=majority").await.expect("failed to connect");
+    
+        let app = test::init_service(
+        App::new()
+                .app_data(web::Data::new(client.clone()))
+                .service(super::user_login)
+                .wrap(Logger::default())
+        ).await;
+    
+        // Create request object
+        let req = TestRequest::post()
+            .uri("/user/login")
+            .set_payload( auth::tests::PLAYGROUND_TOKEN)
+            .to_request();
+    
+        // Call application
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+    }
 }
 
+// DEBUG..
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct DebugResponse{
+    s: String,
+}
+impl From<String> for DebugResponse {
+    fn from(s: String) -> Self {
+        DebugResponse{s}
+    }
+}
+
+#[get("/user/debug")]
+pub async fn debug(content: String) -> HttpResponse{
+    HttpResponse::Ok().json(DebugResponse::from(content))
+}
+
+
+// here "modified" becomes true
+// #[post("/user/details")]
+// pub async fn update_user_details(){
+//     todo!()
+// }
+
+// here "modified" becomes false
 #[get("/user/compute")]
-pub async fn compute_degree_status_for_user(mut user: User, conn: Connection<Db>) -> Result<(), Status>{
+pub async fn compute_degree_status(
+    client: web::Data<Client>,
+    mut user: User, 
+) -> Result<HttpResponse, Error>{
     
     let mut user_details = user
         .details
         .as_mut()
-        .ok_or_else(||{
-            eprintln!("No data exists for user"); //Shouldn't get here..
-            Status::InternalServerError
-    })?;
+        .ok_or_else(||
+             ErrorInternalServerError("No data exists for user")
+        )?;
 
     let catalog_id = user_details
         .catalog
         .ok_or_else(||{
-            eprintln!("The user has not yet selected a catalog");
-            Status::InternalServerError
+            ErrorInternalServerError("No data exists for user")
         })?;
 
-    let catalog = crate::db::services::get_catalog_by_id(&catalog_id, &conn).await?;
+    let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;
     core::calculate_degree_status(&catalog, &mut user_details);
 
     for course_status in user_details.course_statuses.iter_mut() {
         // Fill in courses without information
         let course = &mut course_status.course;
         if course.name.is_empty(){
-            *course = crate::db::services::get_course_by_number(course.number, &conn).await?;
+            *course = db::services::get_course_by_number(course.number, &client).await?;
         }
     }
 
-    Ok(())
+    Ok(HttpResponse::Ok().finish())
 }
 
-#[post("/user/parse", data = "<ug_data>")]
-pub async fn update_user_courses_from_ug(user: User, conn: Connection<Db>, ug_data: String) -> Result<(), Status>{
+//create new file catalog.rs and move this function there
+// #[get("/catalogs")]
+// pub async fn get_all_catalogs(){todo!()}
+
+// #[post("/user/catalog")]
+// pub async fn add_catalog(){todo!()}
+
+#[post("/user/ug_data")]
+pub async fn add_data_from_ug(
+    client: web::Data<Client>, 
+    user: User, 
+    ug_data: String
+) -> Result<HttpResponse, Error>{
 
     course::validate_copy_paste_from_ug(&ug_data)?;
     let user_courses = course::parse_copy_paste_from_ug(&ug_data);
-    let user_courses_serialized = bson::to_bson(&user_courses).map_err(|_| Status::InternalServerError)?;
+    let user_courses_serialized = bson::to_bson(&user_courses).map_err(|err| ErrorInternalServerError(err))?;
     let db_name_from_profile = std::env::var("ROCKET_PROFILE").unwrap_or("debug".into());
-    match conn
+    client
         .database(db_name_from_profile.as_str())
         .collection::<User>("Users")
         .find_one_and_update(
-            doc!{"email" : user.email},
-            doc!{ "$set" : {"details" : {"courses" : user_courses_serialized}}},
+            doc!{"_id" : &user.sub},
+            doc!{ "$set" : {"details" : {"course_statuses" : user_courses_serialized}}},
             None    
         )
-        .await{
-            Ok(_) => Ok(()),
-            Err(err) => {
-                eprintln!("{}", err);
-                Err(Status::InternalServerError)
-            },
-        }
+        .await
+        .map_err(|err| ErrorInternalServerError(err))
+        .map(|maybe_user| 
+            match maybe_user {
+                Some(user) => HttpResponse::Ok().body(format!("Successfully added ug data for {}", user.sub)),
+                None => HttpResponse::InternalServerError().body(format!("User {} does not exist in the database", user.sub)),
+            }
+        )
 }

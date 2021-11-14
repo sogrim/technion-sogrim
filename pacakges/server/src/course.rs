@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use actix_web::Error;
 use serde::{Serialize, Deserialize};
 use crate::core::*;
 
@@ -68,7 +69,7 @@ fn contains_course_number(str : &str) -> bool{
     false
 }
 
-pub fn validate_copy_paste_from_ug(ug_data: &str) -> Result<(), rocket::http::Status>{
+pub fn validate_copy_paste_from_ug(ug_data: &str) -> Result<(), Error> {
     todo!("{}", ug_data)
 }
 
@@ -245,7 +246,7 @@ fn test2(){
 
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn test3(){
     let contents = std::fs::read_to_string("courses.txt")
         .expect("Something went wrong reading the file");

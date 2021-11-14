@@ -369,6 +369,7 @@ fn check_rules() { // for debugging
             credit_overflow_msgs: Vec::<String>::new(),
             total_credit: 0.0,
         },
+        modified: false,
     };
     let bank_name = "hova".to_string();
     let course_list = vec![000001, 000002, 123456, 456789, 159159, 000003];
