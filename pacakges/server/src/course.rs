@@ -41,6 +41,20 @@ impl CourseStatus {
             None => false,
         }
     }
+
+    pub fn set_state(&mut self){
+        self.state = self.passed().then(||{
+            CourseState::Complete
+        }).or(Some(CourseState::NotComplete));
+    }
+    pub fn set_type(&mut self, r#type: String) -> &mut Self{
+        self.r#type = Some(r#type);
+        self
+    }
+    pub fn set_msg(&mut self, msg: String) -> &mut Self{
+        self.additional_msg = Some(msg);
+        self
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -116,7 +130,7 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
         let credit = line_parts[1].parse::<f32>().unwrap();
         let number = course_parts.last().unwrap().parse::<u32>().unwrap();
         let name = course_parts[..course_parts.len() - 1].join(" ").trim().to_string();
-        let course = CourseStatus{
+        let mut course = CourseStatus{
             course : Course{
                 number,
                 credit,
@@ -126,6 +140,7 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
             grade : grade.clone(),
             ..Default::default()
         };
+        course.set_state();
         *courses.entry(number).or_insert(course) = course.clone();
     }
     courses.into_values().collect()

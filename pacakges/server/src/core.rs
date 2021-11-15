@@ -18,7 +18,7 @@ pub struct SpecializationGroup {
     pub credit: f32, // may be redundant, it seems that SpecializationGroup restrictions are number of courses and not number of credits
     pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
     pub course_list: Vec<u32>,
-    pub mandatory: Option<(Vec<u32>, Logic)>,
+    pub mandatory: Option<(Vec<u32>, Logic)>, //TODO liad: change to struct "Mandatory" with fields "courses : Vec<u32>" and "logic : Logic"
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -84,7 +84,7 @@ pub struct Requirement {
 }
 
 impl Requirement {
-    fn create(bank_name: String, credit_requirment: f32) -> Requirement {
+    fn create(bank_name: String, credit_requirment: f32) -> Self {
         Requirement {
             course_bank_name: bank_name,
             credit_requirment,
@@ -92,60 +92,29 @@ impl Requirement {
             message: None,
         }
     }
-    fn with_credits(mut self, credit_complete: f32) -> Requirement {
+    fn with_credits(mut self, credit_complete: f32) -> Self {
         self.credit_complete = credit_complete;
         self
     }
-    fn with_message(mut self, msg: String) -> Requirement {
+    fn with_message(mut self, msg: String) -> Self {
         self.message = Some(msg);
         self
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct DegreeStatus {
     pub course_statuses: Vec<CourseStatus>,
     pub course_bank_requirements: Vec<Requirement>, // 
     pub credit_overflow_msgs: Vec<String>, // זליגות של נקז ואיך טיפלנו בהם
     pub total_credit: f32,   
 }
-
-impl DegreeStatus {
-
-    fn new() -> DegreeStatus {
-        DegreeStatus{
-            course_statuses: Vec::<CourseStatus>::new(),
-            course_bank_requirements: Vec::<Requirement>::new(),
-            credit_overflow_msgs: Vec::<String>::new(),
-            total_credit: 0.0,
-        }
-    }
-
-    fn contains_course(&self, number: u32) -> bool {
-        let course = self.course_statuses.iter().find(|c| c.course.number == number);
-        course.is_some()
-    }
-
-    // Adds course to degree status and update sum_credits if the course wasn't already added, Otherwise does nothing.
-    fn add_course(&mut self, course_status: CourseStatus, bank_name: String, sum_credits: &mut f32) {
-        if self.contains_course(course_status.course.number) { return }
-        self.course_statuses.push(CourseStatus {
-            course: course_status.course.clone(),
-            state: if course_status.passed() {
-                *sum_credits += course_status.course.credit;
-                Some(CourseState::Complete)
-            }
-            else {
-                Some(CourseState::NotComplete)
-            },
-            semester: course_status.semester,
-            grade: course_status.grade,
-            r#type : Some(bank_name),
-            ..Default::default()
-        });
-    }
-}
-
+// impl DegreeStatus {
+//     fn contains_course(&self, number: u32) -> bool {
+//         let course = self.course_statuses.iter().find(|c| c.course.number == number);
+//         course.is_some()
+//     }
+// }
 
 pub fn set_order(course_banks_type: &Vec::<CourseBank>) -> &Vec::<CourseBank> {
     // TODO: implement this function, should order the banks in catalog in the correct calculations order
@@ -160,9 +129,12 @@ pub fn handle_bank_rule_all(
 ) -> f32 {
     let mut sum_credits = credit_overflow;
     for course_number in course_list {
-        match user.find_course_by_number(*course_number) {
+        match user.get_mut_course_status(*course_number) {
             Some(course_status) => {
-                user.degree_status.add_course(course_status.clone(), bank_name.to_string().clone(), &mut sum_credits);
+                course_status.set_type(bank_name.to_string().clone());
+                if course_status.passed(){
+                    sum_credits += course_status.course.credit;
+                }
             },
             None => {
                 user.degree_status.course_statuses.push(CourseStatus {
@@ -188,8 +160,11 @@ pub fn handle_bank_rule_accumulate(
 ) -> f32 {
     let mut sum_credits = credit_overflow;
     for course_number in course_list {
-        if let Some(course_status) = user.find_course_by_number(*course_number) {
-            user.degree_status.add_course(course_status.clone(), bank_name.to_string().clone(), &mut sum_credits);
+        if let Some(course_status) = user.get_mut_course_status(*course_number) {
+            course_status.set_type(bank_name.to_string().clone());
+            if course_status.passed(){
+                sum_credits += course_status.course.credit;
+            }
         }
     }
     sum_credits
@@ -204,8 +179,11 @@ pub fn handle_bank_rule_chain( // TODO: notify the user about courses he has lef
 ) -> (f32, bool) {
     let mut sum_credits = credit_overflow;
     for course_number in course_list {
-        if let Some(course_status) = user.find_course_by_number(*course_number) {
-            user.degree_status.add_course(course_status.clone(), bank_name.to_string().clone(), &mut sum_credits);
+        if let Some(course_status) = user.get_mut_course_status(*course_number) {
+            course_status.set_type(bank_name.to_string().clone());
+            if course_status.passed(){
+                sum_credits += course_status.course.credit;
+            }
         }
     }
     for chain in chains { //check if the user completed one of the chains.
@@ -229,8 +207,11 @@ pub fn handle_bank_rule_specialization_group(
 ) -> (f32, bool) {
     let mut sum_credits = credit_overflow;
     for course_number in course_list {
-        if let Some(course_status) = user.find_course_by_number(*course_number) {
-            user.degree_status.add_course(course_status.clone(), bank_name.to_string().clone(), &mut sum_credits);
+        if let Some(course_status) = user.get_mut_course_status(*course_number) {
+            course_status.set_type(bank_name.to_string().clone());
+            if course_status.passed(){
+                sum_credits += course_status.course.credit;
+            }
         }
     }
     let mut count_completed_groups = 0;
@@ -249,10 +230,10 @@ pub fn handle_bank_rule_specialization_group(
         for course_number in &specialization_group.course_list {
             if user.passed_course(*course_number) {
                 user.degree_status.course_statuses
-                                                .iter_mut()
-                                                .find(|c| c.course.number == *course_number)
-                                                .unwrap()
-                                                .additional_msg = Some(specialization_group.name.clone());
+                    .iter_mut()
+                    .find(|c| c.course.number == *course_number)
+                    .unwrap()
+                    .set_msg(specialization_group.name.clone());
                 count_courses += 1;
             }
         }
@@ -368,7 +349,6 @@ impl<'a> DegreeStatusProcessor<'a> {
 
 pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
     let course_banks = set_order(&catalog.course_banks);
-    user.degree_status = DegreeStatus::new();
     
     DegreeStatusProcessor{      
         user,
@@ -382,51 +362,50 @@ pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
 #[test]
 fn check_rules() { // for debugging
     let mut user = UserDetails {
-        course_statuses: vec![
-            CourseStatus {
-                course: Course {
-                    number: 000001,
-                    credit: 3.0,
-                    name: "c1".to_string(),
-                },
-                state: Some(CourseState::Complete),
-                grade: Some(Grade::Grade(85)),
-                ..Default::default()
-            },
-            CourseStatus {
-                course: Course {
-                    number: 000002,
-                    credit: 3.5,
-                    name: "c2".to_string(),
-                },
-                state: Some(CourseState::Complete),
-                grade: Some(Grade::Grade(45)),
-                ..Default::default()
-            },
-            CourseStatus {
-                course: Course {
-                    number: 000003,
-                    credit: 4.0,
-                    name: "c3".to_string(),
-                },
-                state: Some(CourseState::Complete),
-                grade: Some(Grade::Grade(85)),
-                ..Default::default()
-            },
-            CourseStatus {
-                course: Course {
-                    number: 000004,
-                    credit: 5.0,
-                    name: "c4".to_string(),
-                },
-                state: Some(CourseState::Complete),
-                grade: Some(Grade::Grade(85)),
-                ..Default::default()
-            },
-        ],
         catalog: None,
         degree_status: DegreeStatus {
-            course_statuses: Vec::<CourseStatus>::new(),
+            course_statuses: vec![
+                CourseStatus {
+                    course: Course {
+                        number: 000001,
+                        credit: 3.0,
+                        name: "c1".to_string(),
+                    },
+                    state: None,
+                    grade: Some(Grade::Grade(85)),
+                    ..Default::default()
+                },
+                CourseStatus {
+                    course: Course {
+                        number: 000002,
+                        credit: 3.5,
+                        name: "c2".to_string(),
+                    },
+                    state: None,
+                    grade: Some(Grade::Binary(false)),
+                    ..Default::default()
+                },
+                CourseStatus {
+                    course: Course {
+                        number: 000003,
+                        credit: 4.0,
+                        name: "c3".to_string(),
+                    },
+                    state: None,
+                    grade: Some(Grade::Grade(85)),
+                    ..Default::default()
+                },
+                CourseStatus {
+                    course: Course {
+                        number: 000004,
+                        credit: 5.0,
+                        name: "c4".to_string(),
+                    },
+                    state: None,
+                    grade: Some(Grade::Grade(85)),
+                    ..Default::default()
+                },
+            ],
             course_bank_requirements: Vec::<Requirement>::new(),
             credit_overflow_msgs: Vec::<String>::new(),
             total_credit: 0.0,
@@ -438,5 +417,6 @@ fn check_rules() { // for debugging
 
     let res = handle_bank_rule_all(&mut user, &bank_name, &course_list, credit_overflow);
     println!("{}", res);
+    println!("{:#?}", user.degree_status);
     assert_eq!(res, 7.0);
 }
