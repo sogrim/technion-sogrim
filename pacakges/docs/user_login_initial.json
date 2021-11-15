@@ -1,0 +1,14 @@
+{
+  "_id": "some-sub-number-from-nissan-auth-with-google",
+  "details": {
+    "course_statuses": [],
+    "catalog": null,
+    "degree_status": {
+      "course_statuses": [],
+      "course_bank_requirements": [],
+      "credit_overflow_msgs": [],
+      "total_credit": 0.0
+    },
+    "modified": false
+  }
+}
