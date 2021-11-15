@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer} from 'mobx-react-lite';
 import { Box, Menu, MenuItem } from '@mui/material';
-import { SignIn, SignOut, Settings } from '../Actions/Actions';
+import { SignOut, Settings } from '../Actions/Actions';
 import { useAuth } from '../../../hooks/useAuth';
 
 
@@ -14,9 +14,10 @@ interface MobileMenuProps {
 
  const MobileMenuComp = ({ isMenuOpen, handleMenuOpen, handleMenuClose, anchorEl }: MobileMenuProps) => {
 
-  const { isAuthenticated, logout, setDummyAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
 
   return (
+    isAuthenticated ? 
     <Menu
       anchorEl={anchorEl}
       anchorOrigin={{
@@ -32,25 +33,19 @@ interface MobileMenuProps {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <Box sx={{ textAlign: 'center' }}> 
-        { isAuthenticated ? 
+      <Box sx={{ textAlign: 'center' }}>         
         <>
         <MenuItem onClick={handleMenuClose}>
           <Settings disableTooltip />
           הגדרות
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={ handleMenuClose}>
           <SignOut disableTooltip onClick={logout} />
           התנתקות
         </MenuItem>
-        </> : 
-        <MenuItem onClick={handleMenuClose}>
-          <SignIn disableTooltip onClick={setDummyAuthenticated} />
-          התחבר
-        </MenuItem>}        
-        
-      </Box>
-    </Menu>
+        </>     
+        </Box>
+    </Menu> : null
   );
 };
 

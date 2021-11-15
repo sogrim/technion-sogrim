@@ -11,22 +11,29 @@ use crate::course::{self, CourseStatus};
 use crate::core::{self, *};
 use crate::{auth, db};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
-    pub course_statuses: Vec<CourseStatus>, //from parser
+    //pub course_statuses: Vec<CourseStatus>, //from parser
     pub catalog : Option<bson::oid::ObjectId>,
     pub degree_status: DegreeStatus,
     pub modified: bool,
 }
 
 impl UserDetails {
-    pub fn find_course_by_number(&self, number: u32) -> Option<CourseStatus>{
-        for course_status in &self.course_statuses {
+    pub fn get_mut_course_status(&mut self, number: u32) -> Option<&mut CourseStatus>{
+        for course_status in &mut self.degree_status.course_statuses {
             if course_status.course.number == number {
-                return Some(course_status.clone());
+                return Some(course_status);
             }
         }
         None
+    }
+
+    pub fn passed_course(&mut self, number: u32) -> bool {
+        if let Some(course) = self.get_mut_course_status(number) {
+            return course.passed();
+        }
+        false
     }
 }
 
@@ -208,7 +215,7 @@ pub async fn compute_degree_status(
     let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;
     core::calculate_degree_status(&catalog, &mut user_details);
 
-    for course_status in user_details.course_statuses.iter_mut() {
+    for course_status in user_details.degree_status.course_statuses.iter_mut() {
         // Fill in courses without information
         let course = &mut course_status.course;
         if course.name.is_empty(){

@@ -6,15 +6,13 @@ import { AppTitle } from './AppTitle/AppTitle';
 import { More, UserAccount } from './Actions/Actions';
 import { DefaultMenu, MobileMenu } from './Menu';
 import { useAuth } from '../../hooks/useAuth';
-import { SogrimButton } from '../Commom/SogrimButton';
 
 interface HeaderProps {
-  toggleNavigation: () => void;
 }
 
-const HeaderComp = ({ toggleNavigation }: HeaderProps) => {
+const HeaderComp: React.FC<HeaderProps> = () => {
   
-  const { isAuthenticated, setDummyAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState<null | HTMLElement>(null);
@@ -43,9 +41,9 @@ const HeaderComp = ({ toggleNavigation }: HeaderProps) => {
           <Box sx={{ display: { xs: 'none', md: 'flex', alignItems: 'center', margin: '80px' } }}>            
             { isAuthenticated ? <UserAccount onClick={handleProfileMenuOpen} /> : null }
           </Box>
-          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+          { isAuthenticated ?  <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
             <More onClick={handleMobileMenuOpen} />
-          </Box>
+          </Box> : null }         
         </Toolbar>
       </AppBar>
       <MobileMenu

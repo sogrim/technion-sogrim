@@ -18,6 +18,16 @@ pub enum CourseState {
     InProgress,
 }
 
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct CourseStatus {
+    pub course: Course,
+    pub state: Option<CourseState>,
+    pub semester : Option<String>,
+    pub grade : Option<Grade>,
+    pub r#type : Option<String>, // if none, nissan cries
+    pub additional_msg : Option<String>,
+}
+
 impl CourseStatus {
     pub fn passed(&self) -> bool {
         match &self.grade {
@@ -32,15 +42,20 @@ impl CourseStatus {
             None => false,
         }
     }
-}
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct CourseStatus {
-    pub course: Course,
-    pub state: Option<CourseState>,
-    pub semester : Option<String>,
-    pub grade : Option<Grade>,
-    pub r#type : Option<String>, // if none, nissan cries 
+    pub fn set_state(&mut self){
+        self.state = self.passed().then(||{
+            CourseState::Complete
+        }).or(Some(CourseState::NotComplete));
+    }
+    pub fn set_type(&mut self, r#type: String) -> &mut Self{
+        self.r#type = Some(r#type);
+        self
+    }
+    pub fn set_msg(&mut self, msg: String) -> &mut Self{
+        self.additional_msg = Some(msg);
+        self
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -48,7 +63,7 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Rshima A.
     pub rule: Rule,
     pub credit: f32,
-    pub messege: String, //
+    pub messege: String,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -116,7 +131,7 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
         let credit = line_parts[1].parse::<f32>().unwrap();
         let number = course_parts.last().unwrap().parse::<u32>().unwrap();
         let name = course_parts[..course_parts.len() - 1].join(" ").trim().to_string();
-        let course = CourseStatus{
+        let mut course = CourseStatus{
             course : Course{
                 number,
                 credit,
@@ -124,9 +139,9 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
             },
             semester : Some(semester.clone()),
             grade : grade.clone(),
-            r#type: None,
-            state: None,
+            ..Default::default()
         };
+        course.set_state();
         *courses.entry(number).or_insert(course) = course.clone();
     }
     courses.into_values().collect()
@@ -157,7 +172,8 @@ fn test1(){
                 state: Some(CourseState::Complete), 
                 semester: Some("חורף_1".into()), 
                 grade: Some(Grade::Grade(98)), 
-                r#type: Some("חובה".into()), 
+                r#type: Some("חובה".into()),
+                additional_msg: None,
             },
             CourseStatus{ 
                 course: Course{ 
@@ -168,7 +184,8 @@ fn test1(){
                 state: Some(CourseState::NotComplete), 
                 semester: Some("אביב_2".into()), 
                 grade: Some(Grade::Grade(45)), 
-                r#type: Some("חובה".into()), 
+                r#type: Some("חובה".into()),
+                additional_msg: None,
             },
             CourseStatus{ 
                 course: Course{ 
@@ -179,7 +196,8 @@ fn test1(){
                 state: Some(CourseState::Complete), 
                 semester: Some("חורף_3".into()), 
                 grade: Some(Grade::Binary(true)), 
-                r#type: Some("חובה".into()), 
+                r#type: Some("חובה".into()),
+                additional_msg: None, 
             },
             CourseStatus{ 
                 course: Course{ 
@@ -190,7 +208,8 @@ fn test1(){
                 state: Some(CourseState::Complete), 
                 semester: Some("חורף_3".into()), 
                 grade: Some(Grade::ExemptionWithCredit), 
-                r#type: Some("רשימה א'".into()), 
+                r#type: Some("רשימה א'".into()),
+                additional_msg: None, 
             },
 
         ],
