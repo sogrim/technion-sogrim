@@ -1,7 +1,7 @@
 use std::pin::Pin;
 use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
-use bson::{Document, doc};
+use bson::doc;
 use futures_util::Future;
 use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, web};
 use mongodb::Client;
@@ -13,7 +13,6 @@ use crate::{auth, db};
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
-    //pub course_statuses: Vec<CourseStatus>, //from parser
     pub catalog : Option<bson::oid::ObjectId>,
     pub degree_status: DegreeStatus,
     pub modified: bool,
@@ -37,6 +36,39 @@ impl UserDetails {
     }
 }
 
+#[test]
+fn make_json_mocks(){
+    //user login initial
+    let mut user = User{
+        sub: "some-sub-number-from-nissan-auth-with-google".into(),
+        details: Some(UserDetails::default()),
+    };
+    let mut user_ser = serde_json::to_string_pretty(&user).unwrap();
+    println!("{}", user_ser);
+    std::fs::write(
+        "../docs/user_login_initial.json", 
+    serde_json::to_string_pretty(&user)
+        .expect("json serialization failed")
+    ).expect("Unable to write file");
+
+    //user login with details
+    let json_str = std::fs::read_to_string("../docs/degree_status_mock.json").expect("Unable to read file");
+    let degree_status = serde_json::from_str(&json_str).expect("deserialization failed");
+    user.details = Some(UserDetails{
+        catalog: Some(bson::oid::ObjectId::new()),
+        degree_status,
+        modified: false,
+    });
+    user_ser = serde_json::to_string_pretty(&user).unwrap();
+    println!("{}", user_ser);
+    std::fs::write(
+        "../docs/user_login_with_details.json", 
+    serde_json::to_string_pretty(&user)
+        .expect("json serialization failed")
+    ).expect("Unable to write file");
+
+}
+
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct User {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
@@ -46,17 +78,12 @@ pub struct User {
 
 impl User {
     pub fn new_document(sub: &str) -> bson::Document {
-        doc!{
-            "$setOnInsert" : {
-                "_id" : sub,
-                "details" : doc!{
-                    "course_statuses": null,
-                    "catalog": null,
-                    "degree_status": null,
-                    "modified": false,
-                }
-            }
-        }
+        let user = User{
+            sub : sub.into(),
+            details: Some(UserDetails::default()),
+        };
+        // Should always unwrap succesfully here..
+        bson::to_document(&user).unwrap_or(doc!{"sub" : sub, "details": null})
     }
 }
 
@@ -94,19 +121,16 @@ pub async fn user_login(
 ) -> Result<HttpResponse, Error> {
 
     let token = req_payload.as_str();
-    let user_id = token;
-    // let user_id: &str = &auth::get_decoded(token)
-    //     .await
-    //     .map_err(|err| ErrorInternalServerError(err.to_string()))?
-    //     .sub;
-        
-    let user_doc = User::new_document(user_id);
+    let user_id: &str = &auth::get_decoded(token)
+        .await
+        .map_err(|err| ErrorInternalServerError(err.to_string()))?
+        .sub;
 
     match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
-        .collection::<Document>("Users")
+        .collection::<User>("Users")
         .find_one_and_update(
         doc!{"_id" : user_id}, 
-        UpdateModifications::Document(user_doc), 
+        UpdateModifications::Document(doc!{"$setOnInsert" : User::new_document(user_id)}), 
         Some(
                 FindOneAndUpdateOptions::builder()
                 .upsert(true)
@@ -150,24 +174,20 @@ mod tests{
         // Create request object
         let req = TestRequest::post()
             .uri("/user/login")
-            .set_payload( "bigo-the-debigo")
+            .set_payload( "bugo-the-debugo")
             .to_request();
     
         // Call application
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
         if let AnyBody::Bytes(b)= resp.into_body() {
-            //TODO probably should eradicate this and make degree status an option..
+            //TODO switch the println to asserts.
             if let Ok(user) = serde_json::from_slice::<User>(&b){
-                println!("logged in: {:#?}", user);
-            }
-            else{
-                println!("not logged in: {:#?}", std::str::from_utf8(&b));
+                println!("{:#?}", user);
             }
         }
     }
 }
-
 // DEBUG..
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -185,7 +205,7 @@ pub async fn debug(content: String) -> HttpResponse{
     HttpResponse::Ok().json(DebugResponse::from(content))
 }
 
-
+//TODO
 // here "modified" becomes true
 // #[post("/user/details")]
 // pub async fn update_user_details(){
@@ -226,10 +246,12 @@ pub async fn compute_degree_status(
     Ok(HttpResponse::Ok().finish())
 }
 
+//TODO
 //create new file catalog.rs and move this function there
 // #[get("/catalogs")]
 // pub async fn get_all_catalogs(){todo!()}
 
+//TODO
 // #[post("/user/catalog")]
 // pub async fn add_catalog(){todo!()}
 

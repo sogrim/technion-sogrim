@@ -1,0 +1,86 @@
+{
+  "_id": "some-sub-number-from-nissan-auth-with-google",
+  "details": {
+    "catalog": {
+      "$oid": "6192e5f4d6c89bbe5647f8db"
+    },
+    "degree_status": {
+      "course_statuses": [
+        {
+          "course": {
+            "_id": 234125,
+            "credit": 5.5,
+            "name": "אינפי 1 לניסנים"
+          },
+          "state": "Complete",
+          "semester": "חורף_1",
+          "grade": {
+            "Grade": 98
+          },
+          "type": "חובה",
+          "additional_msg": null
+        },
+        {
+          "course": {
+            "_id": 234126,
+            "credit": 5.0,
+            "name": "אינפי 2 לניסנים"
+          },
+          "state": "NotComplete",
+          "semester": "אביב_2",
+          "grade": {
+            "Grade": 45
+          },
+          "type": "חובה",
+          "additional_msg": null
+        },
+        {
+          "course": {
+            "_id": 234125,
+            "credit": 4.0,
+            "name": "אינפי 3 לניסנים"
+          },
+          "state": "Complete",
+          "semester": "חורף_3",
+          "grade": {
+            "Binary": true
+          },
+          "type": "חובה",
+          "additional_msg": null
+        },
+        {
+          "course": {
+            "_id": 234127,
+            "credit": 3.0,
+            "name": "קורס בחירה כלשהו"
+          },
+          "state": "Complete",
+          "semester": "חורף_3",
+          "grade": "ExemptionWithCredit",
+          "type": "רשימה א'",
+          "additional_msg": null
+        }
+      ],
+      "course_bank_requirements": [
+        {
+          "course_bank_name": "חובה",
+          "credit_requirment": 84.0,
+          "credit_complete": 9.5,
+          "message": "תראה את ניסן הגבר הזה כמה אינפים הוא עשה"
+        },
+        {
+          "course_bank_name": "בחירה חופשית",
+          "credit_requirment": 2.0,
+          "credit_complete": 0.0,
+          "message": null
+        }
+      ],
+      "credit_overflow_msgs": [
+        "2.5 נק\"ז עובר משרשרת מדעית לרשימה ב'",
+        "2.0 נק\"ז עובר מרשימה ב' לבחירה חופשית"
+      ],
+      "total_credit": 76.5
+    },
+    "modified": false
+  }
+}
