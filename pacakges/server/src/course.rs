@@ -55,6 +55,13 @@ impl CourseStatus {
         self.additional_msg = Some(msg);
         self
     }
+
+    pub fn is_malag(&self) -> bool {
+        self.course.number / 1000 == 324 // TODO: check if there are more terms
+    }
+    pub fn is_sport(&self) -> bool {
+        self.course.number / 1000 == 394 // TODO: check if there are more terms
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

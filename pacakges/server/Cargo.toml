@@ -20,6 +20,7 @@ attohttpc = { version = "*", features = ["charsets"] }
 jwt = "0.15.0"
 hmac = "0.11.0"
 sha2 = "0.9.8"
+petgraph = "0.6.0"
 
 [patch.crates-io]
 rocket = { git = "https://github.com/SergioBenitez/Rocket.git" }
