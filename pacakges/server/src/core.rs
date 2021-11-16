@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use bson::doc;
 use serde::{Serialize, Deserialize};
+use petgraph::Graph;
+use petgraph::algo::toposort;
 use crate::user::UserDetails;
 use crate::course::{Course, CourseState, CourseStatus, CourseBank, CourseTableRow};
 
@@ -112,26 +114,47 @@ pub struct DegreeStatus {
     pub total_credit: f32,   
 }
 
-pub fn set_order<'a>(course_banks: &'a Vec::<CourseBank>, credit_overflow_rules: &Vec::<CreditOverflow>) -> &'a Vec::<CourseBank> {
-    // TODO: implement this function, should order the banks in catalog in the correct calculations order
-    course_banks
+pub fn set_order(course_banks: &Vec<CourseBank>, credit_overflow_rules: &Vec<CreditOverflow>) -> Vec<CourseBank> {
+    let mut names_to_indices = HashMap::new();
+    let mut indices_to_names = HashMap::new();
+    let mut g = Graph::<String, ()>::new();
+    for course_bank in course_banks {
+        let node_idx = g.add_node(course_bank.name.clone());
+        names_to_indices.insert(course_bank.name.clone(), node_idx.clone());
+        indices_to_names.insert(node_idx.clone(), course_bank.name.clone());
+    }
+    for credit_rule in credit_overflow_rules {
+        g.add_edge(names_to_indices[&credit_rule.from], names_to_indices[&credit_rule.to], ());
+    }
+    let order = toposort(&g, None).unwrap();
+    let mut ordered_course_banks = Vec::<CourseBank>::new();
+    for node in order {
+        ordered_course_banks.push(course_banks
+            .iter()
+            .find(|c|c.name == indices_to_names[&node])
+            .unwrap()
+            .clone());
+    }
+    ordered_course_banks
 }
 
 pub fn set_type_and_add_credits(course_status: &mut CourseStatus, bank_name: String, sum_credits: &mut f32) {
-    course_status.set_type(bank_name);
-    if course_status.state.is_none() && course_status.passed(){
-        *sum_credits += course_status.course.credit;
+    if course_status.r#type.is_none() {
+        if course_status.passed() {
+            *sum_credits += course_status.course.credit;
+        }
+        course_status.set_type(bank_name);
     }
 }
 
-struct HandleBankRuleProcessor<'a> {
+struct BankRuleHandler<'a> {
     user: &'a mut UserDetails,
     bank_name: String,
     course_list: Vec<u32>,
     credit_overflow: f32,
 }
 
-impl<'a> HandleBankRuleProcessor<'a> {
+impl<'a> BankRuleHandler<'a> {
 
     pub fn iterate_course_list(&mut self) -> f32{
         let mut sum_credits = self.credit_overflow;
@@ -241,14 +264,14 @@ impl<'a> HandleBankRuleProcessor<'a> {
 
 
 
-struct DegreeStatusProcessor<'a>{
+struct DegreeStatusHandler<'a>{
     user : &'a mut UserDetails, 
-    course_banks: &'a Vec<CourseBank>,
+    course_banks: Vec<CourseBank>,
     catalog: &'a Catalog,
     credit_overflow_map: HashMap<String, f32>,
 }
 
-impl<'a> DegreeStatusProcessor<'a> {
+impl<'a> DegreeStatusHandler<'a> {
 
     fn calculate_credits_overflow_for_bank(&mut self, bank_name: &str) -> f32 {
         let mut sum_credits = 0.0;
@@ -288,12 +311,12 @@ impl<'a> DegreeStatusProcessor<'a> {
         let credit_complete = self.calculate_credit_and_handle_overflow(bank, sum_credits);
         self.user.degree_status.course_bank_requirements.push(
             Requirement::create(bank.name.clone(), bank.credit)
-            .with_credits(credit_complete)
-            .with_message(msg));
+                .with_credits(credit_complete)
+                .with_message(msg));
     }
 
     fn handle_bank_rule(&mut self, bank: &CourseBank, course_list_for_bank: Vec<u32>, credit_overflow: f32){
-        let handle_bank_rule_processor = HandleBankRuleProcessor {
+        let bank_rule_handler = BankRuleHandler {
             user: self.user,
             bank_name: bank.name.clone(),
             course_list: course_list_for_bank,
@@ -301,23 +324,23 @@ impl<'a> DegreeStatusProcessor<'a> {
         };
         match &bank.rule {
             Rule::All => {
-                let sum_credits = handle_bank_rule_processor.all();
+                let sum_credits = bank_rule_handler.all();
                 self.add_requirement(bank, sum_credits, None);   
             }
             Rule::Accumulate => {
-                let sum_credits = handle_bank_rule_processor.accumulate();
+                let sum_credits = bank_rule_handler.accumulate();
                 self.add_requirement(bank, sum_credits, None); 
             }
             Rule::Malag => {
-                let sum_credits = handle_bank_rule_processor.malag();
+                let sum_credits = bank_rule_handler.malag();
                 self.add_requirement(bank, sum_credits, None); 
             }
             Rule::Sport => {
-                let sum_credits = handle_bank_rule_processor.sport();
+                let sum_credits = bank_rule_handler.sport();
                 self.add_requirement(bank, sum_credits, None); 
             }
             Rule::Chains(chains) => {
-                let (sum_credits, completed_chain) = handle_bank_rule_processor.chain(chains);
+                let (sum_credits, completed_chain) = bank_rule_handler.chain(chains);
                 let msg = if completed_chain {
                     String::from("The user completed a full chain")
                 }
@@ -327,7 +350,7 @@ impl<'a> DegreeStatusProcessor<'a> {
                 self.add_requirement(bank, sum_credits, Some(msg));
             }
             Rule::SpecializationGroups(specialization_groups) => {
-                let (sum_credits, completed_groups) = handle_bank_rule_processor.specialization_group(specialization_groups);
+                let (sum_credits, completed_groups) = bank_rule_handler.specialization_group(specialization_groups);
                 let msg = if completed_groups {
                     String::from("The user completed enough specialization groups")
                 }
@@ -341,7 +364,7 @@ impl<'a> DegreeStatusProcessor<'a> {
     }
     
     pub fn proccess(mut self) {
-        for bank in self.course_banks {
+        for bank in self.course_banks.clone() {
             let course_list_for_bank = self.catalog.get_course_list(&bank.name);
             let credit_overflow = self.calculate_credits_overflow_for_bank(&bank.name);
             self.handle_bank_rule(&bank, course_list_for_bank, credit_overflow);
@@ -352,7 +375,7 @@ impl<'a> DegreeStatusProcessor<'a> {
 pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
     let course_banks = set_order(&catalog.course_banks, &catalog.credit_overflows);
     
-    DegreeStatusProcessor{      
+    DegreeStatusHandler{      
         user,
         course_banks,
         catalog,
@@ -362,7 +385,7 @@ pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
 
 #[cfg(test)]
 #[test]
-fn check_rules() { // for debugging
+fn check_rule_all() { // for debugging
     let mut user = UserDetails {
         catalog: None,
         degree_status: DegreeStatus {
@@ -373,7 +396,7 @@ fn check_rules() { // for debugging
                         credit: 3.0,
                         name: "c1".to_string(),
                     },
-                    state: None,
+                    state: Some(CourseState::Complete),
                     grade: Some(Grade::Grade(85)),
                     ..Default::default()
                 },
@@ -383,7 +406,7 @@ fn check_rules() { // for debugging
                         credit: 3.5,
                         name: "c2".to_string(),
                     },
-                    state: None,
+                    state: Some(CourseState::NotComplete),
                     grade: Some(Grade::Binary(false)),
                     ..Default::default()
                 },
@@ -393,7 +416,7 @@ fn check_rules() { // for debugging
                         credit: 4.0,
                         name: "c3".to_string(),
                     },
-                    state: None,
+                    state: Some(CourseState::Complete),
                     grade: Some(Grade::Grade(85)),
                     ..Default::default()
                 },
@@ -403,7 +426,7 @@ fn check_rules() { // for debugging
                         credit: 5.0,
                         name: "c4".to_string(),
                     },
-                    state: None,
+                    state: Some(CourseState::Complete),
                     grade: Some(Grade::Grade(85)),
                     ..Default::default()
                 },
@@ -416,7 +439,7 @@ fn check_rules() { // for debugging
     let bank_name = "hova".to_string();
     let course_list = vec![000001, 000002, 123456, 456789, 159159, 000003];
     let credit_overflow = 0.0;
-    let handle_bank_rule_processor = HandleBankRuleProcessor {
+    let handle_bank_rule_processor = BankRuleHandler {
         user: &mut user,
         bank_name,
         course_list,
@@ -425,5 +448,21 @@ fn check_rules() { // for debugging
     let res = handle_bank_rule_processor.all();
     println!("{}", res);
     println!("{:#?}", user.degree_status);
+    // check it add the type
+    assert_eq!(user.degree_status.course_statuses[0].r#type, Some("hova".to_string()));
+    assert_eq!(user.degree_status.course_statuses[1].r#type, Some("hova".to_string()));
+    assert_eq!(user.degree_status.course_statuses[2].r#type, Some("hova".to_string()));
+
+    // check it add the not completed courses in the hove bank
+    assert_eq!(user.degree_status.course_statuses[4].course.number, 123456);
+    assert!(matches!(user.degree_status.course_statuses[4].state, Some(CourseState::NotComplete)));
+
+    assert_eq!(user.degree_status.course_statuses[5].course.number, 456789);
+    assert!(matches!(user.degree_status.course_statuses[5].state, Some(CourseState::NotComplete)));
+
+    assert_eq!(user.degree_status.course_statuses[6].course.number, 159159);
+    assert!(matches!(user.degree_status.course_statuses[6].state, Some(CourseState::NotComplete)));
+
+    // check sum credits
     assert_eq!(res, 7.0);
 }
