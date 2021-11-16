@@ -5,7 +5,6 @@ use bson::doc;
 use futures_util::Future;
 use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, web};
 use mongodb::Client;
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications};
 use serde::{Serialize, Deserialize};
 use crate::course::{self, CourseStatus};
 use crate::core::{self, *};
@@ -85,6 +84,10 @@ impl User {
         // Should always unwrap succesfully here..
         bson::to_document(&user).unwrap_or(doc!{"sub" : sub, "details": null})
     }
+    pub fn into_document(self) -> bson::Document {
+        // Should always unwrap succesfully here..
+        bson::to_document(&self).unwrap_or(doc!{"sub" : self.sub, "details": null})
+    }
 }
 
 impl FromRequest for User {
@@ -126,28 +129,8 @@ pub async fn user_login(
         .map_err(|err| ErrorInternalServerError(err.to_string()))?
         .sub;
 
-    match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
-        .collection::<User>("Users")
-        .find_one_and_update(
-        doc!{"_id" : user_id}, 
-        UpdateModifications::Document(doc!{"$setOnInsert" : User::new_document(user_id)}), 
-        Some(
-                FindOneAndUpdateOptions::builder()
-                .upsert(true)
-                .return_document(ReturnDocument::After)
-                .build()
-            )
-        )
-        .await
-    {
-        // We can safely unwrap here thanks to upsert=true and ReturnDocument::After
-        Ok(user) => Ok(HttpResponse::Ok().json(user.unwrap())),
-        Err(err) => {
-            let err = format!("monogdb driver error: {}", err);
-            eprintln!("{}", err);
-            Err(ErrorInternalServerError(err.to_string()))
-        },
-    }
+    let document = doc!{"$setOnInsert" : User::new_document(user_id)};
+    db::services::find_and_update_user(user_id, document, &client).await
 }
 
 #[cfg(test)]
@@ -155,15 +138,16 @@ mod tests{
 
     use actix_web::{App, body::AnyBody, test::{self, TestRequest}, web::{self}};
     use mongodb::Client;
-    use crate::{user::User};
+    use dotenv::dotenv;
+    use crate::{config::Config, user::User};
 
     #[actix_rt::test]
     async fn test_user_login(){
     
         std::env::set_var("RUST_LOG", "actix_server=info");
         env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-    
-        let client = Client::with_uri_str("mongodb+srv://nbl_admin:sm3sw0rFjzMcQeW3@sogrimdev.7tmyn.mongodb.net/Development?retryWrites=true&w=majority").await.expect("failed to connect");
+        dotenv().ok();
+        let client = Client::with_uri_str(std::env::var("URI").unwrap()).await.expect("failed to connect");
     
         let app = test::init_service(
         App::new()
@@ -234,7 +218,7 @@ pub async fn compute_degree_status(
 
     let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;
     core::calculate_degree_status(&catalog, &mut user_details);
-
+    user_details.modified = false;
     for course_status in user_details.degree_status.course_statuses.iter_mut() {
         // Fill in courses without information
         let course = &mut course_status.course;
@@ -242,7 +226,9 @@ pub async fn compute_degree_status(
             *course = db::services::get_course_by_number(course.number, &client).await?;
         }
     }
-
+    let user_id = user.sub.clone();
+    let document = doc!{"$set" : user.into_document()}; 
+    db::services::find_and_update_user(&user_id, document, &client).await?;
     Ok(HttpResponse::Ok().finish())
 }
 

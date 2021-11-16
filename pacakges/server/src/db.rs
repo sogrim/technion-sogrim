@@ -6,11 +6,12 @@ use crate::user::User;
 use crate::course::Course;
 pub use bson::{Document, doc};
 
-
 pub mod services{
 
     use super::*;
+    use actix_web::{HttpResponse, error::ErrorInternalServerError};
     use bson::oid::ObjectId;
+    use mongodb::{options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications}};
 
     #[macro_export]
     macro_rules! impl_get {
@@ -60,18 +61,33 @@ pub mod services{
         db_key_name: "_id"
     );
 
-    // pub async fn add_user(sub: String, client: &Client) -> Result<InsertOneResult, Error> {
+    pub async fn find_and_update_user(
+        user_id : &str,
+        document: Document, 
+        client: &Client
+    ) -> Result<HttpResponse, Error> {
 
-    //     let new_user = User::new(sub);
-
-    //     client
-    //         .database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
-    //         .collection::<User>("Users")
-    //         .insert_one(new_user, None)
-    //         .await
-    //         .map_err(|err| {
-    //             eprintln!("{:#?}", err);
-    //             ErrorInternalServerError(err)
-    //         })
-    // }
+        match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
+        .collection::<User>("Users")
+        .find_one_and_update(
+        doc!{"_id" : user_id}, 
+        UpdateModifications::Document(document), 
+        Some(
+                FindOneAndUpdateOptions::builder()
+                .upsert(true)
+                .return_document(ReturnDocument::After)
+                .build()
+            )
+        )
+        .await
+        {
+            // We can safely unwrap here thanks to upsert=true and ReturnDocument::After
+            Ok(user) => Ok(HttpResponse::Ok().json(user.unwrap())),
+            Err(err) => {
+                let err = format!("monogdb driver error: {}", err);
+                eprintln!("{}", err);
+                Err(ErrorInternalServerError(err.to_string()))
+            },
+        }
+    }
 }

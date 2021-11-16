@@ -56,7 +56,7 @@ pub(crate) mod tests{
     use actix_web::{App, http::StatusCode, middleware::Logger, test::{self, TestRequest}};
     use actix_web_httpauth::middleware::HttpAuthentication;
     use mongodb::Client;
-
+    use dotenv::dotenv;
     use crate::{auth, user};
 
 
@@ -73,8 +73,8 @@ pub(crate) mod tests{
     
         std::env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
         env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-    
-        let client = Client::with_uri_str("mongodb+srv://nbl_admin:sm3sw0rFjzMcQeW3@sogrimdev.7tmyn.mongodb.net/Development?retryWrites=true&w=majority").await.expect("failed to connect");
+        dotenv().ok();
+        let client = Client::with_uri_str(std::env::var("URI").unwrap()).await.expect("failed to connect");
     
         let app = test::init_service(
         App::new()

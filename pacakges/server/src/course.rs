@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use actix_web::Error;
 use serde::{Serialize, Deserialize};
+use dotenv::dotenv;
 use crate::core::*;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -267,13 +268,14 @@ fn test2(){
 
 #[actix_rt::test]
 async fn test3(){
-    let contents = std::fs::read_to_string("courses.txt")
+    dotenv().ok();
+    let contents = std::fs::read_to_string("Cargo.toml")
         .expect("Something went wrong reading the file");
     let mut counter = 0;
     let mut unique_lines = std::collections::HashSet::new();
     let mut courses = Vec::new();
     let options = mongodb::options::ClientOptions::parse(
-        "mongodb+srv://nbl_admin:sm3sw0rFjzMcQeW3@sogrimdev.7tmyn.mongodb.net/Development?retryWrites=true&w=majority")
+        std::env::var("URI").unwrap())
     .await
     .unwrap();
     let client = mongodb::Client::with_options(options).unwrap();
@@ -338,17 +340,17 @@ async fn test3(){
         },
     ];
     for special_course in special_courses.iter(){
-        match client
-            .database("debug")
-            .collection::<Course>("Courses")
-            .insert_one(
-                special_course,
-                None
-            )
-            .await{
-                Ok(res) => println!("{:?}", res),
-                Err(err) => eprintln!("{:?}", err),
-            };
+        // match client
+        //     .database("debug")
+        //     .collection::<Course>("Courses")
+        //     .insert_one(
+        //         special_course,
+        //         None
+        //     )
+        //     .await{
+        //         Ok(res) => println!("{:?}", res),
+        //         Err(err) => eprintln!("{:?}", err),
+        //     };
     }
     println!("{:?}", counter);
 }

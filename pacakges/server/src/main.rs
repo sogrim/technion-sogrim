@@ -23,7 +23,8 @@ async fn main() -> std::io::Result<()> {
 
     dotenv().ok();
     let config = Config::from_env().unwrap();
-    let client = Client::with_uri_str(config.uri).await.expect("failed to connect");
+    let app_config = config.clone();
+    let client = Client::with_uri_str(&config.uri).await.expect("failed to connect");
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     HttpServer::new(move || {
@@ -31,6 +32,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(client.clone()))
             .wrap(HttpAuthentication::bearer(auth::validator))
             .wrap(Logger::default())
+            .app_data(app_config.clone())
             .service(home_page)
             .service(user::debug)
             .service(user::user_login)

@@ -1,7 +1,7 @@
 pub use config::ConfigError;
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     pub ip: String,
     pub port: u16,

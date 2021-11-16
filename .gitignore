@@ -8,3 +8,4 @@ pacakges/server/Rocket.toml
 pacakges/server/private_key.gpg
 pacakges/server/Cargo.lock
 pacakges/server/.env
+.vscode/
