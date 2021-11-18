@@ -1,1 +1,1 @@
-web: chmod a+x ./pacakges/server/deploy.sh && ./pacakges/server/deploy.sh && ROCKET_PORT=$PORT ROCKET_ADDRESS="0.0.0.0" ROCKET_PROFILE=debug ./pacakges/server/target/release/sogrim-server
+web: PORT=$PORT PROFILE=debug ./pacakges/server/target/release/sogrim-server
