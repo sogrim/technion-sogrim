@@ -2,6 +2,7 @@ use std::pin::Pin;
 use std::str::FromStr;
 use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
+use actix_web::http::header;
 use bson::doc;
 use futures_util::Future;
 use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, web};
@@ -9,7 +10,7 @@ use mongodb::Client;
 use serde::{Serialize, Deserialize};
 use crate::course::{self, CourseStatus};
 use crate::core::{self, *};
-use crate::db;
+use crate::{auth, db};
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
@@ -91,10 +92,21 @@ pub async fn user_login(
     req: HttpRequest,
 ) -> Result<HttpResponse, Error> {
 
-    let extensions = req.extensions();
-    let user_id = extensions
-        .get::<String>()
-        .ok_or(ErrorInternalServerError("Middleware Internal Error"))?;
+    let auth = req
+        .headers()
+        .get(header::AUTHORIZATION)
+        .ok_or(ErrorUnauthorized(""))?
+        .to_str()
+        .map_err(|err| ErrorInternalServerError(err))?;
+
+    let user_id: &str = &auth::get_decoded(auth)
+        .await
+        .map_err(|err| ErrorInternalServerError(err.to_string()))?
+        .sub;
+    // let extensions = req.extensions();
+    // let user_id = extensions
+    //     .get::<String>()
+    //     .ok_or(ErrorInternalServerError("Middleware Internal Error"))?;
 
     let document = doc!{"$setOnInsert" : User::new_document(user_id)};
     db::services::find_and_update_user(user_id, document, &client).await
