@@ -9,7 +9,7 @@ use mongodb::Client;
 use serde::{Serialize, Deserialize};
 use crate::course::{self, CourseStatus};
 use crate::core::{self, *};
-use crate::{auth, db};
+use crate::db;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
@@ -88,14 +88,18 @@ impl FromRequest for User {
 #[post("/user/login")]
 pub async fn user_login(
     client: web::Data<Client>,
-    req_payload: String,
+    req: HttpRequest,
 ) -> Result<HttpResponse, Error> {
 
-    let token = req_payload.as_str();
-    let user_id: &str = &auth::get_decoded(token)
-        .await
-        .map_err(|err| ErrorInternalServerError(err.to_string()))?
-        .sub;
+    // let token = req_payload.as_str();
+    // let user_id: &str = &auth::get_decoded(token)
+    //     .await
+    //     .map_err(|err| ErrorInternalServerError(err.to_string()))?
+    //     .sub;
+    let extensions = req.extensions();
+    let user_id = extensions
+        .get::<String>()
+        .ok_or(ErrorInternalServerError("Middleware Internal Error"))?;
 
     let document = doc!{"$setOnInsert" : User::new_document(user_id)};
     db::services::find_and_update_user(user_id, document, &client).await
