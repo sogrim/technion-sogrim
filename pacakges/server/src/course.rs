@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use actix_web::Error;
 use serde::{Serialize, Deserialize};
-use dotenv::dotenv;
 use crate::core::*;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -266,91 +265,91 @@ fn test2(){
 
 }
 
-#[actix_rt::test]
-async fn test3(){
-    dotenv().ok();
-    let contents = std::fs::read_to_string("Cargo.toml")
-        .expect("Something went wrong reading the file");
-    let mut counter = 0;
-    let mut unique_lines = std::collections::HashSet::new();
-    let mut courses = Vec::new();
-    let options = mongodb::options::ClientOptions::parse(
-        std::env::var("URI").unwrap())
-    .await
-    .unwrap();
-    let client = mongodb::Client::with_options(options).unwrap();
-    // Ping the server to see if you can connect to the cluster
-    client
-        .database("admin")
-        .run_command(bson::doc! {"ping": 1}, None)
-        .await
-        .unwrap();
-    println!("Connected successfully.");
-    for line_ref in contents.split_terminator("\r\n"){
-        //println!("{}", line_ref);
-        if !unique_lines.insert(line_ref){
-            continue;   
-        };
-        let res  = serde_json::from_str::<Course>(line_ref);
-        if res.is_ok(){
-            let course = res.unwrap();   
-            // match client
-            //     .database("debug")
-            //     .collection::<Course>("Courses")
-            //     .insert_one(
-            //         course.clone(),
-            //         None
-            //     )
-            //     .await{
-            //         Ok(res) => println!("{:?}", res),
-            //         Err(err) => eprintln!("{:?}", err),
-            //     };
-            courses.push(course); 
-            counter += 1;
-        }
-        else{
-            println!("{} --- {:?}", line_ref, res);
-        }
-    }
-    let special_courses = vec![
-        Course{
-            number : 234129,
-            credit : 3.0,
-            name: r#"מב.לתורת הקבוצות ואוטומטים למדמ"ח"#.to_string(),
-        },
-        Course{
-            number : 236716,
-            credit : 3.0,
-            name: r#"מודלים גאומטריים במערכות תיב"מ"#.to_string(),
-        },
-        Course{
-            number : 104223,
-            credit : 4.0,
-            name: r#"מד"ח וטורי פוריה"#.to_string(),
-        },
-        Course{
-            number : 104035,
-            credit : 5.0,
-            name: r#"משוואות דיפ' רגילות ואינפי 2ח'"#.to_string(),
-        },
-        Course{
-            number : 46746,
-            credit : 3.0,
-            name: r#"אלג' ויישומים בראייה ממוחשבת"#.to_string(),
-        },
-    ];
-    for special_course in special_courses.iter(){
-        // match client
-        //     .database("debug")
-        //     .collection::<Course>("Courses")
-        //     .insert_one(
-        //         special_course,
-        //         None
-        //     )
-        //     .await{
-        //         Ok(res) => println!("{:?}", res),
-        //         Err(err) => eprintln!("{:?}", err),
-        //     };
-    }
-    println!("{:?}", counter);
-}
+// #[actix_rt::test]
+// async fn test3(){
+//     dotenv().ok();
+//     let contents = std::fs::read_to_string("Cargo.toml")
+//         .expect("Something went wrong reading the file");
+//     let mut counter = 0;
+//     let mut unique_lines = std::collections::HashSet::new();
+//     let mut courses = Vec::new();
+//     let options = mongodb::options::ClientOptions::parse(
+//         std::env::var("URI").unwrap())
+//     .await
+//     .unwrap();
+//     let client = mongodb::Client::with_options(options).unwrap();
+//     // Ping the server to see if you can connect to the cluster
+//     client
+//         .database("admin")
+//         .run_command(bson::doc! {"ping": 1}, None)
+//         .await
+//         .unwrap();
+//     println!("Connected successfully.");
+//     for line_ref in contents.split_terminator("\r\n"){
+//         //println!("{}", line_ref);
+//         if !unique_lines.insert(line_ref){
+//             continue;   
+//         };
+//         let res  = serde_json::from_str::<Course>(line_ref);
+//         if res.is_ok(){
+//             let course = res.unwrap();   
+//             // match client
+//             //     .database("debug")
+//             //     .collection::<Course>("Courses")
+//             //     .insert_one(
+//             //         course.clone(),
+//             //         None
+//             //     )
+//             //     .await{
+//             //         Ok(res) => println!("{:?}", res),
+//             //         Err(err) => eprintln!("{:?}", err),
+//             //     };
+//             courses.push(course); 
+//             counter += 1;
+//         }
+//         else{
+//             println!("{} --- {:?}", line_ref, res);
+//         }
+//     }
+//     let _special_courses = vec![
+//         Course{
+//             number : 234129,
+//             credit : 3.0,
+//             name: r#"מב.לתורת הקבוצות ואוטומטים למדמ"ח"#.to_string(),
+//         },
+//         Course{
+//             number : 236716,
+//             credit : 3.0,
+//             name: r#"מודלים גאומטריים במערכות תיב"מ"#.to_string(),
+//         },
+//         Course{
+//             number : 104223,
+//             credit : 4.0,
+//             name: r#"מד"ח וטורי פוריה"#.to_string(),
+//         },
+//         Course{
+//             number : 104035,
+//             credit : 5.0,
+//             name: r#"משוואות דיפ' רגילות ואינפי 2ח'"#.to_string(),
+//         },
+//         Course{
+//             number : 46746,
+//             credit : 3.0,
+//             name: r#"אלג' ויישומים בראייה ממוחשבת"#.to_string(),
+//         },
+//     ];
+//     // for special_course in special_courses.iter(){
+//     //     // match client
+//     //     //     .database("debug")
+//     //     //     .collection::<Course>("Courses")
+//     //     //     .insert_one(
+//     //     //         special_course,
+//     //     //         None
+//     //     //     )
+//     //     //     .await{
+//     //     //         Ok(res) => println!("{:?}", res),
+//     //     //         Err(err) => eprintln!("{:?}", err),
+//     //     //     };
+//     // }
+//     println!("{:?}", counter);
+// }

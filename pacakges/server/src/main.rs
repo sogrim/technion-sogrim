@@ -8,6 +8,7 @@ use crate::config::Config;
 mod auth;
 mod db;
 mod course;
+mod catalog;
 mod user;
 mod core;
 mod config;
@@ -34,10 +35,13 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .app_data(app_config.clone())
             .service(home_page)
-            .service(user::debug)
+            .service(catalog::get_all_catalogs)
             .service(user::user_login)
-            .service(user::compute_degree_status)
+            .service(user::add_catalog)
             .service(user::add_data_from_ug)
+            .service(user::compute_degree_status)
+            .service(user::update_user_details)
+            .service(user::debug)
     })
     .bind((config.ip, config.port))?
     .run()

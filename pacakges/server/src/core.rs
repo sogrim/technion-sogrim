@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use bson::doc;
 use serde::{Serialize, Deserialize};
+use crate::catalog::Catalog;
 use crate::user::UserDetails;
-use crate::course::{Course, CourseState, CourseStatus, CourseBank, CourseTableRow};
+use crate::course::{Course, CourseState, CourseStatus, CourseBank};
 
 type Chain = Vec<u32>;
 
@@ -48,27 +49,6 @@ pub enum Grade{
 pub struct CreditOverflow {
     pub from : String,
     pub to : String,
-}
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Catalog {
-    #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub id : bson::oid::ObjectId,
-    pub name: String,
-    pub course_banks: Vec<CourseBank>,
-    pub course_table: Vec<CourseTableRow>,
-    pub credit_overflows: Vec<CreditOverflow>,
-}
-
-impl Catalog {
-    fn get_course_list(&self, name: &str) -> Vec<u32> {
-        let mut course_list_for_bank = Vec::<u32>::new();
-        for course in &self.course_table {
-            if course.course_banks.contains(&name.to_string()) {
-                course_list_for_bank.push(course.number);
-            }
-        }
-        course_list_for_bank
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

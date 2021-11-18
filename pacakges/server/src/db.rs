@@ -1,16 +1,19 @@
 
 use mongodb::Client;
 use actix_web::error::{self, Error};
-use crate::core::*;
 use crate::user::User;
+use crate::catalog::Catalog;
 use crate::course::Course;
 pub use bson::{Document, doc};
 
 pub mod services{
 
+    use crate::catalog::DisplayCatalog;
+
     use super::*;
     use actix_web::{HttpResponse, error::ErrorInternalServerError};
     use bson::oid::ObjectId;
+    use futures_util::TryStreamExt;
     use mongodb::{options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications}};
 
     #[macro_export]
@@ -68,15 +71,15 @@ pub mod services{
     ) -> Result<HttpResponse, Error> {
 
         match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
-        .collection::<User>("Users")
-        .find_one_and_update(
-        doc!{"_id" : user_id}, 
-        UpdateModifications::Document(document), 
-        Some(
-                FindOneAndUpdateOptions::builder()
-                .upsert(true)
-                .return_document(ReturnDocument::After)
-                .build()
+            .collection::<User>("Users")
+            .find_one_and_update(
+            doc!{"_id" : user_id}, 
+            UpdateModifications::Document(document), 
+            Some(
+                    FindOneAndUpdateOptions::builder()
+                    .upsert(true)
+                    .return_document(ReturnDocument::After)
+                    .build()
             )
         )
         .await
@@ -90,4 +93,21 @@ pub mod services{
             },
         }
     }
+
+    pub async fn get_all_catalogs(client: &Client) -> Result<HttpResponse, Error> {
+        match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
+            .collection::<DisplayCatalog>("Catalogs")
+            .find(None, None)
+            .await
+            {
+                Ok(docs) => Ok(HttpResponse::Ok().json(
+                    docs
+                        .try_collect::<Vec<DisplayCatalog>>()
+                        .await
+                        .map_err(|e| ErrorInternalServerError(e.to_string()))?)
+                    ),
+                Err(err) => Err(ErrorInternalServerError(err.to_string())),
+            }
+    }
+
 }

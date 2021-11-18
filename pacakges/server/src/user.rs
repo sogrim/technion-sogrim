@@ -1,4 +1,5 @@
 use std::pin::Pin;
+use std::str::FromStr;
 use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
 use bson::doc;
@@ -33,39 +34,6 @@ impl UserDetails {
         }
         false
     }
-}
-
-#[test]
-fn make_json_mocks(){
-    //user login initial
-    let mut user = User{
-        sub: "some-sub-number-from-nissan-auth-with-google".into(),
-        details: Some(UserDetails::default()),
-    };
-    let mut user_ser = serde_json::to_string_pretty(&user).unwrap();
-    println!("{}", user_ser);
-    std::fs::write(
-        "../docs/user_login_initial.json", 
-    serde_json::to_string_pretty(&user)
-        .expect("json serialization failed")
-    ).expect("Unable to write file");
-
-    //user login with details
-    let json_str = std::fs::read_to_string("../docs/degree_status_mock.json").expect("Unable to read file");
-    let degree_status = serde_json::from_str(&json_str).expect("deserialization failed");
-    user.details = Some(UserDetails{
-        catalog: Some(bson::oid::ObjectId::new()),
-        degree_status,
-        modified: false,
-    });
-    user_ser = serde_json::to_string_pretty(&user).unwrap();
-    println!("{}", user_ser);
-    std::fs::write(
-        "../docs/user_login_with_details.json", 
-    serde_json::to_string_pretty(&user)
-        .expect("json serialization failed")
-    ).expect("Unable to write file");
-
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -133,68 +101,42 @@ pub async fn user_login(
     db::services::find_and_update_user(user_id, document, &client).await
 }
 
-#[cfg(test)]
-mod tests{
-
-    use actix_web::{App, body::AnyBody, test::{self, TestRequest}, web::{self}};
-    use mongodb::Client;
-    use dotenv::dotenv;
-    use crate::{config::Config, user::User};
-
-    #[actix_rt::test]
-    async fn test_user_login(){
-    
-        std::env::set_var("RUST_LOG", "actix_server=info");
-        env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-        dotenv().ok();
-        let client = Client::with_uri_str(std::env::var("URI").unwrap()).await.expect("failed to connect");
-    
-        let app = test::init_service(
-        App::new()
-                .app_data(web::Data::new(client.clone()))
-                .service(super::user_login)
-        ).await;
-    
-        // Create request object
-        let req = TestRequest::post()
-            .uri("/user/login")
-            .set_payload( "bugo-the-debugo")
-            .to_request();
-    
-        // Call application
-        let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
-        if let AnyBody::Bytes(b)= resp.into_body() {
-            //TODO switch the println to asserts.
-            if let Ok(user) = serde_json::from_slice::<User>(&b){
-                println!("{:#?}", user);
-            }
-        }
+#[post("/user/catalog")]
+pub async fn add_catalog(    
+    client: web::Data<Client>, 
+    catalog_id: String,
+    mut user: User, 
+) -> Result<HttpResponse, Error>{
+    if let Some(details) = &mut user.details {
+        details.catalog = Some(
+            bson::oid::ObjectId::from_str(&catalog_id)
+            .map_err(|err| ErrorInternalServerError(err))?
+        );
+        let user_id = user.sub.clone();
+        let document = doc!{"$set" : user.into_document()}; 
+        db::services::find_and_update_user(&user_id, document, &client).await?;
+        Ok(HttpResponse::Ok().finish())
     }
-}
-// DEBUG..
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-struct DebugResponse{
-    s: String,
-}
-impl From<String> for DebugResponse {
-    fn from(s: String) -> Self {
-        DebugResponse{s}
+    else{
+        Err(ErrorInternalServerError("No data exists for user"))
     }
 }
 
-#[get("/user/debug")]
-pub async fn debug(content: String) -> HttpResponse{
-    HttpResponse::Ok().json(DebugResponse::from(content))
-}
-
-//TODO
 // here "modified" becomes true
-// #[post("/user/details")]
-// pub async fn update_user_details(){
-//     todo!()
-// }
+#[post("/user/details")]
+pub async fn update_user_details(
+    client: web::Data<Client>,
+    mut details: web::Json<UserDetails>,
+    mut user: User,
+) -> Result<HttpResponse, Error>{
+
+    let user_id = user.sub.clone();
+    details.modified = true;
+    user.details = Some(details.into_inner());
+    let document = doc!{"$set" : user.into_document()}; 
+    db::services::find_and_update_user(&user_id, document, &client).await?;
+    Ok(HttpResponse::Ok().finish())
+}
 
 // here "modified" becomes false
 #[get("/user/compute")]
@@ -232,15 +174,6 @@ pub async fn compute_degree_status(
     Ok(HttpResponse::Ok().finish())
 }
 
-//TODO
-//create new file catalog.rs and move this function there
-// #[get("/catalogs")]
-// pub async fn get_all_catalogs(){todo!()}
-
-//TODO
-// #[post("/user/catalog")]
-// pub async fn add_catalog(){todo!()}
-
 #[post("/user/ug_data")]
 pub async fn add_data_from_ug(
     client: web::Data<Client>, 
@@ -268,4 +201,62 @@ pub async fn add_data_from_ug(
                 None => HttpResponse::InternalServerError().body(format!("User {} does not exist in the database", user.sub)),
             }
         )
+}
+
+// DEBUG..
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct DebugResponse{
+    s: String,
+}
+impl From<String> for DebugResponse {
+    fn from(s: String) -> Self {
+        DebugResponse{s}
+    }
+}
+
+#[get("/user/debug")]
+pub async fn debug(content: String) -> HttpResponse{
+    HttpResponse::Ok().json(DebugResponse::from(content))
+}
+
+#[cfg(test)]
+mod tests{
+    
+    use actix_rt::test;
+    use actix_web::{App, test::{self, TestRequest}, web};
+    use actix_web_httpauth::middleware::HttpAuthentication;
+    use mongodb::Client;
+    use dotenv::dotenv;
+    use crate::{auth, user::User};
+
+    #[test]
+    async fn test_user_login(){
+    
+        std::env::set_var("RUST_LOG", "actix_server=info");
+        env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+        dotenv().ok();
+        let client = Client::with_uri_str(std::env::var("URI").unwrap()).await.expect("failed to connect");
+    
+        let app = test::init_service(
+        App::new()
+                .wrap(HttpAuthentication::bearer(auth::validator))
+                .app_data(web::Data::new(client.clone()))
+                .service(super::user_login)
+        ).await;
+    
+        // Create request object
+        let req = TestRequest::post()
+            .uri("/user/login")
+            .insert_header(("Authorization", "Bearer bugo-the-debugo"))
+            .to_request();
+    
+        // Call application
+        let resp : User = test::read_response_json(&app, req).await;
+
+        // Check for valid json response
+        assert_eq!(resp.sub, "bugo-the-debugo");
+        assert!(resp.details.is_some());
+        assert_eq!(resp.details.unwrap().degree_status.total_credit, 15.0);
+    }
 }
