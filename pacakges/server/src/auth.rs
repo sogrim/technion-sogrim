@@ -39,14 +39,21 @@ impl std::fmt::Display for AuthError {
     }
 }
 
-pub async fn get_decoded(token: &str) -> Result<IdInfo, AuthError> {
-    if env::var("PROFILE").unwrap_or("debug".into()) == "debug" {
-        return Ok(IdInfo{
-            sub: "bugo-the-debugo".into(),
-            ..Default::default()
-        })
+macro_rules! debug_auth{
+    () => {
+        if env::var("PROFILE").unwrap_or("debug".into()) == "debug" {
+            return Ok(IdInfo{
+                sub: "bugo-the-debugo".into(),
+                ..Default::default()
+            })
+        }
     }
+}
+
+pub async fn get_decoded(token: &str) -> Result<IdInfo, AuthError> {
     
+    debug_auth!(); // will return immediately in debug environment.
+
     let parser = Parser::new(
         &env::var("CLIENT_ID")
             .map_err(|e| AuthError::VarError(e))?

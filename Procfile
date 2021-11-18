@@ -1,1 +1,1 @@
-web: PORT=$PORT PROFILE=debug ./pacakges/server/target/release/sogrim-server
+web: PORT=$PORT PROFILE=staging ./pacakges/server/target/release/sogrim-server

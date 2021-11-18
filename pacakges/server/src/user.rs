@@ -91,11 +91,6 @@ pub async fn user_login(
     req: HttpRequest,
 ) -> Result<HttpResponse, Error> {
 
-    // let token = req_payload.as_str();
-    // let user_id: &str = &auth::get_decoded(token)
-    //     .await
-    //     .map_err(|err| ErrorInternalServerError(err.to_string()))?
-    //     .sub;
     let extensions = req.extensions();
     let user_id = extensions
         .get::<String>()
@@ -228,7 +223,7 @@ pub async fn debug(content: String) -> HttpResponse{
 mod tests{
     
     use actix_rt::test;
-    use actix_web::{App, test::{self, TestRequest}, web};
+    use actix_web::{App, test::{self}, web};
     use actix_web_httpauth::middleware::HttpAuthentication;
     use mongodb::Client;
     use dotenv::dotenv;
@@ -242,25 +237,26 @@ mod tests{
         dotenv().ok();
         let client = Client::with_uri_str(std::env::var("URI").unwrap()).await.expect("failed to connect");
     
-        let app = test::init_service(
+        let mut app = test::init_service(
         App::new()
                 .wrap(HttpAuthentication::bearer(auth::validator))
                 .app_data(web::Data::new(client.clone()))
                 .service(super::user_login)
         ).await;
     
-        // Create request object
-        let req = TestRequest::post()
+        // Create and send request
+        let resp = test::TestRequest::post()
             .uri("/user/login")
             .insert_header(("Authorization", "Bearer bugo-the-debugo"))
-            .to_request();
-    
-        // Call application
-        let resp : User = test::read_response_json(&app, req).await;
+            .send_request(&mut app)
+            .await;
+        
+        assert!(resp.status().is_success());
 
         // Check for valid json response
-        assert_eq!(resp.sub, "bugo-the-debugo");
-        assert!(resp.details.is_some());
-        assert_eq!(resp.details.unwrap().degree_status.total_credit, 15.0);
+        let user : User = test::read_body_json(resp).await;
+        assert_eq!(user.sub, "bugo-the-debugo");
+        assert!(user.details.is_some());
+        assert_eq!(user.details.unwrap().degree_status.total_credit, 15.0);
     }
 }
