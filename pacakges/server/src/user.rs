@@ -2,15 +2,15 @@ use std::pin::Pin;
 use std::str::FromStr;
 use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
-use actix_web::http::header;
 use bson::doc;
 use futures_util::Future;
 use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, web};
 use mongodb::Client;
 use serde::{Serialize, Deserialize};
+use crate::auth::Sub;
 use crate::course::{self, CourseStatus};
 use crate::core::{self, *};
-use crate::{auth, db};
+use crate::db;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
@@ -70,7 +70,7 @@ impl FromRequest for User {
                 Some(client) => client,
                 None => return Err(ErrorInternalServerError("Db client was not initialized!")),
             };
-            match req.extensions().get::<String>() {
+            match req.extensions().get::<Sub>() {
                 Some(user_id) => {
                     db::services::get_user_by_id(user_id, &client)
                         .await
@@ -92,21 +92,21 @@ pub async fn user_login(
     req: HttpRequest,
 ) -> Result<HttpResponse, Error> {
 
-    let auth = req
-        .headers()
-        .get(header::AUTHORIZATION)
-        .ok_or(ErrorUnauthorized(""))?
-        .to_str()
-        .map_err(|err| ErrorInternalServerError(err))?;
+    // let auth = req
+    //     .headers()
+    //     .get(header::AUTHORIZATION)
+    //     .ok_or(ErrorUnauthorized(""))?
+    //     .to_str()
+    //     .map_err(|err| ErrorInternalServerError(err))?;
 
-    let user_id: &str = &auth::get_decoded(auth)
-        .await
-        .map_err(|err| ErrorInternalServerError(err.to_string()))?
-        .sub;
-    // let extensions = req.extensions();
-    // let user_id = extensions
-    //     .get::<String>()
-    //     .ok_or(ErrorInternalServerError("Middleware Internal Error"))?;
+    // let user_id: &str = &auth::get_decoded(auth)
+    //     .await
+    //     .map_err(|err| ErrorInternalServerError(err.to_string()))?
+    //     .sub;
+    let extensions = req.extensions();
+    let user_id = extensions
+        .get::<Sub>()
+        .ok_or(ErrorInternalServerError("Middleware Internal Error"))?;
 
     let document = doc!{"$setOnInsert" : User::new_document(user_id)};
     db::services::find_and_update_user(user_id, document, &client).await
@@ -180,9 +180,9 @@ pub async fn compute_degree_status(
         }
     }
     let user_id = user.sub.clone();
-    let document = doc!{"$set" : user.into_document()}; 
+    let document = doc!{"$set" : user.clone().into_document()}; 
     db::services::find_and_update_user(&user_id, document, &client).await?;
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().json(user))
 }
 
 #[post("/user/ug_data")]
@@ -236,7 +236,6 @@ mod tests{
     
     use actix_rt::test;
     use actix_web::{App, test::{self}, web};
-    use actix_web_httpauth::middleware::HttpAuthentication;
     use mongodb::Client;
     use dotenv::dotenv;
     use crate::{auth, user::User};
@@ -251,7 +250,7 @@ mod tests{
     
         let mut app = test::init_service(
         App::new()
-                .wrap(HttpAuthentication::bearer(auth::validator))
+                .wrap(auth::AuthenticateMiddleware)
                 .app_data(web::Data::new(client.clone()))
                 .service(super::user_login)
         ).await;
@@ -259,7 +258,7 @@ mod tests{
         // Create and send request
         let resp = test::TestRequest::post()
             .uri("/user/login")
-            .insert_header(("Authorization", "Bearer bugo-the-debugo"))
+            .insert_header(("authorization", "bugo-the-debugo"))
             .send_request(&mut app)
             .await;
         
