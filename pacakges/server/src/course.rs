@@ -69,7 +69,7 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Rshima A.
     pub rule: Rule,
     pub credit: f32,
-    pub messege: String,
+    pub message: String,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]

@@ -35,6 +35,7 @@ pub enum Rule {
     Accumulate, // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
     Malag,
     Sport,
+    FreeChoice,
     Chains(Vec<Chain>), // למשל שרשרת מדעית.
     SpecializationGroups(SpecializationGroups),
     Wildcard(bool), // קלף משוגע עבור להתמודד עם   
@@ -156,7 +157,7 @@ struct BankRuleHandler<'a> {
 
 impl<'a> BankRuleHandler<'a> {
 
-    pub fn iterate_course_list(&mut self) -> f32{
+    fn iterate_course_list(&mut self) -> f32{
         let mut sum_credits = self.credit_overflow;
         for course_number in &self.course_list {
             if let Some(course_status) = self.user.get_mut_course_status(*course_number) {
@@ -209,6 +210,14 @@ impl<'a> BankRuleHandler<'a> {
             if course_status.is_sport() {
                 set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
             }
+        }
+        sum_credits
+    }
+
+    pub fn free_choice(self) -> f32 {
+        let mut sum_credits = self.credit_overflow;
+        for course_status in &mut self.user.degree_status.course_statuses {
+            set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
         }
         sum_credits
     }
@@ -307,6 +316,14 @@ impl<'a> DegreeStatusHandler<'a> {
         }
     }
 
+    fn calculate_credit_leftovers(&mut self) -> f32 {
+        let mut sum_credits = 0.0;
+        for credit_overflow in &mut self.credit_overflow_map {
+            sum_credits += *credit_overflow.1;
+        }
+        sum_credits
+    }
+
     fn add_requirement(&mut self, bank: &CourseBank, sum_credits: f32, msg: Option<String>) {
         let credit_complete = self.calculate_credit_and_handle_overflow(bank, sum_credits);
         self.user.degree_status.course_bank_requirements.push(
@@ -339,6 +356,10 @@ impl<'a> DegreeStatusHandler<'a> {
                 let sum_credits = bank_rule_handler.sport();
                 self.add_requirement(bank, sum_credits, None); 
             }
+            Rule::FreeChoice => {
+                let sum_credits = bank_rule_handler.free_choice();
+                self.add_requirement(bank, sum_credits, None); 
+            }
             Rule::Chains(chains) => {
                 let (sum_credits, completed_chain) = bank_rule_handler.chain(chains);
                 let msg = if completed_chain {
@@ -362,6 +383,14 @@ impl<'a> DegreeStatusHandler<'a> {
             _ => todo!()
         }
     }
+
+    fn handle_leftovers(&mut self) {
+        for course_status in &self.user.degree_status.course_statuses {
+            if course_status.r#type.is_none() && course_status.passed() { //Nissan cries
+                self.user.degree_status.total_credit += course_status.course.credit;
+            }
+        }
+    }
     
     pub fn proccess(mut self) {
         for bank in self.course_banks.clone() {
@@ -369,6 +398,14 @@ impl<'a> DegreeStatusHandler<'a> {
             let credit_overflow = self.calculate_credits_overflow_for_bank(&bank.name);
             self.handle_bank_rule(&bank, course_list_for_bank, credit_overflow);
         }
+        let credit_leftovers = self.calculate_credit_leftovers(); // if different from 0 then the user has extra credits he doesn't use
+        self.user.degree_status.total_credit += credit_leftovers;
+        self
+            .user
+            .degree_status
+            .credit_overflow_msgs
+            .push(format!("יש לסטודנט {} נקודות עודפות", credit_leftovers));
+        self.handle_leftovers(); // Need to consult with Nissan and Benny
     }
 }
 
@@ -380,13 +417,12 @@ pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
         course_banks,
         catalog,
         credit_overflow_map: HashMap::new(),
-    }.proccess();   
+    }.proccess();
 }
 
 #[cfg(test)]
-#[test]
-fn check_rule_all() { // for debugging
-    let mut user = UserDetails {
+fn create_user() -> UserDetails {
+    UserDetails {
         catalog: None,
         degree_status: DegreeStatus {
             course_statuses: vec![
@@ -430,12 +466,37 @@ fn check_rule_all() { // for debugging
                     grade: Some(Grade::Grade(85)),
                     ..Default::default()
                 },
+                CourseStatus {
+                    course: Course {
+                        number: 324057, // Malag
+                        credit: 2.0,
+                        name: "mlg".to_string(),
+                    },
+                    state: Some(CourseState::Complete),
+                    grade: Some(Grade::Grade(99)),
+                    ..Default::default()
+                },
+                CourseStatus {
+                    course: Course {
+                        number: 394645, // Sport
+                        credit: 1.0,
+                        name: "sport".to_string(),
+                    },
+                    state: Some(CourseState::Complete),
+                    grade: Some(Grade::Grade(100)),
+                    ..Default::default()
+                }
             ],
             course_bank_requirements: Vec::<Requirement>::new(),
             credit_overflow_msgs: Vec::<String>::new(),
             total_credit: 0.0,
         },
-    };
+    }
+}
+
+#[test]
+fn check_rule_all() { // for debugging
+    let mut user = create_user();
     let bank_name = "hova".to_string();
     let course_list = vec![000001, 000002, 123456, 456789, 159159, 000003];
     let credit_overflow = 0.0;
@@ -446,23 +507,384 @@ fn check_rule_all() { // for debugging
         credit_overflow
     };
     let res = handle_bank_rule_processor.all();
-    println!("{}", res);
-    println!("{:#?}", user.degree_status);
-    // check it add the type
+    // check it adds the type
     assert_eq!(user.degree_status.course_statuses[0].r#type, Some("hova".to_string()));
     assert_eq!(user.degree_status.course_statuses[1].r#type, Some("hova".to_string()));
     assert_eq!(user.degree_status.course_statuses[2].r#type, Some("hova".to_string()));
 
-    // check it add the not completed courses in the hove bank
-    assert_eq!(user.degree_status.course_statuses[4].course.number, 123456);
-    assert!(matches!(user.degree_status.course_statuses[4].state, Some(CourseState::NotComplete)));
-
-    assert_eq!(user.degree_status.course_statuses[5].course.number, 456789);
-    assert!(matches!(user.degree_status.course_statuses[5].state, Some(CourseState::NotComplete)));
-
-    assert_eq!(user.degree_status.course_statuses[6].course.number, 159159);
+    // check it adds the not completed courses in the hove bank
+    assert_eq!(user.degree_status.course_statuses[6].course.number, 123456);
     assert!(matches!(user.degree_status.course_statuses[6].state, Some(CourseState::NotComplete)));
+
+    assert_eq!(user.degree_status.course_statuses[7].course.number, 456789);
+    assert!(matches!(user.degree_status.course_statuses[7].state, Some(CourseState::NotComplete)));
+
+    assert_eq!(user.degree_status.course_statuses[8].course.number, 159159);
+    assert!(matches!(user.degree_status.course_statuses[8].state, Some(CourseState::NotComplete)));
 
     // check sum credits
     assert_eq!(res, 7.0);
 }
+
+#[test]
+fn check_rule_accumulate() { // for debugging
+    let mut user = create_user();
+    let bank_name = "reshima a".to_string();
+    let course_list = vec![000001, 000002, 123456, 456789, 159159, 000003];
+    let credit_overflow = 0.0;
+    let handle_bank_rule_processor = BankRuleHandler {
+        user: &mut user,
+        bank_name,
+        course_list,
+        credit_overflow
+    };
+    let res = handle_bank_rule_processor.accumulate();
+    // check it adds the type
+    assert_eq!(user.degree_status.course_statuses[0].r#type, Some("reshima a".to_string()));
+    assert_eq!(user.degree_status.course_statuses[1].r#type, Some("reshima a".to_string()));
+    assert_eq!(user.degree_status.course_statuses[2].r#type, Some("reshima a".to_string()));
+    assert_eq!(user.degree_status.course_statuses[3].r#type, None);
+    assert_eq!(user.degree_status.course_statuses.len(), 6);
+
+    // check sum credits
+    assert_eq!(res, 7.0);
+}
+
+#[test]
+fn check_rule_malag() { // for debugging
+    let mut user = create_user();
+    let bank_name = "MALAG".to_string();
+    let course_list = vec![000001, 000002]; // this list shouldn't affect anything
+    let credit_overflow = 2.5;
+    let handle_bank_rule_processor = BankRuleHandler {
+        user: &mut user,
+        bank_name,
+        course_list,
+        credit_overflow
+    };
+    let res = handle_bank_rule_processor.malag();
+    println!("{}", res);
+    println!("{:#?}", user.degree_status);
+    // check it adds the type
+    assert_eq!(user.degree_status.course_statuses[0].r#type, None);
+    assert_eq!(user.degree_status.course_statuses[1].r#type, None);
+    assert_eq!(user.degree_status.course_statuses[2].r#type, None);
+    assert_eq!(user.degree_status.course_statuses[3].r#type, None);
+    assert_eq!(user.degree_status.course_statuses[4].r#type, Some("MALAG".to_string()));
+    assert_eq!(user.degree_status.course_statuses.len(), 6);
+
+    // check sum credits
+    assert_eq!(res, 4.5);
+}
+
+
+/////////////////////
+// Catalog computer sciencse 3 years
+/*
+fn build_catalog_tlat_shnati() -> Catalog {
+    Catalog {
+        id: 123,
+        name: "מדמח תלת שנתי".to_string(),
+        course_banks: vec![
+            CourseBank {
+                name: "hova".to_string(),
+                rule: Rule::All,
+                credit: 10.0, // change this,
+                message: "".to_string(), // check if necessary
+            },
+            CourseBank {
+                name: "שרשרת מדעית".to_string(),
+                rule: Rule::Chains(
+                    vec![
+                        vec![114075],
+                        vec![114052,114054],
+                        vec![134058,134020], 
+                        vec![124120,125801],
+                        vec![124120,124510],
+                        vec![124120,114052],
+                    ]
+                ),
+                credit: 8.0,
+                message: "".to_string(), // check if necessary
+            },
+            CourseBank {
+                name: "מתמטי נוסף".to_string(),
+                rule: Rule::Accumulate,
+                credit: 2.5,
+                message: "".to_string(), // check if necessary
+            },
+            CourseBank {
+                name: "רשימה א".to_string(),
+                rule: Rule::Accumulate,
+                credit: 18.0,
+                message: "".to_string(), // check if necessary
+            },
+            CourseBank {
+                name: "רשימה ב".to_string(),
+                rule: Rule::Accumulate,
+                credit: 6.0,
+                message: "".to_string(), // check if necessary
+            },
+            CourseBank {
+                name: "בחירת העשרה".to_string(),
+                rule: Rule::Malag,
+                credit: 6.0,
+                message: "".to_string(), // check if necessary
+            },
+            CourseBank {
+                name: "חינוך גופני".to_string(),
+                rule: Rule::Sport,
+                credit: 2.0,
+                message: "".to_string(), // check if necessary
+            },
+            CourseBank {
+                name: "בחירת חופשית".to_string(),
+                rule: Rule::FreeChoice,
+                credit: 2.0,
+                message: "".to_string(), // check if necessary
+            },
+        ],
+        course_table: vec![ // Need to think how to handle english courses
+            // hova
+            CourseTableRow {
+                number: 104031,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 104166,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234114,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234129,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 104032,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 114071,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234124,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234125,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234141,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 094412,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 104134,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234218,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 044252,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234292,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234118,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234123,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 234247,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 236343,
+                course_banks: vec!["חובה".to_string()]
+            },
+            CourseTableRow {
+                number: 236360,
+                course_banks: vec!["חובה".to_string()]
+            },
+
+            // Math courses
+            CourseTableRow {
+                number: 104135,
+                course_banks: vec!["מתמטי נוסף".to_string()]
+            },
+            CourseTableRow {
+                number: 104033,
+                course_banks: vec!["מתמטי נוסף".to_string()]
+            },
+            CourseTableRow {
+                number: 104174,
+                course_banks: vec!["מתמטי נוסף".to_string()]
+            },
+            CourseTableRow {
+                number: 104122,
+                course_banks: vec!["מתמטי נוסף".to_string()]
+            },
+            CourseTableRow {
+                number: 104142,
+                course_banks: vec!["מתמטי נוסף".to_string()]
+            },
+            CourseTableRow {
+                number: 104285,
+                course_banks: vec!["מתמטי נוסף".to_string()]
+            },
+            CourseTableRow {
+                number: 104295,
+                course_banks: vec!["מתמטי נוסף".to_string()]
+            },
+
+            //sciensce chain
+            CourseTableRow {
+                number: 114075,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 114052,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 114054,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 114073,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 114101,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 114246,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 124120,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 125001,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 125801,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 124510,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 134058,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+            CourseTableRow {
+                number: 134020,
+                course_banks: vec!["שרשרת מדעית".to_string()]
+            },
+
+            //Reshima alef
+            CourseTableRow {
+                number: 234301,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234302,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234303,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234304,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234306,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234313,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234325,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234326,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234329,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234493,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 234901,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236026,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236200,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236270,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236278,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236268,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236268,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236299,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236303,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+            CourseTableRow {
+                number: 236304,
+                course_banks: vec!["רשימה א".to_string()]
+            },
+        ]
+    }
+}
+*/
