@@ -11,15 +11,15 @@ bson = "2.0.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 my_internet_ip = "0.1.1"
-rocket = {git = "https://github.com/SergioBenitez/Rocket.git", features = ["json", "secrets"]}
-rocket_db_pools = {git = "https://github.com/SergioBenitez/Rocket.git"}
-rocket_oauth2 = {version = "0.5.0-rc.1"}
-reqwest = { version = "0.11.0", default-features = false, features = ["json", "rustls-tls"] }
-anyhow = "1.0"
-attohttpc = { version = "*", features = ["charsets"] }
-jwt = "0.15.0"
-hmac = "0.11.0"
-sha2 = "0.9.8"
-
-[patch.crates-io]
-rocket = { git = "https://github.com/SergioBenitez/Rocket.git" }
+actix-rt = "2.2.0"
+actix-web = "4.0.0-beta.8"
+actix-cors = "0.6.0-beta.3"
+actix-service = "2.0.1"
+futures-util = "0.3.17"
+jsonwebtoken = "7.2.0"
+jsonwebtoken-google = "0.1.2"
+env_logger = "0.9.0"
+toml = "0.5.8"
+dotenv = "0.15.0"
+config = "0.10.1"
+petgraph = "0.6.0"

@@ -1,9 +1,8 @@
 {
   "_id": "some-sub-number-from-nissan-auth-with-google",
   "details": {
-    "course_statuses": [],
     "catalog": {
-      "$oid": "61924229ddb7715cc7e891ac"
+      "$oid": "6192e5f4d6c89bbe5647f8db"
     },
     "degree_status": {
       "course_statuses": [
@@ -18,7 +17,8 @@
           "grade": {
             "Grade": 98
           },
-          "type": "חובה"
+          "type": "חובה",
+          "additional_msg": null
         },
         {
           "course": {
@@ -31,7 +31,8 @@
           "grade": {
             "Grade": 45
           },
-          "type": "חובה"
+          "type": "חובה",
+          "additional_msg": null
         },
         {
           "course": {
@@ -44,7 +45,8 @@
           "grade": {
             "Binary": true
           },
-          "type": "חובה"
+          "type": "חובה",
+          "additional_msg": null
         },
         {
           "course": {
@@ -55,7 +57,8 @@
           "state": "Complete",
           "semester": "חורף_3",
           "grade": "ExemptionWithCredit",
-          "type": "רשימה א'"
+          "type": "רשימה א'",
+          "additional_msg": null
         }
       ],
       "course_bank_requirements": [

@@ -1,0 +1,123 @@
+extern crate jsonwebtoken_google;
+
+use std::{env::{self, VarError}, rc::Rc};
+
+use actix_web::{Error, HttpMessage, dev::{Service, ServiceRequest, ServiceResponse, Transform}, error::ErrorUnauthorized, http::header};
+use futures_util::{FutureExt, future::{LocalBoxFuture, Ready, ready}};
+use jsonwebtoken_google::{Parser, ParserError};
+use serde::Deserialize;
+
+#[derive(Default, Debug, Deserialize)]
+pub struct IdInfo {
+    /// These six fields are included in all Google ID Tokens.
+    pub iss: String,
+    pub sub: String,
+    pub azp: String,
+    pub aud: String,
+    pub iat: u64,
+    pub exp: u64,
+
+    /// These seven fields are only included when the user has granted the "profile" and
+    /// "email" OAuth scopes to the application.
+    pub email: Option<String>,
+    pub email_verified: Option<bool>, 
+    pub name: Option<String>,
+    pub picture: Option<String>,
+    pub given_name: Option<String>,
+    pub family_name: Option<String>,
+    pub locale: Option<String>,
+}
+
+pub type Sub = String;
+
+#[derive(Debug)]
+pub enum AuthError{
+    ParserError(ParserError),
+    VarError(VarError),
+}
+impl std::fmt::Display for AuthError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+macro_rules! debug_auth{
+    () => {
+        if env::var("PROFILE").unwrap_or("debug".into()) == "debug" {
+            return Ok(IdInfo{
+                sub: "bugo-the-debugo".into(),
+                ..Default::default()
+            })
+        }
+    }
+}
+
+pub async fn get_decoded(token: &str) -> Result<IdInfo, AuthError> {
+    
+    debug_auth!(); // will return immediately in debug environment.
+
+    let parser = Parser::new(
+        &env::var("CLIENT_ID")
+            .map_err(|e| AuthError::VarError(e))?
+    );
+
+    Ok(parser
+        .parse::<IdInfo>(token)
+        .await
+        .map_err(|e| AuthError::ParserError(e))?
+    )
+}
+pub struct AuthenticateMiddleware;
+impl<S, B> Transform<S, ServiceRequest> for AuthenticateMiddleware
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+{
+    type Response = ServiceResponse<B>;
+    type Error = Error;
+    type Transform = Authenticator<S>;
+    type InitError = ();
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        ready(Ok(Authenticator {service: Rc::new(service)}))
+    }
+}
+
+pub struct Authenticator<S> {
+    service: Rc<S>,
+}
+
+impl<S, B> Service<ServiceRequest> for Authenticator<S>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+{
+    type Response = ServiceResponse<B>;
+    type Error = Error;
+    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+    actix_service::forward_ready!(service);
+
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        let srv = Rc::clone(&self.service);
+        async move {
+
+            let jwt= req
+                .headers()
+                .get(header::AUTHORIZATION)
+                .ok_or(ErrorUnauthorized("Authorization Header Missing"))?
+                .to_str()
+                .map_err(|_| ErrorUnauthorized("Authorization Header Invalid"))?;
+            
+            let sub = get_decoded(jwt)
+                .await
+                .map_err(|err| ErrorUnauthorized(err.to_string()))?
+                .sub;
+
+            req.extensions_mut().insert::<Sub>(sub);
+            let res = srv.call(req).await?;
+
+            Ok(res)
+        }
+        .boxed_local()
+    }
+}
