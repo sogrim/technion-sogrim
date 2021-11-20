@@ -8,8 +8,8 @@ import { useStore } from "../../hooks/useStore";
 export const BannerTitleComp: React.FC = () => {
   const [open, setOpen] = React.useState(false);  
 
-  const { dataStore: {
-    userState,
+  const { uiStore: {
+    userDisplyName,
   }} = useStore();
 
   const handleClickOpen = () => {
@@ -22,10 +22,10 @@ export const BannerTitleComp: React.FC = () => {
   
   return <Box>
     <Typography variant="h2" noWrap sx={sxAppTitle}> 
-             {`שלום ${userState?.given_name ?? ','}`}
+             {`שלום ${userDisplyName ?? ','}`}
         </Typography>       
         <Box sx={{display: 'flex', flexDirection: 'row' ,marginTop: '10px', gap: '10px'}}> 
-        <SogrimButton >
+        <SogrimButton>
           סגור את התואר!
         </SogrimButton>       
         <SogrimButton onClick={handleClickOpen}>

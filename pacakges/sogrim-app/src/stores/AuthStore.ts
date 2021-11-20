@@ -30,6 +30,13 @@ export class AuthStore {
     return this.authenticated;
   }
 
+  get userAuthToken() {
+    if(this.googleSession === GoogleClinetSession.DONE) {
+      return this.userCredentialResponse.credential;
+    }
+    return null;
+  }
+
   setGoogleSession = (gss: GoogleClinetSession) => {
     this.googleSession = gss;
   }
