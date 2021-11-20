@@ -8,6 +8,7 @@ import { Autocomplete, Box, FormControl, Link, TextField, Theme } from '@mui/mat
 import useCatalogs from '../../../hooks/apiHooks/useCatalogs';
 import { useAuth } from '../../../hooks/useAuth';
 import { Catalog } from '../../../types/data-types';
+import useUpdateUserCatalog from '../../../hooks/apiHooks/useUpdateUserCatalog';
 
 export interface SelectCatalogProps {
     handleClose: () => void;    
@@ -20,27 +21,32 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
   // TODO: add warrning message - if you re-write the catalog, the data is irelevant.
  
   const [ selectedCatalog, setSelectedCatalog] = React.useState<Catalog | null>();
-  //const [ catalogs, setCatalogs] = React.useState<Catalog[]>([] as Catalog[]);
-
-  const catalogs: Catalog[] = [{catalogName: '3 years', catalogId: '123'}, {catalogName: '4 years', catalogId: '1234'}]
+  const [ catalogs, setCatalogs] = React.useState<Catalog[]>([] as Catalog[]);
 
   const { userAuthToken } = useAuth();
   
   const { data, isLoading, isError} = useCatalogs(userAuthToken);
+  const { mutate } = useUpdateUserCatalog(userAuthToken);
 
   React.useEffect(() => {
     if (isError) {
       // TODO: handle error
-    } else if (data && !isLoading) {
-      //setCatalogs(data);
+    } else if (data && !isLoading) {      
+      setCatalogs(data);
     }
   }, [data, isLoading, isError])
+
   const handleSend = () => {
-    console.log(selectedCatalog);
+    console.log(selectedCatalog?._id.$oid);
+    if (selectedCatalog?._id.$oid) {
+      mutate(selectedCatalog?._id.$oid);
+    } else {
+      // TODO: handle error state - no chosen catalog.
+    }    
     handleClose();
   }
 
-    return (    
+  return (    
       <>
         <DialogTitle>בחר קטלוג</DialogTitle>
         <DialogContent >
@@ -71,7 +77,7 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
                 sx={{ overflowY: 'visible'  }}
                 id="choose-catalog"
                 options={catalogs}
-                getOptionLabel={(option: Catalog) => option.catalogName}
+                getOptionLabel={(option: Catalog) => option.name}
                 renderInput={(params) => <TextField {...params} label="בחר קטלוג" />}
                 />
             </FormControl>

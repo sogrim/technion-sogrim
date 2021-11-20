@@ -12,8 +12,7 @@ const UserAppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(LIGHT_MODE_THEME);  
   
   const { dataStore: {
-    setUserState,
-    userState
+    setUserState,    
   }} = useStore();
 
   const { userAuthToken } = useAuth();
@@ -29,7 +28,6 @@ const UserAppComp: React.FC = () => {
   }, [data, isLoading,  isError]);
 
   // TODO: add loading state.
-  console.log({...userState});
 
   const theme = useMemo(() => getAppTheme(mode), [mode]);
   

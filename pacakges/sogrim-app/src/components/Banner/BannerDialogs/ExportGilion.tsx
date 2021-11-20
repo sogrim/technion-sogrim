@@ -6,25 +6,34 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { Link, Theme } from '@mui/material';
+import useUpdateUserUgData from '../../../hooks/apiHooks/useUpdateUgData';
+import { useAuth } from '../../../hooks/useAuth';
 
 export interface ImportGilionProps {
     handleClose: () => void;    
 }
 
-export const ImportGilion: React.FC<ImportGilionProps> = ({
+export const ExportGilion: React.FC<ImportGilionProps> = ({
     handleClose,
 }) => {
  
-  const [ ugText, setUgText] = React.useState<String>('');
+  const [ ugText, setUgText] = React.useState<string | null>(null);
+  
+  const { userAuthToken } = useAuth();
 
+  const { mutate } = useUpdateUserUgData(userAuthToken);
   // No debounce needed.
   const handleChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
     // TODO: check prevent.
+    // TODO: xss attacks.
     e.preventDefault();
     setUgText(e.target.value)    
   }
-  const handleSend = () => {
-    console.log(ugText.split('\n'));
+  const handleSend = () => {    
+    if (ugText) {
+      console.log(ugText);
+      mutate(ugText);
+    }
     handleClose();
   }
     return (    
