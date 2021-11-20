@@ -4,21 +4,33 @@ import { observer} from 'mobx-react-lite';
 import { FormModal } from "../Commom/FormModal";
 import { SogrimButton } from "../Commom/SogrimButton";
 import { useStore } from "../../hooks/useStore";
+import { ImportGilion } from "./BannerDialogs/ImportGilion";
+import { SelectCatalog } from "./BannerDialogs/SelectCatalog";
 
 export const BannerTitleComp: React.FC = () => {
-  const [open, setOpen] = React.useState(false);  
+  const [coursesModalOpen, coursesModalsetOpen] = React.useState(false);  
+  const [catalogsModalOpen, catalogsModalsetOpen] = React.useState(false);  
 
   const { uiStore: {
     userDisplyName,
   }} = useStore();
 
-  const handleClickOpen = () => {
-    setOpen(true);
+  const coursesHandleClickOpen = () => {
+    coursesModalsetOpen(true);
   };
 
-  const handleClose = () => {
-    setOpen(false);
+  const coursesHandleClose = () => {
+    coursesModalsetOpen(false);
   };
+
+  const catalogsHandleClickOpen = () => {
+    catalogsModalsetOpen(true);
+  };
+
+  const catalogsHandleClose = () => {
+    catalogsModalsetOpen(false);
+  };
+  
   
   return <Box>
     <Typography variant="h2" noWrap sx={sxAppTitle}> 
@@ -28,10 +40,14 @@ export const BannerTitleComp: React.FC = () => {
         <SogrimButton>
           סגור את התואר!
         </SogrimButton>       
-        <SogrimButton onClick={handleClickOpen}>
+        <SogrimButton onClick={coursesHandleClickOpen}>
           יבא קורסים
         </SogrimButton>
-        <FormModal handleClose={handleClose} open={open}/>
+        <SogrimButton onClick={catalogsHandleClickOpen}>
+          בחר קטלוג
+        </SogrimButton>
+        <FormModal dialogContent={<ImportGilion handleClose={coursesHandleClose} />} handleClose={coursesHandleClose} open={coursesModalOpen}/>
+        <FormModal dialogContent={<SelectCatalog handleClose={catalogsHandleClose} />} handleClose={catalogsHandleClose} open={catalogsModalOpen}/>
         </Box>
   </Box> 
 }

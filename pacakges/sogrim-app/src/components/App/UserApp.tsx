@@ -7,8 +7,6 @@ import { observer } from 'mobx-react-lite';
 import { useStore } from '../../hooks/useStore';
 import useUserState from '../../hooks/apiHooks/useUserState';
 import { useAuth } from '../../hooks/useAuth';
-import useCatalogs from '../../hooks/apiHooks/useCatalogs';
-
 
 const UserAppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(LIGHT_MODE_THEME);  
@@ -21,7 +19,6 @@ const UserAppComp: React.FC = () => {
   const { userAuthToken } = useAuth();
 
   const { data, isLoading, isError} = useUserState(userAuthToken);
-  //const { data: catalogsData, isLoading: catalogsIsLoading, isError: catalogsIsError} = useCatalogs(userAuthToken);
   
   useEffect(() => {
       if (isError) {
