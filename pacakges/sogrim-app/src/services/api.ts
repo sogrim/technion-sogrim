@@ -1,21 +1,48 @@
 import axios from "axios";
 import { Catalog, UserState } from "../types/data-types";
+import { API_URL } from "./api-url";
 
-const api = axios.create({
-    baseURL: '',
-})
-
-export const getCatalogs = async (): Promise<Catalog> => {
-    const res = await api.get('/catalogs');
+export const getCatalogs = async (authToken: any): Promise<Catalog> => {
+    const fallback = {}
+    let res;
+    try {
+        res = (await axios.get(`${API_URL}/catalogs`, { // TODO: with benny,
+            headers: {
+            'authorization': `${authToken}`,        
+        }
+        })) || fallback;
+    } catch {
+        res = fallback;
+    }
     return res;
-} 
+}
 
-export const getUserState = async (): Promise<UserState> => {
-    const res = await api.get('/user')
+export const getUserState = async (authToken: any): Promise<UserState> => {
+    const fallback = {}
+    let res;
+    try {
+        res = (await axios.post(`${API_URL}/user/login`, {}, { // TODO: with benny, should be post?
+            headers: {
+            'authorization': `${authToken}`,        
+        }
+        })) || fallback;
+    } catch {
+        res = fallback;
+    }
     return res;
-} 
+}
 
-export const postUserCoursesRaw = async (coursesRaw: string): Promise<UserState> => {
-    const res = await api.post('', coursesRaw);
+export const postUserState = async (authToken: any): Promise<UserState> => {
+    const fallback = {}
+    let res;
+    try {
+        res = (await axios.put(`${API_URL}/user`, {}, { // TODO: put, benny
+            headers: {
+            'authorization': `${authToken}`,        
+        }
+        })) || fallback;
+    } catch {
+        res = fallback;
+    }
     return res;
 } 

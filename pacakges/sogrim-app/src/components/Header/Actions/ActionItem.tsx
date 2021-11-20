@@ -16,13 +16,11 @@ interface ActionItemProps {
 
 const ActionItemComp = ({ title, icon, onClick, badgeContent, disableTooltip = false, avatar = false, }: ActionItemProps) => {
 
-    const { dataStore: {
-    userState,
+  const { uiStore: {
+    displayPicture,
   }} = useStore();
 
-  const us = {...userState}
-
-  const actionType = avatar ? <Avatar src={us?.picture ?? ''}/> : <ActionIcon badgeContent={badgeContent} icon={icon} />
+  const actionType = avatar ? <Avatar src={displayPicture}/> : <ActionIcon badgeContent={badgeContent} icon={icon} />
   const buttonIcon = <IconButton size="large" color="primary" onClick={onClick}> {actionType} </IconButton>
 
   return disableTooltip ? (

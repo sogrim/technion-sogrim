@@ -1,45 +1,39 @@
-import { useMemo, useState, useEffect, useContext } from 'react';
-import { CssBaseline, ThemeProvider } from '@mui/material';
-import { Layout } from '../Layout/Layout';
+import { useMemo, useState, useEffect } from 'react';
+import GoogleAuth from '../GoogleAuth/GoogleAuth';
+import { ThemeProvider } from '@mui/material';
 import { getAppTheme } from '../../themes/theme';
 import { DARK_MODE_THEME, LIGHT_MODE_THEME } from '../../themes/constants';
-import { useQuery } from 'react-query';
-
-import { useAuth } from '../../hooks/useAuth';
-import GoogleAuth from '../GoogleAuth/GoogleAuth';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../../hooks/useStore';
+import { useAuth } from '../../hooks/useAuth';
+import { UserApp } from './UserApp';
+import { AnonymousApp } from './AnonymousApp';
 import { GoogleClinetSession } from '../../types/auth-types';
 import jwtDecode from 'jwt-decode';
 
+
 const AppComp: React.FC = () => {
-  
-  const { googleSession, userCredentialResponse, isAuthenticated } = useAuth();
+  const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(LIGHT_MODE_THEME);  
 
-  const { dataStore: {
-    userState,
-    setUserState,
+  const { uiStore: {
+    setUserDisplay,
   }} = useStore();
+  const { isAuthenticated, googleSession, userAuthToken } = useAuth();
 
-  useEffect(() => {
+   useEffect(() => {
     if(googleSession === GoogleClinetSession.DONE) {
-      if (userCredentialResponse.credential) {
-        setUserState(jwtDecode(userCredentialResponse.credential))
+      if (userAuthToken) {
+        setUserDisplay(jwtDecode(userAuthToken))
       }      
     }
   }, [googleSession]);
-
-  
-  const [mode, setMode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(LIGHT_MODE_THEME);
 
   const theme = useMemo(() => getAppTheme(mode), [mode]);
   
   return (            
     <ThemeProvider theme={theme}>
       <GoogleAuth />       
-      <CssBaseline />
-      <Layout>
-      </Layout>
+      { isAuthenticated ? <UserApp /> : <AnonymousApp/>}
     </ThemeProvider>  
   );
 }
