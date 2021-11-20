@@ -100,6 +100,7 @@ fn contains_course_number(str : &str) -> bool{
 
 pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
     let mut courses = HashMap::<u32, CourseStatus>::new();
+    let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter = 0.0;
 
@@ -160,9 +161,15 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
             ..Default::default()
         };
         course.set_state();
+        if course.is_sport(){
+            sport_courses.push(course);
+            continue;
+        }
         *courses.entry(number).or_insert(course) = course.clone();
     }
-    courses.into_values().collect()
+    let mut vec_courses: Vec<_> = courses.into_values().collect();
+    vec_courses.append(&mut sport_courses);
+    vec_courses
 }
 
 #[cfg(test)]

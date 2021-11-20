@@ -86,7 +86,7 @@ impl FromRequest for User {
     }
 }
 
-#[post("/user/login")]
+#[get("/user/login")]
 pub async fn user_login(
     client: web::Data<Client>,
     req: HttpRequest,
@@ -123,7 +123,7 @@ pub async fn add_catalog(
 }
 
 // here "modified" becomes true
-#[post("/user/details")]
+#[put("/user/details")]
 pub async fn update_user_details(
     client: web::Data<Client>,
     mut details: web::Json<UserDetails>,
