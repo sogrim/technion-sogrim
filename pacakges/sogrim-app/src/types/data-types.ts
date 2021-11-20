@@ -1,8 +1,20 @@
 export type Catalog = {
-    catalogName: string;
-    catalogId: string;
-}
+    name: string;
+    _id: {
+        $oid: string;
+    };
+};
+
+export type CourseStatus = {
+
+};
+
+export type DegreeStatus = {
+
+};
 
 export type UserState = {
-
-}
+    course_statuses: CourseStatus;
+    degree_status: DegreeStatus
+    catalog: Catalog;
+};

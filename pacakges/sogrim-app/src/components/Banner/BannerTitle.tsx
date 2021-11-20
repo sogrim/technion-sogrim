@@ -4,7 +4,7 @@ import { observer} from 'mobx-react-lite';
 import { FormModal } from "../Commom/FormModal";
 import { SogrimButton } from "../Commom/SogrimButton";
 import { useStore } from "../../hooks/useStore";
-import { ImportGilion } from "./BannerDialogs/ImportGilion";
+import { ExportGilion } from "./BannerDialogs/ExportGilion";
 import { SelectCatalog } from "./BannerDialogs/SelectCatalog";
 
 export const BannerTitleComp: React.FC = () => {
@@ -46,7 +46,7 @@ export const BannerTitleComp: React.FC = () => {
         <SogrimButton onClick={catalogsHandleClickOpen}>
           בחר קטלוג
         </SogrimButton>
-        <FormModal dialogContent={<ImportGilion handleClose={coursesHandleClose} />} handleClose={coursesHandleClose} open={coursesModalOpen}/>
+        <FormModal dialogContent={<ExportGilion handleClose={coursesHandleClose} />} handleClose={coursesHandleClose} open={coursesModalOpen}/>
         <FormModal dialogContent={<SelectCatalog handleClose={catalogsHandleClose} />} handleClose={catalogsHandleClose} open={catalogsModalOpen}/>
         </Box>
   </Box> 
