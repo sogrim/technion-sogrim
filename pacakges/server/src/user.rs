@@ -4,7 +4,7 @@ use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
 use bson::doc;
 use futures_util::Future;
-use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, web};
+use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, put, web};
 use mongodb::Client;
 use serde::{Serialize, Deserialize};
 use crate::auth::Sub;
@@ -14,7 +14,7 @@ use crate::db;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
-    pub catalog : Option<bson::oid::ObjectId>,
+    pub catalog : Option<bson::oid::ObjectId>, //TODO change type to DisplayCatalog
     pub degree_status: DegreeStatus,
     pub modified: bool,
 }
@@ -92,17 +92,6 @@ pub async fn user_login(
     req: HttpRequest,
 ) -> Result<HttpResponse, Error> {
 
-    // let auth = req
-    //     .headers()
-    //     .get(header::AUTHORIZATION)
-    //     .ok_or(ErrorUnauthorized(""))?
-    //     .to_str()
-    //     .map_err(|err| ErrorInternalServerError(err))?;
-
-    // let user_id: &str = &auth::get_decoded(auth)
-    //     .await
-    //     .map_err(|err| ErrorInternalServerError(err.to_string()))?
-    //     .sub;
     let extensions = req.extensions();
     let user_id = extensions
         .get::<Sub>()
@@ -112,7 +101,7 @@ pub async fn user_login(
     db::services::find_and_update_user(user_id, document, &client).await
 }
 
-#[post("/user/catalog")]
+#[put("/user/catalog")]
 pub async fn add_catalog(    
     client: web::Data<Client>, 
     catalog_id: String,
@@ -188,20 +177,29 @@ pub async fn compute_degree_status(
 #[post("/user/ug_data")]
 pub async fn add_data_from_ug(
     client: web::Data<Client>, 
-    user: User, 
-    ug_data: String
+    ug_data: String,
+    mut user: User, 
 ) -> Result<HttpResponse, Error>{
 
-    course::validate_copy_paste_from_ug(&ug_data)?;
-    let user_courses = course::parse_copy_paste_from_ug(&ug_data);
-    let user_courses_serialized = bson::to_bson(&user_courses).map_err(|err| ErrorInternalServerError(err))?;
-    let db_name_from_profile = std::env::var("ROCKET_PROFILE").unwrap_or("debug".into());
+    //course::validate_copy_paste_from_ug(&ug_data)?;
+    let user_courses = course::parse_copy_paste_from_ug(&ug_data); //TODO if parsing fails -> 400
+    // let user_courses_serialized = bson::to_bson(&user_courses).map_err(|err| {
+    //     ErrorInternalServerError(err)})?;
+    let user_id = user.sub.clone();
+    if let Some(details) = &mut user.details {
+        details.degree_status.course_statuses = user_courses;
+        details.modified = true;
+    }
+    else{
+        return Err(ErrorInternalServerError(""));
+    }
+    let db_name_from_profile = std::env::var("PROFILE").unwrap_or("debug".into());
     client
         .database(db_name_from_profile.as_str())
         .collection::<User>("Users")
         .find_one_and_update(
-            doc!{"_id" : &user.sub},
-            doc!{ "$set" : {"details" : {"course_statuses" : user_courses_serialized}}},
+            doc!{"_id" : &user_id},
+            doc!{ "$set" : user.into_document()},
             None    
         )
         .await
@@ -209,7 +207,7 @@ pub async fn add_data_from_ug(
         .map(|maybe_user| 
             match maybe_user {
                 Some(user) => HttpResponse::Ok().body(format!("Successfully added ug data for {}", user.sub)),
-                None => HttpResponse::InternalServerError().body(format!("User {} does not exist in the database", user.sub)),
+                None => HttpResponse::InternalServerError().body(format!("User {} does not exist in the database", user_id)),
             }
         )
 }

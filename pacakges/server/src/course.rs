@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use actix_web::Error;
+//use actix_web::Error;
 use serde::{Serialize, Deserialize};
 use crate::core::*;
 
@@ -94,16 +94,16 @@ fn contains_course_number(str : &str) -> bool{
     false
 }
 
-pub fn validate_copy_paste_from_ug(ug_data: &str) -> Result<(), Error> {
-    todo!("{}", ug_data)
-}
+// pub fn validate_copy_paste_from_ug(ug_data: &str) -> Result<(), Error> {
+//     todo!("{}", ug_data)
+// }
 
 pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
     let mut courses = HashMap::<u32, CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter = 0.0;
-    
-    for line_ref in ug_data.split_terminator("\r\n"){
+
+    for line_ref in ug_data.split_terminator("\n"){
         let line = line_ref.to_string();
         
         semester = if line.contains("אביב") || line.contains("חורף") || line.contains("קיץ"){
