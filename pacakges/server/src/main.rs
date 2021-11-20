@@ -12,6 +12,7 @@ mod catalog;
 mod user;
 mod core;
 mod config;
+mod catalog_for_example;
 
 #[get("/")]
 async fn home_page() -> impl Responder{
