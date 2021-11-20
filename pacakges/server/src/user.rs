@@ -112,6 +112,8 @@ pub async fn add_catalog(
             bson::oid::ObjectId::from_str(&catalog_id)
             .map_err(|err| ErrorInternalServerError(err))?
         );
+        details.modified = true;
+        details.degree_status = DegreeStatus::default();
         let user_id = user.sub.clone();
         let document = doc!{"$set" : user.into_document()}; 
         db::services::find_and_update_user(&user_id, document, &client).await?;
@@ -126,12 +128,11 @@ pub async fn add_catalog(
 #[put("/user/details")]
 pub async fn update_user_details(
     client: web::Data<Client>,
-    mut details: web::Json<UserDetails>,
+    details: web::Json<UserDetails>,
     mut user: User,
 ) -> Result<HttpResponse, Error>{
 
     let user_id = user.sub.clone();
-    details.modified = true;
     user.details = Some(details.into_inner());
     let document = doc!{"$set" : user.into_document()}; 
     db::services::find_and_update_user(&user_id, document, &client).await?;
@@ -182,13 +183,12 @@ pub async fn add_data_from_ug(
 ) -> Result<HttpResponse, Error>{
 
     //course::validate_copy_paste_from_ug(&ug_data)?;
-    let user_courses = course::parse_copy_paste_from_ug(&ug_data); //TODO if parsing fails -> 400
-    // let user_courses_serialized = bson::to_bson(&user_courses).map_err(|err| {
-    //     ErrorInternalServerError(err)})?;
+    let user_courses = course::parse_copy_paste_from_ug(&ug_data)?; //TODO if parsing fails -> 400
     let user_id = user.sub.clone();
     if let Some(details) = &mut user.details {
-        details.degree_status.course_statuses = user_courses;
+        details.degree_status = DegreeStatus::default();
         details.modified = true;
+        details.degree_status.course_statuses = user_courses;
     }
     else{
         return Err(ErrorInternalServerError(""));

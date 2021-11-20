@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-//use actix_web::Error;
+use actix_web::{Error, error::ErrorBadRequest};
 use serde::{Serialize, Deserialize};
 use crate::core::*;
 
@@ -73,7 +73,7 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Rshima A.
     pub rule: Rule,
     pub credit: f32,
-    pub message: String,
+    pub message: String, //TODO remove
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -94,11 +94,7 @@ fn contains_course_number(str : &str) -> bool{
     false
 }
 
-// pub fn validate_copy_paste_from_ug(ug_data: &str) -> Result<(), Error> {
-//     todo!("{}", ug_data)
-// }
-
-pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
+pub fn parse_copy_paste_from_ug(ug_data: &str) -> Result<Vec<CourseStatus>, Error>{
     let mut courses = HashMap::<u32, CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
@@ -117,7 +113,13 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
             else{
                 1.0
             };
-            format!("{}_{}", line.split_whitespace().next().unwrap(), semester_counter)
+
+            let semester_term = line
+                .split_whitespace()
+                .next()
+                .ok_or(ErrorBadRequest("Parse Error: Missing Whitespace"))?;
+
+            format!("{}_{}", semester_term, semester_counter)
         }
         else {
             semester
@@ -138,17 +140,27 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
                 else if grade_str == "פטור עם ניקוד"{
                     Some(Grade::ExemptionWithCredit)
                 }
-                else if grade_str == "-"{
-                    None
+                else if grade_str == "עבר" || grade_str == "נכשל" { //TODO כתוב נכשל או שכתוב לא עבר?
+                    Some(Grade::Binary(grade_str == "עבר"))
                 }
                 else{
-                    Some(Grade::Binary(grade_str == "עבר"))
+                    None
                 }
             },
         };
         let course_parts : Vec<_> = line_parts[2].split_whitespace().collect();
-        let credit = line_parts[1].parse::<f32>().unwrap();
-        let number = course_parts.last().unwrap().parse::<u32>().unwrap();
+        let credit = line_parts[1]
+            .parse::<f32>()
+            .map_err(|err|{
+                ErrorBadRequest(err.to_string())
+            })?;
+        let number = course_parts
+            .last()
+            .ok_or(ErrorBadRequest("Parse Error: Empty Course Parts"))?
+            .parse::<u32>()
+            .map_err(|err|{
+                ErrorBadRequest(err.to_string())
+            })?;
         let name = course_parts[..course_parts.len() - 1].join(" ").trim().to_string();
         let mut course = CourseStatus{
             course : Course{
@@ -169,7 +181,7 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
     }
     let mut vec_courses: Vec<_> = courses.into_values().collect();
     vec_courses.append(&mut sport_courses);
-    vec_courses
+    Ok(vec_courses)
 }
 
 #[cfg(test)]
@@ -183,7 +195,7 @@ mod tests{
         
         let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
             .expect("Something went wrong reading the file");
-        let mut courses_display = parse_copy_paste_from_ug(&contents);
+        let mut courses_display = parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
         courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap() );
         for course_display in courses_display{
             println!("{:?}", course_display);

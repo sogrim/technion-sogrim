@@ -39,13 +39,29 @@ pub struct SpecializationGroups {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Rule {
     All, //  כמו חובה פקולטית.
-    Accumulate, // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
+    Accumulate, //TODO Accumulate -> AccumulateCredit, AccumulateCourses // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
     Malag,
     Sport,
     FreeChoice,
     Chains(Vec<Chain>), // למשל שרשרת מדעית.
     SpecializationGroups(SpecializationGroups),
     Wildcard(bool), // קלף משוגע עבור להתמודד עם   
+}
+
+//TODO this is done to send the Rule name (string) to nissan, need to add it in Requirement struct. 
+impl ToString for Rule{
+    fn to_string(&self) -> String {
+        match self{
+            Rule::All => "all".into(),
+            Rule::Accumulate => "accumulate".into(),
+            Rule::Malag => "malag".into(),
+            Rule::Sport => "sport".into(),
+            Rule::FreeChoice => "free choice".into(),
+            Rule::Chains(_) => "chains".into(),
+            Rule::SpecializationGroups(_) => "specialization groups".into(),
+            Rule::Wildcard(_) => "wildcard".into(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -68,6 +84,7 @@ pub struct Requirement {
     בזין הזה יש את כל הבנקים והאם בוצעו או לא בכל קטלוג
     */
     pub course_bank_name: String,
+    // TODO add -> pub bank_rule_name : String,
     pub credit_requirment: f32,
     pub credit_complete: f32,
     // TODO planing ...
@@ -612,7 +629,7 @@ mod tests{
         let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
             .expect("Something went wrong reading the file");
 
-        let course_statuses = course::parse_copy_paste_from_ug(&contents);
+        let course_statuses = course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
 
         let obj_id = bson::oid::ObjectId::from_str("6199043f1cf3261f8d15aa47").expect("failed to create oid");
         let catalog = db::services::get_catalog_by_id(&obj_id, &client).await.expect("failed to get catalog");
