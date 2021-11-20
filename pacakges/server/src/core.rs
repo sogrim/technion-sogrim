@@ -16,12 +16,18 @@ pub enum Logic {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Mandatory {
+    courses : Vec<u32>,
+    logic: Logic,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
     pub credit: f32, // may be redundant, it seems that SpecializationGroup restrictions are number of courses and not number of credits
     pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
     pub course_list: Vec<u32>,
-    pub mandatory: Option<(Vec<u32>, Logic)>, //TODO liad: change to struct "Mandatory" with fields "courses : Vec<u32>" and "logic : Logic"
+    pub mandatory: Option<Mandatory>, 
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -222,9 +228,9 @@ impl<'a> BankRuleHandler<'a> {
         for specialization_group in &specialization_groups.groups_list { //check if the user completed all the specialization groups requirements
             let mut completed_group = true;
             if let Some(mandatory) = &specialization_group.mandatory {
-                completed_group = matches!(&mandatory.1, Logic::AND);
-                for course_number in &mandatory.0 {
-                    match &mandatory.1 {
+                completed_group = matches!(&mandatory.logic, Logic::AND);
+                for course_number in &mandatory.courses {
+                    match &mandatory.logic {
                         Logic::OR => { completed_group |= self.user.passed_course(*course_number); }
                         Logic::AND => { completed_group &= self.user.passed_course(*course_number); }
                     }
