@@ -2,9 +2,9 @@ import axios from "axios";
 import { Catalog, UserState } from "../types/data-types";
 import { API_URL } from "./api-url";
 
-export const getCatalogs = async (authToken: any): Promise<Catalog> => {
-    const fallback = {}
-    let res;
+export const getCatalogs = async (authToken: any): Promise<Catalog[]> => {
+    const fallback: Catalog[] = [];
+    let res: Catalog[];
     try {
         res = (await axios.get(`${API_URL}/catalogs`, { // TODO: with benny,
             headers: {
