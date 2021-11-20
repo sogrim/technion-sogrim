@@ -21,7 +21,7 @@ export const putUserCatalog = async (authToken: any, userCatalogId: string): Pro
     const fallback: Catalog = {} as Catalog;
     let res: Catalog;
     try {
-        res = (await axios.post(`${API_URL}/user/catalog`, userCatalogId, { // TODO: put, with benny
+        res = (await axios.put(`${API_URL}/user/catalog`, userCatalogId, {
             headers: {
             'authorization': `${authToken}`,        
         }
@@ -50,9 +50,26 @@ export const putUserUgData = async (authToken: any, ugData: string): Promise<any
 
 export const getUserState = async (authToken: any): Promise<UserState> => {
     const fallback: UserState = {} as UserState;
+    let data: UserState;
+    try {
+        const res = (await axios.get(`${API_URL}/user/login`, {
+            headers: {
+            'authorization': `${authToken}`,        
+        }
+        }));
+        data = res.data || fallback;
+
+    } catch {
+        data = fallback;
+    }
+    return data;
+}
+
+export const putUserState = async (authToken: any, updatedUserState: UserState): Promise<UserState> => {
+    const fallback: UserState = {} as UserState;
     let res: UserState;
     try {
-        res = (await axios.post(`${API_URL}/user/login`, {}, { // TODO: with benny, should be post?
+        res = (await axios.post(`${API_URL}/user`, updatedUserState, { // TODO: put, benny
             headers: {
             'authorization': `${authToken}`,        
         }
@@ -61,13 +78,13 @@ export const getUserState = async (authToken: any): Promise<UserState> => {
         res = fallback;
     }
     return res;
-}
+} 
 
-export const putUserState = async (authToken: any, updatedUserState: UserState): Promise<UserState> => {
+export const getComputeEndGame = async (authToken: any): Promise<UserState> => {
     const fallback: UserState = {} as UserState;
     let res: UserState;
     try {
-        res = (await axios.put(`${API_URL}/user`, {updatedUserState}, { // TODO: put, benny
+        res = (await axios.get(`${API_URL}/user/compute`, {
             headers: {
             'authorization': `${authToken}`,        
         }
