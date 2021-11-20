@@ -3,8 +3,9 @@ use bson::doc;
 use serde::{Serialize, Deserialize};
 use petgraph::Graph;
 use petgraph::algo::toposort;
+use crate::catalog_for_example::build_catalog_tlat_shnati;
 use crate::user::UserDetails;
-use crate::course::{Course, CourseState, CourseStatus, CourseBank, CourseTableRow};
+use crate::course::{Course, CourseState, CourseStatus, CourseBank, CourseTableRow, self};
 
 type Chain = Vec<u32>;
 
@@ -76,7 +77,7 @@ impl Catalog {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Requirement {
     /*
     בזין הזה יש את כל הבנקים והאם בוצעו או לא בכל קטלוג
@@ -93,8 +94,7 @@ impl Requirement {
         Requirement {
             course_bank_name: bank_name,
             credit_requirment,
-            credit_complete: 0.0,
-            message: None,
+            ..Default::default()
         }
     }
     fn with_credits(mut self, credit_complete: f32) -> Self {
@@ -428,9 +428,9 @@ fn create_user() -> UserDetails {
             course_statuses: vec![
                 CourseStatus {
                     course: Course {
-                        number: 000001,
-                        credit: 3.0,
-                        name: "c1".to_string(),
+                        number: 104031,
+                        credit: 5.5,
+                        name: "infi1m".to_string(),
                     },
                     state: Some(CourseState::Complete),
                     grade: Some(Grade::Grade(85)),
@@ -438,9 +438,9 @@ fn create_user() -> UserDetails {
                 },
                 CourseStatus {
                     course: Course {
-                        number: 000002,
-                        credit: 3.5,
-                        name: "c2".to_string(),
+                        number: 104166,
+                        credit: 5.5,
+                        name: "Algebra alef".to_string(),
                     },
                     state: Some(CourseState::NotComplete),
                     grade: Some(Grade::Binary(false)),
@@ -448,9 +448,9 @@ fn create_user() -> UserDetails {
                 },
                 CourseStatus {
                     course: Course {
-                        number: 000003,
-                        credit: 4.0,
-                        name: "c3".to_string(),
+                        number: 114052,
+                        credit: 3.5,
+                        name: "פיסיקה2".to_string(),
                     },
                     state: Some(CourseState::Complete),
                     grade: Some(Grade::Grade(85)),
@@ -458,9 +458,29 @@ fn create_user() -> UserDetails {
                 },
                 CourseStatus {
                     course: Course {
-                        number: 000004,
-                        credit: 5.0,
-                        name: "c4".to_string(),
+                        number: 114054,
+                        credit: 3.5,
+                        name: "פיסקה3".to_string(),
+                    },
+                    state: Some(CourseState::Complete),
+                    grade: Some(Grade::Grade(85)),
+                    ..Default::default()
+                },
+                CourseStatus {
+                    course: Course {
+                        number: 236303,
+                        credit: 3.0,
+                        name: "project1".to_string(),
+                    },
+                    state: Some(CourseState::Complete),
+                    grade: Some(Grade::Grade(85)),
+                    ..Default::default()
+                },
+                CourseStatus {
+                    course: Course {
+                        number: 236512,
+                        credit: 3.0,
+                        name: "project2".to_string(),
                     },
                     state: Some(CourseState::Complete),
                     grade: Some(Grade::Grade(85)),
@@ -577,314 +597,25 @@ fn check_rule_malag() { // for debugging
     assert_eq!(res, 4.5);
 }
 
-
-/////////////////////
-// Catalog computer sciencse 3 years
-/*
-fn build_catalog_tlat_shnati() -> Catalog {
-    Catalog {
-        id: 123,
-        name: "מדמח תלת שנתי".to_string(),
-        course_banks: vec![
-            CourseBank {
-                name: "hova".to_string(),
-                rule: Rule::All,
-                credit: 10.0, // change this,
-                message: "".to_string(), // check if necessary
-            },
-            CourseBank {
-                name: "שרשרת מדעית".to_string(),
-                rule: Rule::Chains(
-                    vec![
-                        vec![114075],
-                        vec![114052,114054],
-                        vec![134058,134020], 
-                        vec![124120,125801],
-                        vec![124120,124510],
-                        vec![124120,114052],
-                    ]
-                ),
-                credit: 8.0,
-                message: "".to_string(), // check if necessary
-            },
-            CourseBank {
-                name: "מתמטי נוסף".to_string(),
-                rule: Rule::Accumulate,
-                credit: 2.5,
-                message: "".to_string(), // check if necessary
-            },
-            CourseBank {
-                name: "רשימה א".to_string(),
-                rule: Rule::Accumulate,
-                credit: 18.0,
-                message: "".to_string(), // check if necessary
-            },
-            CourseBank {
-                name: "רשימה ב".to_string(),
-                rule: Rule::Accumulate,
-                credit: 6.0,
-                message: "".to_string(), // check if necessary
-            },
-            CourseBank {
-                name: "בחירת העשרה".to_string(),
-                rule: Rule::Malag,
-                credit: 6.0,
-                message: "".to_string(), // check if necessary
-            },
-            CourseBank {
-                name: "חינוך גופני".to_string(),
-                rule: Rule::Sport,
-                credit: 2.0,
-                message: "".to_string(), // check if necessary
-            },
-            CourseBank {
-                name: "בחירת חופשית".to_string(),
-                rule: Rule::FreeChoice,
-                credit: 2.0,
-                message: "".to_string(), // check if necessary
-            },
-        ],
-        course_table: vec![ // Need to think how to handle english courses
-            // hova
-            CourseTableRow {
-                number: 104031,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 104166,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234114,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234129,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 104032,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 114071,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234124,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234125,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234141,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 094412,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 104134,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234218,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 044252,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234292,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234118,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234123,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 234247,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 236343,
-                course_banks: vec!["חובה".to_string()]
-            },
-            CourseTableRow {
-                number: 236360,
-                course_banks: vec!["חובה".to_string()]
-            },
-
-            // Math courses
-            CourseTableRow {
-                number: 104135,
-                course_banks: vec!["מתמטי נוסף".to_string()]
-            },
-            CourseTableRow {
-                number: 104033,
-                course_banks: vec!["מתמטי נוסף".to_string()]
-            },
-            CourseTableRow {
-                number: 104174,
-                course_banks: vec!["מתמטי נוסף".to_string()]
-            },
-            CourseTableRow {
-                number: 104122,
-                course_banks: vec!["מתמטי נוסף".to_string()]
-            },
-            CourseTableRow {
-                number: 104142,
-                course_banks: vec!["מתמטי נוסף".to_string()]
-            },
-            CourseTableRow {
-                number: 104285,
-                course_banks: vec!["מתמטי נוסף".to_string()]
-            },
-            CourseTableRow {
-                number: 104295,
-                course_banks: vec!["מתמטי נוסף".to_string()]
-            },
-
-            //sciensce chain
-            CourseTableRow {
-                number: 114075,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 114052,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 114054,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 114073,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 114101,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 114246,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 124120,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 125001,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 125801,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 124510,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 134058,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-            CourseTableRow {
-                number: 134020,
-                course_banks: vec!["שרשרת מדעית".to_string()]
-            },
-
-            //Reshima alef
-            CourseTableRow {
-                number: 234301,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234302,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234303,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234304,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234306,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234313,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234325,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234326,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234329,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234493,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 234901,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236026,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236200,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236270,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236278,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236268,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236268,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236299,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236303,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-            CourseTableRow {
-                number: 236304,
-                course_banks: vec!["רשימה א".to_string()]
-            },
-        ]
-    }
+#[test]
+fn run_legendary_function() {
+    let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
+        .expect("Something went wrong reading the file");
+    let course_statuses = course::parse_copy_paste_from_ug(&contents);
+    let catalog = build_catalog_tlat_shnati();
+    let mut user = UserDetails {
+        catalog: None,
+        degree_status: DegreeStatus {
+            course_statuses,
+            ..Default::default()
+        },  
+    };
+    calculate_degree_status(&catalog, &mut user);
+    std::fs::write(
+        "degree_status.json", 
+    serde_json::to_string_pretty(&user.degree_status)
+        .expect("json serialization failed")
+    ).expect("Unable to write file");
+    println!("{:#?}", user.degree_status);
 }
-*/
+

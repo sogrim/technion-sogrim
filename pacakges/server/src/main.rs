@@ -7,6 +7,7 @@ mod db;
 mod course;
 mod user;
 mod core;
+mod catalog_for_example;
 
 use oauth2::{GitHubUserInfo, GoogleUserInfo};
 use db::Db;

@@ -17,6 +17,7 @@ pub enum CourseState {
     InProgress,
 }
 
+const MALAG_EXCEPTIONS: &'static [u32] = &[324033];
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct CourseStatus {
     pub course: Course,
@@ -57,7 +58,7 @@ impl CourseStatus {
     }
 
     pub fn is_malag(&self) -> bool {
-        self.course.number / 1000 == 324 // TODO: check if there are more terms
+        self.course.number / 1000 == 324 && !MALAG_EXCEPTIONS.contains(&self.course.number) // TODO: check if there are more terms
     }
     pub fn is_sport(&self) -> bool {
         self.course.number / 1000 == 394 // TODO: check if there are more terms
@@ -229,8 +230,7 @@ fn test1(){
             Requirement{ 
                 course_bank_name: "בחירה חופשית".into(),  
                 credit_requirment: 2.0, 
-                credit_complete: 0.0, 
-                message: None
+                ..Default::default()
             }
         ],
         credit_overflow_msgs: vec![
