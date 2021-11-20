@@ -18,7 +18,6 @@ pub enum CourseState {
     InProgress,
 }
 
-const MALAG_EXCEPTIONS: &'static [u32] = &[324033];
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct CourseStatus {
     pub course: Course,
@@ -30,6 +29,9 @@ pub struct CourseStatus {
 }
 
 impl CourseStatus {
+
+    const MALAG_EXCEPTIONS: &'static [u32] = &[324033]; //TODO think about this
+    
     pub fn passed(&self) -> bool {
         match &self.grade {
             Some(grade) => {
@@ -59,7 +61,7 @@ impl CourseStatus {
     }
 
     pub fn is_malag(&self) -> bool {
-        self.course.number / 1000 == 324 && !MALAG_EXCEPTIONS.contains(&self.course.number) // TODO: check if there are more terms
+        self.course.number / 1000 == 324 && !Self::MALAG_EXCEPTIONS.contains(&self.course.number) // TODO: check if there are more terms
     }
     pub fn is_sport(&self) -> bool {
         self.course.number / 1000 == 394 // TODO: check if there are more terms
@@ -99,13 +101,21 @@ pub fn validate_copy_paste_from_ug(ug_data: &str) -> Result<(), Error> {
 pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
     let mut courses = HashMap::<u32, CourseStatus>::new();
     let mut semester = String::new();
-    let mut semester_counter = 0;
+    let mut semester_counter = 0.0;
     
     for line_ref in ug_data.split_terminator("\r\n"){
         let line = line_ref.to_string();
         
         semester = if line.contains("אביב") || line.contains("חורף") || line.contains("קיץ"){
-            semester_counter += 1;
+            semester_counter += if line.contains("קיץ"){
+                0.5
+            } 
+            else if semester_counter != (semester_counter as u32) as f64 {
+                0.5
+            }
+            else{
+                1.0
+            };
             format!("{}_{}", line.split_whitespace().next().unwrap(), semester_counter)
         }
         else {
@@ -145,7 +155,7 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
                 credit,
                 name,
             },
-            semester : Some(semester.clone()),
+            semester : (!semester.is_empty()).then(|| semester.clone()),
             grade : grade.clone(),
             ..Default::default()
         };
@@ -155,208 +165,215 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Vec<CourseStatus>{
     courses.into_values().collect()
 }
 
-#[test]
-fn test(){
-    
-    let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
-        .expect("Something went wrong reading the file");
-    let mut courses_display = parse_copy_paste_from_ug(&contents);
-    courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap() );
-    for course_display in courses_display{
-        println!("{:?}", course_display);
-    };
-}
-#[test]
-fn test1(){
-    
-    let degree_status = DegreeStatus{
-        course_statuses: vec![
-            CourseStatus{ 
-                course: Course{ 
-                    number: 234125, 
-                    credit: 5.5, 
-                    name: "אינפי 1 לניסנים".into() 
-                }, 
-                state: Some(CourseState::Complete), 
-                semester: Some("חורף_1".into()), 
-                grade: Some(Grade::Grade(98)), 
-                r#type: Some("חובה".into()),
-                additional_msg: None,
-            },
-            CourseStatus{ 
-                course: Course{ 
-                    number: 234126, 
-                    credit: 5.0, 
-                    name: "אינפי 2 לניסנים".into() 
-                }, 
-                state: Some(CourseState::NotComplete), 
-                semester: Some("אביב_2".into()), 
-                grade: Some(Grade::Grade(45)), 
-                r#type: Some("חובה".into()),
-                additional_msg: None,
-            },
-            CourseStatus{ 
-                course: Course{ 
-                    number: 234125, 
-                    credit: 4.0, 
-                    name: "אינפי 3 לניסנים".into() 
-                }, 
-                state: Some(CourseState::Complete), 
-                semester: Some("חורף_3".into()), 
-                grade: Some(Grade::Binary(true)), 
-                r#type: Some("חובה".into()),
-                additional_msg: None, 
-            },
-            CourseStatus{ 
-                course: Course{ 
-                    number: 234127, 
-                    credit: 3.0, 
-                    name: "קורס בחירה כלשהו".into() 
-                }, 
-                state: Some(CourseState::Complete), 
-                semester: Some("חורף_3".into()), 
-                grade: Some(Grade::ExemptionWithCredit), 
-                r#type: Some("רשימה א'".into()),
-                additional_msg: None, 
-            },
+#[cfg(test)]
+mod tests{
+    use super::*;
+    use actix_rt::test;
+    use dotenv::dotenv;
 
-        ],
-        course_bank_requirements: vec![
-            Requirement{ 
-                course_bank_name: "חובה".into(), 
-                credit_requirment: 84.0, 
-                credit_complete: 9.5, 
-                message: Some("תראה את ניסן הגבר הזה כמה אינפים הוא עשה".into()),
-            },
-            Requirement{ 
-                course_bank_name: "בחירה חופשית".into(),  
-                credit_requirment: 2.0, 
-                ..Default::default()
+    #[test]
+    async fn test_ug_course_parser(){
+        
+        let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
+            .expect("Something went wrong reading the file");
+        let mut courses_display = parse_copy_paste_from_ug(&contents);
+        courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap() );
+        for course_display in courses_display{
+            println!("{:?}", course_display);
+        };
+    }
+    
+    #[test]
+    async fn test_create_degree_status_mock(){
+        
+        let degree_status = DegreeStatus{
+            course_statuses: vec![
+                CourseStatus{ 
+                    course: Course{ 
+                        number: 234125, 
+                        credit: 5.5, 
+                        name: "אינפי 1 לניסנים".into() 
+                    }, 
+                    state: Some(CourseState::Complete), 
+                    semester: Some("חורף_1".into()), 
+                    grade: Some(Grade::Grade(98)), 
+                    r#type: Some("חובה".into()),
+                    additional_msg: None,
+                },
+                CourseStatus{ 
+                    course: Course{ 
+                        number: 234126, 
+                        credit: 5.0, 
+                        name: "אינפי 2 לניסנים".into() 
+                    }, 
+                    state: Some(CourseState::NotComplete), 
+                    semester: Some("אביב_2".into()), 
+                    grade: Some(Grade::Grade(45)), 
+                    r#type: Some("חובה".into()),
+                    additional_msg: None,
+                },
+                CourseStatus{ 
+                    course: Course{ 
+                        number: 234125, 
+                        credit: 4.0, 
+                        name: "אינפי 3 לניסנים".into() 
+                    }, 
+                    state: Some(CourseState::Complete), 
+                    semester: Some("חורף_3".into()), 
+                    grade: Some(Grade::Binary(true)), 
+                    r#type: Some("חובה".into()),
+                    additional_msg: None, 
+                },
+                CourseStatus{ 
+                    course: Course{ 
+                        number: 234127, 
+                        credit: 3.0, 
+                        name: "קורס בחירה כלשהו".into() 
+                    }, 
+                    state: Some(CourseState::Complete), 
+                    semester: Some("חורף_3".into()), 
+                    grade: Some(Grade::ExemptionWithCredit), 
+                    r#type: Some("רשימה א'".into()),
+                    additional_msg: None, 
+                },
+    
+            ],
+            course_bank_requirements: vec![
+                Requirement{ 
+                    course_bank_name: "חובה".into(), 
+                    credit_requirment: 84.0, 
+                    credit_complete: 9.5, 
+                    message: Some("תראה את ניסן הגבר הזה כמה אינפים הוא עשה".into()),
+                },
+                Requirement{ 
+                    course_bank_name: "בחירה חופשית".into(),  
+                    credit_requirment: 2.0, 
+                    ..Default::default()
+                }
+            ],
+            credit_overflow_msgs: vec![
+                r#"2.5 נק"ז עובר משרשרת מדעית לרשימה ב'"#.to_string(),
+                r#"2.0 נק"ז עובר מרשימה ב' לבחירה חופשית"#.to_string(),
+            ],
+            total_credit: 76.5,
+        };
+    
+        //let serialized = bson::to_bson(&degree_status).unwrap();
+        std::fs::write(
+            "degree_status_mock.json", 
+        serde_json::to_string_pretty(&degree_status)
+            .expect("json serialization failed")
+        ).expect("Unable to write file");
+    }
+    
+    #[test]
+    async fn test_ser_deser_course(){
+        
+        let course = Course{
+            number: 234,
+            credit: 2.5,
+            name: "some_course".into(),
+        };
+        let serialized = bson::to_bson(&course).unwrap();
+        println!("{}", serialized);
+        let doc = bson::to_document(&serialized).unwrap();
+        println!("{}", doc);
+        let deserialized  = bson::from_document::<Course>(doc).unwrap();
+        println!("{:?}", deserialized);
+        
+        let vec = vec![course.clone(), course];
+        let serialized_vec = bson::to_bson(&vec).unwrap();
+        println!("{}", serialized_vec);
+        let doc_vec = bson::doc!{"vec" : serialized_vec};
+        println!("{}", doc_vec);
+    
+    }
+    #[test]
+    async fn test_add_courses_to_db(){
+        dotenv().ok();
+        let contents = std::fs::read_to_string("courses.txt")
+            .expect("Something went wrong reading the file");
+        let mut counter = 0;
+        let mut unique_lines = std::collections::HashSet::new();
+        let mut courses = Vec::new();
+        let options = mongodb::options::ClientOptions::parse(
+            std::env::var("URI").unwrap())
+        .await
+        .unwrap();
+        let client = mongodb::Client::with_options(options).unwrap();
+        // Ping the server to see if you can connect to the cluster
+        client
+            .database("admin")
+            .run_command(bson::doc! {"ping": 1}, None)
+            .await
+            .unwrap();
+        println!("Connected successfully.");
+        for line_ref in contents.split_terminator("\r\n"){
+            //println!("{}", line_ref);
+            if !unique_lines.insert(line_ref){
+                continue;   
+            };
+            let res  = serde_json::from_str::<Course>(line_ref);
+            if res.is_ok(){
+                let course = res.unwrap();   
+                match client
+                    .database("debug")
+                    .collection::<Course>("Courses")
+                    .insert_one(
+                        course.clone(),
+                        None
+                    )
+                    .await{
+                        Ok(res) => println!("{:?}", res),
+                        Err(err) => eprintln!("{:?}", err),
+                    };
+                courses.push(course); 
+                counter += 1;
             }
-        ],
-        credit_overflow_msgs: vec![
-            r#"2.5 נק"ז עובר משרשרת מדעית לרשימה ב'"#.to_string(),
-            r#"2.0 נק"ז עובר מרשימה ב' לבחירה חופשית"#.to_string(),
-        ],
-        total_credit: 76.5,
-    };
-
-    //let serialized = bson::to_bson(&degree_status).unwrap();
-    std::fs::write(
-        "degree_status_mock.json", 
-    serde_json::to_string_pretty(&degree_status)
-        .expect("json serialization failed")
-    ).expect("Unable to write file");
+            else{
+                println!("{} --- {:?}", line_ref, res);
+            }
+        }
+        let special_courses = vec![
+            Course{
+                number : 234129,
+                credit : 3.0,
+                name: r#"מב.לתורת הקבוצות ואוטומטים למדמ"ח"#.to_string(),
+            },
+            Course{
+                number : 236716,
+                credit : 3.0,
+                name: r#"מודלים גאומטריים במערכות תיב"מ"#.to_string(),
+            },
+            Course{
+                number : 104223,
+                credit : 4.0,
+                name: r#"מד"ח וטורי פוריה"#.to_string(),
+            },
+            Course{
+                number : 104035,
+                credit : 5.0,
+                name: r#"משוואות דיפ' רגילות ואינפי 2ח'"#.to_string(),
+            },
+            Course{
+                number : 46746,
+                credit : 3.0,
+                name: r#"אלג' ויישומים בראייה ממוחשבת"#.to_string(),
+            },
+        ];
+        for special_course in special_courses.iter(){
+            match client
+                .database("staging")
+                .collection::<Course>("Courses")
+                .insert_one(
+                    special_course,
+                    None
+                )
+                .await{
+                    Ok(res) => println!("{:?}", res),
+                    Err(err) => eprintln!("{:?}", err),
+                };
+        }
+        println!("{:?}", counter);
+    }
 }
-
-#[test]
-fn test2(){
-    
-    let course = Course{
-        number: 234,
-        credit: 2.5,
-        name: "some_course".into(),
-    };
-    let serialized = bson::to_bson(&course).unwrap();
-    println!("{}", serialized);
-    let doc = bson::to_document(&serialized).unwrap();
-    println!("{}", doc);
-    let deserialized  = bson::from_document::<Course>(doc).unwrap();
-    println!("{:?}", deserialized);
-    
-    let vec = vec![course.clone(), course];
-    let serialized_vec = bson::to_bson(&vec).unwrap();
-    println!("{}", serialized_vec);
-    let doc_vec = bson::doc!{"vec" : serialized_vec};
-    println!("{}", doc_vec);
-
-}
-
-// #[actix_rt::test]
-// async fn test3(){
-//     dotenv().ok();
-//     let contents = std::fs::read_to_string("Cargo.toml")
-//         .expect("Something went wrong reading the file");
-//     let mut counter = 0;
-//     let mut unique_lines = std::collections::HashSet::new();
-//     let mut courses = Vec::new();
-//     let options = mongodb::options::ClientOptions::parse(
-//         std::env::var("URI").unwrap())
-//     .await
-//     .unwrap();
-//     let client = mongodb::Client::with_options(options).unwrap();
-//     // Ping the server to see if you can connect to the cluster
-//     client
-//         .database("admin")
-//         .run_command(bson::doc! {"ping": 1}, None)
-//         .await
-//         .unwrap();
-//     println!("Connected successfully.");
-//     for line_ref in contents.split_terminator("\r\n"){
-//         //println!("{}", line_ref);
-//         if !unique_lines.insert(line_ref){
-//             continue;   
-//         };
-//         let res  = serde_json::from_str::<Course>(line_ref);
-//         if res.is_ok(){
-//             let course = res.unwrap();   
-//             // match client
-//             //     .database("debug")
-//             //     .collection::<Course>("Courses")
-//             //     .insert_one(
-//             //         course.clone(),
-//             //         None
-//             //     )
-//             //     .await{
-//             //         Ok(res) => println!("{:?}", res),
-//             //         Err(err) => eprintln!("{:?}", err),
-//             //     };
-//             courses.push(course); 
-//             counter += 1;
-//         }
-//         else{
-//             println!("{} --- {:?}", line_ref, res);
-//         }
-//     }
-//     let _special_courses = vec![
-//         Course{
-//             number : 234129,
-//             credit : 3.0,
-//             name: r#"מב.לתורת הקבוצות ואוטומטים למדמ"ח"#.to_string(),
-//         },
-//         Course{
-//             number : 236716,
-//             credit : 3.0,
-//             name: r#"מודלים גאומטריים במערכות תיב"מ"#.to_string(),
-//         },
-//         Course{
-//             number : 104223,
-//             credit : 4.0,
-//             name: r#"מד"ח וטורי פוריה"#.to_string(),
-//         },
-//         Course{
-//             number : 104035,
-//             credit : 5.0,
-//             name: r#"משוואות דיפ' רגילות ואינפי 2ח'"#.to_string(),
-//         },
-//         Course{
-//             number : 46746,
-//             credit : 3.0,
-//             name: r#"אלג' ויישומים בראייה ממוחשבת"#.to_string(),
-//         },
-//     ];
-//     // for special_course in special_courses.iter(){
-//     //     // match client
-//     //     //     .database("debug")
-//     //     //     .collection::<Course>("Courses")
-//     //     //     .insert_one(
-//     //     //         special_course,
-//     //     //         None
-//     //     //     )
-//     //     //     .await{
-//     //     //         Ok(res) => println!("{:?}", res),
-//     //     //         Err(err) => eprintln!("{:?}", err),
-//     //     //     };
-//     // }
-//     println!("{:?}", counter);
-// }

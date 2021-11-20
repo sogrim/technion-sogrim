@@ -1,5 +1,5 @@
 extern crate my_internet_ip;
-use actix_web::{App, HttpServer, Responder, get, middleware::Logger, web};
+use actix_web::{App, HttpServer, middleware::Logger, web};
 use actix_cors::Cors;
 use mongodb::Client;
 use dotenv::dotenv;
@@ -12,13 +12,6 @@ mod catalog;
 mod user;
 mod core;
 mod config;
-mod catalog_for_example;
-
-#[get("/")]
-async fn home_page() -> impl Responder{
-    "Hello world!"
-}
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -36,7 +29,6 @@ async fn main() -> std::io::Result<()> {
             .wrap(Cors::permissive())
             .wrap(Logger::default())
             .app_data(app_config.clone())
-            .service(home_page)
             .service(catalog::get_all_catalogs)
             .service(user::user_login)
             .service(user::add_catalog)
