@@ -1,26 +1,24 @@
-import { useMutation, MutationCache } from 'react-query';
-import { getUserState, postUserState } from '../../services/api';
+import { useMutation,useQueryClient } from 'react-query';
+import { getUserState, putUserState } from '../../services/api';
+import { UserState } from '../../types/data-types';
 
-// export default function useUpdateUserState(authToken: any) {
-//   return useMutation(
-//     (values) => postUserState(authToken),
-//     {
-//       onMutate: (newPost) => {
-//         const oldPosts = queryCache.getQueryData('useState')
+export default function useUpdateUserState(authToken: any, updatedUserState: UserState) {
+    
+    // const queryClinet = useQueryClient();
 
-//         if (queryCache.getQueryData('posts')) {
-//           queryCache.setQueryData('posts', old => [...old, newPost])
-//         }
-
-//         return () => queryCache.setQueryData('posts', oldPosts)
-//       },
-//       onError: (error, _newPost, rollback) => {
-//         console.error(error);
-//         if (rollback) rollback()
-//       },
-//       onSettled: () => {
-//         queryCache.invalidateQueries('posts');
-//       }
-//     }
-//   )
-// }
+    // return useMutation(
+    //     () => putUserState(authToken, updatedUserState),
+    //     {
+    //     onMutate: (updatedUserState) => {
+            
+    //     },
+    //     onError: (error, _newPost, rollback) => {
+    //         console.error(error);
+    //         if (rollback) rollback()
+    //     },
+    //     onSettled: () => {
+    //         queryCache.invalidateQueries('posts');
+    //     }
+    //     }
+    // )
+}
