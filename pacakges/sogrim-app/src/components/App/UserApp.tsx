@@ -10,26 +10,23 @@ import { useAuth } from '../../hooks/useAuth';
 
 const UserAppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(LIGHT_MODE_THEME);  
-  
-  const { dataStore: {
-    setUserState,    
-  }} = useStore();
+  const theme = useMemo(() => getAppTheme(mode), [mode]);
+
+  const [ triggerUseUserState, setTriggerUseUserState] = useState<boolean>(true);
 
   const { userAuthToken } = useAuth();
 
-  const { data, isLoading, isError} = useUserState(userAuthToken);
+  const { data, isLoading, isError} = useUserState(userAuthToken, triggerUseUserState);
   
   useEffect(() => {
       if (isError) {
         // TODO: add error state.
       } else if (data && !isLoading) {        
-        setUserState(data);
+        setTriggerUseUserState(false);        
       }
-  }, [data, isLoading,  isError]);
+  }, [data, isLoading, isError]);
 
   // TODO: add loading state.
-
-  const theme = useMemo(() => getAppTheme(mode), [mode]);
   
   return (            
     <ThemeProvider theme={theme}>
