@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Box, Tabs, Tab, Theme, Divider} from '@mui/material';
+import {Box, Tabs, Tab, Divider} from '@mui/material';
 
 export const PagesTabs: React.FC = () => {
   const [value, setValue] = React.useState(0);
