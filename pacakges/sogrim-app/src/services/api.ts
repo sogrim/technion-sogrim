@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Catalog, UserState } from "../types/data-types";
+import { UserDetails, UserState } from "../types/data-types";
 import { API_URL } from "./api-url";
 
 export const getCatalogs = async (authToken: any): Promise<any> => {
@@ -17,24 +17,24 @@ export const getCatalogs = async (authToken: any): Promise<any> => {
     return res.data;
 }
 
-export const putUserCatalog = async (authToken: any, userCatalogId: string): Promise<Catalog> => {
-    const fallback: Catalog = {} as Catalog;
-    let res: Catalog;
+export const putUserCatalog = async (authToken: any, userCatalogId: string): Promise<UserState> => {
+    const fallback: UserState = {} as UserState;
+    let res: UserState;
     try {
-        res = (await axios.put(`${API_URL}/user/catalog`, userCatalogId, {
+        res = (await axios.put(`${API_URL}/user/catalog`, userCatalogId || {} as UserState, {
             headers: {
             'authorization': `${authToken}`,        
         }
-        })) || fallback;
+        })) || fallback;      
     } catch {
         res = fallback;
     }
     return res;
 }
 
-export const putUserUgData = async (authToken: any, ugData: string): Promise<any> => {
-    const fallback: any = {} as any;
-    let res: any;
+export const postUserUgData = async (authToken: any, ugData: string): Promise<UserState> => {
+    const fallback: UserState = {} as UserState;
+    let res: UserState;
     try {
         res = (await axios.post(`${API_URL}/user/ug_data`, ugData, { 
             headers: {
@@ -65,11 +65,11 @@ export const getUserState = async (authToken: any): Promise<UserState> => {
     return data;
 }
 
-export const putUserState = async (authToken: any, updatedUserState: UserState): Promise<UserState> => {
-    const fallback: UserState = {} as UserState;
-    let res: UserState;
+export const putUserState = async (authToken: any, updatedUserState: UserDetails): Promise<UserDetails> => {
+    const fallback: UserDetails = {} as UserDetails;
+    let res: UserDetails;
     try {
-        res = (await axios.post(`${API_URL}/user`, updatedUserState, { // TODO: put, benny
+        res = (await axios.post(`${API_URL}/user`, updatedUserState, { // TODO: check method with benny.
             headers: {
             'authorization': `${authToken}`,        
         }

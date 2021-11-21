@@ -36,8 +36,7 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
     }
   }, [data, isLoading, isError])
 
-  const handleSend = () => {
-    console.log(selectedCatalog?._id.$oid);
+  const handleSend = () => {    
     if (selectedCatalog?._id.$oid) {
       mutate(selectedCatalog?._id.$oid);
     } else {
