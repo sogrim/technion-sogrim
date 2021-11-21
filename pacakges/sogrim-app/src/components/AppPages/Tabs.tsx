@@ -1,5 +1,7 @@
 import * as React from 'react';
 import {Box, Tabs, Tab, Divider} from '@mui/material';
+import { TabPanel } from './TabPanel';
+import { CompleteTab } from '../Pages/CompleteTab/CompleteTab';
 
 export const PagesTabs: React.FC = () => {
   const [value, setValue] = React.useState(0);
@@ -14,9 +16,14 @@ export const PagesTabs: React.FC = () => {
             indicatorColor="secondary" value={value} onChange={handleChange} centered>
         <Tab sx={{fontSize: '30px'}} label="מה עשית" />
         <Tab sx={{fontSize: '30px'}} label="מה בתכנון" />
-        </Tabs>
-        
+        </Tabs>        
         <Divider />
+        <TabPanel value={value} index={0}>
+          <CompleteTab />
+        </TabPanel>
+        <TabPanel value={value} index={1}>
+          🦈 🔨 🦈 🔨 🦈 🔨 🦈 🔨 🦈 🔨  
+        </TabPanel>
     </Box>
   );
 }
