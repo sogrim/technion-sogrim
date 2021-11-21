@@ -72,8 +72,7 @@ impl CourseStatus {
 pub struct CourseBank {
     pub name: String, // for example, Hova, Rshima A.
     pub rule: Rule,
-    pub credit: f32,
-    pub message: String, //TODO remove
+    pub demand: f32, // can be either credit or courses, depends on the rule
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -260,13 +259,15 @@ mod tests{
             course_bank_requirements: vec![
                 Requirement{ 
                     course_bank_name: "חובה".into(), 
-                    credit_requirment: 84.0, 
-                    credit_complete: 9.5, 
+                    bank_rule_name: "all".into(),
+                    requirment: 84.0, 
+                    complete: 9.5, 
                     message: Some("תראה את ניסן הגבר הזה כמה אינפים הוא עשה".into()),
                 },
                 Requirement{ 
-                    course_bank_name: "בחירה חופשית".into(),  
-                    credit_requirment: 2.0, 
+                    course_bank_name: "בחירה חופשית".into(),
+                    bank_rule_name: "accumulate credit".into(), 
+                    requirment: 2.0, 
                     ..Default::default()
                 }
             ],
