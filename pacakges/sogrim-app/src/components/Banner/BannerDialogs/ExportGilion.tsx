@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState } from 'react';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import DialogActions from '@mui/material/DialogActions';
@@ -8,7 +8,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { Link, Theme } from '@mui/material';
 import useUpdateUserUgData from '../../../hooks/apiHooks/useUpdateUgData';
 import { useAuth } from '../../../hooks/useAuth';
-
 export interface ImportGilionProps {
     handleClose: () => void;    
 }
@@ -17,12 +16,11 @@ export const ExportGilion: React.FC<ImportGilionProps> = ({
     handleClose,
 }) => {
  
-  const [ ugText, setUgText] = React.useState<string | null>(null);
-  
+  const [ ugText, setUgText] = useState<string | null>(null);
   const { userAuthToken } = useAuth();
 
   const { mutate } = useUpdateUserUgData(userAuthToken);
-  // No debounce needed.
+ 
   const handleChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
     // TODO: check prevent.
     // TODO: xss attacks.
@@ -31,7 +29,6 @@ export const ExportGilion: React.FC<ImportGilionProps> = ({
   }
   const handleSend = () => {    
     if (ugText) {
-      console.log(ugText);
       mutate(ugText);
     }
     handleClose();

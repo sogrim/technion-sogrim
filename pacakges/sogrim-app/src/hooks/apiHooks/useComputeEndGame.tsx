@@ -6,6 +6,7 @@ export default function useComputeEndGame(authToken: any, trigger: boolean) {
     'userState', 
     () => getComputeEndGame(authToken),
     {
+        onSuccess: (res) => console.log('from end game', res),
         enabled: !!authToken && trigger,
         
     }
