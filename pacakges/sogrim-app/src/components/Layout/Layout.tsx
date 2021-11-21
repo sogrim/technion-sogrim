@@ -1,6 +1,5 @@
 import { styled, Box } from '@mui/material';
 import { Header } from '../Header/Header';
-import { Footer } from '../Footer';
 import { Banner } from '../Banner/Banner';
 
 import { FOOTER_HEIGHT } from '../../themes/constants';
@@ -14,12 +13,10 @@ export const Layout: React.FC = ({ children }) => {
         <Box component="header">
           <Header />
         </Box>
-        <Banner />             
+        <Banner />                     
       </ContentWrapper>
-      <AppPages /> 
-      <Box component="footer">
-        <Footer />
-      </Box>
+       <AppPages /> 
+      {/* {<Footer />} */}
     </LayoutWrapper>
   );
 };

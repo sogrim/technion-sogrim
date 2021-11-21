@@ -14,8 +14,8 @@ export const PagesTabs: React.FC = () => {
     <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
       <Tabs textColor="secondary"
             indicatorColor="secondary" value={value} onChange={handleChange} centered>
-        <Tab sx={{fontSize: '30px'}} label="מה עשית" />
-        <Tab sx={{fontSize: '30px'}} label="מה בתכנון" />
+        <Tab sx={{fontSize: '30px'}} label="דרישות" />
+        <Tab sx={{fontSize: '30px'}} label="סמסטרים" />
         </Tabs>        
         <Divider />
         <TabPanel value={value} index={0}>
