@@ -121,8 +121,7 @@ pub async fn add_catalog(
                 &user.sub.clone(), 
                 doc!{"$set" : user.into_document()}, 
                 &client
-            ).await?;
-            Ok(HttpResponse::Ok().finish())
+            ).await
         },
         None => Err(ErrorInternalServerError("No data exists for user")),
     }
@@ -144,8 +143,7 @@ pub async fn add_catalog(
                 &user.sub.clone(), 
                 doc!{"$set" : user.into_document()}, 
                 &client
-            ).await?;
-            Ok(HttpResponse::Ok().finish())
+            ).await
         }
         None => Err(ErrorInternalServerError("No data exists for user"))
     }
