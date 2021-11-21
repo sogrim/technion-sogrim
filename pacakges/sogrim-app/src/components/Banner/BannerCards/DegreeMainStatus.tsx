@@ -5,22 +5,28 @@ import { useState, useEffect } from 'react';
 
 
 export const DegreeMainStatus: React.FC = ({ children }) => {
-  
-  const { data } = useUserState();
-  const [ totalCredit, setTotalCredit] = useState<number>(118.5); // TODO: get from server.
+    
+  const { data, isLoading } = useUserState();
+  const [ totalCredit, setTotalCredit] = useState<number>(0);
   const [ pointsDone, setPointsDone] = useState<number>(0);
-  const [ catalogName, setCatalogName] = useState<string>("מדעי המחשבי תלת שנתי 2019-2020");
-  
+  const [ catalogName, setCatalogName] = useState<string>('');
+
+  const showMainStatus = ((totalCredit * pointsDone) > 0) && catalogName !== '';
+ 
   // TODO: loading? or loading to all the banner!
-  useEffect(() => {    
-    if (data?.details?.degree_status?.total_credit) {
-      const total = data?.details?.degree_status?.total_credit;
-      setPointsDone(total);
-    }    
-  }, [data])
+  useEffect(() => {
+    if (data && !isLoading) {
+      const studentTotal = data?.details?.degree_status?.total_credit || 0;
+      const totalCredit = data?.details?.catalog?.total_credit || 0 ;
+      const catalogName = data?.details?.catalog?.name || '';
+      setPointsDone(studentTotal);
+      setTotalCredit(totalCredit)
+      setCatalogName(catalogName);      
+    }   
+  }, [data, isLoading])
 
   const progress = (pointsDone / totalCredit) >= 1 ? 100 : ((pointsDone / totalCredit) * 100);
-  return (    
+  return showMainStatus ? (        
     <Card sx={{ minWidth: 275 }}>
     <CardContent>
       <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
@@ -31,9 +37,7 @@ export const DegreeMainStatus: React.FC = ({ children }) => {
         {`השלמת ${pointsDone} מתוך ${totalCredit} נקודות`}
       </Typography>               
       <Button sx={{ display: 'flex', justifyContent: 'center'}} size="small">{catalogName}</Button>   
-    </CardContent>    
-    
-  </Card>            
-     
-  );
+    </CardContent>   
+  </Card> 
+  ) : null;
 };

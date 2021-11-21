@@ -1,11 +1,22 @@
 import { useMutation, useQueryClient } from 'react-query';
-import { putUserCatalog, putUserUgData } from '../../services/api';
+import { postUserUgData } from '../../services/api';
+import { UserState } from '../../types/data-types';
 
 export default function useUpdateUserUgData(authToken: any) {
-    
-    // const queryClinet = useQueryClient();
+    const queryClient =  useQueryClient();
+
     return useMutation(
-        'userUgData',
-        (ugData: string) => putUserUgData(authToken, ugData),             
+        'ugData',
+        (ugData: string) => postUserUgData(authToken, ugData), {
+            onSuccess: (newData: UserState) => {
+                console.log('from ug update response', newData);            
+                queryClient.setQueryData('userState', () => {
+                    const current = newData;                        
+                    return current;
+                })
+                
+            }
+        }       
+                     
     )
 }

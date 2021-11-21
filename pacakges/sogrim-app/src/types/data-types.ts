@@ -1,9 +1,9 @@
 export type Catalog = {
     name: string;
+    total_credit: number;
+    description: string;
     _id: {
-        $oid: string;
-        name: string;
-        message?: string;
+        $oid: string;        
     };
 };
 
@@ -50,11 +50,13 @@ export type DegreeStatus = {
     total_credit: number;
 };
 
+export type UserDetails = {
+    degree_status: DegreeStatus;
+    catalog: Catalog;   
+    modified: boolean;
+}
+
 export type UserState = {
-    details: {        
-        degree_status: DegreeStatus;
-        catalog: Catalog;
-        modified: boolean;
-    };
+    details: UserDetails;
     _id: string;
 };
