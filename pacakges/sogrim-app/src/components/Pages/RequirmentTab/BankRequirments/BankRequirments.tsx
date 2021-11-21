@@ -17,7 +17,7 @@ const BankRequirmentsComp: React.FC<BankRequirmentsProps> = () => {
     return (
         <Box sx={{ marginTop: 2}}>            
             <Grid sx={sxPages} container spacing={{ xs: 2, md: 2 }} columns={{ xs: 3 , md: 3 }}>
-                { banReqList?.map( banReq => <RequirmentItem bankRequirment={banReq}/>) }                          
+                { banReqList?.map( (banReq, id) => <RequirmentItem key={id} bankRequirment={banReq}/>) }                          
             </Grid>
         </Box>
     );
