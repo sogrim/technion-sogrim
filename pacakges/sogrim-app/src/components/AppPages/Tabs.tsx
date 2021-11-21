@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Box, Tabs, Tab, Divider} from '@mui/material';
 import { TabPanel } from './TabPanel';
-import { CompleteTab } from '../Pages/CompleteTab/CompleteTab';
+import { BankRequirments } from '../Pages/RequirmentTab/BankRequirments/BankRequirments';
 
 export const PagesTabs: React.FC = () => {
   const [value, setValue] = React.useState(0);
@@ -19,7 +19,7 @@ export const PagesTabs: React.FC = () => {
         </Tabs>        
         <Divider />
         <TabPanel value={value} index={0}>
-          <CompleteTab />
+          <BankRequirments />
         </TabPanel>
         <TabPanel value={value} index={1}>
           🦈 🔨 🦈 🔨 🦈 🔨 🦈 🔨 🦈 🔨  

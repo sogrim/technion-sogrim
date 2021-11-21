@@ -24,7 +24,7 @@ export const TabPanel: React.FC<TabPanelProps> = ({
     >
     <Box sx={sxPages}> 
       {value === index && (        
-          <Typography>{children}</Typography>
+          <Typography component='div'>{children}</Typography>
        
       )}
     </Box>

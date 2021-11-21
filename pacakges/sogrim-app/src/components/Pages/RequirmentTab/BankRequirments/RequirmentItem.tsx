@@ -65,7 +65,7 @@ export const RequirmentItem: React.FC<RequirmentItemProps> = ({
             <MoreVertIcon />
           </IconButton>
         }
-        title={<Typography> {course_bank_name} </Typography>}
+        title={<Typography component={'span'}> {course_bank_name} </Typography>}
         subheader={subtitle}
       />            
       <CardActions disableSpacing>        
