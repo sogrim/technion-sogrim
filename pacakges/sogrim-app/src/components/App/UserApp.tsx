@@ -31,8 +31,7 @@ const UserAppComp: React.FC = () => {
   return (            
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Layout>
-      </Layout>
+      <Layout />
     </ThemeProvider>  
   );
 }
