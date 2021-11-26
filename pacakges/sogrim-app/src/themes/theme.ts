@@ -14,7 +14,12 @@ export const getAppTheme = (mode: typeof LIGHT_MODE_THEME | typeof DARK_MODE_THE
         main: '#d66563',
         light: '##efc1c1',
         dark: '#ab514f'
-      },         
+      },
+      info: {
+        main: '#743ca5',
+        light: '#743ca5',
+        dark: '#743ca5'
+      },
     },
     typography: {
       fontFamily: 'Assistant', 

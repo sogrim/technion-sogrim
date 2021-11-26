@@ -7,7 +7,8 @@ export class UIStore {
   public currentTab: TabState = TabState.DoneTab;
   public userDisplay: any;
   public showMainStatus: boolean = false;
-  private userState: UserState | null = null;
+  public semesterTab: number = 0;
+  
   // TODO: public scrollToTopRef: HTMLDivElement = null;
   // TODO: public notificationParams: NotificationParams = initalNotificationParams;
 
@@ -36,8 +37,8 @@ export class UIStore {
     this.showMainStatus = status;
   }
 
-  setUserUIState = (userState: UserState) => {
-    this.userState = userState;
+  setSemesterTab = (semesterTab: number) => {
+    this.semesterTab = semesterTab;
   }
 
   userRegistrationState = (userState: UserState): UserRegistrationState => {    

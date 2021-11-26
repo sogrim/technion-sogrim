@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {Box, Tabs, Tab, Divider} from '@mui/material';
 import { TabPanel } from './TabPanel';
-import { SemestersTab } from '../Pages/SemestersTabs/SemestersTabs';
-import { RequirmentsTab } from '../Pages/RequirmentTab/RequirmentsTab';
+import { SemestersPage } from '../Pages/SemestersPage/SemestersPage';
+import { RequirmentsPage } from '../Pages/RequirmentPage/RequirmentsTab';
 
 export const PagesTabs: React.FC = () => {
   const [value, setValue] = React.useState(0);
@@ -20,10 +20,10 @@ export const PagesTabs: React.FC = () => {
         </Tabs>        
         <Divider />
         <TabPanel value={value} index={0}>
-          <RequirmentsTab />
+          <RequirmentsPage />
         </TabPanel>
         <TabPanel value={value} index={1}>
-          <SemestersTab />  
+          <SemestersPage />  
         </TabPanel>
     </Box>
   );

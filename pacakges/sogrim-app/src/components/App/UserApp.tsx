@@ -15,20 +15,17 @@ const UserAppComp: React.FC = () => {
   const [ triggerUseUserState, setTriggerUseUserState] = useState<boolean>(true);
 
   const { userAuthToken } = useAuth();
-  const { uiStore: {
-    setUserUIState,
-  }} = useStore();
 
   const { data, isLoading, isError} = useUserState(userAuthToken, triggerUseUserState);
   
-  useEffect(() => {
-      if (isError) {
-        // TODO: add error state.
-      } else if (data && !isLoading) {        
-    //    setTriggerUseUserState(false); 
-        setUserUIState(data);
-      }
-  }, [data, isLoading, isError]);
+  // useEffect(() => {
+  //     if (isError) {
+  //       // TODO: add error state.
+  //     } else if (data && !isLoading) {        
+  //   //    setTriggerUseUserState(false); 
+  //       setUserUIState(data);
+  //     }
+  // }, [data, isLoading, isError]);
 
   // TODO: add loading state.
   
