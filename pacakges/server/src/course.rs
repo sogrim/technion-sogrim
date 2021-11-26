@@ -72,7 +72,7 @@ impl CourseStatus {
 pub struct CourseBank {
     pub name: String, // for example, Hova, Rshima A.
     pub rule: Rule,
-    pub demand: f32, // can be either credit or courses, depends on the rule
+    pub credit: Option<f32>,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -201,90 +201,90 @@ mod tests{
         };
     }
     
-    #[test]
-    async fn test_create_degree_status_mock(){
+    // #[test]
+    // async fn test_create_degree_status_mock(){
         
-        let degree_status = DegreeStatus{
-            course_statuses: vec![
-                CourseStatus{ 
-                    course: Course{ 
-                        number: 234125, 
-                        credit: 5.5, 
-                        name: "אינפי 1 לניסנים".into() 
-                    }, 
-                    state: Some(CourseState::Complete), 
-                    semester: Some("חורף_1".into()), 
-                    grade: Some(Grade::Grade(98)), 
-                    r#type: Some("חובה".into()),
-                    additional_msg: None,
-                },
-                CourseStatus{ 
-                    course: Course{ 
-                        number: 234126, 
-                        credit: 5.0, 
-                        name: "אינפי 2 לניסנים".into() 
-                    }, 
-                    state: Some(CourseState::NotComplete), 
-                    semester: Some("אביב_2".into()), 
-                    grade: Some(Grade::Grade(45)), 
-                    r#type: Some("חובה".into()),
-                    additional_msg: None,
-                },
-                CourseStatus{ 
-                    course: Course{ 
-                        number: 234125, 
-                        credit: 4.0, 
-                        name: "אינפי 3 לניסנים".into() 
-                    }, 
-                    state: Some(CourseState::Complete), 
-                    semester: Some("חורף_3".into()), 
-                    grade: Some(Grade::Binary(true)), 
-                    r#type: Some("חובה".into()),
-                    additional_msg: None, 
-                },
-                CourseStatus{ 
-                    course: Course{ 
-                        number: 234127, 
-                        credit: 3.0, 
-                        name: "קורס בחירה כלשהו".into() 
-                    }, 
-                    state: Some(CourseState::Complete), 
-                    semester: Some("חורף_3".into()), 
-                    grade: Some(Grade::ExemptionWithCredit), 
-                    r#type: Some("רשימה א'".into()),
-                    additional_msg: None, 
-                },
+    //     let degree_status = DegreeStatus{
+    //         course_statuses: vec![
+    //             CourseStatus{ 
+    //                 course: Course{ 
+    //                     number: 234125, 
+    //                     credit: 5.5, 
+    //                     name: "אינפי 1 לניסנים".into() 
+    //                 }, 
+    //                 state: Some(CourseState::Complete), 
+    //                 semester: Some("חורף_1".into()), 
+    //                 grade: Some(Grade::Grade(98)), 
+    //                 r#type: Some("חובה".into()),
+    //                 additional_msg: None,
+    //             },
+    //             CourseStatus{ 
+    //                 course: Course{ 
+    //                     number: 234126, 
+    //                     credit: 5.0, 
+    //                     name: "אינפי 2 לניסנים".into() 
+    //                 }, 
+    //                 state: Some(CourseState::NotComplete), 
+    //                 semester: Some("אביב_2".into()), 
+    //                 grade: Some(Grade::Grade(45)), 
+    //                 r#type: Some("חובה".into()),
+    //                 additional_msg: None,
+    //             },
+    //             CourseStatus{ 
+    //                 course: Course{ 
+    //                     number: 234125, 
+    //                     credit: 4.0, 
+    //                     name: "אינפי 3 לניסנים".into() 
+    //                 }, 
+    //                 state: Some(CourseState::Complete), 
+    //                 semester: Some("חורף_3".into()), 
+    //                 grade: Some(Grade::Binary(true)), 
+    //                 r#type: Some("חובה".into()),
+    //                 additional_msg: None, 
+    //             },
+    //             CourseStatus{ 
+    //                 course: Course{ 
+    //                     number: 234127, 
+    //                     credit: 3.0, 
+    //                     name: "קורס בחירה כלשהו".into() 
+    //                 }, 
+    //                 state: Some(CourseState::Complete), 
+    //                 semester: Some("חורף_3".into()), 
+    //                 grade: Some(Grade::ExemptionWithCredit), 
+    //                 r#type: Some("רשימה א'".into()),
+    //                 additional_msg: None, 
+    //             },
     
-            ],
-            course_bank_requirements: vec![
-                Requirement{ 
-                    course_bank_name: "חובה".into(), 
-                    bank_rule_name: "all".into(),
-                    requirment: 84.0, 
-                    complete: 9.5, 
-                    message: Some("תראה את ניסן הגבר הזה כמה אינפים הוא עשה".into()),
-                },
-                Requirement{ 
-                    course_bank_name: "בחירה חופשית".into(),
-                    bank_rule_name: "accumulate credit".into(), 
-                    requirment: 2.0, 
-                    ..Default::default()
-                }
-            ],
-            credit_overflow_msgs: vec![
-                r#"2.5 נק"ז עובר משרשרת מדעית לרשימה ב'"#.to_string(),
-                r#"2.0 נק"ז עובר מרשימה ב' לבחירה חופשית"#.to_string(),
-            ],
-            total_credit: 76.5,
-        };
+    //         ],
+    //         course_bank_requirements: vec![
+    //             Requirement{ 
+    //                 course_bank_name: "חובה".into(), 
+    //                 bank_rule_name: "all".into(),
+    //                 requirment: 84.0, 
+    //                 complete: 9.5, 
+    //                 message: Some("תראה את ניסן הגבר הזה כמה אינפים הוא עשה".into()),
+    //             },
+    //             Requirement{ 
+    //                 course_bank_name: "בחירה חופשית".into(),
+    //                 bank_rule_name: "accumulate credit".into(), 
+    //                 requirment: 2.0, 
+    //                 ..Default::default()
+    //             }
+    //         ],
+    //         overflow_msgs: vec![
+    //             r#"2.5 נק"ז עובר משרשרת מדעית לרשימה ב'"#.to_string(),
+    //             r#"2.0 נק"ז עובר מרשימה ב' לבחירה חופשית"#.to_string(),
+    //         ],
+    //         total_credit: 76.5,
+    //     };
     
-        //let serialized = bson::to_bson(&degree_status).unwrap();
-        std::fs::write(
-            "degree_status_mock.json", 
-        serde_json::to_string_pretty(&degree_status)
-            .expect("json serialization failed")
-        ).expect("Unable to write file");
-    }
+    //     //let serialized = bson::to_bson(&degree_status).unwrap();
+    //     std::fs::write(
+    //         "degree_status_mock.json", 
+    //     serde_json::to_string_pretty(&degree_status)
+    //         .expect("json serialization failed")
+    //     ).expect("Unable to write file");
+    // }
     
     #[test]
     async fn test_ser_deser_course(){
