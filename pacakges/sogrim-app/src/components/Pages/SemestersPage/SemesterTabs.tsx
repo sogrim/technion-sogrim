@@ -7,6 +7,7 @@ import { observer } from 'mobx-react-lite';
 import { useStore } from '../../../hooks/useStore';
 import useUserState from '../../../hooks/apiHooks/useUserState';
 import { useAuth } from '../../../hooks/useAuth';
+import { SemesterTable } from './SemesterTable/SemesterTable';
 
 const SemesterTabsComp = () => {
 
@@ -19,7 +20,8 @@ const SemesterTabsComp = () => {
           setSemesterTab,
           },
           dataStore: {
-            getAllUserSemesters
+            getAllUserSemesters,
+            generateRows
           }
       } = useStore();
 
@@ -46,7 +48,7 @@ const SemesterTabsComp = () => {
 
   return (
     <Box  sx={{
-            maxWidth: 1100,
+            minWidth: 1100,
           [`& .${tabsClasses.scrollButtons}`]: {
             '&.Mui-disabled': { opacity: 0.3 },
           },
@@ -60,13 +62,15 @@ const SemesterTabsComp = () => {
         >
           { allSemesters?.map( (semester, index) => <Tab sx={{fontSize: '30px'}} 
               label={semesterNaming(semester)} key={semester} />)}
-        </Tabs>                
-        <TabPanel value={value} index={0}>
-          הוגלה
-        </TabPanel>
-        <TabPanel value={value} index={1}>
-          בוגלה
-        </TabPanel>
+        </Tabs>     
+          { allSemesters?.map( (semester, index) => 
+          <Box sx={{ display: 'flex', justifyContent: 'center', }}> 
+             <TabPanel key={semester} value={value} index={index}>
+              {(data?.details?.degree_status?.course_statuses) ? 
+              <SemesterTable rows={generateRows(semester, data.details.degree_status.course_statuses)}/> : null}
+            </TabPanel>
+          </Box>
+          )}
     </Box>
 );  
 }

@@ -8,8 +8,7 @@ export default function useUpdateUserUgData(authToken: any) {
     return useMutation(
         'ugData',
         (ugData: string) => postUserUgData(authToken, ugData), {
-            onSuccess: (newData: UserState) => {
-                console.log('from ug update response', newData);            
+            onSuccess: (newData: UserState) => {                           
                 queryClient.setQueryData('userState', () => {
                     const current = newData;                        
                     return current;

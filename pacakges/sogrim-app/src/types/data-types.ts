@@ -12,22 +12,20 @@ export enum CourseState {
     NotComplete = 'NotComplete',
 }
 
-export enum GradeTypes {
-    ExemptionWithoutCredit = 'ExemptionWithoutCredit',
-    ExemptionWithCredit = 'ExemptionWithCredit',
-}
-
 export type Course = {
     credit: number;
     name: string;
     _id: number;
 }
 
+type GradeNumber = {
+        Grade?: number;
+    }
+export type Grade = null | 'ExemptionWithoutCredit' | 'ExemptionWithCredit' | GradeNumber;
+
 export type CourseStatus = {
     course: Course;
-    grade: null | GradeTypes | {
-        Grade?: number;
-    };
+    grade: Grade;
     semester: string;
     state: CourseState;
     type: string;
