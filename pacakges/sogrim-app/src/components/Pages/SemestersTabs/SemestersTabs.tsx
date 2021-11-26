@@ -14,7 +14,7 @@ const SemestersTabComp: React.FC<SemestersTabProps> = () => {
     
     return (
         <div> 
-            { allCourses.map( (course, id) => <h1> {course.course.name} - {course.state} </h1>)}
+            { allCourses !== [] ? allCourses.map( (course, id) => <h1> {course.course.name} - {course.state} </h1>) : null }
           
         </div>
       

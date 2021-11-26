@@ -15,6 +15,9 @@ const UserAppComp: React.FC = () => {
   const [ triggerUseUserState, setTriggerUseUserState] = useState<boolean>(true);
 
   const { userAuthToken } = useAuth();
+  const { uiStore: {
+    setUserUIState,
+  }} = useStore();
 
   const { data, isLoading, isError} = useUserState(userAuthToken, triggerUseUserState);
   
@@ -22,7 +25,8 @@ const UserAppComp: React.FC = () => {
       if (isError) {
         // TODO: add error state.
       } else if (data && !isLoading) {        
-        setTriggerUseUserState(false);        
+    //    setTriggerUseUserState(false); 
+        setUserUIState(data);
       }
   }, [data, isLoading, isError]);
 
