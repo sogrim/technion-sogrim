@@ -134,6 +134,7 @@ pub fn set_type_and_add_credits(course_status: &mut CourseStatus, bank_name: Str
     if course_status.r#type.is_none() {
         if course_status.passed() {
             *sum_credits += course_status.course.credit;
+            course_status.set_type(bank_name);
             return true;
         }
         course_status.set_type(bank_name);
@@ -151,17 +152,21 @@ struct BankRuleHandler<'a> {
 
 impl<'a> BankRuleHandler<'a> {
 
-    fn iterate_course_list(&mut self, count_courses: &mut Option<u32>) -> f32 {
+    fn iterate_course_list(&mut self) -> (f32, u32) {
         let mut sum_credits = self.credit_overflow;
+        let mut count_courses = match &self.courses_overflow {
+            Some(num_courses) => { *num_courses }
+            None => { 0 },
+        };
         for course_number in &self.course_list {
             if let Some(course_status) = self.user.get_mut_course_status(*course_number) {
                 let course_added = set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
-                if course_added && count_courses.is_some() {
-                    count_courses.map(|count| count + 1);
+                if course_added {
+                    count_courses += 1;
                 }
             }
         }
-        sum_credits
+        (sum_credits, count_courses)
     }
 
     pub fn all(self) -> f32 {
@@ -188,12 +193,13 @@ impl<'a> BankRuleHandler<'a> {
     }
     
     pub fn accumulate_credit(mut self) -> f32 {
-        self.iterate_course_list(&mut None)
+        let (sum_credits, _) = self.iterate_course_list();
+        sum_credits
     }
 
     pub fn accumulate_courses(mut self, count_courses: &mut u32) -> f32 {
-        *count_courses = self.courses_overflow.unwrap();
-        let sum_credits = self.iterate_course_list(&mut Some(*count_courses));
+        let (sum_credits, num_courses) = self.iterate_course_list();
+        *count_courses = num_courses;
         sum_credits
     }
 
@@ -226,7 +232,7 @@ impl<'a> BankRuleHandler<'a> {
     }
     
     pub fn chain(mut self, chains: &Vec<Chain>, chain_done: &mut Chain) -> f32 {
-        let sum_credits = self.iterate_course_list(&mut None);
+        let (sum_credits, _) = self.iterate_course_list();
         for chain in chains { //check if the user completed one of the chains.
             let mut completed_chain = true;
             for course_number in chain {
@@ -240,7 +246,7 @@ impl<'a> BankRuleHandler<'a> {
     }
     
     pub fn specialization_group(mut self, specialization_groups: &SpecializationGroups, completed_groups: &mut Vec<String>) -> f32 {
-        let sum_credits = self.iterate_course_list(&mut None);
+        let (sum_credits, _) = self.iterate_course_list();
         for specialization_group in &specialization_groups.groups_list { //check if the user completed all the specialization groups requirements
             let mut completed_group = true;
             if let Some(mandatory) = &specialization_group.mandatory {
@@ -332,8 +338,8 @@ impl<'a> DegreeStatusHandler<'a> {
 
     fn calculate_credit_leftovers(&mut self) -> f32 {
         let mut sum_credits = 0.0;
-        for credit_overflow in &mut self.credit_overflow_map {
-            sum_credits += *credit_overflow.1;
+        for credit_overflow in &mut self.credit_overflow_map.values() {
+            sum_credits += *credit_overflow;
         }
         sum_credits
     }
@@ -364,6 +370,7 @@ impl<'a> DegreeStatusHandler<'a> {
             }
             Rule::AccumulateCourses(num_courses) => {
                 sum_credits = bank_rule_handler.accumulate_courses(&mut count_courses);
+                println!("{}", count_courses);
                 count_courses = self.handle_courses_overflow(bank, *num_courses, count_courses);
                 completed = count_courses >= *num_courses;
             }
@@ -464,7 +471,6 @@ pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
 #[cfg(test)]
 mod tests{
     use std::str::FromStr;
-
     use dotenv::dotenv;
     use actix_rt::test;
     use crate::{course::{self}, db};   
@@ -672,7 +678,7 @@ mod tests{
 
         let course_statuses = course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
 
-        let obj_id = bson::oid::ObjectId::from_str("6199043f1cf3261f8d15aa47").expect("failed to create oid");
+        let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401").expect("failed to create oid");
         let catalog = db::services::get_catalog_by_id(&obj_id, &client).await.expect("failed to get catalog");
         let mut user = UserDetails {
             catalog: None,
