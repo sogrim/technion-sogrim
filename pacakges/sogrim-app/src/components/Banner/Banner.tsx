@@ -35,7 +35,7 @@ const sxBanner = {
 
 const StyledBox = styled(Box)(({ theme }) => ({
     width: '60%',
-    height: 250,
+    height: 300,
     marginTop: '100px',
     display: 'flex',
     justifyContent: 'space-around',    

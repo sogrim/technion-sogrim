@@ -13,6 +13,7 @@ export const BannerTitleComp: React.FC = () => {
   const [coursesModalOpen, coursesModalsetOpen] = React.useState(false);  
   const [catalogsModalOpen, catalogsModalsetOpen] = React.useState(false);  
   const [triggerCompute, setTriggerCompute] = React.useState(false);  
+  
   const { uiStore: {
     userDisplyName,
   }} = useStore();
