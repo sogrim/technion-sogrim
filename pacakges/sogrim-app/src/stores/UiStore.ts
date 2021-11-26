@@ -17,10 +17,6 @@ export class UIStore {
     makeAutoObservable(this, { rootStore: false });
   }
 
-  get showDegreeStatusCard() {
-    return this.rootStore.dataStore.userHasDegreeStatus;
-  }
-
   setUserDisplay = (userDisplay: any) => {
     this.userDisplay = userDisplay;
   }
