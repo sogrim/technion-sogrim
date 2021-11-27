@@ -6,7 +6,8 @@ export default function useUserState(authToken: any = undefined, trigger: boolea
     return useQuery<UserState>(
     'userState', 
     () => getUserState(authToken),
-    {        
+    {  
+        onSuccess: (newData) => console.log(newData)   ,   
         enabled: !!authToken && trigger,
     },    
     )

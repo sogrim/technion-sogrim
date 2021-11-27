@@ -32,10 +32,15 @@ export type CourseStatus = {
 
 };
 
+export const ACCUMULATE_COURSES = 'accumulate courses';
+
 export type CourseBankReq = { // TODO: check with Liad after apdated.
+    bank_rule_name: string;
     course_bank_name: string;
-    credit_complete: number;
+    credit_completed: number;
     credit_requirment: number;
+    course_completed: number;
+    course_requirement: number;
     message?: string;
     done?: boolean;
     type: string; 

@@ -7,17 +7,12 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
-import IconButton from '@mui/material/IconButton';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import { visuallyHidden } from '@mui/utils';
 import { observer } from 'mobx-react-lite';
 import { getComparator, Order, stableSort } from './SemesterTableUtils';
 import { RowData, headCells } from './SemesterTabsConsts';
+import { SemesterTableRow } from './SemesterTableRow';
+import { Paper } from '@mui/material';
 
 interface EnhancedTableProps {
   onRequestSort: (event: React.MouseEvent<unknown>, property: keyof RowData) => void;
@@ -58,6 +53,12 @@ const EnhancedTableHead: React.FC<EnhancedTableProps> = ({
             </TableSortLabel>
           </TableCell>
         ))}
+        <TableCell
+            align='center'
+            key={'header-actions'}                                    
+          >
+              פעולות
+          </TableCell>
       </TableRow>
     </TableHead>
   );
@@ -97,9 +98,9 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
   return (
     <Box sx={{ width: '100%', display: 'flex', alignItems: 'center'}}>
       <Paper sx={{ width: '100%', mb: 2 }}>        
-        <TableContainer>
+        <TableContainer sx={{ width: '1200px' }}>
           <Table
-            sx={{ minWidth: 1100 }}
+            
             aria-labelledby="tableTitle"
             size={dense ? 'small' : 'medium'}
           >
@@ -116,30 +117,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
                   const isItemSelected = isSelected(row.name as string);
                   const labelId = `enhanced-table-checkbox-${index}`;
                   return (
-                    <TableRow
-                      hover
-                      onClick={(event) => console.log(event, row.name)}
-                      role="checkbox"
-                      aria-checked={isItemSelected}
-                      tabIndex={-1}
-                      key={row.name}
-                      selected={isItemSelected}
-                    >                      
-                      <TableCell
-                        align='center'
-                        component="th"
-                        id={labelId}
-                        scope="row"
-                        padding="none"
-                      >
-                        {row.name}
-                      </TableCell>
-                      <TableCell align="center">{row.courseNumber}</TableCell>
-                      <TableCell align="center">{row.credit}</TableCell>
-                      <TableCell align="center">{row.grade}</TableCell>
-                      <TableCell align="center">{row.type}</TableCell>
-                      <TableCell align="center">{row.state}</TableCell>
-                    </TableRow>
+                      < SemesterTableRow row={row} isItemSelected={isItemSelected} labelId={labelId} />                   
                   );
                 })}              
             </TableBody>
