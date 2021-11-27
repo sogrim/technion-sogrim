@@ -170,7 +170,7 @@ pub async fn compute_degree_status(
     let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;
     
     user_details.degree_status.course_bank_requirements.clear();
-    user_details.degree_status.credit_overflow_msgs.clear();
+    user_details.degree_status.overflow_msgs.clear();
     user_details.degree_status.total_credit = 0.0;
     user_details.modified = false;
 

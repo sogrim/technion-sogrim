@@ -204,8 +204,8 @@ impl<'a> BankRuleHandler<'a> {
     fn iterate_course_list(&mut self) -> (f32, u32) {
         let mut sum_credits = self.credit_overflow;
         let mut count_courses = match &self.courses_overflow {
-            Some(num_courses) => { *num_courses }
-            None => { 0 },
+            Some(num_courses) =>  *num_courses,
+            None => 0,
         };
         for course_number in &self.course_list {
             if let Some(course_status) = self.user.get_mut_course_status(*course_number) {
@@ -302,8 +302,8 @@ impl<'a> BankRuleHandler<'a> {
                 completed_group = matches!(&mandatory.logic, Logic::AND);
                 for course_number in &mandatory.courses {
                     match &mandatory.logic {
-                        Logic::OR => { completed_group |= self.user.passed_course(*course_number); }
-                        Logic::AND => { completed_group &= self.user.passed_course(*course_number); }
+                        Logic::OR =>  completed_group |= self.user.passed_course(*course_number), 
+                        Logic::AND =>  completed_group &= self.user.passed_course(*course_number),
                     }
                 }
             }
@@ -411,36 +411,26 @@ impl<'a> DegreeStatusHandler<'a> {
         let mut msg = None;
 
         match &bank.rule {
-            Rule::All => {
-                sum_credits = bank_rule_handler.all();
-            }
-            Rule::AccumulateCredit => {
-                sum_credits = bank_rule_handler.accumulate_credit();
-            }
+            Rule::All => sum_credits = bank_rule_handler.all(),
+            Rule::AccumulateCredit => sum_credits = bank_rule_handler.accumulate_credit(),
             Rule::AccumulateCourses(num_courses) => {
                 sum_credits = bank_rule_handler.accumulate_courses(&mut count_courses);
                 println!("{}", count_courses);
                 count_courses = self.handle_courses_overflow(bank, *num_courses, count_courses);
                 completed = count_courses >= *num_courses;
             }
-            Rule::Malag => {
-                sum_credits = bank_rule_handler.malag();
-            }
-            Rule::Sport => {
-                sum_credits = bank_rule_handler.sport();
-            }
-            Rule::FreeChoice => {
-                sum_credits = bank_rule_handler.free_choice();
-            }
+            Rule::Malag =>  sum_credits = bank_rule_handler.malag(),
+            Rule::Sport =>  sum_credits = bank_rule_handler.sport(),
+            Rule::FreeChoice => sum_credits = bank_rule_handler.free_choice(),
             Rule::Chains(chains) => {
                 sum_credits = bank_rule_handler.chain(chains, &mut chain_done);
                 completed = !chain_done.is_empty();
                 if completed {
-                    let mut _msg = format!("הסטודנט השלים את השרשרת הבאה:\n");
+                    let mut new_msg = format!("הסטודנט השלים את השרשרת הבאה:\n");
                     for course in chain_done {
-                        _msg += &format!("{},", course);
+                        new_msg += &format!("{},", course);
                     }
-                    msg = Some(_msg);
+                    msg = Some(new_msg);
                 }
             }
             Rule::SpecializationGroups(specialization_groups) => {
