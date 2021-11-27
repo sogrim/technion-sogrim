@@ -9,6 +9,7 @@ use crate::user::UserDetails;
 use crate::course::{Course, CourseState, CourseStatus, CourseBank};
 
 type Chain = Vec<u32>;
+type NumCourses = u32;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Logic {
@@ -40,7 +41,8 @@ pub struct SpecializationGroups {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Rule {
     All, //  כמו חובה פקולטית.
-    Accumulate, //TODO Accumulate -> AccumulateCredit, AccumulateCourses // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
+    AccumulateCredit, // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
+    AccumulateCourses(NumCourses),
     Malag,
     Sport,
     FreeChoice,
@@ -49,12 +51,12 @@ pub enum Rule {
     Wildcard(bool), // קלף משוגע עבור להתמודד עם   
 }
 
-//TODO this is done to send the Rule name (string) to nissan, need to add it in Requirement struct. 
 impl ToString for Rule{
     fn to_string(&self) -> String {
         match self{
             Rule::All => "all".into(),
-            Rule::Accumulate => "accumulate".into(),
+            Rule::AccumulateCredit => "accumulate credit".into(),
+            Rule::AccumulateCourses(_) => "accumulate courses".into(),
             Rule::Malag => "malag".into(),
             Rule::Sport => "sport".into(),
             Rule::FreeChoice => "free choice".into(),
@@ -133,36 +135,21 @@ pub struct Requirement {
     בזין הזה יש את כל הבנקים והאם בוצעו או לא בכל קטלוג
     */
     pub course_bank_name: String,
-    // TODO add -> pub bank_rule_name : String,
-    pub credit_requirment: f32,
-    pub credit_complete: f32,
+    pub bank_rule_name : String,
+    pub credit_requirment: Option<f32>,
+    pub course_requirement: Option<u32>,
+    pub credit_completed: f32,
+    pub course_completed: u32,
+    pub completed: bool, //Is the user completed the necessary demands for this bank
     // TODO planing ...
     pub message: Option<String>,
-}
-
-impl Requirement {
-    fn create(bank_name: String, credit_requirment: f32) -> Self {
-        Requirement {
-            course_bank_name: bank_name,
-            credit_requirment,
-            ..Default::default()
-        }
-    }
-    fn with_credits(mut self, credit_complete: f32) -> Self {
-        self.credit_complete = credit_complete;
-        self
-    }
-    fn with_message(mut self, msg: Option<String>) -> Self {
-        self.message = msg;
-        self
-    }
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct DegreeStatus {
     pub course_statuses: Vec<CourseStatus>,
     pub course_bank_requirements: Vec<Requirement>, // 
-    pub credit_overflow_msgs: Vec<String>, // זליגות של נקז ואיך טיפלנו בהם
+    pub overflow_msgs: Vec<String>, // זליגות של נקז ואיך טיפלנו בהם
     pub total_credit: f32,   
 }
 
@@ -190,13 +177,18 @@ pub fn set_order(course_banks: &Vec<CourseBank>, credit_overflow_rules: &Vec<Cre
     ordered_course_banks
 }
 
-pub fn set_type_and_add_credits(course_status: &mut CourseStatus, bank_name: String, sum_credits: &mut f32) {
+// This function sets the type of the course and adds its credit to sum_credits.
+// Returns true if the credits have been added, false otherwise.
+pub fn set_type_and_add_credits(course_status: &mut CourseStatus, bank_name: String, sum_credits: &mut f32) -> bool {
     if course_status.r#type.is_none() {
         if course_status.passed() {
             *sum_credits += course_status.course.credit;
+            course_status.set_type(bank_name);
+            return true;
         }
         course_status.set_type(bank_name);
     }
+    false
 }
 
 struct BankRuleHandler<'a> {
@@ -204,18 +196,26 @@ struct BankRuleHandler<'a> {
     bank_name: String,
     course_list: Vec<u32>,
     credit_overflow: f32,
+    courses_overflow: Option<u32>
 }
 
 impl<'a> BankRuleHandler<'a> {
 
-    fn iterate_course_list(&mut self) -> f32{
+    fn iterate_course_list(&mut self) -> (f32, u32) {
         let mut sum_credits = self.credit_overflow;
+        let mut count_courses = match &self.courses_overflow {
+            Some(num_courses) => { *num_courses }
+            None => { 0 },
+        };
         for course_number in &self.course_list {
             if let Some(course_status) = self.user.get_mut_course_status(*course_number) {
-                set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+                let course_added = set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+                if course_added {
+                    count_courses += 1;
+                }
             }
         }
-        sum_credits
+        (sum_credits, count_courses)
     }
 
     pub fn all(self) -> f32 {
@@ -241,8 +241,15 @@ impl<'a> BankRuleHandler<'a> {
         sum_credits
     }
     
-    pub fn accumulate(mut self) -> f32 {
-        self.iterate_course_list()
+    pub fn accumulate_credit(mut self) -> f32 {
+        let (sum_credits, _) = self.iterate_course_list();
+        sum_credits
+    }
+
+    pub fn accumulate_courses(mut self, count_courses: &mut u32) -> f32 {
+        let (sum_credits, num_courses) = self.iterate_course_list();
+        *count_courses = num_courses;
+        sum_credits
     }
 
     pub fn malag(self) -> f32 {
@@ -273,24 +280,22 @@ impl<'a> BankRuleHandler<'a> {
         sum_credits
     }
     
-    pub fn chain(mut self, chains: &Vec<Chain>) -> (f32, bool) {
-    // TODO: notify the user about courses he has left to complete the chain he started
-        let sum_credits = self.iterate_course_list();
+    pub fn chain(mut self, chains: &Vec<Chain>, chain_done: &mut Chain) -> f32 {
+        let (sum_credits, _) = self.iterate_course_list();
         for chain in chains { //check if the user completed one of the chains.
             let mut completed_chain = true;
             for course_number in chain {
                 completed_chain &= self.user.passed_course(*course_number);
             }
             if completed_chain {
-                return (sum_credits, true);
+                *chain_done = chain.clone();
             }
         }
-        (sum_credits, false)
+        sum_credits
     }
     
-    pub fn specialization_group(mut self, specialization_groups: &SpecializationGroups) -> (f32, bool) {
-        let sum_credits = self.iterate_course_list();
-        let mut count_completed_groups = 0;
+    pub fn specialization_group(mut self, specialization_groups: &SpecializationGroups, completed_groups: &mut Vec<String>) -> f32 {
+        let (sum_credits, _) = self.iterate_course_list();
         for specialization_group in &specialization_groups.groups_list { //check if the user completed all the specialization groups requirements
             let mut completed_group = true;
             if let Some(mandatory) = &specialization_group.mandatory {
@@ -315,124 +320,159 @@ impl<'a> BankRuleHandler<'a> {
             }
             completed_group &= count_courses >= specialization_group.courses_sum;
             if completed_group {
-                count_completed_groups += 1;
+                completed_groups.push(specialization_group.name.clone());
             }
         }
-        (sum_credits, count_completed_groups >= specialization_groups.groups_number)
+
+        sum_credits
     }
 }
-
-
 
 struct DegreeStatusHandler<'a>{
     user : &'a mut UserDetails, 
     course_banks: Vec<CourseBank>,
     catalog: &'a Catalog,
     credit_overflow_map: HashMap<String, f32>,
+    courses_overflow_map: HashMap<String, f32>,
 }
 
 impl<'a> DegreeStatusHandler<'a> {
 
-    fn calculate_credits_overflow_for_bank(&mut self, bank_name: &str) -> f32 {
-        let mut sum_credits = 0.0;
-        for credit_overflow in &self.catalog.credit_overflows {
-            if &credit_overflow.to == bank_name {
-                if self.credit_overflow_map.contains_key(&credit_overflow.from) {
-                    let credits = self.credit_overflow_map[&credit_overflow.from];
-                    if credits > 0.0 {
-                        self
-                            .user
-                            .degree_status
-                            .credit_overflow_msgs
-                            .push(format!("עברו {} נקודות מ- {} ל- {}", credits, &credit_overflow.from, &credit_overflow.to));
-                        *self.credit_overflow_map.get_mut(&credit_overflow.from).unwrap() = 0.0;
-                        sum_credits += credits
+    fn calculate_overflows(&mut self, bank_name: &str, credits_overflow: bool) -> f32 {
+        let mut sum = 0.0;
+        let overflows_map = if credits_overflow { &mut self.credit_overflow_map } else { &mut self.courses_overflow_map };
+        for overflow_rule in &self.catalog.credit_overflows {
+            if &overflow_rule.to == bank_name {
+                if overflows_map.contains_key(&overflow_rule.from) {
+                    let overflow = overflows_map[&overflow_rule.from];
+                    if overflow > 0.0 {
+                        let msg = if credits_overflow {
+                            format!("עברו {} נקודות מ{} ל{}", overflow, &overflow_rule.from, &overflow_rule.to)
+                        }
+                        else {
+                            format!("עברו {} קורסים מ{} ל{}", overflow, &overflow_rule.from, &overflow_rule.to)
+                        };
+                        self.user.degree_status.overflow_msgs.push(msg);
+                        *overflows_map.get_mut(&overflow_rule.from).unwrap() = 0.0;
+                        sum += overflow
                     }
                 }
             }
         }
-        sum_credits
+        sum
     }
 
-    fn calculate_credit_and_handle_overflow(&mut self, bank: &CourseBank, sum_credits: f32) -> f32 {
-        if sum_credits <= bank.credit {
+    fn handle_credit_overflow(&mut self, bank: &CourseBank, sum_credits: f32) -> f32 {
+        let bank_credit = if bank.credit.is_some() { bank.credit.unwrap() } else { 0.0 };
+        if sum_credits <= bank_credit {
             self.user.degree_status.total_credit += sum_credits;
             sum_credits
         } 
-        // The student has credits overflow for this bank
         else {
-            self.credit_overflow_map.insert(bank.name.clone(), sum_credits - bank.credit);
-            self.user.degree_status.total_credit += bank.credit;
-            bank.credit
+            self.credit_overflow_map.insert(bank.name.clone(), sum_credits - bank_credit);
+            self.user.degree_status.total_credit += bank_credit;
+            bank_credit
+        }
+    }
+
+    fn handle_courses_overflow(&mut self, bank: &CourseBank, num_courses: u32, count_courses: u32) -> u32 {
+        if count_courses <= num_courses {
+            count_courses
+        }
+        else {
+            self.courses_overflow_map.insert(bank.name.clone(), (count_courses - num_courses) as f32);
+            num_courses
         }
     }
 
     fn calculate_credit_leftovers(&mut self) -> f32 {
         let mut sum_credits = 0.0;
-        for credit_overflow in &mut self.credit_overflow_map {
-            sum_credits += *credit_overflow.1;
+        for credit_overflow in &mut self.credit_overflow_map.values() {
+            sum_credits += *credit_overflow;
         }
         sum_credits
     }
 
-    fn add_requirement(&mut self, bank: &CourseBank, sum_credits: f32, msg: Option<String>) {
-        let credit_complete = self.calculate_credit_and_handle_overflow(bank, sum_credits);
-        self.user.degree_status.course_bank_requirements.push(
-            Requirement::create(bank.name.clone(), bank.credit)
-                .with_credits(credit_complete)
-                .with_message(msg));
-    }
-
-    fn handle_bank_rule(&mut self, bank: &CourseBank, course_list_for_bank: Vec<u32>, credit_overflow: f32){
+    fn handle_bank_rule(&mut self, bank: &CourseBank, course_list_for_bank: Vec<u32>, credit_overflow: f32, courses_overflow: Option<u32>){
         let bank_rule_handler = BankRuleHandler {
             user: self.user,
             bank_name: bank.name.clone(),
             course_list: course_list_for_bank,
-            credit_overflow
+            credit_overflow,
+            courses_overflow
         };
+
+        // Initialize necessary variable for rules handling
+        let mut sum_credits;
+        let mut count_courses= 0; // for accumulate courses rule
+        let mut completed = true;
+        let mut groups_done_list = Vec::new(); // for specialization groups rule
+        let mut chain_done = Vec::new(); // for chain rule
+        let mut msg = None;
+
         match &bank.rule {
             Rule::All => {
-                let sum_credits = bank_rule_handler.all();
-                self.add_requirement(bank, sum_credits, None);   
+                sum_credits = bank_rule_handler.all();
             }
-            Rule::Accumulate => {
-                let sum_credits = bank_rule_handler.accumulate();
-                self.add_requirement(bank, sum_credits, None); 
+            Rule::AccumulateCredit => {
+                sum_credits = bank_rule_handler.accumulate_credit();
+            }
+            Rule::AccumulateCourses(num_courses) => {
+                sum_credits = bank_rule_handler.accumulate_courses(&mut count_courses);
+                println!("{}", count_courses);
+                count_courses = self.handle_courses_overflow(bank, *num_courses, count_courses);
+                completed = count_courses >= *num_courses;
             }
             Rule::Malag => {
-                let sum_credits = bank_rule_handler.malag();
-                self.add_requirement(bank, sum_credits, None); 
+                sum_credits = bank_rule_handler.malag();
             }
             Rule::Sport => {
-                let sum_credits = bank_rule_handler.sport();
-                self.add_requirement(bank, sum_credits, None); 
+                sum_credits = bank_rule_handler.sport();
             }
             Rule::FreeChoice => {
-                let sum_credits = bank_rule_handler.free_choice();
-                self.add_requirement(bank, sum_credits, None); 
+                sum_credits = bank_rule_handler.free_choice();
             }
             Rule::Chains(chains) => {
-                let (sum_credits, completed_chain) = bank_rule_handler.chain(chains);
-                let msg = if completed_chain {
-                    String::from("The user completed a full chain")
+                sum_credits = bank_rule_handler.chain(chains, &mut chain_done);
+                completed = !chain_done.is_empty();
+                if completed {
+                    let mut _msg = format!("הסטודנט השלים את השרשרת הבאה:\n");
+                    for course in chain_done {
+                        _msg += &format!("{},", course);
+                    }
+                    msg = Some(_msg);
                 }
-                else {
-                    String::from("The user didn't complete a full chain")
-                };
-                self.add_requirement(bank, sum_credits, Some(msg));
             }
             Rule::SpecializationGroups(specialization_groups) => {
-                let (sum_credits, completed_groups) = bank_rule_handler.specialization_group(specialization_groups);
-                let msg = if completed_groups {
-                    String::from("The user completed enough specialization groups")
+                sum_credits = bank_rule_handler.specialization_group(specialization_groups, &mut groups_done_list);
+                completed = groups_done_list.len() >= specialization_groups.groups_number.into();
+                let mut new_msg = format!("הסטודנט השלים {} קבוצות התמחות", groups_done_list.len());
+                for group_done in groups_done_list {
+                    new_msg += &format!("{}\n", group_done);
                 }
-                else {
-                    String::from("The user didn't completed enough specialization groups")
-                };
-                self.add_requirement(bank, sum_credits, Some(msg));
+                msg = Some(new_msg);
             }
-            _ => todo!()
+            Rule::Wildcard(_) => {
+                sum_credits = 0.0; // TODO: change this
+            },
         }
+        sum_credits = self.handle_credit_overflow(bank, sum_credits);
+        if let Some(bank_credit) = bank.credit {
+            completed &= sum_credits >= bank_credit;
+        }
+
+        self.user.degree_status.course_bank_requirements.push(
+            Requirement {
+                course_bank_name: bank.name.clone(),
+                bank_rule_name: bank.rule.to_string(),
+                credit_requirment: bank.credit,
+                course_requirement: if let Rule::AccumulateCourses(num_courses) = bank.rule { Some(num_courses) } else { None },
+                credit_completed: sum_credits,
+                course_completed: count_courses,
+                completed,
+                message: msg,
+            }
+        );
     }
 
     fn handle_leftovers(&mut self) {
@@ -446,15 +486,19 @@ impl<'a> DegreeStatusHandler<'a> {
     pub fn proccess(mut self) {
         for bank in self.course_banks.clone() {
             let course_list_for_bank = self.catalog.get_course_list(&bank.name);
-            let credit_overflow = self.calculate_credits_overflow_for_bank(&bank.name);
-            self.handle_bank_rule(&bank, course_list_for_bank, credit_overflow);
+            let credit_overflow = self.calculate_overflows(&bank.name, true);
+            let mut courses_overflow = None;
+            if matches!(bank.rule, Rule::AccumulateCourses(_)) {
+                courses_overflow = Some(self.calculate_overflows(&bank.name, false) as u32);
+            }
+            self.handle_bank_rule(&bank, course_list_for_bank, credit_overflow, courses_overflow);
         }
         let credit_leftovers = self.calculate_credit_leftovers(); // if different from 0 then the user has extra credits he doesn't use
         self.user.degree_status.total_credit += credit_leftovers;
         self
             .user
             .degree_status
-            .credit_overflow_msgs
+            .overflow_msgs
             .push(format!("יש לסטודנט {} נקודות עודפות", credit_leftovers));
         self.handle_leftovers(); // Need to consult with Nissan and Benny
     }
@@ -468,6 +512,7 @@ pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
         course_banks,
         catalog,
         credit_overflow_map: HashMap::new(),
+        courses_overflow_map: HashMap::new()
     }.proccess();
 }
 
@@ -475,7 +520,6 @@ pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
 #[cfg(test)]
 mod tests{
     use std::str::FromStr;
-
     use dotenv::dotenv;
     use actix_rt::test;
     use crate::{course::{self}, db};   
@@ -568,7 +612,7 @@ mod tests{
                     }
                 ],
                 course_bank_requirements: Vec::<Requirement>::new(),
-                credit_overflow_msgs: Vec::<String>::new(),
+                overflow_msgs: Vec::<String>::new(),
                 total_credit: 0.0,
             },
             modified: false,
@@ -585,7 +629,8 @@ mod tests{
             user: &mut user,
             bank_name,
             course_list,
-            credit_overflow
+            credit_overflow,
+            courses_overflow: None
         };
         let res = handle_bank_rule_processor.all();
         // check it adds the type
@@ -608,7 +653,7 @@ mod tests{
     }
 
     #[test]
-    async fn test_rule_accumulate() { // for debugging
+    async fn test_rule_accumulate_credit() { // for debugging
         let mut user = create_user();
         let bank_name = "reshima a".to_string();
         let course_list = vec![000001, 000002, 123456, 456789, 159159, 000003];
@@ -617,9 +662,10 @@ mod tests{
             user: &mut user,
             bank_name,
             course_list,
-            credit_overflow
+            credit_overflow,
+            courses_overflow: None
         };
-        let res = handle_bank_rule_processor.accumulate();
+        let res = handle_bank_rule_processor.accumulate_credit();
         // check it adds the type
         assert_eq!(user.degree_status.course_statuses[0].r#type, Some("reshima a".to_string()));
         assert_eq!(user.degree_status.course_statuses[1].r#type, Some("reshima a".to_string()));
@@ -641,7 +687,8 @@ mod tests{
             user: &mut user,
             bank_name,
             course_list,
-            credit_overflow
+            credit_overflow,
+            courses_overflow: None
         };
         let res = handle_bank_rule_processor.malag();
         println!("{}", res);
@@ -680,7 +727,7 @@ mod tests{
 
         let course_statuses = course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
 
-        let obj_id = bson::oid::ObjectId::from_str("6199043f1cf3261f8d15aa47").expect("failed to create oid");
+        let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401").expect("failed to create oid");
         let catalog = db::services::get_catalog_by_id(&obj_id, &client).await.expect("failed to get catalog");
         let mut user = UserDetails {
             catalog: None,

@@ -1,9 +1,9 @@
 import { useQuery } from 'react-query';
 import { getCatalogs } from '../../services/api';
 
-export default function useUserState(authToken: any) {    
+export default function useCatalogs(authToken: any) {    
     return useQuery(
-    'useState', 
+    'catalogs', 
     () => getCatalogs(authToken),
     {
         enabled: !!authToken,

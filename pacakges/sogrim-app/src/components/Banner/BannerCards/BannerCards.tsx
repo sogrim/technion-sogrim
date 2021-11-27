@@ -3,14 +3,15 @@ import { DegreeMainStatus } from './DegreeMainStatus';
 import { observer} from 'mobx-react-lite';
 import { useStore } from '../../../hooks/useStore';
 
-const BannerCardsComp: React.FC = ({ children }) => {
-  
-  const { uiStore: { showDegreeStatusCard }} = useStore();
+const BannerCardsComp: React.FC = () => {
+  const { uiStore: { showMainStatus } } = useStore();
 
   return (    
         <Box >
-          { showDegreeStatusCard ? <DegreeMainStatus /> : null }
-         
+           <DegreeMainStatus />          
+          {/* { !showMainStatus ? 
+          <VerticalLinearStepper /> :
+          <DegreeMainStatus />  } */}
         </Box>                
      
   );

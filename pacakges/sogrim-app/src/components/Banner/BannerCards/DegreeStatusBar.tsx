@@ -19,9 +19,8 @@ const LinearProgressWithLabel = (props: LinearProgressProps & { value: number })
   );
 }
 
-export const DegreeStatusBar = () => {
-  const [progress] = React.useState(50);  
-
+export const DegreeStatusBar = ({progress = 0}: {progress: number}) => {
+  
   return (
     <Box sx={{ width: '100%', }}>
       <LinearProgressWithLabel value={progress} />

@@ -1,14 +1,49 @@
 import { Box } from "@mui/system";
+import { observer } from "mobx-react-lite";
+import React from "react";
+import useUserState from "../../hooks/apiHooks/useUserState";
+import { useAuth } from "../../hooks/useAuth";
+import { useStore } from "../../hooks/useStore";
+import { UserRegistrationState } from "../../types/ui-types";
+import { AppStepper } from "../Banner/AppStepper";
 import { PagesTabs } from "./Tabs";
 
-export const AppPages: React.FC = () => {
+const AppPagesComp: React.FC = () => {
+
+    const { uiStore: {
+        userRegistrationState,
+    }} = useStore();
+
+    const [ rs, setRs ] = React.useState<UserRegistrationState>();
+
+    const { userAuthToken } = useAuth();
+    const { data, isLoading, isError, refetch} = useUserState(userAuthToken);
+
+    React.useEffect(() => {
+      const refreshStepper = async() => {
+        if (data && !isLoading ) {
+          const { data: newData} = await refetch();
+          if (newData) {
+            const rs = userRegistrationState(newData);            
+            setRs(rs);
+          }
+        }      
+      }
+      refreshStepper();
+
+    }, [data])
+
     return ( 
-        <Box sx={sxPages} > 
-            <PagesTabs/>
+        <Box sx={sxPages} >
+            { rs !== UserRegistrationState.Ready ? 
+                <AppStepper /> : <PagesTabs/>
+            }
                
         </Box> 
         );
 }
+
+export const AppPages = observer(AppPagesComp);
 
 const sxPages = {
     width: '100%',

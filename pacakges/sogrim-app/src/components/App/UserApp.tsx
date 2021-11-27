@@ -7,40 +7,35 @@ import { observer } from 'mobx-react-lite';
 import { useStore } from '../../hooks/useStore';
 import useUserState from '../../hooks/apiHooks/useUserState';
 import { useAuth } from '../../hooks/useAuth';
-import useCatalogs from '../../hooks/apiHooks/useCatalogs';
-
 
 const UserAppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(LIGHT_MODE_THEME);  
-  
-  const { dataStore: {
-    setUserState,
-    userState
-  }} = useStore();
+  const theme = useMemo(() => getAppTheme(mode), [mode]);
+
+  const [ triggerUseUserState, setTriggerUseUserState] = useState<boolean>(true);
 
   const { userAuthToken } = useAuth();
+  const { uiStore: {
+    setUserUIState,
+  }} = useStore();
 
-  const { data, isLoading, isError} = useUserState(userAuthToken);
-  //const { data: catalogsData, isLoading: catalogsIsLoading, isError: catalogsIsError} = useCatalogs(userAuthToken);
+  const { data, isLoading, isError} = useUserState(userAuthToken, triggerUseUserState);
   
   useEffect(() => {
       if (isError) {
         // TODO: add error state.
       } else if (data && !isLoading) {        
-        setUserState(data);
+    //    setTriggerUseUserState(false); 
+        setUserUIState(data);
       }
-  }, [data, isLoading,  isError]);
+  }, [data, isLoading, isError]);
 
   // TODO: add loading state.
-  console.log({...userState});
-
-  const theme = useMemo(() => getAppTheme(mode), [mode]);
   
   return (            
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Layout>
-      </Layout>
+      <Layout />
     </ThemeProvider>  
   );
 }
