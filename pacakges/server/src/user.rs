@@ -8,13 +8,14 @@ use actix_web::{Error, FromRequest, HttpRequest, HttpResponse, get, post, put, w
 use mongodb::Client;
 use serde::{Serialize, Deserialize};
 use crate::auth::Sub;
+use crate::catalog::DisplayCatalog;
 use crate::course::{self, CourseStatus};
 use crate::core::{self, *};
 use crate::db;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
-    pub catalog : Option<bson::oid::ObjectId>, //TODO change type to DisplayCatalog
+    pub catalog : Option<DisplayCatalog>,
     pub degree_status: DegreeStatus,
     pub modified: bool,
 }
@@ -107,21 +108,85 @@ pub async fn add_catalog(
     catalog_id: String,
     mut user: User, 
 ) -> Result<HttpResponse, Error>{
-    if let Some(details) = &mut user.details {
-        details.catalog = Some(
-            bson::oid::ObjectId::from_str(&catalog_id)
-            .map_err(|err| ErrorInternalServerError(err))?
-        );
-        details.modified = true;
-        details.degree_status = DegreeStatus::default();
-        let user_id = user.sub.clone();
-        let document = doc!{"$set" : user.into_document()}; 
-        db::services::find_and_update_user(&user_id, document, &client).await?;
-        Ok(HttpResponse::Ok().finish())
+
+    match &mut user.details{
+        Some(details) => {
+            let obj_id = bson::oid::ObjectId::from_str(&catalog_id)
+                .map_err(|err| ErrorInternalServerError(err))?;
+            let catalog = db::services::get_catalog_by_id(&obj_id, &client).await?;
+            details.catalog = Some(DisplayCatalog::from(catalog));
+            details.degree_status = DegreeStatus::default();
+            details.modified = true;
+            db::services::find_and_update_user(
+                &user.sub.clone(), 
+                doc!{"$set" : user.into_document()}, 
+                &client
+            ).await
+        },
+        None => Err(ErrorInternalServerError("No data exists for user")),
     }
-    else{
-        Err(ErrorInternalServerError("No data exists for user"))
+}
+
+#[post("/user/ug_data")]
+pub async fn add_data_from_ug(
+        client: web::Data<Client>, 
+    ug_data: String,
+    mut user: User, 
+) -> Result<HttpResponse, Error>{
+
+    match &mut user.details{
+        Some(details) => {
+            details.degree_status = DegreeStatus::default();
+            details.degree_status.course_statuses = course::parse_copy_paste_from_ug(&ug_data)?;
+            details.modified = true;
+            db::services::find_and_update_user(
+                &user.sub.clone(), 
+                doc!{"$set" : user.into_document()}, 
+                &client
+            ).await
+        }
+        None => Err(ErrorInternalServerError("No data exists for user"))
     }
+}
+
+// here "modified" becomes false
+#[get("/user/compute")]
+pub async fn compute_degree_status(
+    client: web::Data<Client>,
+    mut user: User, 
+) -> Result<HttpResponse, Error>{
+    
+    let mut user_details = user
+        .details
+        .as_mut()
+        .ok_or_else(|| ErrorInternalServerError("No data exists for user"))?;
+    
+    let catalog_id = user_details
+        .catalog
+        .as_ref()
+        .ok_or_else(|| ErrorInternalServerError("No data exists for user"))?
+        .id;
+    
+    let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;
+    
+    user_details.degree_status.course_bank_requirements.clear();
+    user_details.degree_status.overflow_msgs.clear();
+    user_details.degree_status.total_credit = 0.0;
+    user_details.modified = false;
+
+    core::calculate_degree_status(&catalog, &mut user_details);
+    
+    for course_status in user_details.degree_status.course_statuses.iter_mut() {
+        // Fill in courses without information
+        let course = &mut course_status.course;
+        if course.name.is_empty(){
+            *course = db::services::get_course_by_number(course.number, &client).await?;
+        }
+    }
+    let user_id = user.sub.clone();
+    let document = doc!{"$set" : user.clone().into_document()}; 
+    db::services::find_and_update_user(&user_id, document, &client).await?;
+    Ok(HttpResponse::Ok().json(user))
 }
 
 // here "modified" becomes true
@@ -137,79 +202,6 @@ pub async fn update_user_details(
     let document = doc!{"$set" : user.into_document()}; 
     db::services::find_and_update_user(&user_id, document, &client).await?;
     Ok(HttpResponse::Ok().finish())
-}
-
-// here "modified" becomes false
-#[get("/user/compute")]
-pub async fn compute_degree_status(
-    client: web::Data<Client>,
-    mut user: User, 
-) -> Result<HttpResponse, Error>{
-    
-    let mut user_details = user
-        .details
-        .as_mut()
-        .ok_or_else(||
-             ErrorInternalServerError("No data exists for user")
-        )?;
-
-    let catalog_id = user_details
-        .catalog
-        .ok_or_else(||{
-            ErrorInternalServerError("No data exists for user")
-        })?;
-
-    let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;
-    core::calculate_degree_status(&catalog, &mut user_details);
-    user_details.modified = false;
-    for course_status in user_details.degree_status.course_statuses.iter_mut() {
-        // Fill in courses without information
-        let course = &mut course_status.course;
-        if course.name.is_empty(){
-            *course = db::services::get_course_by_number(course.number, &client).await?;
-        }
-    }
-    let user_id = user.sub.clone();
-    let document = doc!{"$set" : user.clone().into_document()}; 
-    db::services::find_and_update_user(&user_id, document, &client).await?;
-    Ok(HttpResponse::Ok().json(user))
-}
-
-#[post("/user/ug_data")]
-pub async fn add_data_from_ug(
-    client: web::Data<Client>, 
-    ug_data: String,
-    mut user: User, 
-) -> Result<HttpResponse, Error>{
-
-    //course::validate_copy_paste_from_ug(&ug_data)?;
-    let user_courses = course::parse_copy_paste_from_ug(&ug_data)?; //TODO if parsing fails -> 400
-    let user_id = user.sub.clone();
-    if let Some(details) = &mut user.details {
-        details.degree_status = DegreeStatus::default();
-        details.modified = true;
-        details.degree_status.course_statuses = user_courses;
-    }
-    else{
-        return Err(ErrorInternalServerError(""));
-    }
-    let db_name_from_profile = std::env::var("PROFILE").unwrap_or("debug".into());
-    client
-        .database(db_name_from_profile.as_str())
-        .collection::<User>("Users")
-        .find_one_and_update(
-            doc!{"_id" : &user_id},
-            doc!{ "$set" : user.into_document()},
-            None    
-        )
-        .await
-        .map_err(|err| ErrorInternalServerError(err))
-        .map(|maybe_user| 
-            match maybe_user {
-                Some(user) => HttpResponse::Ok().body(format!("Successfully added ug data for {}", user.sub)),
-                None => HttpResponse::InternalServerError().body(format!("User {} does not exist in the database", user_id)),
-            }
-        )
 }
 
 // DEBUG..
@@ -237,14 +229,13 @@ mod tests{
     use mongodb::Client;
     use dotenv::dotenv;
     use crate::{auth, user::User};
+    use crate::config::CONFIG;
 
     #[test]
     async fn test_user_login(){
     
-        std::env::set_var("RUST_LOG", "actix_server=info");
-        env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
         dotenv().ok();
-        let client = Client::with_uri_str(std::env::var("URI").unwrap()).await.expect("failed to connect");
+        let client = Client::with_uri_str(CONFIG.uri).await.expect("failed to connect");
     
         let mut app = test::init_service(
         App::new()
@@ -254,7 +245,7 @@ mod tests{
         ).await;
     
         // Create and send request
-        let resp = test::TestRequest::post()
+        let resp = test::TestRequest::get()
             .uri("/user/login")
             .insert_header(("authorization", "bugo-the-debugo"))
             .send_request(&mut app)

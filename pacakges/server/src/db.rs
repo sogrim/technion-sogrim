@@ -4,6 +4,7 @@ use actix_web::error::{self, Error};
 use crate::user::User;
 use crate::catalog::Catalog;
 use crate::course::Course;
+use crate::config::CONFIG;
 pub use bson::{Document, doc};
 
 pub mod services{
@@ -27,7 +28,7 @@ pub mod services{
         ) => {
             pub async fn $fn_name(item : $db_key_type, client: &Client) -> Result<$db_item, Error> {
                 match client
-                    .database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
+                    .database(CONFIG.profile)
                     .collection::<$db_item>(format!("{}s", stringify!($db_item)).as_str())
                     .find_one(doc!{$db_key_name : item}, None)
                     .await
@@ -70,7 +71,7 @@ pub mod services{
         client: &Client
     ) -> Result<HttpResponse, Error> {
 
-        match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
+        match client.database(CONFIG.profile)
             .collection::<User>("Users")
             .find_one_and_update(
             doc!{"_id" : user_id}, 
@@ -95,7 +96,7 @@ pub mod services{
     }
 
     pub async fn get_all_catalogs(client: &Client) -> Result<HttpResponse, Error> {
-        match client.database(std::env::var("PROFILE").unwrap_or("debug".into()).as_str())
+        match client.database(CONFIG.profile)
             .collection::<DisplayCatalog>("Catalogs")
             .find(None, None)
             .await

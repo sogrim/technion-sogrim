@@ -1,7 +1,7 @@
 extern crate jsonwebtoken_google;
 
-use std::{env::{self, VarError}, rc::Rc};
-
+use crate::config::CONFIG;
+use std::rc::Rc;
 use actix_web::{Error, HttpMessage, dev::{Service, ServiceRequest, ServiceResponse, Transform}, error::ErrorUnauthorized, http::header};
 use futures_util::{FutureExt, future::{LocalBoxFuture, Ready, ready}};
 use jsonwebtoken_google::{Parser, ParserError};
@@ -30,20 +30,9 @@ pub struct IdInfo {
 
 pub type Sub = String;
 
-#[derive(Debug)]
-pub enum AuthError{
-    ParserError(ParserError),
-    VarError(VarError),
-}
-impl std::fmt::Display for AuthError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 macro_rules! debug_auth{
     () => {
-        if env::var("PROFILE").unwrap_or("debug".into()) == "debug" {
+        if CONFIG.profile == "debug" {
             return Ok(IdInfo{
                 sub: "bugo-the-debugo".into(),
                 ..Default::default()
@@ -52,20 +41,11 @@ macro_rules! debug_auth{
     }
 }
 
-pub async fn get_decoded(token: &str) -> Result<IdInfo, AuthError> {
+pub async fn get_decoded(token: &str) -> Result<IdInfo, ParserError> {
     
     debug_auth!(); // will return immediately in debug environment.
-
-    let parser = Parser::new(
-        &env::var("CLIENT_ID")
-            .map_err(|e| AuthError::VarError(e))?
-    );
-
-    Ok(parser
-        .parse::<IdInfo>(token)
-        .await
-        .map_err(|e| AuthError::ParserError(e))?
-    )
+    let parser = Parser::new(CONFIG.client_id);
+    Ok(parser.parse::<IdInfo>(token).await?)
 }
 pub struct AuthenticateMiddleware;
 impl<S, B> Transform<S, ServiceRequest> for AuthenticateMiddleware
