@@ -3,7 +3,7 @@ use actix_web::{App, HttpServer, middleware::Logger, web};
 use actix_cors::Cors;
 use mongodb::Client;
 use dotenv::dotenv;
-use crate::config::Config;
+use crate::config::CONFIG;
 
 mod auth;
 mod db;
@@ -17,9 +17,7 @@ mod config;
 async fn main() -> std::io::Result<()> {
 
     dotenv().ok();
-    let config = Config::from_env().unwrap();
-    let app_config = config.clone();
-    let client = Client::with_uri_str(&config.uri).await.expect("failed to connect");
+    let client = Client::with_uri_str(&CONFIG.uri).await.expect("failed to connect");
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     HttpServer::new(move || {
@@ -28,7 +26,6 @@ async fn main() -> std::io::Result<()> {
             .wrap(auth::AuthenticateMiddleware)
             .wrap(Cors::permissive())
             .wrap(Logger::default())
-            .app_data(app_config.clone())
             .service(catalog::get_all_catalogs)
             .service(user::user_login)
             .service(user::add_catalog)
@@ -37,7 +34,7 @@ async fn main() -> std::io::Result<()> {
             .service(user::update_user_details)
             .service(user::debug)
     })
-    .bind((config.ip, config.port))?
+    .bind((CONFIG.ip, CONFIG.port))?
     .run()
     .await
 }

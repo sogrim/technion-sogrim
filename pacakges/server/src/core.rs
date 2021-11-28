@@ -512,7 +512,8 @@ mod tests{
     use std::str::FromStr;
     use dotenv::dotenv;
     use actix_rt::test;
-    use crate::{course::{self}, db};   
+    use crate::{course::{self}, db};
+    use crate::config::CONFIG;   
     use super::*;
 
     fn create_user() -> UserDetails {
@@ -699,10 +700,9 @@ mod tests{
     async fn test_legendary_function() {
         
         dotenv().ok();
-        let options = mongodb::options::ClientOptions::parse(
-            std::env::var("URI").unwrap())
-        .await
-        .expect("failed to parse URI");
+        let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
+            .await
+            .expect("failed to parse URI");
     
         let client = mongodb::Client::with_options(options).unwrap();
         // Ping the server to see if you can connect to the cluster

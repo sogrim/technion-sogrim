@@ -229,14 +229,13 @@ mod tests{
     use mongodb::Client;
     use dotenv::dotenv;
     use crate::{auth, user::User};
+    use crate::config::CONFIG;
 
     #[test]
     async fn test_user_login(){
     
-        std::env::set_var("RUST_LOG", "actix_server=info");
-        env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
         dotenv().ok();
-        let client = Client::with_uri_str(std::env::var("URI").unwrap()).await.expect("failed to connect");
+        let client = Client::with_uri_str(CONFIG.uri).await.expect("failed to connect");
     
         let mut app = test::init_service(
         App::new()
@@ -246,7 +245,7 @@ mod tests{
         ).await;
     
         // Create and send request
-        let resp = test::TestRequest::post()
+        let resp = test::TestRequest::get()
             .uri("/user/login")
             .insert_header(("authorization", "bugo-the-debugo"))
             .send_request(&mut app)

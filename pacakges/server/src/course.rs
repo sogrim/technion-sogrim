@@ -188,6 +188,7 @@ mod tests{
     use super::*;
     use actix_rt::test;
     use dotenv::dotenv;
+    use crate::config::CONFIG;
 
     #[test]
     async fn test_ug_course_parser(){
@@ -316,10 +317,9 @@ mod tests{
         let mut counter = 0;
         let mut unique_lines = std::collections::HashSet::new();
         let mut courses = Vec::new();
-        let options = mongodb::options::ClientOptions::parse(
-            std::env::var("URI").unwrap())
-        .await
-        .unwrap();
+        let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
+            .await
+            .unwrap();
         let client = mongodb::Client::with_options(options).unwrap();
         // Ping the server to see if you can connect to the cluster
         client
