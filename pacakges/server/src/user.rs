@@ -128,7 +128,7 @@ pub async fn add_catalog(
 }
 
 #[post("/user/ug_data")]
-    pub async fn add_data_from_ug(
+pub async fn add_data_from_ug(
         client: web::Data<Client>, 
     ug_data: String,
     mut user: User, 
