@@ -8,6 +8,8 @@ pub struct Catalog {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id : bson::oid::ObjectId,
     pub name: String,
+    pub total_credit : f64,
+    pub description : String,
     pub course_banks: Vec<CourseBank>,
     pub course_table: Vec<CourseTableRow>,
     pub credit_overflows: Vec<CreditOverflow>,
@@ -30,6 +32,8 @@ pub struct DisplayCatalog{
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id : bson::oid::ObjectId,
     pub name: String,
+    pub total_credit : f64,
+    pub description : String,
 }
 
 impl From<Catalog> for DisplayCatalog{
@@ -37,6 +41,8 @@ impl From<Catalog> for DisplayCatalog{
         DisplayCatalog{
             id: catalog.id,
             name: catalog.name,
+            total_credit : catalog.total_credit, 
+            description: catalog.description,
         }
     }
 }
@@ -44,7 +50,7 @@ impl From<Catalog> for DisplayCatalog{
 #[get("/catalogs")]
 pub async fn get_all_catalogs(
     client: web::Data<Client>, 
-    _: User, 
+    _: User, //TODO think about whether this is neccesary
 ) -> Result<HttpResponse, Error>{
     db::services::get_all_catalogs(&client).await    
 }
