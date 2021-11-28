@@ -120,16 +120,30 @@ pub fn set_order(course_banks: &Vec<CourseBank>, credit_overflow_rules: &Vec<Cre
     ordered_course_banks
 }
 
+pub fn reset_type_for_unmodified_courses(user_details: &mut UserDetails) {
+    for course_status in &mut user_details.degree_status.course_statuses {
+        if !course_status.modified {
+            course_status.r#type = None;
+        }
+    }
+}
+
 // This function sets the type of the course and adds its credit to sum_credits.
 // Returns true if the credits have been added, false otherwise.
-pub fn set_type_and_add_credits(course_status: &mut CourseStatus, bank_name: String, sum_credits: &mut f32) -> bool {
-    if course_status.r#type.is_none() {
+pub fn set_type_and_add_credits(
+    course_status: &mut CourseStatus,
+    bank_name: String,
+    sum_credits: &mut f32,
+) -> bool {
+    if course_status.r#type.is_none()
+        || (course_status.modified && *course_status.r#type.as_ref().unwrap() == bank_name)
+    {
+        course_status.set_type(bank_name);
+        course_status.modified = false; // finished handle this course
         if course_status.passed() {
             *sum_credits += course_status.course.credit;
-            course_status.set_type(bank_name);
             return true;
         }
-        course_status.set_type(bank_name);
     }
     false
 }
@@ -281,6 +295,16 @@ struct DegreeStatusHandler<'a>{
 
 impl<'a> DegreeStatusHandler<'a> {
 
+    fn get_modified_courses(&self, bank_name: &str) -> Vec<u32>{
+        let mut modified_courses = Vec::new();
+        for course_status in &self.user.degree_status.course_statuses {
+            if course_status.modified && course_status.r#type == Some(bank_name.to_string()) {
+                modified_courses.push(course_status.course.number);
+            }
+        }
+        modified_courses
+    }
+
     fn calculate_overflows(&mut self, bank_name: &str, credits_overflow: bool) -> f32 {
         let mut sum = 0.0;
         let overflows_map = if credits_overflow { &mut self.credit_overflow_map } else { &mut self.courses_overflow_map };
@@ -337,10 +361,13 @@ impl<'a> DegreeStatusHandler<'a> {
     }
 
     fn handle_bank_rule(&mut self, bank: &CourseBank, course_list_for_bank: Vec<u32>, credit_overflow: f32, courses_overflow: Option<u32>){
+        let mut course_list = self.get_modified_courses(&bank.name);
+        course_list.extend(course_list_for_bank);
+        //course list inscludes all courses for this bank from the catalog and courses that the user marked manually that their type is this bank
         let bank_rule_handler = BankRuleHandler {
             user: self.user,
             bank_name: bank.name.clone(),
-            course_list: course_list_for_bank,
+            course_list,
             credit_overflow,
             courses_overflow
         };
@@ -358,7 +385,6 @@ impl<'a> DegreeStatusHandler<'a> {
             Rule::AccumulateCredit => sum_credits = bank_rule_handler.accumulate_credit(),
             Rule::AccumulateCourses(num_courses) => {
                 sum_credits = bank_rule_handler.accumulate_courses(&mut count_courses);
-                println!("{}", count_courses);
                 count_courses = self.handle_courses_overflow(bank, *num_courses, count_courses);
                 completed = count_courses >= *num_courses;
             }
@@ -439,7 +465,8 @@ impl<'a> DegreeStatusHandler<'a> {
 
 pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
     let course_banks = set_order(&catalog.course_banks, &catalog.credit_overflows);
-    
+    reset_type_for_unmodified_courses(user);
+
     DegreeStatusHandler{      
         user,
         course_banks,
@@ -649,6 +676,7 @@ mod tests{
 
     #[test]
     async fn test_rule_chain() { // for debugging
+        // user finished a chain
         let mut user = create_user();
         let bank_name = "science chain".to_string();
         let course_list = vec![000001, 000002, 114052, 000005, 114054, 111111];
@@ -676,6 +704,26 @@ mod tests{
     
         // check sum credits
         assert_eq!(chain_done, vec![114052, 114054]);
+        assert_eq!(res, 7.0);
+
+
+        // user didn't finish a chain
+        let mut user = create_user();
+        let bank_name = "science chain".to_string();
+        let course_list = vec![000001, 000002, 114052, 000005, 114054, 111111];
+        let chains = vec![vec![000001, 000002], vec![114052, 000005], vec![222222, 114054], vec![114052, 111111]];
+        let mut chain_done = Vec::new();
+        let credit_overflow = 0.0;
+        let handle_bank_rule_processor = BankRuleHandler {
+            user: &mut user,
+            bank_name,
+            course_list,
+            credit_overflow,
+            courses_overflow: None
+        };
+        let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
+
+        assert_eq!(chain_done, Chain::new());
         assert_eq!(res, 7.0);
     }
     

@@ -27,6 +27,7 @@ pub struct CourseStatus {
     pub grade : Option<Grade>,
     pub r#type : Option<String>, // if none, nissan cries
     pub additional_msg : Option<String>,
+    pub modified: bool,
 }
 
 impl CourseStatus {
