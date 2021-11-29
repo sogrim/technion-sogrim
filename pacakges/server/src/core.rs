@@ -874,7 +874,7 @@ mod tests{
             .await
             .expect("failed to connect to db");
         println!("Connected successfully.");
-        let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
+        let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
             .expect("Something went wrong reading the file");
 
         let course_statuses = course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
@@ -895,7 +895,41 @@ mod tests{
         serde_json::to_string_pretty(&user.degree_status)
             .expect("json serialization failed")
         ).expect("Unable to write file");
-        println!("{:#?}", user.degree_status);
+
+        // check output
+        assert_eq!(user.degree_status.course_bank_requirements[0].credit_requirment, Some(2.0));
+        assert_eq!(user.degree_status.course_bank_requirements[0].credit_completed, 2.0);
+
+        assert_eq!(user.degree_status.course_bank_requirements[1].credit_requirment, Some(6.0));
+        assert_eq!(user.degree_status.course_bank_requirements[1].credit_completed, 6.0);
+
+        assert_eq!(user.degree_status.course_bank_requirements[2].course_requirement, Some(1));
+        assert_eq!(user.degree_status.course_bank_requirements[2].course_completed, 1);
+
+        assert_eq!(user.degree_status.course_bank_requirements[3].credit_requirment, Some(18.0));
+        assert_eq!(user.degree_status.course_bank_requirements[3].credit_completed, 17.0);
+
+        assert_eq!(user.degree_status.course_bank_requirements[4].credit_requirment, Some(2.5));
+        assert_eq!(user.degree_status.course_bank_requirements[4].course_requirement, Some(1));
+        assert_eq!(user.degree_status.course_bank_requirements[4].credit_completed, 2.5);
+        assert_eq!(user.degree_status.course_bank_requirements[4].course_completed, 1);
+
+        assert_eq!(user.degree_status.course_bank_requirements[5].credit_requirment, Some(8.0));
+        assert_eq!(user.degree_status.course_bank_requirements[5].credit_completed, 8.0);
+        assert_eq!(user.degree_status.course_bank_requirements[5].message, Some("הסטודנט השלים את השרשרת הבאה:\n114052,114054,".to_string()));
+
+        assert_eq!(user.degree_status.course_bank_requirements[6].credit_requirment, Some(73.5));
+        assert_eq!(user.degree_status.course_bank_requirements[6].credit_completed, 73.5);
+
+        assert_eq!(user.degree_status.course_bank_requirements[7].credit_requirment, Some(6.5));
+        assert_eq!(user.degree_status.course_bank_requirements[7].credit_completed, 5.5);
+
+        assert_eq!(user.degree_status.course_bank_requirements[8].credit_requirment, Some(2.0));
+        assert_eq!(user.degree_status.course_bank_requirements[8].credit_completed, 0.0);
+
+        assert_eq!(user.degree_status.overflow_msgs[0], "עברו 3 נקודות מפרויקט לרשימה א".to_string());
+        assert_eq!(user.degree_status.overflow_msgs[1], "עברו 2 נקודות משרשרת מדעית לרשימה ב".to_string());
+        assert_eq!(user.degree_status.overflow_msgs[2], "יש לסטודנט 0 נקודות עודפות".to_string());
     }
 }
 
