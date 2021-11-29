@@ -245,18 +245,16 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Result<Vec<CourseStatus>, Erro
 mod tests{
     use super::*;
     use actix_rt::test;
-    use dotenv::dotenv;
-    use crate::config::CONFIG;
 
     #[test]
     async fn test_ug_course_parser(){
         
-        let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
+        let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
             .expect("Something went wrong reading the file");
         let mut courses_display = parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
         courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap() );
         for course_display in courses_display{
-            println!("{:?}", course_display);
+            println!("{:?}", course_display); // TODO change to asserts
         };
     }
     
@@ -366,92 +364,5 @@ mod tests{
         let doc_vec = bson::doc!{"vec" : serialized_vec};
         println!("{}", doc_vec);
     
-    }
-    #[test]
-    async fn test_add_courses_to_db(){
-        dotenv().ok();
-        let contents = std::fs::read_to_string("courses.txt")
-            .expect("Something went wrong reading the file");
-        let mut counter = 0;
-        let mut unique_lines = std::collections::HashSet::new();
-        let mut courses = Vec::new();
-        let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
-            .await
-            .unwrap();
-        let client = mongodb::Client::with_options(options).unwrap();
-        // Ping the server to see if you can connect to the cluster
-        client
-            .database("admin")
-            .run_command(bson::doc! {"ping": 1}, None)
-            .await
-            .unwrap();
-        println!("Connected successfully.");
-        for line_ref in contents.split_terminator("\r\n"){
-            //println!("{}", line_ref);
-            if !unique_lines.insert(line_ref){
-                continue;   
-            };
-            let res  = serde_json::from_str::<Course>(line_ref);
-            if res.is_ok(){
-                let course = res.unwrap();   
-                match client
-                    .database("debug")
-                    .collection::<Course>("Courses")
-                    .insert_one(
-                        course.clone(),
-                        None
-                    )
-                    .await{
-                        Ok(res) => println!("{:?}", res),
-                        Err(err) => eprintln!("{:?}", err),
-                    };
-                courses.push(course); 
-                counter += 1;
-            }
-            else{
-                println!("{} --- {:?}", line_ref, res);
-            }
-        }
-        let special_courses = vec![
-            Course{
-                number : 234129,
-                credit : 3.0,
-                name: r#"מב.לתורת הקבוצות ואוטומטים למדמ"ח"#.to_string(),
-            },
-            Course{
-                number : 236716,
-                credit : 3.0,
-                name: r#"מודלים גאומטריים במערכות תיב"מ"#.to_string(),
-            },
-            Course{
-                number : 104223,
-                credit : 4.0,
-                name: r#"מד"ח וטורי פוריה"#.to_string(),
-            },
-            Course{
-                number : 104035,
-                credit : 5.0,
-                name: r#"משוואות דיפ' רגילות ואינפי 2ח'"#.to_string(),
-            },
-            Course{
-                number : 46746,
-                credit : 3.0,
-                name: r#"אלג' ויישומים בראייה ממוחשבת"#.to_string(),
-            },
-        ];
-        for special_course in special_courses.iter(){
-            match client
-                .database("staging")
-                .collection::<Course>("Courses")
-                .insert_one(
-                    special_course,
-                    None
-                )
-                .await{
-                    Ok(res) => println!("{:?}", res),
-                    Err(err) => eprintln!("{:?}", err),
-                };
-        }
-        println!("{:?}", counter);
     }
 }
