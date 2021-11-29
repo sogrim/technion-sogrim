@@ -3,7 +3,7 @@ use mongodb::Client;
 use serde::{self, Deserialize, Serialize};
 use crate::{core::CreditOverflow, course::{CourseBank, CourseTableRow}, db, user::User};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Catalog {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id : bson::oid::ObjectId,

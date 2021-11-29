@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use bson::doc;
-use serde::de::{Error, Unexpected, Visitor};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use petgraph::Graph;
 use petgraph::algo::toposort;
 use crate::catalog::Catalog;
 use crate::user::UserDetails;
-use crate::course::{Course, CourseState, CourseStatus, CourseBank};
+use crate::course::{Course, CourseState, CourseStatus, CourseBank, Grade};
 
 type Chain = Vec<u32>;
 type NumCourses = u32;
@@ -67,62 +66,6 @@ impl ToString for Rule{
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum Grade{
-    Grade(u8),
-    Binary(bool),
-    ExemptionWithoutCredit,
-    ExemptionWithCredit,
-}
-
-impl Serialize for Grade {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match *self{
-            Grade::Grade(grade) => serializer.serialize_str(grade.to_string().as_str()),
-            Grade::Binary(val) if val => serializer.serialize_str("עבר"),
-            Grade::Binary(_) => serializer.serialize_str("נכשל"),
-            Grade::ExemptionWithoutCredit => serializer.serialize_str("פטור ללא ניקוד"),
-            Grade::ExemptionWithCredit => serializer.serialize_str("פטור עם ניקוד"),
-        }    
-    }
-}
-struct StrVisitor;
-
-impl<'de> Visitor<'de> for StrVisitor {
-    type Value = Grade;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a valid string representation of a grade")
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        match v{
-            "עבר" => Ok(Grade::Binary(true)),
-            "נכשל" => Ok(Grade::Binary(false)),
-            "פטור ללא ניקוד" => Ok(Grade::ExemptionWithoutCredit),
-            "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
-            _ if v.parse::<u8>().is_ok() => Ok(Grade::Grade(v.parse::<u8>().unwrap())),
-            _ => Err(Error::invalid_type(Unexpected::Str(v), &self))
-        }
-        
-    }
-}
-
-impl<'de> Deserialize<'de> for Grade {
-    fn deserialize<D>(deserializer: D) -> Result<Grade, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(StrVisitor)
-    }
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CreditOverflow {
     pub from : String,
@@ -177,16 +120,30 @@ pub fn set_order(course_banks: &Vec<CourseBank>, credit_overflow_rules: &Vec<Cre
     ordered_course_banks
 }
 
+pub fn reset_type_for_unmodified_courses(user_details: &mut UserDetails) {
+    for course_status in &mut user_details.degree_status.course_statuses {
+        if !course_status.modified {
+            course_status.r#type = None;
+        }
+    }
+}
+
 // This function sets the type of the course and adds its credit to sum_credits.
 // Returns true if the credits have been added, false otherwise.
-pub fn set_type_and_add_credits(course_status: &mut CourseStatus, bank_name: String, sum_credits: &mut f32) -> bool {
-    if course_status.r#type.is_none() {
+pub fn set_type_and_add_credits(
+    course_status: &mut CourseStatus,
+    bank_name: String,
+    sum_credits: &mut f32,
+) -> bool {
+    if course_status.r#type.is_none()
+        || (course_status.modified && *course_status.r#type.as_ref().unwrap() == bank_name)
+    {
+        course_status.set_type(bank_name);
+        course_status.modified = false; // finished handle this course
         if course_status.passed() {
             *sum_credits += course_status.course.credit;
-            course_status.set_type(bank_name);
             return true;
         }
-        course_status.set_type(bank_name);
     }
     false
 }
@@ -338,6 +295,16 @@ struct DegreeStatusHandler<'a>{
 
 impl<'a> DegreeStatusHandler<'a> {
 
+    fn get_modified_courses(&self, bank_name: &str) -> Vec<u32>{
+        let mut modified_courses = Vec::new();
+        for course_status in &self.user.degree_status.course_statuses {
+            if course_status.modified && course_status.r#type == Some(bank_name.to_string()) {
+                modified_courses.push(course_status.course.number);
+            }
+        }
+        modified_courses
+    }
+
     fn calculate_overflows(&mut self, bank_name: &str, credits_overflow: bool) -> f32 {
         let mut sum = 0.0;
         let overflows_map = if credits_overflow { &mut self.credit_overflow_map } else { &mut self.courses_overflow_map };
@@ -394,10 +361,13 @@ impl<'a> DegreeStatusHandler<'a> {
     }
 
     fn handle_bank_rule(&mut self, bank: &CourseBank, course_list_for_bank: Vec<u32>, credit_overflow: f32, courses_overflow: Option<u32>){
+        let mut course_list = self.get_modified_courses(&bank.name);
+        course_list.extend(course_list_for_bank);
+        //course list inscludes all courses for this bank from the catalog and courses that the user marked manually that their type is this bank
         let bank_rule_handler = BankRuleHandler {
             user: self.user,
             bank_name: bank.name.clone(),
-            course_list: course_list_for_bank,
+            course_list,
             credit_overflow,
             courses_overflow
         };
@@ -415,7 +385,6 @@ impl<'a> DegreeStatusHandler<'a> {
             Rule::AccumulateCredit => sum_credits = bank_rule_handler.accumulate_credit(),
             Rule::AccumulateCourses(num_courses) => {
                 sum_credits = bank_rule_handler.accumulate_courses(&mut count_courses);
-                println!("{}", count_courses);
                 count_courses = self.handle_courses_overflow(bank, *num_courses, count_courses);
                 completed = count_courses >= *num_courses;
             }
@@ -496,7 +465,8 @@ impl<'a> DegreeStatusHandler<'a> {
 
 pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
     let course_banks = set_order(&catalog.course_banks, &catalog.credit_overflows);
-    
+    reset_type_for_unmodified_courses(user);
+
     DegreeStatusHandler{      
         user,
         course_banks,
@@ -614,7 +584,7 @@ mod tests{
     async fn test_rule_all() { // for debugging
         let mut user = create_user();
         let bank_name = "hova".to_string();
-        let course_list = vec![000001, 000002, 123456, 456789, 159159, 000003];
+        let course_list = vec![104031, 104166, 000001, 000002, 000003];
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -627,28 +597,27 @@ mod tests{
         // check it adds the type
         assert_eq!(user.degree_status.course_statuses[0].r#type, Some("hova".to_string()));
         assert_eq!(user.degree_status.course_statuses[1].r#type, Some("hova".to_string()));
-        assert_eq!(user.degree_status.course_statuses[2].r#type, Some("hova".to_string()));
     
         // check it adds the not completed courses in the hove bank
-        assert_eq!(user.degree_status.course_statuses[6].course.number, 123456);
-        assert!(matches!(user.degree_status.course_statuses[6].state, Some(CourseState::NotComplete)));
-    
-        assert_eq!(user.degree_status.course_statuses[7].course.number, 456789);
-        assert!(matches!(user.degree_status.course_statuses[7].state, Some(CourseState::NotComplete)));
-    
-        assert_eq!(user.degree_status.course_statuses[8].course.number, 159159);
+        assert_eq!(user.degree_status.course_statuses[8].course.number, 000001);
         assert!(matches!(user.degree_status.course_statuses[8].state, Some(CourseState::NotComplete)));
     
+        assert_eq!(user.degree_status.course_statuses[9].course.number, 000002);
+        assert!(matches!(user.degree_status.course_statuses[9].state, Some(CourseState::NotComplete)));
+    
+        assert_eq!(user.degree_status.course_statuses[10].course.number, 000003);
+        assert!(matches!(user.degree_status.course_statuses[10].state, Some(CourseState::NotComplete)));
+    
         // check sum credits
-        assert_eq!(res, 7.0);
+        assert_eq!(res, 5.5);
     }
 
     #[test]
     async fn test_rule_accumulate_credit() { // for debugging
         let mut user = create_user();
         let bank_name = "reshima a".to_string();
-        let course_list = vec![000001, 000002, 123456, 456789, 159159, 000003];
-        let credit_overflow = 0.0;
+        let course_list = vec![236303, 236512, 000001, 000002];
+        let credit_overflow = 5.5;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
             bank_name,
@@ -658,13 +627,103 @@ mod tests{
         };
         let res = handle_bank_rule_processor.accumulate_credit();
         // check it adds the type
-        assert_eq!(user.degree_status.course_statuses[0].r#type, Some("reshima a".to_string()));
-        assert_eq!(user.degree_status.course_statuses[1].r#type, Some("reshima a".to_string()));
-        assert_eq!(user.degree_status.course_statuses[2].r#type, Some("reshima a".to_string()));
+        assert_eq!(user.degree_status.course_statuses[0].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[1].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[2].r#type, None);
         assert_eq!(user.degree_status.course_statuses[3].r#type, None);
-        assert_eq!(user.degree_status.course_statuses.len(), 6);
+        assert_eq!(user.degree_status.course_statuses[4].r#type, Some("reshima a".to_string()));
+        assert_eq!(user.degree_status.course_statuses[5].r#type, Some("reshima a".to_string()));
+        assert_eq!(user.degree_status.course_statuses[6].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[7].r#type, None);
+        assert_eq!(user.degree_status.course_statuses.len(), 8);
     
         // check sum credits
+        assert_eq!(res, 11.5);
+    }
+
+    #[test]
+    async fn test_rule_accumulate_courses() { // for debugging
+        let mut user = create_user();
+        let bank_name = "Project".to_string();
+        let course_list = vec![236303, 236512, 000001, 000002];
+        let credit_overflow = 0.0;
+        let handle_bank_rule_processor = BankRuleHandler {
+            user: &mut user,
+            bank_name,
+            course_list,
+            credit_overflow,
+            courses_overflow: Some(1)
+        };
+        let mut count_courses = 0;
+        let res = handle_bank_rule_processor.accumulate_courses(&mut count_courses);
+        // check it adds the type
+        assert_eq!(user.degree_status.course_statuses[0].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[1].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[2].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[3].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[4].r#type, Some("Project".to_string()));
+        assert_eq!(user.degree_status.course_statuses[5].r#type, Some("Project".to_string()));
+        assert_eq!(user.degree_status.course_statuses[6].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[7].r#type, None);
+        assert_eq!(user.degree_status.course_statuses.len(), 8);
+
+        //check num courses
+        assert_eq!(count_courses, 3);
+    
+        // check sum credits
+        assert_eq!(res, 6.0);
+    }
+
+    #[test]
+    async fn test_rule_chain() { // for debugging
+        // user finished a chain
+        let mut user = create_user();
+        let bank_name = "science chain".to_string();
+        let course_list = vec![000001, 000002, 114052, 000005, 114054, 111111];
+        let chains = vec![vec![000001, 000002], vec![114052, 000005], vec![114052, 114054], vec![114052, 111111]];
+        let mut chain_done = Vec::new();
+        let credit_overflow = 0.0;
+        let handle_bank_rule_processor = BankRuleHandler {
+            user: &mut user,
+            bank_name,
+            course_list,
+            credit_overflow,
+            courses_overflow: None
+        };
+        let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
+        // check it adds the type
+        assert_eq!(user.degree_status.course_statuses[0].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[1].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[2].r#type, Some("science chain".to_string()));
+        assert_eq!(user.degree_status.course_statuses[3].r#type, Some("science chain".to_string()));
+        assert_eq!(user.degree_status.course_statuses[4].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[5].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[6].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[7].r#type, None);
+        assert_eq!(user.degree_status.course_statuses.len(), 8);
+    
+        // check sum credits
+        assert_eq!(chain_done, vec![114052, 114054]);
+        assert_eq!(res, 7.0);
+
+
+        // user didn't finish a chain
+        let mut user = create_user();
+        let bank_name = "science chain".to_string();
+        let course_list = vec![000001, 000002, 114052, 000005, 114054, 111111];
+        let chains = vec![vec![000001, 000002], vec![114052, 000005], vec![222222, 114054], vec![114052, 111111]];
+        let mut chain_done = Vec::new();
+        let credit_overflow = 0.0;
+        let handle_bank_rule_processor = BankRuleHandler {
+            user: &mut user,
+            bank_name,
+            course_list,
+            credit_overflow,
+            courses_overflow: None
+        };
+        let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
+
+        assert_eq!(chain_done, Chain::new());
         assert_eq!(res, 7.0);
     }
     
@@ -673,7 +732,7 @@ mod tests{
         let mut user = create_user();
         let bank_name = "MALAG".to_string();
         let course_list = vec![000001, 000002]; // this list shouldn't affect anything
-        let credit_overflow = 2.5;
+        let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
             bank_name,
@@ -682,18 +741,121 @@ mod tests{
             courses_overflow: None
         };
         let res = handle_bank_rule_processor.malag();
-        println!("{}", res);
-        println!("{:#?}", user.degree_status);
+
         // check it adds the type
         assert_eq!(user.degree_status.course_statuses[0].r#type, None);
         assert_eq!(user.degree_status.course_statuses[1].r#type, None);
         assert_eq!(user.degree_status.course_statuses[2].r#type, None);
         assert_eq!(user.degree_status.course_statuses[3].r#type, None);
-        assert_eq!(user.degree_status.course_statuses[4].r#type, Some("MALAG".to_string()));
-        assert_eq!(user.degree_status.course_statuses.len(), 6);
+        assert_eq!(user.degree_status.course_statuses[4].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[5].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[6].r#type, Some("MALAG".to_string()));
+        assert_eq!(user.degree_status.course_statuses[7].r#type, None);
+        assert_eq!(user.degree_status.course_statuses.len(), 8);
     
         // check sum credits
-        assert_eq!(res, 4.5);
+        assert_eq!(res, 2.0);
+    }
+
+    #[test]
+    async fn test_rule_sport() { // for debugging
+        let mut user = create_user();
+        let bank_name = "SPORT".to_string();
+        let course_list = vec![000001, 000002]; // this list shouldn't affect anything
+        let credit_overflow = 0.0;
+        let handle_bank_rule_processor = BankRuleHandler {
+            user: &mut user,
+            bank_name,
+            course_list,
+            credit_overflow,
+            courses_overflow: None
+        };
+        let res = handle_bank_rule_processor.sport();
+
+        // check it adds the type
+        assert_eq!(user.degree_status.course_statuses[0].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[1].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[2].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[3].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[4].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[5].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[6].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[7].r#type, Some("SPORT".to_string()));
+        assert_eq!(user.degree_status.course_statuses.len(), 8);
+    
+        // check sum credits
+        assert_eq!(res, 1.0);
+    }
+
+    #[test]
+    async fn test_modified() { // for debugging
+        let mut user = create_user();
+        user.degree_status.course_statuses[0].r#type = Some("reshima alef".to_string()); // the user modified the type of 104031 to be reshima alef
+        user.degree_status.course_statuses[0].modified = true;
+        let bank_name = "hova".to_string();
+        let course_list = vec![104031, 104166]; // although 104031 is in the list, it shouldn't be taken because the user modified its type
+        let credit_overflow = 0.0;
+        let handle_bank_rule_processor = BankRuleHandler {
+            user: &mut user,
+            bank_name,
+            course_list,
+            credit_overflow,
+            courses_overflow: None
+        };
+        let res = handle_bank_rule_processor.all();
+
+        // check it adds the type
+        assert_eq!(user.degree_status.course_statuses[0].r#type, Some("reshima alef".to_string()));
+        assert_eq!(user.degree_status.course_statuses[1].r#type, Some("hova".to_string()));
+        assert_eq!(user.degree_status.course_statuses[2].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[3].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[4].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[5].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[6].r#type, None);
+        assert_eq!(user.degree_status.course_statuses[7].r#type, None);
+        assert_eq!(user.degree_status.course_statuses.len(), 8);
+    
+        // check sum credits
+        assert_eq!(res, 0.0);
+
+
+        let mut user = create_user();
+        user.degree_status.course_statuses[2].r#type = Some("hova".to_string()); // the user modified the type of 114052 to be hova
+        user.degree_status.course_statuses[2].modified = true;
+        user.degree_status.course_statuses[3].r#type = Some("reshima alef".to_string()); // the user modified the type of 114054 to be reshima alef
+        user.degree_status.course_statuses[3].modified = true;
+        let bank_name = "hova".to_string();
+        let mut course_list = vec![104031, 104166];
+        // create DegreeStatusHandler so we can run the function get_modified_courses
+        let catalog = Catalog {
+            ..Default::default()
+        };
+        let degree_status_handler = DegreeStatusHandler {
+            user: &mut user,
+            course_banks: Vec::new(),
+            catalog: &catalog,
+            credit_overflow_map: HashMap::new(),
+            courses_overflow_map: HashMap::new(),
+        };
+
+        course_list.extend(degree_status_handler.get_modified_courses(&bank_name)); // should take only 114052
+
+        let handle_bank_rule_processor = BankRuleHandler {
+            user: &mut user,
+            bank_name,
+            course_list,
+            credit_overflow,
+            courses_overflow: None
+        };
+        let res = handle_bank_rule_processor.all();
+
+        // check it adds the type
+        assert_eq!(user.degree_status.course_statuses[2].r#type, Some("hova".to_string()));
+        assert_eq!(user.degree_status.course_statuses[3].r#type, Some("reshima alef".to_string()));
+        assert_eq!(user.degree_status.course_statuses.len(), 8);
+    
+        // check sum credits
+        assert_eq!(res, 9.0);
     }
 
     #[test]

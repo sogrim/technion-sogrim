@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use actix_web::{Error, error::ErrorBadRequest};
-use serde::{Serialize, Deserialize};
+use serde::de::{Error as Err, Unexpected, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::core::*;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -26,6 +27,7 @@ pub struct CourseStatus {
     pub grade : Option<Grade>,
     pub r#type : Option<String>, // if none, nissan cries
     pub additional_msg : Option<String>,
+    pub modified: bool,
 }
 
 impl CourseStatus {
@@ -79,6 +81,62 @@ pub struct CourseBank {
 pub struct CourseTableRow {
     pub number: u32,
     pub course_banks: Vec<String> // שמות הבנקים. שימו לב לקבוצת ההתמחות
+}
+
+#[derive(Clone, Debug)]
+pub enum Grade{
+    Grade(u8),
+    Binary(bool),
+    ExemptionWithoutCredit,
+    ExemptionWithCredit,
+}
+
+impl Serialize for Grade {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *self{
+            Grade::Grade(grade) => serializer.serialize_str(grade.to_string().as_str()),
+            Grade::Binary(val) if val => serializer.serialize_str("עבר"),
+            Grade::Binary(_) => serializer.serialize_str("נכשל"),
+            Grade::ExemptionWithoutCredit => serializer.serialize_str("פטור ללא ניקוד"),
+            Grade::ExemptionWithCredit => serializer.serialize_str("פטור עם ניקוד"),
+        }    
+    }
+}
+struct StrVisitor;
+
+impl<'de> Visitor<'de> for StrVisitor {
+    type Value = Grade;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a valid string representation of a grade")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: Err,
+    {
+        match v{
+            "עבר" => Ok(Grade::Binary(true)),
+            "נכשל" => Ok(Grade::Binary(false)),
+            "פטור ללא ניקוד" => Ok(Grade::ExemptionWithoutCredit),
+            "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
+            _ if v.parse::<u8>().is_ok() => Ok(Grade::Grade(v.parse::<u8>().unwrap())),
+            _ => Err(Err::invalid_type(Unexpected::Str(v), &self))
+        }
+        
+    }
+}
+
+impl<'de> Deserialize<'de> for Grade {
+    fn deserialize<D>(deserializer: D) -> Result<Grade, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(StrVisitor)
+    }
 }
 
 fn contains_course_number(str : &str) -> bool{
