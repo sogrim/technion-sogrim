@@ -1,4 +1,4 @@
-use crate::catalog::Catalog;
+use crate::catalog::{Catalog, Replacements};
 use crate::course::{Course, CourseBank, CourseState, CourseStatus};
 use crate::user::UserDetails;
 use bson::doc;
@@ -163,9 +163,25 @@ struct BankRuleHandler<'a> {
     course_list: Vec<u32>,
     credit_overflow: f32,
     courses_overflow: Option<u32>,
+    catalog_replacements: Option<HashMap<u32, Replacements>>
 }
 
 impl<'a> BankRuleHandler<'a> {
+    // Tries to find a replacment course which was done by the user, for the given course.
+    // Returns the course number if found, and None otherwise.
+    fn find_catalog_replacement(&self, course_number: u32) -> Option<u32> {
+        if let Some(catalog_replacements) = &self.catalog_replacements {
+            if let Some(optional_replacements_for_course) = catalog_replacements.get(&course_number) {
+                for optional_replacement in optional_replacements_for_course {
+                    if self.user.course_exists(*optional_replacement) {
+                        return Some(*optional_replacement);
+                    }
+                }
+            }
+        }
+        None
+    }
+
     fn iterate_course_list(&mut self) -> (f32, u32) {
         let mut sum_credits = self.credit_overflow;
         let mut count_courses = match &self.courses_overflow {
@@ -173,42 +189,50 @@ impl<'a> BankRuleHandler<'a> {
             None => 0,
         };
         for course_number in &self.course_list {
-            if let Some(course_status) = self.user.get_mut_course_status(*course_number) {
-                let course_added = set_type_and_add_credits(
-                    course_status,
-                    self.bank_name.clone(),
-                    &mut sum_credits,
-                );
-                if course_added {
-                    count_courses += 1;
-                }
-            }
-        }
-        (sum_credits, count_courses)
-    }
-
-    pub fn all(self) -> f32 {
-        let mut sum_credits = self.credit_overflow;
-        for course_number in self.course_list {
-            match self.user.get_mut_course_status(course_number) {
+            let mut course_added = false;
+            match self.user.get_mut_course_status(*course_number) {
                 Some(course_status) => {
-                    set_type_and_add_credits(
+                    course_added = set_type_and_add_credits(
                         course_status,
                         self.bank_name.clone(),
                         &mut sum_credits,
                     );
                 }
                 None => {
-                    self.user.degree_status.course_statuses.push(CourseStatus {
-                        course: Course {
-                            number: course_number,
-                            ..Default::default()
-                        },
-                        state: Some(CourseState::NotComplete),
-                        r#type: Some(self.bank_name.clone()),
-                        ..Default::default()
-                    });
+                    let course_number_replacement = self.find_catalog_replacement(*course_number);
+                    if let Some(course_number) = course_number_replacement {
+                        let course_status = self.user.get_mut_course_status(course_number).unwrap();
+                        course_added = set_type_and_add_credits(
+                            course_status,
+                            self.bank_name.clone(),
+                            &mut sum_credits,
+                        );
+                        course_status.additional_msg = Some(format!("קורס זה מחליף את הקורס {}", course_number));
+                    }
                 }
+            }
+            if course_added {
+                count_courses += 1;
+            }
+        }
+        (sum_credits, count_courses)
+    }
+
+    pub fn all(mut self) -> f32 {
+        let (sum_credits, _) = self.iterate_course_list();
+
+        // handle courses in course list which the user didn't complete them or any replacement for them
+        for course_number in &self.course_list {
+            if self.user.get_mut_course_status(*course_number).is_none() && self.find_catalog_replacement(*course_number).is_none() {
+                self.user.degree_status.course_statuses.push(CourseStatus {
+                    course: Course {
+                        number: *course_number,
+                        ..Default::default()
+                    },
+                    state: Some(CourseState::NotComplete),
+                    r#type: Some(self.bank_name.clone()),
+                    ..Default::default()
+                });
             }
         }
         sum_credits
@@ -415,6 +439,7 @@ impl<'a> DegreeStatusHandler<'a> {
             course_list,
             credit_overflow,
             courses_overflow,
+            catalog_replacements: self.catalog.catalog_replacements.clone(),
         };
 
         // Initialize necessary variable for rules handling
@@ -657,6 +682,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: None,
+            catalog_replacements: None,
         };
         let res = handle_bank_rule_processor.all();
         // check it adds the type
@@ -705,6 +731,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: None,
+            catalog_replacements: None,
         };
         let res = handle_bank_rule_processor.accumulate_credit();
         // check it adds the type
@@ -741,6 +768,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: Some(1),
+            catalog_replacements: None,
         };
         let mut count_courses = 0;
         let res = handle_bank_rule_processor.accumulate_courses(&mut count_courses);
@@ -789,6 +817,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: None,
+            catalog_replacements: None,
         };
         let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
         // check it adds the type
@@ -830,6 +859,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: None,
+            catalog_replacements: None,
         };
         let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
 
@@ -850,6 +880,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: None,
+            catalog_replacements: None,
         };
         let res = handle_bank_rule_processor.malag();
 
@@ -884,6 +915,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: None,
+            catalog_replacements: None,
         };
         let res = handle_bank_rule_processor.sport();
 
@@ -920,6 +952,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: None,
+            catalog_replacements: None,
         };
         let res = handle_bank_rule_processor.all();
 
@@ -970,6 +1003,7 @@ mod tests {
             course_list,
             credit_overflow,
             courses_overflow: None,
+            catalog_replacements: None,
         };
         let res = handle_bank_rule_processor.all();
 
@@ -988,78 +1022,78 @@ mod tests {
         assert_eq!(res, 9.0);
     }
 
-    // TODO uncomment this when secrets are added.
-    // #[test]
-    // async fn test_legendary_function() {
+    //TODO uncomment this when secrets are added.
+    #[test]
+    async fn test_legendary_function() {
 
-    //     dotenv().ok();
-    //     let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
-    //         .await
-    //         .expect("failed to parse URI");
+        dotenv().ok();
+        let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
+            .await
+            .expect("failed to parse URI");
 
-    //     let client = mongodb::Client::with_options(options).unwrap();
-    //     // Ping the server to see if you can connect to the cluster
-    //     client
-    //         .database("admin")
-    //         .run_command(bson::doc! {"ping": 1}, None)
-    //         .await
-    //         .expect("failed to connect to db");
-    //     println!("Connected successfully.");
-    //     let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
-    //         .expect("Something went wrong reading the file");
+        let client = mongodb::Client::with_options(options).unwrap();
+        // Ping the server to see if you can connect to the cluster
+        client
+            .database("admin")
+            .run_command(bson::doc! {"ping": 1}, None)
+            .await
+            .expect("failed to connect to db");
+        println!("Connected successfully.");
+        let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
+            .expect("Something went wrong reading the file");
 
-    //     let course_statuses = course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
+        let course_statuses = course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
 
-    //     let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401").expect("failed to create oid");
-    //     let catalog = db::services::get_catalog_by_id(&obj_id, &client).await.expect("failed to get catalog");
-    //     let mut user = UserDetails {
-    //         catalog: None,
-    //         degree_status: DegreeStatus {
-    //             course_statuses,
-    //             ..Default::default()
-    //         },
-    //         modified: false
-    //     };
-    //     calculate_degree_status(&catalog, &mut user);
-    //     std::fs::write(
-    //         "degree_status.json",
-    //     serde_json::to_string_pretty(&user.degree_status)
-    //         .expect("json serialization failed")
-    //     ).expect("Unable to write file");
+        let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401").expect("failed to create oid");
+        let catalog = db::services::get_catalog_by_id(&obj_id, &client).await.expect("failed to get catalog");
+        let mut user = UserDetails {
+            catalog: None,
+            degree_status: DegreeStatus {
+                course_statuses,
+                ..Default::default()
+            },
+            modified: false
+        };
+        calculate_degree_status(&catalog, &mut user);
+        std::fs::write(
+            "degree_status.json",
+        serde_json::to_string_pretty(&user.degree_status)
+            .expect("json serialization failed")
+        ).expect("Unable to write file");
 
-    //     // check output
-    //     assert_eq!(user.degree_status.course_bank_requirements[0].credit_requirment, Some(2.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[0].credit_completed, 2.0);
+        // check output
+        assert_eq!(user.degree_status.course_bank_requirements[0].credit_requirment, Some(2.0));
+        assert_eq!(user.degree_status.course_bank_requirements[0].credit_completed, 2.0);
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[1].credit_requirment, Some(6.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[1].credit_completed, 6.0);
+        assert_eq!(user.degree_status.course_bank_requirements[1].credit_requirment, Some(6.0));
+        assert_eq!(user.degree_status.course_bank_requirements[1].credit_completed, 6.0);
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[2].course_requirement, Some(1));
-    //     assert_eq!(user.degree_status.course_bank_requirements[2].course_completed, 1);
+        assert_eq!(user.degree_status.course_bank_requirements[2].course_requirement, Some(1));
+        assert_eq!(user.degree_status.course_bank_requirements[2].course_completed, 1);
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[3].credit_requirment, Some(18.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[3].credit_completed, 17.0);
+        assert_eq!(user.degree_status.course_bank_requirements[3].credit_requirment, Some(18.0));
+        assert_eq!(user.degree_status.course_bank_requirements[3].credit_completed, 17.0);
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[4].credit_requirment, Some(2.5));
-    //     assert_eq!(user.degree_status.course_bank_requirements[4].course_requirement, Some(1));
-    //     assert_eq!(user.degree_status.course_bank_requirements[4].credit_completed, 2.5);
-    //     assert_eq!(user.degree_status.course_bank_requirements[4].course_completed, 1);
+        assert_eq!(user.degree_status.course_bank_requirements[4].credit_requirment, Some(2.5));
+        assert_eq!(user.degree_status.course_bank_requirements[4].course_requirement, Some(1));
+        assert_eq!(user.degree_status.course_bank_requirements[4].credit_completed, 2.5);
+        assert_eq!(user.degree_status.course_bank_requirements[4].course_completed, 1);
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[5].credit_requirment, Some(8.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[5].credit_completed, 8.0);
-    //     assert_eq!(user.degree_status.course_bank_requirements[5].message, Some("הסטודנט השלים את השרשרת הבאה:\n114052,114054,".to_string()));
+        assert_eq!(user.degree_status.course_bank_requirements[5].credit_requirment, Some(8.0));
+        assert_eq!(user.degree_status.course_bank_requirements[5].credit_completed, 8.0);
+        assert_eq!(user.degree_status.course_bank_requirements[5].message, Some("הסטודנט השלים את השרשרת הבאה:\n114052,114054,".to_string()));
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[6].credit_requirment, Some(73.5));
-    //     assert_eq!(user.degree_status.course_bank_requirements[6].credit_completed, 73.5);
+        assert_eq!(user.degree_status.course_bank_requirements[6].credit_requirment, Some(73.5));
+        assert_eq!(user.degree_status.course_bank_requirements[6].credit_completed, 73.5);
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[7].credit_requirment, Some(6.5));
-    //     assert_eq!(user.degree_status.course_bank_requirements[7].credit_completed, 5.5);
+        assert_eq!(user.degree_status.course_bank_requirements[7].credit_requirment, Some(6.5));
+        assert_eq!(user.degree_status.course_bank_requirements[7].credit_completed, 5.5);
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[8].credit_requirment, Some(2.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[8].credit_completed, 0.0);
+        assert_eq!(user.degree_status.course_bank_requirements[8].credit_requirment, Some(2.0));
+        assert_eq!(user.degree_status.course_bank_requirements[8].credit_completed, 0.0);
 
-    //     assert_eq!(user.degree_status.overflow_msgs[0], "עברו 3 נקודות מפרויקט לרשימה א".to_string());
-    //     assert_eq!(user.degree_status.overflow_msgs[1], "עברו 2 נקודות משרשרת מדעית לרשימה ב".to_string());
-    //     assert_eq!(user.degree_status.overflow_msgs[2], "יש לסטודנט 0 נקודות עודפות".to_string());
-    // }
+        assert_eq!(user.degree_status.overflow_msgs[0], "עברו 3 נקודות מפרויקט לרשימה א".to_string());
+        assert_eq!(user.degree_status.overflow_msgs[1], "עברו 2 נקודות משרשרת מדעית לרשימה ב".to_string());
+        assert_eq!(user.degree_status.overflow_msgs[2], "יש לסטודנט 0 נקודות עודפות".to_string());
+    }
 }

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::{
     core::CreditOverflow,
     course::{CourseBank, CourseTableRow},
@@ -12,6 +13,8 @@ use actix_web::{
 use mongodb::Client;
 use serde::{self, Deserialize, Serialize};
 
+pub(crate) type Replacements = Vec<u32>;
+
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Catalog {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
@@ -22,6 +25,7 @@ pub struct Catalog {
     pub course_banks: Vec<CourseBank>,
     pub course_table: Vec<CourseTableRow>,
     pub credit_overflows: Vec<CreditOverflow>,
+    pub catalog_replacements: Option<HashMap<u32, Replacements>>, // All replacements which are mentioned in the catalog
 }
 
 impl Catalog {
