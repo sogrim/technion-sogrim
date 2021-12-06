@@ -25,7 +25,7 @@ pub struct Catalog {
     pub course_banks: Vec<CourseBank>,
     pub course_table: Vec<CourseTableRow>,
     pub credit_overflows: Vec<CreditOverflow>,
-    pub catalog_replacements: Option<HashMap<u32, Replacements>>, // All replacements which are mentioned in the catalog
+    pub catalog_replacements: HashMap<u32, Replacements>, // All replacements which are mentioned in the catalog
 }
 
 impl Catalog {

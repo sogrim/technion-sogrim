@@ -31,6 +31,7 @@ impl UserDetails {
     }
 
     pub fn get_mut_course_status(&mut self, number: u32) -> Option<&mut CourseStatus> {
+        // TODO: find the first course with type None
         for course_status in &mut self.degree_status.course_statuses {
             if course_status.course.number == number {
                 return Some(course_status);
@@ -181,7 +182,7 @@ pub async fn compute_degree_status(
     user_details.degree_status.total_credit = 0.0;
     user_details.modified = false;
 
-    core::calculate_degree_status(&catalog, &mut user_details);
+    core::calculate_degree_status(catalog, &mut user_details);
 
     for course_status in user_details.degree_status.course_statuses.iter_mut() {
         // Fill in courses without information
