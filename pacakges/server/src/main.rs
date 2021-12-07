@@ -1,23 +1,24 @@
 extern crate my_internet_ip;
-use actix_web::{App, HttpServer, middleware::Logger, web};
-use actix_cors::Cors;
-use mongodb::Client;
-use dotenv::dotenv;
 use crate::config::CONFIG;
+use actix_cors::Cors;
+use actix_web::{middleware::Logger, web, App, HttpServer};
+use dotenv::dotenv;
+use mongodb::Client;
 
 mod auth;
-mod db;
-mod course;
 mod catalog;
-mod user;
-mod core;
 mod config;
+mod core;
+mod course;
+mod db;
+mod user;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
     dotenv().ok();
-    let client = Client::with_uri_str(&CONFIG.uri).await.expect("failed to connect");
+    let client = Client::with_uri_str(&CONFIG.uri)
+        .await
+        .expect("failed to connect");
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     HttpServer::new(move || {
