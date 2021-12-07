@@ -172,7 +172,7 @@ pub async fn compute_degree_status(
     user_details.degree_status.total_credit = 0.0;
     user_details.modified = false;
 
-    core::calculate_degree_status(&catalog, &mut user_details);
+    core::calculate_degree_status(&catalog, user_details);
 
     for course_status in user_details.degree_status.course_statuses.iter_mut() {
         // Fill in courses without information

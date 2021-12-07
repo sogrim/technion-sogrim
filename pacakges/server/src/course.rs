@@ -233,6 +233,7 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Result<Vec<CourseStatus>, Erro
     Ok(vec_courses)
 }
 
+#[allow(dead_code)]
 pub fn parse_copy_paste_from_pdf(pdf_data: &str) -> Result<Vec<CourseStatus>, Error> {
     let mut courses = HashMap::<u32, CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
@@ -246,8 +247,7 @@ pub fn parse_copy_paste_from_pdf(pdf_data: &str) -> Result<Vec<CourseStatus>, Er
         let is_winter = line.contains("חורף");
         let is_summer = line.contains("קיץ");
 
-        semester = if is_spring || is_summer || is_winter
-        {
+        semester = if is_spring || is_summer || is_winter {
             semester_counter += if is_summer || semester_counter.fract() != 0.0 {
                 0.5
             } else {
@@ -261,7 +261,9 @@ pub fn parse_copy_paste_from_pdf(pdf_data: &str) -> Result<Vec<CourseStatus>, Er
             } else if is_winter {
                 "חורף"
             } else {
-                return Err(ErrorInternalServerError("Something really unexcepted happend"))
+                return Err(ErrorInternalServerError(
+                    "Something really unexcepted happend",
+                ));
             };
 
             format!("{}_{}", semester_term, semester_counter)
@@ -282,40 +284,42 @@ pub fn parse_copy_paste_from_pdf(pdf_data: &str) -> Result<Vec<CourseStatus>, Er
 
         let mut index = 0;
         let mut credit = 0.0;
-        for mut word in line.split(' '){
+        for mut word in line.split(' ') {
             //TODO explain this abomination
-            if word.contains('-') && word.contains('.'){ 
+            if word.contains('-') && word.contains('.') {
                 word = &word[0..word.len() - 2];
             }
             if word.parse::<f32>().is_ok() && word.contains('.') {
-                credit = word.chars().rev().collect::<String>().parse::<f32>().unwrap();
+                credit = word
+                    .chars()
+                    .rev()
+                    .collect::<String>()
+                    .parse::<f32>()
+                    .unwrap();
                 break;
             }
             index += 1;
         }
 
-        let name = line
-            .split_whitespace()
-            .collect::<Vec<&str>>()[1..index]
-            .join(" ");
+        let name = line.split_whitespace().collect::<Vec<&str>>()[1..index].join(" ");
 
         let grade_str = line
             .split(' ')
             .last()
             .ok_or_else(|| ErrorBadRequest("Bad Format"))?
             .trim();
-        
+
         let grade = match grade_str as &str {
             "ניקוד" => {
-                if line.contains("ללא"){
+                if line.contains("ללא") {
                     Some(Grade::ExemptionWithoutCredit)
                 } else {
                     Some(Grade::ExemptionWithCredit)
                 }
-            },
+            }
             "עבר" => Some(Grade::Binary(true)),
             "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
-            _  => grade_str.parse::<u8>().ok().map(Grade::Grade)
+            _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
         };
 
         let mut course = CourseStatus {
@@ -357,17 +361,18 @@ mod tests {
         }
     }
 
-    #[test]
-    async fn test_pdf_course_parser() {
-        let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
-            .expect("Something went wrong reading the file");
-        let mut courses_display =
-            parse_copy_paste_from_pdf(&contents).expect("failed to parse ug data");
-        courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap());
-        for course_display in courses_display {
-            println!("{:?}", course_display); // TODO change to asserts
-        }
-    }
+    // TODO add ../docs/pdf_ctrl_c_ctrl_v.txt
+    // #[test]
+    // async fn test_pdf_course_parser() {
+    //     let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
+    //         .expect("Something went wrong reading the file");
+    //     let mut courses_display =
+    //         parse_copy_paste_from_pdf(&contents).expect("failed to parse ug data");
+    //     courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap());
+    //     for course_display in courses_display {
+    //         println!("{:?}", course_display); // TODO change to asserts
+    //     }
+    // }
 
     // #[test]
     // async fn test_create_degree_status_mock(){
