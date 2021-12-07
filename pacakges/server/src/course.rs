@@ -72,7 +72,7 @@ impl CourseStatus {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CourseBank {
-    pub name: String, // for example, Hova, Rshima A.
+    pub name: String, // for example, Hova, Reshima A.
     pub rule: Rule,
     pub credit: Option<f32>,
 }
@@ -83,7 +83,7 @@ pub struct CourseTableRow {
     pub course_banks: Vec<String>, // שמות הבנקים. שימו לב לקבוצת ההתמחות
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Grade {
     Grade(u8),
     Binary(bool),
@@ -150,97 +150,13 @@ fn contains_course_number(str: &str) -> bool {
     false
 }
 
-pub fn parse_copy_paste_from_ug(ug_data: &str) -> Result<Vec<CourseStatus>, Error> {
+pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     let mut courses = HashMap::<u32, CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter: f32 = 0.0;
 
-    for line_ref in ug_data.split_terminator('\n') {
-        let line = line_ref.to_string();
-
-        semester = if line.contains("אביב") || line.contains("חורף") || line.contains("קיץ")
-        {
-            semester_counter += if line.contains("קיץ") || semester_counter.fract() != 0.0 {
-                0.5
-            } else {
-                1.0
-            };
-
-            let semester_term = line
-                .split_whitespace()
-                .next()
-                .ok_or_else(|| ErrorBadRequest("Parse Error: Missing Whitespace"))?;
-
-            format!("{}_{}", semester_term, semester_counter)
-        } else {
-            semester
-        };
-
-        if !contains_course_number(&line) {
-            continue;
-        }
-
-        let line_parts: Vec<_> = line.split('\t').collect();
-        let grade_str = line_parts[0];
-        let grade = match grade_str.parse::<u8>() {
-            Ok(num) => Some(Grade::Grade(num)),
-            Err(_) => {
-                if grade_str == "פטור ללא ניקוד" {
-                    Some(Grade::ExemptionWithoutCredit)
-                } else if grade_str == "פטור עם ניקוד" {
-                    Some(Grade::ExemptionWithCredit)
-                } else if grade_str == "עבר" || grade_str == "נכשל" {
-                    //TODO כתוב נכשל או שכתוב לא עבר?
-                    Some(Grade::Binary(grade_str == "עבר"))
-                } else {
-                    None
-                }
-            }
-        };
-        let course_parts: Vec<_> = line_parts[2].split_whitespace().collect();
-        let credit = line_parts[1]
-            .parse::<f32>()
-            .map_err(|err| ErrorBadRequest(err.to_string()))?;
-        let number = course_parts
-            .last()
-            .ok_or_else(|| ErrorBadRequest("Parse Error: Empty Course Parts"))?
-            .parse::<u32>()
-            .map_err(|err| ErrorBadRequest(err.to_string()))?;
-        let name = course_parts[..course_parts.len() - 1]
-            .join(" ")
-            .trim()
-            .to_string();
-        let mut course = CourseStatus {
-            course: Course {
-                number,
-                credit,
-                name,
-            },
-            semester: (!semester.is_empty()).then(|| semester.clone()),
-            grade: grade.clone(),
-            ..Default::default()
-        };
-        course.set_state();
-        if course.is_sport() {
-            sport_courses.push(course);
-            continue;
-        }
-        *courses.entry(number).or_insert(course) = course.clone();
-    }
-    let mut vec_courses: Vec<_> = courses.into_values().collect();
-    vec_courses.append(&mut sport_courses);
-    Ok(vec_courses)
-}
-
-#[allow(dead_code)]
-pub fn parse_copy_paste_from_pdf(pdf_data: &str) -> Result<Vec<CourseStatus>, Error> {
-    let mut courses = HashMap::<u32, CourseStatus>::new();
-    let mut sport_courses = Vec::<CourseStatus>::new();
-    let mut semester = String::new();
-    let mut semester_counter: f32 = 0.0;
-
-    for line_ref in pdf_data.split_terminator('\n') {
+    for line_ref in data.split_terminator('\n') {
         let line = line_ref.to_string();
 
         let is_spring = line.contains("אביב");
@@ -262,7 +178,7 @@ pub fn parse_copy_paste_from_pdf(pdf_data: &str) -> Result<Vec<CourseStatus>, Er
                 "חורף"
             } else {
                 return Err(ErrorInternalServerError(
-                    "Something really unexcepted happend",
+                    "Something really unexpected happened",
                 ));
             };
 
@@ -275,73 +191,130 @@ pub fn parse_copy_paste_from_pdf(pdf_data: &str) -> Result<Vec<CourseStatus>, Er
             continue;
         }
 
-        let number = line
-            .split(' ')
-            .next()
-            .ok_or_else(|| ErrorBadRequest("Bad Format"))?
-            .parse::<u32>()
-            .map_err(|err| ErrorBadRequest(err.to_string()))?;
-
-        let mut index = 0;
-        let mut credit = 0.0;
-        for mut word in line.split(' ') {
-            //TODO explain this abomination
-            if word.contains('-') && word.contains('.') {
-                word = &word[0..word.len() - 2];
-            }
-            if word.parse::<f32>().is_ok() && word.contains('.') {
-                credit = word
-                    .chars()
-                    .rev()
-                    .collect::<String>()
-                    .parse::<f32>()
-                    .unwrap();
-                break;
-            }
-            index += 1;
-        }
-
-        let name = line.split_whitespace().collect::<Vec<&str>>()[1..index].join(" ");
-
-        let grade_str = line
-            .split(' ')
-            .last()
-            .ok_or_else(|| ErrorBadRequest("Bad Format"))?
-            .trim();
-
-        let grade = match grade_str as &str {
-            "ניקוד" => {
-                if line.contains("ללא") {
-                    Some(Grade::ExemptionWithoutCredit)
-                } else {
-                    Some(Grade::ExemptionWithCredit)
-                }
-            }
-            "עבר" => Some(Grade::Binary(true)),
-            "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
-            _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
+        let (course, grade) = if data.starts_with("גיליון ציונים") {
+            parse_course_status_pdf_format(line)?
+        } else {
+            parse_course_status_ug_format(line)?
         };
 
-        let mut course = CourseStatus {
-            course: Course {
-                number,
-                credit,
-                name,
-            },
+        let mut course_status = CourseStatus {
+            course,
             semester: (!semester.is_empty()).then(|| semester.clone()),
             grade: grade.clone(),
             ..Default::default()
         };
-        course.set_state();
-        if course.is_sport() {
-            sport_courses.push(course);
+        course_status.set_state();
+        if course_status.is_sport() {
+            sport_courses.push(course_status);
             continue;
         }
-        *courses.entry(number).or_insert(course) = course.clone();
+        *courses
+            .entry(course_status.course.number)
+            .or_insert(course_status) = course_status.clone();
     }
     let mut vec_courses: Vec<_> = courses.into_values().collect();
     vec_courses.append(&mut sport_courses);
     Ok(vec_courses)
+}
+
+fn parse_course_status_ug_format(line: String) -> Result<(Course, Option<Grade>), Error> {
+    let line_parts: Vec<_> = line.split('\t').collect();
+    let grade_str = line_parts[0];
+    let grade = match grade_str.parse::<u8>() {
+        Ok(num) => Some(Grade::Grade(num)),
+        Err(_) => {
+            if grade_str == "פטור ללא ניקוד" {
+                Some(Grade::ExemptionWithoutCredit)
+            } else if grade_str == "פטור עם ניקוד" {
+                Some(Grade::ExemptionWithCredit)
+            } else if grade_str == "עבר" || grade_str == "נכשל" {
+                //TODO כתוב נכשל או שכתוב לא עבר?
+                Some(Grade::Binary(grade_str == "עבר"))
+            } else {
+                None
+            }
+        }
+    };
+    let course_parts: Vec<_> = line_parts[2].split_whitespace().collect();
+    let credit = line_parts[1]
+        .parse::<f32>()
+        .map_err(|err| ErrorBadRequest(err.to_string()))?;
+    let number = course_parts
+        .last()
+        .ok_or_else(|| ErrorBadRequest("Parse Error: Empty Course Parts"))?
+        .parse::<u32>()
+        .map_err(|err| ErrorBadRequest(err.to_string()))?;
+    let name = course_parts[..course_parts.len() - 1]
+        .join(" ")
+        .trim()
+        .to_string();
+    Ok((
+        Course {
+            credit,
+            number,
+            name,
+        },
+        grade,
+    ))
+}
+
+fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>), Error> {
+    let number = line
+        .split(' ')
+        .next()
+        .ok_or_else(|| ErrorBadRequest("Bad Format"))?
+        .parse::<u32>()
+        .map_err(|err| ErrorBadRequest(err.to_string()))?;
+
+    let mut index = 0;
+    let mut credit = 0.0;
+    for mut word in line.split(' ') {
+        // When a grade is missing, a hyphen (מקף) char is written instead, without any whitespaces between it and the credit.
+        // This means that the credit part is no longer parsable as f32, and therefore the hyphen must be manually removed.
+        // This won't create a problem later in the code since 'word' only lives in the for-loop scope.
+        if word.contains('-') && word.contains('.') {
+            word = &word[0..word.len() - 2];
+        }
+        if word.parse::<f32>().is_ok() && word.contains('.') {
+            credit = word
+                .chars()
+                .rev()
+                .collect::<String>()
+                .parse::<f32>()
+                .unwrap();
+            break;
+        }
+        index += 1;
+    }
+
+    let name = line.split_whitespace().collect::<Vec<&str>>()[1..index].join(" ");
+
+    let grade_str = line
+        .split(' ')
+        .last()
+        .ok_or_else(|| ErrorBadRequest("Bad Format"))?
+        .trim();
+
+    let grade = match grade_str as &str {
+        "ניקוד" => {
+            if line.contains("ללא") {
+                Some(Grade::ExemptionWithoutCredit)
+            } else {
+                Some(Grade::ExemptionWithCredit)
+            }
+        }
+        "עבר" => Some(Grade::Binary(true)),
+        "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
+        _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
+    };
+    Ok((
+        Course {
+            number,
+            credit,
+            name,
+        },
+        grade,
+    ))
 }
 
 #[cfg(test)]
@@ -349,134 +322,38 @@ mod tests {
     use super::*;
     use actix_rt::test;
 
+    #[allow(clippy::float_cmp)]
     #[test]
-    async fn test_ug_course_parser() {
-        let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
+    async fn test_both_parsers() {
+        let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
             .expect("Something went wrong reading the file");
-        let mut courses_display =
-            parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
-        courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap());
-        for course_display in courses_display {
-            println!("{:?}", course_display); // TODO change to asserts
+        let from_ug = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
+            .expect("Something went wrong reading the file");
+        let mut courses_display_from_pdf =
+            parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
+        let mut courses_display_from_ug =
+            parse_copy_paste_data(&from_ug).expect("failed to parse ug data");
+        courses_display_from_pdf
+            .sort_by(|a, b| a.course.number.partial_cmp(&b.course.number).unwrap());
+        courses_display_from_ug
+            .sort_by(|a, b| a.course.number.partial_cmp(&b.course.number).unwrap());
+        for i in 0..courses_display_from_pdf.len() {
+            assert_eq!(
+                courses_display_from_ug[i].grade,
+                courses_display_from_pdf[i].grade
+            );
+            assert_eq!(
+                courses_display_from_ug[i].semester,
+                courses_display_from_pdf[i].semester
+            );
+            assert_eq!(
+                courses_display_from_ug[i].course.number,
+                courses_display_from_pdf[i].course.number
+            );
+            assert_eq!(
+                courses_display_from_ug[i].course.credit,
+                courses_display_from_pdf[i].course.credit
+            );
         }
-    }
-
-    // TODO add ../docs/pdf_ctrl_c_ctrl_v.txt
-    // #[test]
-    // async fn test_pdf_course_parser() {
-    //     let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
-    //         .expect("Something went wrong reading the file");
-    //     let mut courses_display =
-    //         parse_copy_paste_from_pdf(&contents).expect("failed to parse ug data");
-    //     courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap());
-    //     for course_display in courses_display {
-    //         println!("{:?}", course_display); // TODO change to asserts
-    //     }
-    // }
-
-    // #[test]
-    // async fn test_create_degree_status_mock(){
-
-    //     let degree_status = DegreeStatus{
-    //         course_statuses: vec![
-    //             CourseStatus{
-    //                 course: Course{
-    //                     number: 234125,
-    //                     credit: 5.5,
-    //                     name: "אינפי 1 לניסנים".into()
-    //                 },
-    //                 state: Some(CourseState::Complete),
-    //                 semester: Some("חורף_1".into()),
-    //                 grade: Some(Grade::Grade(98)),
-    //                 r#type: Some("חובה".into()),
-    //                 additional_msg: None,
-    //             },
-    //             CourseStatus{
-    //                 course: Course{
-    //                     number: 234126,
-    //                     credit: 5.0,
-    //                     name: "אינפי 2 לניסנים".into()
-    //                 },
-    //                 state: Some(CourseState::NotComplete),
-    //                 semester: Some("אביב_2".into()),
-    //                 grade: Some(Grade::Grade(45)),
-    //                 r#type: Some("חובה".into()),
-    //                 additional_msg: None,
-    //             },
-    //             CourseStatus{
-    //                 course: Course{
-    //                     number: 234125,
-    //                     credit: 4.0,
-    //                     name: "אינפי 3 לניסנים".into()
-    //                 },
-    //                 state: Some(CourseState::Complete),
-    //                 semester: Some("חורף_3".into()),
-    //                 grade: Some(Grade::Binary(true)),
-    //                 r#type: Some("חובה".into()),
-    //                 additional_msg: None,
-    //             },
-    //             CourseStatus{
-    //                 course: Course{
-    //                     number: 234127,
-    //                     credit: 3.0,
-    //                     name: "קורס בחירה כלשהו".into()
-    //                 },
-    //                 state: Some(CourseState::Complete),
-    //                 semester: Some("חורף_3".into()),
-    //                 grade: Some(Grade::ExemptionWithCredit),
-    //                 r#type: Some("רשימה א'".into()),
-    //                 additional_msg: None,
-    //             },
-
-    //         ],
-    //         course_bank_requirements: vec![
-    //             Requirement{
-    //                 course_bank_name: "חובה".into(),
-    //                 bank_rule_name: "all".into(),
-    //                 requirment: 84.0,
-    //                 complete: 9.5,
-    //                 message: Some("תראה את ניסן הגבר הזה כמה אינפים הוא עשה".into()),
-    //             },
-    //             Requirement{
-    //                 course_bank_name: "בחירה חופשית".into(),
-    //                 bank_rule_name: "accumulate credit".into(),
-    //                 requirment: 2.0,
-    //                 ..Default::default()
-    //             }
-    //         ],
-    //         overflow_msgs: vec![
-    //             r#"2.5 נק"ז עובר משרשרת מדעית לרשימה ב'"#.to_string(),
-    //             r#"2.0 נק"ז עובר מרשימה ב' לבחירה חופשית"#.to_string(),
-    //         ],
-    //         total_credit: 76.5,
-    //     };
-
-    //     //let serialized = bson::to_bson(&degree_status).unwrap();
-    //     std::fs::write(
-    //         "degree_status_mock.json",
-    //     serde_json::to_string_pretty(&degree_status)
-    //         .expect("json serialization failed")
-    //     ).expect("Unable to write file");
-    // }
-
-    #[test]
-    async fn test_ser_deser_course() {
-        let course = Course {
-            number: 234,
-            credit: 2.5,
-            name: "some_course".into(),
-        };
-        let serialized = bson::to_bson(&course).unwrap();
-        println!("{}", serialized);
-        let doc = bson::to_document(&serialized).unwrap();
-        println!("{}", doc);
-        let deserialized = bson::from_document::<Course>(doc).unwrap();
-        println!("{:?}", deserialized);
-
-        let vec = vec![course.clone(), course];
-        let serialized_vec = bson::to_bson(&vec).unwrap();
-        println!("{}", serialized_vec);
-        let doc_vec = bson::doc! {"vec" : serialized_vec};
-        println!("{}", doc_vec);
     }
 }

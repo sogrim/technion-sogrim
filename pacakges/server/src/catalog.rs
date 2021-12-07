@@ -59,7 +59,7 @@ impl From<Catalog> for DisplayCatalog {
 #[get("/catalogs")]
 pub async fn get_all_catalogs(
     client: web::Data<Client>,
-    _: User, //TODO think about whether this is neccesary
+    _: User, //TODO think about whether this is necessary
 ) -> Result<HttpResponse, Error> {
     db::services::get_all_catalogs(&client).await
 }
