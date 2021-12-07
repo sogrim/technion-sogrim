@@ -8,6 +8,7 @@ name: Sogrim-CI
 env:
   CARGO_TERM_COLOR: always
   IP: "0.0.0.0"
+  PORT: ${{secrets.PORT}} 
   URI: ${{secrets.MONGO_URI_DEV}}
   CLIENT_ID: ${{secrets.CLIENT_ID}}
 
