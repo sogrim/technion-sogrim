@@ -11,31 +11,13 @@ name: Sogrim-CI
 
 env:
   CARGO_TERM_COLOR: always
+  IP: "0.0.0.0"
+  URI: ${{secrets.MONGO_URI_DEV}}
+  CLIENT_ID: ${{secrets.CLIENT_ID}}
 
 jobs:
-  compile:
-    name: Compile
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path pacakges/server/Cargo.toml
-
   test:
     name: Run Tests
-    needs: compile
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -96,15 +78,16 @@ jobs:
           command: clippy
           args: --manifest-path pacakges/server/Cargo.toml --all-targets -- -D warnings
 
-  #TODO make this work 
-  # deploy:
-  #   name: Deploy to Heroku
-  #   runs-on: ubuntu-latest
-  #   needs: [compile, test, clippy, format]
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
-  #       with:
-  #         heroku_api_key: ${{secrets.HEROKU_API_KEY}} #TODO ask nissan to insert a secret
-  #         heroku_app_name: "sh-ops-server" #TODO change this, Must be unique in Heroku
-  #         heroku_email: "benick12@gmail.com"
+
+  deploy:
+    name: Deploy to Heroku
+    runs-on: ubuntu-latest
+    needs: [test, clippy, format]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}} 
+          heroku_app_name: "sogrim" 
+          heroku_email: "benick12@gmail.com"
+          procfile: "web: PORT=$PORT PROFILE=staging ./pacakges/server/target/release/sogrim-server"
