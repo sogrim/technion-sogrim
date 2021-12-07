@@ -537,17 +537,13 @@ pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[allow(unused)] //TODO remove
     use crate::config::CONFIG;
-    #[allow(unused)] //TODO remove
     use crate::{
         course::{self, Grade},
         db,
     };
     use actix_rt::test;
-    #[allow(unused)] //TODO remove
     use dotenv::dotenv;
-    #[allow(unused)] //TODO remove
     use std::str::FromStr;
 
     fn create_user() -> UserDetails {
@@ -988,78 +984,152 @@ mod tests {
         assert_eq!(res, 9.0);
     }
 
-    // TODO uncomment this when secrets are added.
-    // #[test]
-    // async fn test_legendary_function() {
+    #[test]
+    async fn test_legendary_function() {
+        dotenv().ok();
+        let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
+            .await
+            .expect("failed to parse URI");
 
-    //     dotenv().ok();
-    //     let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
-    //         .await
-    //         .expect("failed to parse URI");
+        let client = mongodb::Client::with_options(options).unwrap();
+        // Ping the server to see if you can connect to the cluster
+        client
+            .database("admin")
+            .run_command(bson::doc! {"ping": 1}, None)
+            .await
+            .expect("failed to connect to db");
+        println!("Connected successfully.");
+        let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
+            .expect("Something went wrong reading the file");
 
-    //     let client = mongodb::Client::with_options(options).unwrap();
-    //     // Ping the server to see if you can connect to the cluster
-    //     client
-    //         .database("admin")
-    //         .run_command(bson::doc! {"ping": 1}, None)
-    //         .await
-    //         .expect("failed to connect to db");
-    //     println!("Connected successfully.");
-    //     let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
-    //         .expect("Something went wrong reading the file");
+        let course_statuses =
+            course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
 
-    //     let course_statuses = course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
+        let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401")
+            .expect("failed to create oid");
+        let catalog = db::services::get_catalog_by_id(&obj_id, &client)
+            .await
+            .expect("failed to get catalog");
+        let mut user = UserDetails {
+            catalog: None,
+            degree_status: DegreeStatus {
+                course_statuses,
+                ..Default::default()
+            },
+            modified: false,
+        };
+        calculate_degree_status(&catalog, &mut user);
+        std::fs::write(
+            "degree_status.json",
+            serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
+        )
+        .expect("Unable to write file");
 
-    //     let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401").expect("failed to create oid");
-    //     let catalog = db::services::get_catalog_by_id(&obj_id, &client).await.expect("failed to get catalog");
-    //     let mut user = UserDetails {
-    //         catalog: None,
-    //         degree_status: DegreeStatus {
-    //             course_statuses,
-    //             ..Default::default()
-    //         },
-    //         modified: false
-    //     };
-    //     calculate_degree_status(&catalog, &mut user);
-    //     std::fs::write(
-    //         "degree_status.json",
-    //     serde_json::to_string_pretty(&user.degree_status)
-    //         .expect("json serialization failed")
-    //     ).expect("Unable to write file");
+        // check output
+        assert_eq!(
+            user.degree_status.course_bank_requirements[0].credit_requirment,
+            Some(2.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[0].credit_completed,
+            2.0
+        );
 
-    //     // check output
-    //     assert_eq!(user.degree_status.course_bank_requirements[0].credit_requirment, Some(2.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[0].credit_completed, 2.0);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[1].credit_requirment,
+            Some(6.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[1].credit_completed,
+            6.0
+        );
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[1].credit_requirment, Some(6.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[1].credit_completed, 6.0);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[2].course_requirement,
+            Some(1)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[2].course_completed,
+            1
+        );
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[2].course_requirement, Some(1));
-    //     assert_eq!(user.degree_status.course_bank_requirements[2].course_completed, 1);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[3].credit_requirment,
+            Some(18.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[3].credit_completed,
+            17.0
+        );
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[3].credit_requirment, Some(18.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[3].credit_completed, 17.0);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].credit_requirment,
+            Some(2.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].course_requirement,
+            Some(1)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].credit_completed,
+            2.5
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].course_completed,
+            1
+        );
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[4].credit_requirment, Some(2.5));
-    //     assert_eq!(user.degree_status.course_bank_requirements[4].course_requirement, Some(1));
-    //     assert_eq!(user.degree_status.course_bank_requirements[4].credit_completed, 2.5);
-    //     assert_eq!(user.degree_status.course_bank_requirements[4].course_completed, 1);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].credit_requirment,
+            Some(8.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].credit_completed,
+            8.0
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].message,
+            Some("הסטודנט השלים את השרשרת הבאה:\n114052,114054,".to_string())
+        );
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[5].credit_requirment, Some(8.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[5].credit_completed, 8.0);
-    //     assert_eq!(user.degree_status.course_bank_requirements[5].message, Some("הסטודנט השלים את השרשרת הבאה:\n114052,114054,".to_string()));
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].credit_requirment,
+            Some(73.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].credit_completed,
+            73.5
+        );
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[6].credit_requirment, Some(73.5));
-    //     assert_eq!(user.degree_status.course_bank_requirements[6].credit_completed, 73.5);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[7].credit_requirment,
+            Some(6.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[7].credit_completed,
+            5.5
+        );
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[7].credit_requirment, Some(6.5));
-    //     assert_eq!(user.degree_status.course_bank_requirements[7].credit_completed, 5.5);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[8].credit_requirment,
+            Some(2.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[8].credit_completed,
+            0.0
+        );
 
-    //     assert_eq!(user.degree_status.course_bank_requirements[8].credit_requirment, Some(2.0));
-    //     assert_eq!(user.degree_status.course_bank_requirements[8].credit_completed, 0.0);
-
-    //     assert_eq!(user.degree_status.overflow_msgs[0], "עברו 3 נקודות מפרויקט לרשימה א".to_string());
-    //     assert_eq!(user.degree_status.overflow_msgs[1], "עברו 2 נקודות משרשרת מדעית לרשימה ב".to_string());
-    //     assert_eq!(user.degree_status.overflow_msgs[2], "יש לסטודנט 0 נקודות עודפות".to_string());
-    // }
+        assert_eq!(
+            user.degree_status.overflow_msgs[0],
+            "עברו 3 נקודות מפרויקט לרשימה א".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[1],
+            "עברו 2 נקודות משרשרת מדעית לרשימה ב".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[2],
+            "יש לסטודנט 0 נקודות עודפות".to_string()
+        );
+    }
 }

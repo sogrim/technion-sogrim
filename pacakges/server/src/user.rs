@@ -221,41 +221,46 @@ pub async fn debug(content: String) -> HttpResponse {
 #[cfg(test)]
 mod tests {
 
-    // use actix_rt::test;
-    // use actix_web::{App, test::{self}, web};
-    // use mongodb::Client;
-    // use dotenv::dotenv;
-    // use crate::{auth, user::User};
-    // use crate::config::CONFIG;
+    use crate::config::CONFIG;
+    use crate::{auth, user::User};
+    use actix_rt::test;
+    use actix_web::{
+        test::{self},
+        web, App,
+    };
+    use dotenv::dotenv;
+    use mongodb::Client;
 
     //TODO verify correctness when run on multiple threads
-    //TODO uncomment this when secrets are added.
-    // #[test]
-    // async fn test_user_login(){
+    #[allow(clippy::float_cmp)]
+    #[test]
+    async fn test_user_login() {
+        dotenv().ok();
+        let client = Client::with_uri_str(CONFIG.uri)
+            .await
+            .expect("failed to connect");
 
-    //     dotenv().ok();
-    //     let client = Client::with_uri_str(CONFIG.uri).await.expect("failed to connect");
+        let app = test::init_service(
+            App::new()
+                .wrap(auth::AuthenticateMiddleware)
+                .app_data(web::Data::new(client.clone()))
+                .service(super::user_login),
+        )
+        .await;
 
-    //     let mut app = test::init_service(
-    //     App::new()
-    //             .wrap(auth::AuthenticateMiddleware)
-    //             .app_data(web::Data::new(client.clone()))
-    //             .service(super::user_login)
-    //     ).await;
+        // Create and send request
+        let resp = test::TestRequest::get()
+            .uri("/user/login")
+            .insert_header(("authorization", "bugo-the-debugo"))
+            .send_request(&app)
+            .await;
 
-    //     // Create and send request
-    //     let resp = test::TestRequest::get()
-    //         .uri("/user/login")
-    //         .insert_header(("authorization", "bugo-the-debugo"))
-    //         .send_request(&mut app)
-    //         .await;
+        assert!(resp.status().is_success());
 
-    //     assert!(resp.status().is_success());
-
-    //     // Check for valid json response
-    //     let user : User = test::read_body_json(resp).await;
-    //     assert_eq!(user.sub, "bugo-the-debugo");
-    //     assert!(user.details.is_some());
-    //     assert_eq!(user.details.unwrap().degree_status.total_credit, 15.0);
-    // }
+        // Check for valid json response
+        let user: User = test::read_body_json(resp).await;
+        assert_eq!(user.sub, "bugo-the-debugo");
+        assert!(user.details.is_some());
+        assert_eq!(user.details.unwrap().degree_status.total_credit, 42.0);
+    }
 }
