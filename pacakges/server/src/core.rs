@@ -160,20 +160,20 @@ pub fn set_type_and_add_credits(
 struct BankRuleHandler<'a> {
     user: &'a mut UserDetails,
     bank_name: String,
-    course_list: Vec<u32>,
+    course_list: Vec<Course>,
     credit_overflow: f32,
     courses_overflow: Option<u32>,
     catalog_replacements: HashMap<u32, Replacements>
 }
 
 impl<'a> BankRuleHandler<'a> {
-    // Tries to find a replacment course which was done by the user, for the given course.
+    // Tries to find a replacment course which was done and passed by the user, for the given course.
     // Returns the course number if found, and None otherwise.
     fn find_catalog_replacement(&self, course_number: u32) -> Option<u32> {
         if let Some(optional_replacements_for_course) = self.catalog_replacements.get(&course_number) {
             for optional_replacement in optional_replacements_for_course {
-                if self.user.course_exists(*optional_replacement) {
-                    return Some(*optional_replacement);
+                if self.user.passed_course(optional_replacement.number) {
+                    return Some(optional_replacement.number);
                 }
             }
         }
@@ -186,29 +186,30 @@ impl<'a> BankRuleHandler<'a> {
             Some(num_courses) => *num_courses,
             None => 0,
         };
-        for course_number in &self.course_list {
+        for course in &self.course_list {
             let mut course_added = false;
-            match self.user.get_mut_course_status(*course_number) {
-                Some(course_status) => {
+            let course_replacement = self.find_catalog_replacement(course.number);
+            if let Some(course_status) = self.user.get_mut_course_status(course.number) {
+                if course_status.passed() || course_replacement.is_none() {
+                    // The user completed and passed the necessary course or
+                    // The user didn't pass the necessary course but didn't pass any of the optinal replacements either
                     course_added = set_type_and_add_credits(
                         course_status,
                         self.bank_name.clone(),
                         &mut sum_credits,
                     );
                 }
-                None => {
-                    let course_number_replacement = self.find_catalog_replacement(*course_number);
-                    if let Some(course_number) = course_number_replacement {
-                        let course_status = self.user.get_mut_course_status(course_number).unwrap();
-                        course_added = set_type_and_add_credits(
-                            course_status,
-                            self.bank_name.clone(),
-                            &mut sum_credits,
-                        );
-                        course_status.additional_msg = Some(format!("קורס זה מחליף את הקורס {}", course_number));
-                    }
-                }
             }
+            else if course_replacement.is_some() { // The user didn't complete the necessary course but completed an optional replacement
+                let course_replacement = self.user.get_mut_course_status(course_replacement.unwrap()).unwrap();
+                course_added = set_type_and_add_credits(
+                    course_replacement,
+                    self.bank_name.clone(),
+                    &mut sum_credits,
+                );
+                course_replacement.additional_msg = Some(format!("קורס זה מחליף את הקורס {}", course.name));
+            }
+                
             if course_added {
                 count_courses += 1;
             }
@@ -221,13 +222,10 @@ impl<'a> BankRuleHandler<'a> {
         let (sum_credits, num_courses) = self.iterate_course_list();
 
         // handle courses in course list which the user didn't complete or any replacement for them
-        for course_number in &self.course_list {
-            if self.user.get_mut_course_status(*course_number).is_none() && self.find_catalog_replacement(*course_number).is_none() {
+        for course in &self.course_list {
+            if self.user.get_mut_course_status(course.number).is_none() && self.find_catalog_replacement(course.number).is_none() {
                 self.user.degree_status.course_statuses.push(CourseStatus {
-                    course: Course {
-                        number: *course_number,
-                        ..Default::default()
-                    },
+                    course: course.clone(),
                     state: Some(CourseState::NotComplete),
                     r#type: Some(self.bank_name.clone()),
                     ..Default::default()
@@ -277,17 +275,28 @@ impl<'a> BankRuleHandler<'a> {
         sum_credits
     }
 
-    pub fn chain(mut self, chains: &[Chain], chain_done: &mut Chain) -> f32 {
-        //TODO: support replacements
+    pub fn chain(mut self, chains: &[Chain], chain_done: &mut Vec<String>) -> f32 {
         let (sum_credits, _) = self.iterate_course_list();
         for chain in chains {
             //check if the user completed one of the chains.
             let mut completed_chain = true;
             for course_number in chain {
-                completed_chain &= self.user.passed_course(*course_number);
+                if self.user.passed_course(*course_number) {
+                    chain_done.push(self.user.get_mut_course_status(*course_number).unwrap().course.name.clone());
+                } else {
+                    let course_replacement = self.find_catalog_replacement(*course_number);
+                    if let Some(course_replacement) = course_replacement {
+                        chain_done.push(self.user.get_mut_course_status(course_replacement).unwrap().course.name.clone());
+                    } else {
+                        completed_chain = false;
+                        break;
+                    }
+                }
             }
             if completed_chain {
-                *chain_done = chain.clone();
+                return sum_credits;
+            } else {
+                chain_done.clear();
             }
         }
         sum_credits
@@ -344,11 +353,11 @@ struct DegreeStatusHandler<'a> {
 }
 
 impl<'a> DegreeStatusHandler<'a> {
-    fn get_modified_courses(&self, bank_name: &str) -> Vec<u32> {
+    fn get_modified_courses(&self, bank_name: &str) -> Vec<Course> {
         let mut modified_courses = Vec::new();
         for course_status in &self.user.degree_status.course_statuses {
             if course_status.modified && course_status.r#type == Some(bank_name.to_string()) {
-                modified_courses.push(course_status.course.number);
+                modified_courses.push(course_status.course.clone());
             }
         }
         modified_courses
@@ -435,7 +444,7 @@ impl<'a> DegreeStatusHandler<'a> {
     fn handle_bank_rule(
         &mut self,
         bank: &CourseBank,
-        course_list_for_bank: Vec<u32>,
+        course_list_for_bank: Vec<Course>,
         credit_overflow: f32,
         courses_overflow: Option<u32>,
     ) {
@@ -622,7 +631,7 @@ mod tests {
                         course: Course {
                             number: 114052,
                             credit: 3.5,
-                            name: "פיסיקה2".to_string(),
+                            name: "פיסיקה 2".to_string(),
                         },
                         state: Some(CourseState::Complete),
                         grade: Some(Grade::Grade(85)),
@@ -632,7 +641,7 @@ mod tests {
                         course: Course {
                             number: 114054,
                             credit: 3.5,
-                            name: "פיסקה3".to_string(),
+                            name: "פיסיקה 3".to_string(),
                         },
                         state: Some(CourseState::Complete),
                         grade: Some(Grade::Grade(85)),
@@ -692,7 +701,30 @@ mod tests {
         // for debugging
         let mut user = create_user();
         let bank_name = "hova".to_string();
-        let course_list = vec![104031, 104166, 1, 2, 3];
+        let course_list = vec![
+            Course {
+                number: 104031,
+                credit: 5.5,
+                name: "infi1m".to_string(),
+            },
+            Course {
+                number: 104166,
+                credit: 5.5,
+                name: "Algebra alef".to_string(),
+            },
+            Course {
+                number: 1,
+                ..Default::default()
+            },
+            Course {
+                number: 2,
+                ..Default::default()
+            },
+            Course {
+                number: 3,
+                ..Default::default()
+            }
+        ];    
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -742,7 +774,26 @@ mod tests {
         // for debugging
         let mut user = create_user();
         let bank_name = "reshima a".to_string();
-        let course_list = vec![236303, 236512, 1, 2];
+        let course_list = vec![
+            Course {
+                number: 236303,
+                credit: 3.0,
+                name: "project1".to_string(),
+            }, 
+            Course {
+                number: 236512,
+                credit: 3.0,
+                name: "project2".to_string(),
+            }, 
+            Course {
+                number: 1,
+                ..Default::default()
+            },
+            Course {
+                number: 2,
+                ..Default::default()
+            }
+        ];
         let credit_overflow = 5.5;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -779,7 +830,26 @@ mod tests {
         // for debugging
         let mut user = create_user();
         let bank_name = "Project".to_string();
-        let course_list = vec![236303, 236512, 1, 2];
+        let course_list = vec![
+            Course {
+                number: 236303,
+                credit: 3.0,
+                name: "project1".to_string(),
+            }, 
+            Course {
+                number: 236512,
+                credit: 3.0,
+                name: "project2".to_string(),
+            }, 
+            Course {
+                number: 1,
+                ..Default::default()
+            },
+            Course {
+                number: 2,
+                ..Default::default()
+            }
+        ];
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -821,7 +891,35 @@ mod tests {
         // user finished a chain
         let mut user = create_user();
         let bank_name = "science chain".to_string();
-        let course_list = vec![1, 2, 114052, 5, 114054, 111111];
+        let course_list = vec![
+            Course {
+                number: 1,
+                ..Default::default()
+            }
+            ,
+            Course {
+                number: 2,
+                ..Default::default()
+            },
+            Course {
+                number: 114052,
+                credit: 3.5,
+                name: "פיסיקה 2".to_string()
+            },
+            Course {
+                number: 5,
+                ..Default::default()
+            },
+            Course {
+                number: 114054,
+                credit: 3.5,
+                name: "פיסיקה 3".to_string()
+            },
+            Course {
+                number: 111111,
+                ..Default::default()
+            }
+        ];
         let chains = vec![
             vec![1, 2],
             vec![114052, 5],
@@ -857,13 +955,41 @@ mod tests {
         assert_eq!(user.degree_status.course_statuses.len(), 8);
 
         // check sum credits
-        assert_eq!(chain_done, vec![114052, 114054]);
+        assert_eq!(chain_done, vec!["פיסיקה 2".to_string(), "פיסיקה 3".to_string()]);
         assert_eq!(res, 7.0);
 
         // user didn't finish a chain
         let mut user = create_user();
         let bank_name = "science chain".to_string();
-        let course_list = vec![1, 2, 114052, 5, 114054, 111111];
+        let course_list = vec![
+            Course {
+                number: 1,
+                ..Default::default()
+            }
+            ,
+            Course {
+                number: 2,
+                ..Default::default()
+            },
+            Course {
+                number: 114052,
+                credit: 3.5,
+                name: "פיסיקה 2".to_string()
+            },
+            Course {
+                number: 5,
+                ..Default::default()
+            },
+            Course {
+                number: 114054,
+                credit: 3.5,
+                name: "פיסיקה 3".to_string()
+            },
+            Course {
+                number: 111111,
+                ..Default::default()
+            }
+        ];
         let chains = vec![
             vec![1, 2],
             vec![114052, 5],
@@ -882,7 +1008,7 @@ mod tests {
         };
         let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
 
-        assert_eq!(chain_done, Chain::new());
+        assert!(chain_done.is_empty());
         assert_eq!(res, 7.0);
     }
 
@@ -891,7 +1017,16 @@ mod tests {
         // for debugging
         let mut user = create_user();
         let bank_name = "MALAG".to_string();
-        let course_list = vec![1, 2]; // this list shouldn't affect anything
+        let course_list = vec![ // this list shouldn't affect anything
+            Course {
+                number: 1,
+                ..Default::default()
+            },
+            Course {
+                number: 2,
+                ..Default::default()
+            }
+        ];
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -926,7 +1061,16 @@ mod tests {
         // for debugging
         let mut user = create_user();
         let bank_name = "SPORT".to_string();
-        let course_list = vec![1, 2]; // this list shouldn't affect anything
+        let course_list = vec![ // this list shouldn't affect anything
+            Course {
+                number: 1,
+                ..Default::default()
+            },
+            Course {
+                number: 2,
+                ..Default::default()
+            }
+        ];
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -963,7 +1107,18 @@ mod tests {
         user.degree_status.course_statuses[0].r#type = Some("reshima alef".to_string()); // the user modified the type of 104031 to be reshima alef
         user.degree_status.course_statuses[0].modified = true;
         let bank_name = "hova".to_string();
-        let course_list = vec![104031, 104166]; // although 104031 is in the list, it shouldn't be taken because the user modified its type
+        let course_list = vec![ // although 104031 is in the list, it shouldn't be taken because the user modified its type
+            Course {
+                number: 104031,
+                credit: 5.5,
+                name: "infi1m".to_string(),
+            }, 
+            Course {
+                number: 104166,
+                credit: 5.5,
+                name: "Algebra alef".to_string(),
+            }
+        ];
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -1002,7 +1157,18 @@ mod tests {
         user.degree_status.course_statuses[3].r#type = Some("reshima alef".to_string()); // the user modified the type of 114054 to be reshima alef
         user.degree_status.course_statuses[3].modified = true;
         let bank_name = "hova".to_string();
-        let mut course_list = vec![104031, 104166];
+        let mut course_list = vec![
+            Course {
+                number: 104031,
+                credit: 5.5,
+                name: "infi1m".to_string(),
+            }, 
+            Course {
+                number: 104166,
+                credit: 5.5,
+                name: "Algebra alef".to_string(),
+            }
+        ];
         // create DegreeStatusHandler so we can run the function get_modified_courses
         let catalog = Catalog {
             ..Default::default()

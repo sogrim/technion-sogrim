@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::{
     core::CreditOverflow,
-    course::{CourseBank, CourseTableRow},
+    course::{Course, CourseBank, CourseTableRow},
     db,
     user::User,
 };
@@ -13,7 +13,7 @@ use actix_web::{
 use mongodb::Client;
 use serde::{self, Deserialize, Serialize};
 
-pub(crate) type Replacements = Vec<u32>;
+pub(crate) type Replacements = Vec<Course>;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Catalog {
@@ -29,11 +29,11 @@ pub struct Catalog {
 }
 
 impl Catalog {
-    pub fn get_course_list(&self, name: &str) -> Vec<u32> {
-        let mut course_list_for_bank = Vec::<u32>::new();
-        for course in &self.course_table {
-            if course.course_banks.contains(&name.to_string()) {
-                course_list_for_bank.push(course.number);
+    pub fn get_course_list(&self, name: &str) -> Vec<Course> {
+        let mut course_list_for_bank = Vec::new();
+        for course_row in &self.course_table {
+            if course_row.course_banks.contains(&name.to_string()) {
+                course_list_for_bank.push(course_row.course.clone());
             }
         }
         course_list_for_bank

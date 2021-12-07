@@ -78,7 +78,7 @@ pub struct CourseBank {
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct CourseTableRow {
-    pub number: u32,
+    pub course: Course,
     pub course_banks: Vec<String>, // שמות הבנקים. שימו לב לקבוצת ההתמחות
 }
 

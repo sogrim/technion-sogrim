@@ -21,14 +21,6 @@ pub struct UserDetails {
 }
 
 impl UserDetails {
-    pub fn course_exists(&self, number: u32) -> bool {
-        for course_status in &self.degree_status.course_statuses {
-            if course_status.course.number == number {
-                return true;
-            }
-        }
-        false
-    }
 
     pub fn get_mut_course_status(&mut self, number: u32) -> Option<&mut CourseStatus> {
         // TODO: find the first course with type None
@@ -40,9 +32,11 @@ impl UserDetails {
         None
     }
 
-    pub fn passed_course(&mut self, number: u32) -> bool {
-        if let Some(course) = self.get_mut_course_status(number) {
-            return course.passed();
+    pub fn passed_course(&self, number: u32) -> bool {
+        for course_status in &self.degree_status.course_statuses {
+            if course_status.course.number == number && course_status.passed() {
+                return true;
+            }
         }
         false
     }
@@ -184,13 +178,14 @@ pub async fn compute_degree_status(
 
     core::calculate_degree_status(catalog, &mut user_details);
 
-    for course_status in user_details.degree_status.course_statuses.iter_mut() {
-        // Fill in courses without information
-        let course = &mut course_status.course;
-        if course.name.is_empty() {
-            *course = db::services::get_course_by_number(course.number, &client).await?;
-        }
-    }
+    //TODO: remove this, we work on course so no need to back patching.
+    // for course_status in user_details.degree_status.course_statuses.iter_mut() {
+    //     // Fill in courses without information
+    //     let course = &mut course_status.course;
+    //     if course.name.is_empty() {
+    //         *course = db::services::get_course_by_number(course.number, &client).await?;
+    //     }
+    // }
     let user_id = user.sub.clone();
     let document = doc! {"$set" : user.clone().into_document()};
     db::services::find_and_update_user(&user_id, document, &client).await?;
