@@ -27,7 +27,7 @@ const ReadOnlyRowComp: React.FC<ReadOnlyRowProps> = ({
                 {row.courseNumber}
             </TableCell>
             <TableCell align="center" width={'50px'}>{row.credit}</TableCell>
-            <TableCell align="center" width={'50px'}>{row.grade}</TableCell>
+            <TableCell align="center" width={'100px'}>{row.grade}</TableCell>
             <TableCell align="center" width={'200px'}>{row.type}</TableCell>
             <TableCell align="center" width={'200px'}>{row.state}</TableCell>
         </>

@@ -12,7 +12,7 @@ import { observer } from 'mobx-react-lite';
 import { getComparator, Order, stableSort } from './SemesterTableUtils';
 import { RowData, headCells } from './SemesterTabsConsts';
 import { SemesterTableRow } from './SemesterTableRow';
-import { Paper } from '@mui/material';
+import { Paper, TableFooter } from '@mui/material';
 
 interface EnhancedTableProps {
   onRequestSort: (event: React.MouseEvent<unknown>, property: keyof RowData) => void;
@@ -122,7 +122,10 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
                 })}              
             </TableBody>
           </Table>
-        </TableContainer>        
+        </TableContainer>    
+        <TableFooter>
+            hogale
+        </TableFooter>    
       </Paper>
       {/* <FormControlLabel
         control={<Switch checked={dense} onChange={handleChangeDense} />}

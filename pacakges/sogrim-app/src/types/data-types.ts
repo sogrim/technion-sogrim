@@ -49,7 +49,7 @@ export type CourseBankReq = { // TODO: check with Liad after apdated.
 export type DegreeStatus = {
     course_bank_requirements: CourseBankReq[];
     course_statuses: CourseStatus[];
-    credit_overflow_msgs: string[];
+    overflow_msgs: string[];
     total_credit: number;
 };
 
