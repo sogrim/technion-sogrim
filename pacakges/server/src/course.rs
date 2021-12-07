@@ -1,4 +1,5 @@
 use crate::core::*;
+use actix_web::error::ErrorInternalServerError;
 use actix_web::{error::ErrorBadRequest, Error};
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -160,7 +161,7 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Result<Vec<CourseStatus>, Erro
 
         semester = if line.contains("אביב") || line.contains("חורף") || line.contains("קיץ")
         {
-            semester_counter += if line.contains("קיץ") || semester_counter.fract() == 0.0 {
+            semester_counter += if line.contains("קיץ") || semester_counter.fract() != 0.0 {
                 0.5
             } else {
                 1.0
@@ -232,6 +233,113 @@ pub fn parse_copy_paste_from_ug(ug_data: &str) -> Result<Vec<CourseStatus>, Erro
     Ok(vec_courses)
 }
 
+pub fn parse_copy_paste_from_pdf(pdf_data: &str) -> Result<Vec<CourseStatus>, Error> {
+    let mut courses = HashMap::<u32, CourseStatus>::new();
+    let mut sport_courses = Vec::<CourseStatus>::new();
+    let mut semester = String::new();
+    let mut semester_counter: f32 = 0.0;
+
+    for line_ref in pdf_data.split_terminator('\n') {
+        let line = line_ref.to_string();
+
+        let is_spring = line.contains("אביב");
+        let is_winter = line.contains("חורף");
+        let is_summer = line.contains("קיץ");
+
+        semester = if is_spring || is_summer || is_winter
+        {
+            semester_counter += if is_summer || semester_counter.fract() != 0.0 {
+                0.5
+            } else {
+                1.0
+            };
+
+            let semester_term = if is_spring {
+                "אביב"
+            } else if is_summer {
+                "קיץ"
+            } else if is_winter {
+                "חורף"
+            } else {
+                return Err(ErrorInternalServerError("Something really unexcepted happend"))
+            };
+
+            format!("{}_{}", semester_term, semester_counter)
+        } else {
+            semester
+        };
+
+        if !contains_course_number(&line) || line.contains('*') {
+            continue;
+        }
+
+        let number = line
+            .split(' ')
+            .next()
+            .ok_or_else(|| ErrorBadRequest("Bad Format"))?
+            .parse::<u32>()
+            .map_err(|err| ErrorBadRequest(err.to_string()))?;
+
+        let mut index = 0;
+        let mut credit = 0.0;
+        for mut word in line.split(' '){
+            //TODO explain this abomination
+            if word.contains('-') && word.contains('.'){ 
+                word = &word[0..word.len() - 2];
+            }
+            if word.parse::<f32>().is_ok() && word.contains('.') {
+                credit = word.chars().rev().collect::<String>().parse::<f32>().unwrap();
+                break;
+            }
+            index += 1;
+        }
+
+        let name = line
+            .split_whitespace()
+            .collect::<Vec<&str>>()[1..index]
+            .join(" ");
+
+        let grade_str = line
+            .split(' ')
+            .last()
+            .ok_or_else(|| ErrorBadRequest("Bad Format"))?
+            .trim();
+        
+        let grade = match grade_str as &str {
+            "ניקוד" => {
+                if line.contains("ללא"){
+                    Some(Grade::ExemptionWithoutCredit)
+                } else {
+                    Some(Grade::ExemptionWithCredit)
+                }
+            },
+            "עבר" => Some(Grade::Binary(true)),
+            "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
+            _  => grade_str.parse::<u8>().ok().map(Grade::Grade)
+        };
+
+        let mut course = CourseStatus {
+            course: Course {
+                number,
+                credit,
+                name,
+            },
+            semester: (!semester.is_empty()).then(|| semester.clone()),
+            grade: grade.clone(),
+            ..Default::default()
+        };
+        course.set_state();
+        if course.is_sport() {
+            sport_courses.push(course);
+            continue;
+        }
+        *courses.entry(number).or_insert(course) = course.clone();
+    }
+    let mut vec_courses: Vec<_> = courses.into_values().collect();
+    vec_courses.append(&mut sport_courses);
+    Ok(vec_courses)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -243,6 +351,18 @@ mod tests {
             .expect("Something went wrong reading the file");
         let mut courses_display =
             parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
+        courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap());
+        for course_display in courses_display {
+            println!("{:?}", course_display); // TODO change to asserts
+        }
+    }
+
+    #[test]
+    async fn test_pdf_course_parser() {
+        let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
+            .expect("Something went wrong reading the file");
+        let mut courses_display =
+            parse_copy_paste_from_pdf(&contents).expect("failed to parse ug data");
         courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap());
         for course_display in courses_display {
             println!("{:?}", course_display); // TODO change to asserts
