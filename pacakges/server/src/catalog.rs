@@ -59,7 +59,52 @@ impl From<Catalog> for DisplayCatalog {
 #[get("/catalogs")]
 pub async fn get_all_catalogs(
     client: web::Data<Client>,
-    _: User, //TODO think about whether this is neccesary
+    _: User, //TODO think about whether this is necessary
 ) -> Result<HttpResponse, Error> {
-    db::services::get_all_catalogs(&client).await
+    db::services::get_all_catalogs(&client)
+        .await
+        .map(|catalogs| HttpResponse::Ok().json(catalogs))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::auth;
+    use crate::config::CONFIG;
+    use actix_rt::test;
+    use actix_web::{
+        test::{self},
+        web, App,
+    };
+    use dotenv::dotenv;
+    use mongodb::Client;
+
+    #[test]
+    pub async fn test_get_all_catalogs() {
+        dotenv().ok();
+        let client = Client::with_uri_str(CONFIG.uri)
+            .await
+            .expect("failed to connect");
+
+        let app = test::init_service(
+            App::new()
+                .wrap(auth::AuthenticateMiddleware)
+                .app_data(web::Data::new(client.clone()))
+                .service(super::get_all_catalogs),
+        )
+        .await;
+
+        // Create and send request
+        let resp = test::TestRequest::get()
+            .uri("/catalogs")
+            .insert_header(("authorization", "bugo-the-debugo"))
+            .send_request(&app)
+            .await;
+
+        assert!(resp.status().is_success());
+
+        // Check for valid json response
+        let vec_catalogs: Vec<DisplayCatalog> = test::read_body_json(resp).await;
+        assert_eq!(vec_catalogs[0].name, "מדמח תלת שנתי");
+    }
 }
