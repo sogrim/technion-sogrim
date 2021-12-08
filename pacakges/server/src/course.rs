@@ -278,14 +278,14 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
 
     let mut index = 0;
     let mut credit = 0.0;
-    let mut clean;
-    for mut word in line.split(' ') {
+    let mut word;
+    for part in line.split(' ') {
+        word = part.to_string();
         // When a grade is missing, a hyphen (מקף) char is written instead, without any whitespaces between it and the credit.
         // This means that the credit part is no longer parsable as f32, and therefore the hyphen must be manually removed.
         // This won't create a problem later in the code since 'word' only lives in the for-loop scope.
         if word.contains('-') && word.contains('.') {
-            clean = word.replace('-', "");
-            word = &*clean.trim();
+            word = word.replace('-', "").trim().to_string();
         }
         if word.parse::<f32>().is_ok() && word.contains('.') {
             credit = word
