@@ -519,7 +519,12 @@ impl<'a> DegreeStatusHandler<'a> {
     }
 }
 
-pub fn calculate_degree_status(catalog: &Catalog, user: &mut UserDetails) {
+pub fn calculate_degree_status(
+    catalog: &Catalog,
+    _courses: HashMap<u32, Course>,
+    user: &mut UserDetails,
+) {
+    // TODO for liad: remove '_' from _courses and use
     let course_banks = set_order(&catalog.course_banks, &catalog.credit_overflows);
     reset_type_for_unmodified_courses(user);
 
@@ -1003,7 +1008,7 @@ mod tests {
             .expect("Something went wrong reading the file");
 
         let course_statuses =
-            course::parse_copy_paste_data(&contents).expect("failed to parse ug data");
+            course::parse_copy_paste_data(&contents).expect("failed to parse courses data");
 
         let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401")
             .expect("failed to create oid");
@@ -1018,7 +1023,11 @@ mod tests {
             },
             modified: false,
         };
-        calculate_degree_status(&catalog, &mut user);
+        let vec_courses = db::services::get_all_courses(&client)
+            .await
+            .expect("failed to get all courses");
+
+        calculate_degree_status(&catalog, course::vec_to_map(vec_courses), &mut user);
         //FOR VIEWING IN JSON FORMAT
         // std::fs::write(
         //     "degree_status.json",

@@ -43,6 +43,31 @@ pub mod services {
         };
     }
 
+    #[macro_export]
+    macro_rules! impl_get_all {
+        (
+            fn_name : $fn_name:ident,
+            db_item : $db_item:ty,
+            db_coll_name : $db_coll_name:literal
+
+        ) => {
+            pub async fn $fn_name(client: &Client) -> Result<Vec<$db_item>, Error> {
+                match client
+                    .database(CONFIG.profile)
+                    .collection::<$db_item>($db_coll_name)
+                    .find(None, None)
+                    .await
+                {
+                    Ok(docs) => Ok(docs
+                        .try_collect::<Vec<$db_item>>()
+                        .await
+                        .map_err(|e| ErrorInternalServerError(e.to_string()))?),
+                    Err(err) => Err(ErrorInternalServerError(err.to_string())),
+                }
+            }
+        };
+    }
+
     impl_get!(
         fn_name : get_catalog_by_id,
         db_item : Catalog,
@@ -62,6 +87,18 @@ pub mod services {
         db_item : User,
         db_key_type: &str,
         db_key_name: "_id"
+    );
+
+    impl_get_all!(
+        fn_name: get_all_catalogs,
+        db_item: DisplayCatalog,
+        db_coll_name: "Catalogs"
+    );
+
+    impl_get_all!(
+        fn_name: get_all_courses,
+        db_item: Course,
+        db_coll_name: "Courses"
     );
 
     pub async fn find_and_update_user(
@@ -91,22 +128,6 @@ pub mod services {
                 eprintln!("{}", err);
                 Err(ErrorInternalServerError(err))
             }
-        }
-    }
-
-    pub async fn get_all_catalogs(client: &Client) -> Result<HttpResponse, Error> {
-        match client
-            .database(CONFIG.profile)
-            .collection::<DisplayCatalog>("Catalogs")
-            .find(None, None)
-            .await
-        {
-            Ok(docs) => Ok(HttpResponse::Ok().json(
-                docs.try_collect::<Vec<DisplayCatalog>>()
-                    .await
-                    .map_err(|e| ErrorInternalServerError(e.to_string()))?,
-            )),
-            Err(err) => Err(ErrorInternalServerError(err.to_string())),
         }
     }
 }

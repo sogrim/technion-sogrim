@@ -4,6 +4,7 @@ use actix_web::{error::ErrorBadRequest, Error};
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
+use std::iter::FromIterator;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Course {
@@ -150,6 +151,15 @@ fn contains_course_number(str: &str) -> bool {
     false
 }
 
+pub fn vec_to_map(vec: Vec<Course>) -> HashMap<u32, Course> {
+    HashMap::from_iter(
+        vec.clone()
+            .iter()
+            .map(|course| course.number)
+            .zip(vec.into_iter()),
+    )
+}
+
 pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     let mut courses = HashMap::<u32, CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
@@ -268,12 +278,14 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
 
     let mut index = 0;
     let mut credit = 0.0;
+    let mut clean;
     for mut word in line.split(' ') {
         // When a grade is missing, a hyphen (מקף) char is written instead, without any whitespaces between it and the credit.
         // This means that the credit part is no longer parsable as f32, and therefore the hyphen must be manually removed.
         // This won't create a problem later in the code since 'word' only lives in the for-loop scope.
         if word.contains('-') && word.contains('.') {
-            word = &word[0..word.len() - 2];
+            clean = word.replace('-', "");
+            word = &*clean.trim();
         }
         if word.parse::<f32>().is_ok() && word.contains('.') {
             credit = word

@@ -169,7 +169,9 @@ pub async fn compute_degree_status(
     user_details.degree_status.total_credit = 0.0;
     user_details.modified = false;
 
-    core::calculate_degree_status(&catalog, user_details);
+    let vec_courses = db::services::get_all_courses(&client).await?;
+
+    core::calculate_degree_status(&catalog, course::vec_to_map(vec_courses), user_details);
 
     for course_status in user_details.degree_status.course_statuses.iter_mut() {
         // Fill in courses without information
