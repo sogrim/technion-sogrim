@@ -175,7 +175,7 @@ pub async fn compute_degree_status(
 
     let vec_courses = db::services::get_all_courses(&client).await?;
 
-    core::calculate_degree_status(&catalog, course::vec_to_map(vec_courses), user_details);
+    core::calculate_degree_status(catalog, course::vec_to_map(vec_courses), user_details);
 
     //TODO: remove this, we work on course so no need to back patching.
     // for course_status in user_details.degree_status.course_statuses.iter_mut() {
