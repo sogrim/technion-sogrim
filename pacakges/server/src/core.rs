@@ -85,7 +85,7 @@ pub struct Requirement {
     */
     pub course_bank_name: String,
     pub bank_rule_name: String,
-    pub credit_requirment: Option<f32>,
+    pub credit_requirement: Option<f32>,
     pub course_requirement: Option<u32>,
     pub credit_completed: f32,
     pub course_completed: u32,
@@ -473,7 +473,7 @@ impl<'a> DegreeStatusHandler<'a> {
     ) {
         let mut course_list = self.get_modified_courses(&bank.name);
         course_list.extend(course_list_for_bank);
-        //course list inscludes all courses for this bank from the catalog and courses that the user marked manually that their type is this bank
+        //course list includes all courses for this bank from the catalog and courses that the user marked manually that their type is this bank
         let bank_rule_handler = BankRuleHandler {
             user: self.user,
             bank_name: bank.name.clone(),
@@ -551,7 +551,7 @@ impl<'a> DegreeStatusHandler<'a> {
             .push(Requirement {
                 course_bank_name: bank.name.clone(),
                 bank_rule_name: bank.rule.to_string(),
-                credit_requirment: new_bank_credit,
+                credit_requirement: new_bank_credit,
                 course_requirement: if let Rule::AccumulateCourses(num_courses) = bank.rule {
                     Some(num_courses)
                 } else {
@@ -573,7 +573,7 @@ impl<'a> DegreeStatusHandler<'a> {
         }
     }
 
-    pub fn proccess(mut self) {
+    pub fn process(mut self) {
         for bank in self.course_banks.clone() {
             let course_list_for_bank = self.catalog.get_course_list(&bank.name);
             let credit_overflow = self.calculate_overflows(&bank.name, CreditsTransfer::OverflowCredits);
@@ -600,7 +600,12 @@ impl<'a> DegreeStatusHandler<'a> {
     }
 }
 
-pub fn calculate_degree_status(catalog: Catalog, user: &mut UserDetails) {
+pub fn calculate_degree_status(
+    catalog: &Catalog,
+    _courses: HashMap<u32, Course>,
+    user: &mut UserDetails,
+) {
+    // TODO for liad: remove '_' from _courses and use
     let course_banks = set_order(&catalog.course_banks, &catalog.credit_overflows);
     reset_type_for_unmodified_courses(user);
 
@@ -612,24 +617,20 @@ pub fn calculate_degree_status(catalog: Catalog, user: &mut UserDetails) {
         missing_credits_map: HashMap::new(),
         courses_overflow_map: HashMap::new(),
     }
-    .proccess();
+    .process();
 }
 
 #[allow(clippy::float_cmp)]
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[allow(unused)] //TODO remove
     use crate::config::CONFIG;
-    #[allow(unused)] //TODO remove
     use crate::{
         course::{self, Grade},
         db,
     };
     use actix_rt::test;
-    #[allow(unused)] //TODO remove
     use dotenv::dotenv;
-    #[allow(unused)] //TODO remove
     use std::str::FromStr;
 
     fn create_user() -> UserDetails {
@@ -1102,58 +1103,135 @@ mod tests {
         let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
             .expect("Something went wrong reading the file");
 
-        let course_statuses = course::parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
+        let course_statuses =
+            course::parse_copy_paste_data(&contents).expect("failed to parse courses data");
 
-        let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401").expect("failed to create oid");
-        let catalog = db::services::get_catalog_by_id(&obj_id, &client).await.expect("failed to get catalog");
+        let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401")
+            .expect("failed to create oid");
+        let catalog = db::services::get_catalog_by_id(&obj_id, &client)
+            .await
+            .expect("failed to get catalog");
         let mut user = UserDetails {
             catalog: None,
             degree_status: DegreeStatus {
                 course_statuses,
                 ..Default::default()
             },
-            modified: false
+            modified: false,
         };
-        calculate_degree_status(catalog, &mut user);
-        std::fs::write(
-            "degree_status.json",
-        serde_json::to_string_pretty(&user.degree_status)
-            .expect("json serialization failed")
-        ).expect("Unable to write file");
+        let vec_courses = db::services::get_all_courses(&client)
+            .await
+            .expect("failed to get all courses");
+
+        calculate_degree_status(&catalog, course::vec_to_map(vec_courses), &mut user);
+        //FOR VIEWING IN JSON FORMAT
+        // std::fs::write(
+        //     "degree_status.json",
+        //     serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
+        // )
+        // .expect("Unable to write file");
 
         // check output
-        assert_eq!(user.degree_status.course_bank_requirements[0].credit_requirment, Some(2.0));
-        assert_eq!(user.degree_status.course_bank_requirements[0].credit_completed, 2.0);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[0].credit_requirement,
+            Some(2.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[0].credit_completed,
+            1.0
+        );
 
-        assert_eq!(user.degree_status.course_bank_requirements[1].credit_requirment, Some(6.0));
-        assert_eq!(user.degree_status.course_bank_requirements[1].credit_completed, 6.0);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[1].credit_requirement,
+            Some(6.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[1].credit_completed,
+            6.0
+        );
 
-        assert_eq!(user.degree_status.course_bank_requirements[2].course_requirement, Some(1));
-        assert_eq!(user.degree_status.course_bank_requirements[2].course_completed, 1);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[2].course_requirement,
+            Some(1)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[2].course_completed,
+            0
+        );
 
-        assert_eq!(user.degree_status.course_bank_requirements[3].credit_requirment, Some(18.0));
-        assert_eq!(user.degree_status.course_bank_requirements[3].credit_completed, 17.0);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[3].credit_requirement,
+            Some(18.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[3].credit_completed,
+            15.0
+        );
 
-        assert_eq!(user.degree_status.course_bank_requirements[4].credit_requirment, Some(2.5));
-        assert_eq!(user.degree_status.course_bank_requirements[4].course_requirement, Some(1));
-        assert_eq!(user.degree_status.course_bank_requirements[4].credit_completed, 2.5);
-        assert_eq!(user.degree_status.course_bank_requirements[4].course_completed, 1);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].credit_requirement,
+            Some(2.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].course_requirement,
+            Some(1)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].credit_completed,
+            2.5
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].course_completed,
+            1
+        );
 
-        assert_eq!(user.degree_status.course_bank_requirements[5].credit_requirment, Some(8.0));
-        assert_eq!(user.degree_status.course_bank_requirements[5].credit_completed, 8.0);
-        assert_eq!(user.degree_status.course_bank_requirements[5].message, Some("הסטודנט השלים את השרשרת הבאה:\n114052,114054,".to_string()));
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].credit_requirement,
+            Some(8.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].credit_completed,
+            8.0
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].message,
+            Some("הסטודנט השלים את השרשרת הבאה:\n114075,".to_string())
+        );
 
-        assert_eq!(user.degree_status.course_bank_requirements[6].credit_requirment, Some(73.5));
-        assert_eq!(user.degree_status.course_bank_requirements[6].credit_completed, 73.5);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].credit_requirement,
+            Some(73.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].credit_completed,
+            73.5
+        );
 
-        assert_eq!(user.degree_status.course_bank_requirements[7].credit_requirment, Some(6.5));
-        assert_eq!(user.degree_status.course_bank_requirements[7].credit_completed, 5.5);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[7].credit_requirement,
+            Some(6.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[7].credit_completed,
+            0.5
+        );
 
-        assert_eq!(user.degree_status.course_bank_requirements[8].credit_requirment, Some(2.0));
-        assert_eq!(user.degree_status.course_bank_requirements[8].credit_completed, 0.0);
+        assert_eq!(
+            user.degree_status.course_bank_requirements[8].credit_requirement,
+            Some(2.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[8].credit_completed,
+            0.0
+        );
 
-        assert_eq!(user.degree_status.overflow_msgs[0], "עברו 3 נקודות מפרויקט לרשימה א".to_string());
-        assert_eq!(user.degree_status.overflow_msgs[1], "עברו 2 נקודות משרשרת מדעית לרשימה ב".to_string());
-        assert_eq!(user.degree_status.overflow_msgs[2], "יש לסטודנט 0 נקודות עודפות".to_string());
+        assert_eq!(
+            user.degree_status.overflow_msgs[0],
+            "עברו 0.5 נקודות משרשרת מדעית לרשימה ב".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[1],
+            "יש לסטודנט 0 נקודות עודפות".to_string()
+        );
     }
 }

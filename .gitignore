@@ -6,3 +6,4 @@ pacakges/server/Cargo.lock
 pacakges/server/*.txt
 pacakges/server/.env
 .vscode/
+.idea/
