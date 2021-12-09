@@ -29,11 +29,11 @@ pub struct Catalog {
 }
 
 impl Catalog {
-    pub fn get_course_list(&self, name: &str) -> Vec<Course> {
+    pub fn get_course_list(&self, name: &str) -> Vec<u32> {
         let mut course_list_for_bank = Vec::new();
         for course_row in &self.course_table {
             if course_row.course_banks.contains(&name.to_string()) {
-                course_list_for_bank.push(course_row.course.clone());
+                course_list_for_bank.push(course_row.number);
             }
         }
         course_list_for_bank
