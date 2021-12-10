@@ -42,22 +42,27 @@ impl UserDetails {
     // Find the best match according to the following rules:
     // 1. If all optional courses type's are none take the last course
     // 2. If one of the courses type is bank_name returns the last course with the corresponding type.
-    pub fn find_best_match_for_course(&mut self, optional_courses_list: &Vec<u32>, bank_name: &str, ignore_courses: &Vec<u32>) -> Option<&mut CourseStatus> {
+    pub fn find_best_match_for_course(
+        &mut self,
+        optional_courses_list: &[u32],
+        bank_name: &str,
+        ignore_courses: &[u32],
+    ) -> Option<&mut CourseStatus> {
         // TODO: think about how to support student with the same course number twice (for example Ben with his 2 projects)
         let mut best_match = None;
         for course_status in &mut self.degree_status.course_statuses.iter_mut().rev() {
             if optional_courses_list.contains(&course_status.course.number) {
                 if best_match.is_none() && course_status.r#type.is_none() {
                     best_match = Some(course_status);
-                }
-                else if let Some(course_type) = course_status.r#type.clone() {
-                    if course_type == bank_name && !ignore_courses.contains(&course_status.course.number){
+                } else if let Some(course_type) = course_status.r#type.clone() {
+                    if course_type == bank_name
+                        && !ignore_courses.contains(&course_status.course.number)
+                    {
                         best_match = Some(course_status);
                         break;
                     }
                 }
             }
-
         }
 
         best_match

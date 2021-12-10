@@ -1,9 +1,4 @@
-use crate::{
-    core::CreditOverflow,
-    course::CourseBank,
-    db,
-    user::User,
-};
+use crate::{core::CreditOverflow, course::CourseBank, db, user::User};
 use actix_web::{
     get,
     web::{self},
@@ -25,14 +20,14 @@ pub struct Catalog {
     pub course_to_bank: Vec<(u32, String)>,
     pub credit_overflows: Vec<CreditOverflow>,
     pub catalog_replacements: Vec<(u32, Replacements)>, // All replacements which are mentioned in the catalog
-    pub common_replacements: Vec<(u32, Replacements)> // Common replacement which usually approved by the coordinators
+    pub common_replacements: Vec<(u32, Replacements)>, // Common replacement which usually approved by the coordinators
 }
 
 impl Catalog {
     pub fn get_course_list(&self, name: &str) -> Vec<u32> {
         let mut course_list_for_bank = Vec::new();
         for (course_number, bank_name) in &self.course_to_bank {
-            if *bank_name == name.to_string() {
+            if *bank_name == name {
                 course_list_for_bank.push(*course_number);
             }
         }
