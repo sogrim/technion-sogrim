@@ -339,7 +339,9 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused)]
     use super::*;
+    #[allow(unused)]
     use actix_rt::test;
 
     // TODO: uncomment this test after we fix it
