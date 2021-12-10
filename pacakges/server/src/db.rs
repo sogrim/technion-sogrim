@@ -25,6 +25,7 @@ pub mod services {
             db_key_name : $db_key_name:literal
 
         ) => {
+            #[allow(dead_code)]
             pub async fn $fn_name(item: $db_key_type, client: &Client) -> Result<$db_item, Error> {
                 match client
                     .database(CONFIG.profile)

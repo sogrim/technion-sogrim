@@ -6,6 +6,7 @@ use petgraph::algo::toposort;
 use petgraph::Graph;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::iter::FromIterator;
 
 type Chain = Vec<u32>;
 type NumCourses = u32;
@@ -156,17 +157,14 @@ pub fn set_type_and_add_credits(
     bank_name: String,
     sum_credits: &mut f32,
 ) -> bool {
-    if course_status.r#type.is_none()
-        || (course_status.modified && *course_status.r#type.as_ref().unwrap() == bank_name)
-    {
-        course_status.set_type(bank_name);
-        course_status.modified = false; // finished handle this course
-        if course_status.passed() {
-            *sum_credits += course_status.course.credit;
-            return true;
-        }
+    course_status.set_type(bank_name);
+    course_status.modified = false; // finished handle this course
+    if course_status.passed() {
+        *sum_credits += course_status.course.credit;
+        return true;
+    } else {
+        false
     }
-    false
 }
 
 struct BankRuleHandler<'a> {
@@ -176,21 +174,22 @@ struct BankRuleHandler<'a> {
     courses: &'a HashMap<u32, Course>,
     credit_overflow: f32,
     courses_overflow: Option<u32>,
-    catalog_replacements: HashMap<u32, Replacements>
+    catalog_replacements: HashMap<u32, Replacements>,
+    common_replacements: HashMap<u32, Replacements>,
+    ignore_courses: Vec<u32>
 }
 
 impl<'a> BankRuleHandler<'a> {
-    // Tries to find a replacment course which was done and passed by the user, for the given course.
-    // Returns the course number if found, and None otherwise.
-    fn find_catalog_replacement(&self, course_number: u32) -> Option<u32> {
-        if let Some(optional_replacements_for_course) = self.catalog_replacements.get(&course_number) {
-            for optional_replacement in optional_replacements_for_course {
-                if self.user.passed_course(optional_replacement.number) {
-                    return Some(optional_replacement.number);
-                }
-            }
+
+    fn create_optional_courses_list(&self, course_number: u32) -> Replacements {
+        let mut course_list = vec![course_number];
+        if let Some(optional_replacements) = self.catalog_replacements.get(&course_number) {
+            course_list.append(&mut (optional_replacements.clone()));
         }
-        None
+        if let Some(optional_replacements) = self.common_replacements.get(&course_number) {
+            course_list.append(&mut (optional_replacements.clone()));
+        }
+        course_list
     }
 
     fn iterate_course_list(&mut self) -> CreditInfo { // return sum_credits, count_courses, missing_points
@@ -202,28 +201,39 @@ impl<'a> BankRuleHandler<'a> {
         let mut missing_credits = 0.0;
         for course_number in &self.course_list {
             let mut course_added = false;
-            let course_replacement = self.find_catalog_replacement(*course_number);
-            if let Some(course_status) = self.user.get_mut_course_status(*course_number) {
-                if course_status.passed() || course_replacement.is_none() {
-                    // The user completed and passed the necessary course or
-                    // The user didn't pass the necessary course but didn't pass any of the optinal replacements either
-                    course_added = set_type_and_add_credits(
-                        course_status,
-                        self.bank_name.clone(),
-                        &mut sum_credits,
-                    );
-                }
-            }
-            else if course_replacement.is_some() { // The user didn't complete the necessary course but completed an optional replacement
-                let course_replacement = self.user.get_mut_course_status(course_replacement.unwrap()).unwrap();
+            let optional_courses_for_course = self.create_optional_courses_list(*course_number);
+            if let Some(course_status) = self.user.find_best_match_for_course(&optional_courses_for_course, &self.bank_name, &self.ignore_courses) {
                 course_added = set_type_and_add_credits(
-                    course_replacement,
+                    course_status,
                     self.bank_name.clone(),
                     &mut sum_credits,
                 );
-                course_replacement.additional_msg = Some(format!("קורס זה מחליף את הקורס {}", self.courses[course_number].name));
-                if course_replacement.course.credit < self.courses[course_number].credit {
-                    missing_credits += self.courses[course_number].credit - course_replacement.course.credit;
+                if course_status.course.number != *course_number { // A replacment was chosen from catalog replacements or common replacements
+                    if let Some(catalog_replacements) = self.catalog_replacements.get(&course_status.course.number) {
+                        if catalog_replacements.contains(&course_status.course.number) {
+                            course_status.additional_msg = Some(format!("קורס זה מחליף את הקורס {}", self.courses[course_number].name));
+                        } else {
+                            course_status.additional_msg = Some(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n שים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
+                        }
+                    } else {
+                        course_status.additional_msg = Some(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n שים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
+                    }
+                    
+                    if course_status.course.credit < self.courses[course_number].credit {
+                        missing_credits += self.courses[course_number].credit - course_status.course.credit;
+                    }
+                }
+
+                // After choosing the correct course for the total credits, we want to ignore all other replacements for this course.
+                // TODO: verify with the coordinators that a course and its replacement can't be both added to the total credit.
+                for course_number in optional_courses_for_course {
+                    if let Some(course_status) = self.user.get_mut_course_status(course_number) {
+                        if course_status.valid_for_bank(&self.bank_name) {
+                            course_status.set_type(self.bank_name.clone());
+                            course_status.modified = false;
+                            self.ignore_courses.push(course_status.course.number);
+                        }
+                    }
                 }
             }
             if course_added {
@@ -242,7 +252,8 @@ impl<'a> BankRuleHandler<'a> {
 
         // handle courses in course list which the user didn't complete or any replacement for them
         for course_number in &self.course_list {
-            if self.user.get_mut_course_status(*course_number).is_none() && self.find_catalog_replacement(*course_number).is_none() {
+            let optional_courses_for_course = self.create_optional_courses_list(*course_number);
+            if self.user.find_best_match_for_course(&optional_courses_for_course, &self.bank_name, &self.ignore_courses).is_none() {
                 self.user.degree_status.course_statuses.push(CourseStatus {
                     course: self.courses[course_number].clone(),
                     state: Some(CourseState::NotComplete),
@@ -289,7 +300,9 @@ impl<'a> BankRuleHandler<'a> {
     pub fn free_choice(self) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+            if course_status.r#type.is_none() && self.ignore_courses.contains(&course_status.course.number) {
+                set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+            }
         }
         sum_credits
     }
@@ -300,16 +313,18 @@ impl<'a> BankRuleHandler<'a> {
             //check if the user completed one of the chains.
             let mut completed_chain = true;
             for course_number in chain {
-                if self.user.passed_course(*course_number) {
-                    chain_done.push(self.user.get_mut_course_status(*course_number).unwrap().course.name.clone());
-                } else {
-                    let course_replacement = self.find_catalog_replacement(*course_number);
-                    if let Some(course_replacement) = course_replacement {
-                        chain_done.push(self.user.get_mut_course_status(course_replacement).unwrap().course.name.clone());
+                let optional_courses_for_course = self.create_optional_courses_list(*course_number);
+                let course_status = self.user.find_best_match_for_course(&optional_courses_for_course, &self.bank_name, &self.ignore_courses);
+                if let Some(course_status) = course_status {
+                    if course_status.passed() {
+                        chain_done.push(course_status.course.name.clone());
                     } else {
                         completed_chain = false;
                         break;
                     }
+                } else {
+                    completed_chain = false;
+                    break;
                 }
             }
             if completed_chain {
@@ -479,7 +494,17 @@ impl<'a> DegreeStatusHandler<'a> {
             courses: &self.courses,
             credit_overflow,
             courses_overflow,
-            catalog_replacements: self.catalog.catalog_replacements.clone(),
+            catalog_replacements: HashMap::from(HashMap::from_iter(
+                self.catalog.catalog_replacements.clone()
+                    .iter()
+                    .map(|replacement| (replacement.0, replacement.1.clone()))
+            )),
+            common_replacements: HashMap::from(HashMap::from_iter(
+                self.catalog.common_replacements.clone()
+                    .iter()
+                    .map(|replacement| (replacement.0, replacement.1.clone()))
+            )),
+            ignore_courses: Vec::new()
         };
 
         // Initialize necessary variable for rules handling
@@ -606,6 +631,7 @@ pub fn calculate_degree_status(
 ) {
     let course_banks = set_order(&catalog.course_banks, &catalog.credit_overflows);
     reset_type_for_unmodified_courses(user);
+    user.degree_status.course_statuses.sort_by(|c1, c2| c1.extract_semester().partial_cmp(&c2.extract_semester()).unwrap());
 
     DegreeStatusHandler {
         user,
@@ -767,7 +793,9 @@ mod tests {
             courses: &courses,
             credit_overflow,
             courses_overflow: None,
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let mut missing_credits_dummy = 0.0;
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
@@ -818,7 +846,9 @@ mod tests {
             courses: &HashMap::new(),
             credit_overflow,
             courses_overflow: None,
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let res = handle_bank_rule_processor.accumulate_credit();
         // check it adds the type
@@ -856,7 +886,9 @@ mod tests {
             courses: &HashMap::new(),
             credit_overflow,
             courses_overflow: Some(1),
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let mut count_courses = 0;
         let res = handle_bank_rule_processor.accumulate_courses(&mut count_courses);
@@ -906,7 +938,9 @@ mod tests {
             courses: &HashMap::new(),
             credit_overflow,
             courses_overflow: None,
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
         // check it adds the type
@@ -949,7 +983,9 @@ mod tests {
             courses: &HashMap::new(),
             credit_overflow,
             courses_overflow: None,
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
 
@@ -971,7 +1007,9 @@ mod tests {
             courses: &HashMap::new(),
             credit_overflow,
             courses_overflow: None,
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let res = handle_bank_rule_processor.malag();
 
@@ -1007,7 +1045,9 @@ mod tests {
             courses: &HashMap::new(),
             credit_overflow,
             courses_overflow: None,
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let res = handle_bank_rule_processor.sport();
 
@@ -1033,6 +1073,33 @@ mod tests {
     async fn test_modified() {
         // for debugging
         let mut user = create_user();
+        let courses = HashMap::from([
+            (104031, Course {
+                number: 104031,
+                credit: 5.5,
+                name: "infi1m".to_string()
+            }),
+            (104166, Course {
+                number: 104166,
+                credit: 5.5,
+                name: "Algebra alef".to_string()
+            }),
+            (1, Course {
+                number: 1,
+                credit: 1.0,
+                name: "".to_string()
+            }),
+            (2, Course {
+                number: 2,
+                credit: 2.0,
+                name: "".to_string()
+            }),
+            (3, Course {
+                number: 3,
+                credit: 3.0,
+                name: "".to_string()
+            }),
+        ]);
         user.degree_status.course_statuses[0].r#type = Some("reshima alef".to_string()); // the user modified the type of 104031 to be reshima alef
         user.degree_status.course_statuses[0].modified = true;
         let bank_name = "hova".to_string();
@@ -1042,13 +1109,17 @@ mod tests {
             user: &mut user,
             bank_name,
             course_list,
-            courses: &HashMap::new(),
+            courses: &courses,
             credit_overflow,
             courses_overflow: None,
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let mut missing_credits_dummy = 0.0;
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
+
+        println!("{:#?}", user.degree_status);
 
         // check it adds the type
         assert_eq!(
@@ -1065,7 +1136,8 @@ mod tests {
         assert_eq!(user.degree_status.course_statuses[5].r#type, None);
         assert_eq!(user.degree_status.course_statuses[6].r#type, None);
         assert_eq!(user.degree_status.course_statuses[7].r#type, None);
-        assert_eq!(user.degree_status.course_statuses.len(), 8);
+        assert_eq!(user.degree_status.course_statuses[8].r#type, Some("hova".to_string())); // We considered 104031 as reshima alef so the user didn't complete this course for hova
+        assert_eq!(user.degree_status.course_statuses.len(), 9);
 
         // check sum credits
         assert_eq!(res, 0.0);
@@ -1100,7 +1172,9 @@ mod tests {
             courses: &HashMap::new(),
             credit_overflow,
             courses_overflow: None,
-            catalog_replacements: HashMap::new()
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new()
         };
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
 
@@ -1119,7 +1193,6 @@ mod tests {
         assert_eq!(res, 9.0);
     }
 
-    //TODO uncomment this when secrets are added.
     #[test]
     async fn test_legendary_function() {
 
@@ -1161,11 +1234,11 @@ mod tests {
 
         calculate_degree_status(catalog, course::vec_to_map(vec_courses), &mut user);
         //FOR VIEWING IN JSON FORMAT
-        // std::fs::write(
-        //     "degree_status.json",
-        //     serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
-        // )
-        // .expect("Unable to write file");
+        std::fs::write(
+            "degree_status.json",
+            serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
+        )
+        .expect("Unable to write file");
 
         // check output
         assert_eq!(
@@ -1201,7 +1274,7 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[3].credit_completed,
-            15.0
+            9.0
         );
 
         assert_eq!(
@@ -1214,11 +1287,11 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[4].credit_completed,
-            2.5
+            0.0
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[4].course_completed,
-            1
+            0
         );
 
         assert_eq!(
@@ -1227,29 +1300,29 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[5].credit_completed,
-            8.0
-        );
-        assert_eq!(
-            user.degree_status.course_bank_requirements[5].message,
-            Some("הסטודנט השלים את השרשרת הבאה:\n114075,".to_string())
+            3.0
         );
 
         assert_eq!(
             user.degree_status.course_bank_requirements[6].credit_requirement,
-            Some(73.5)
+            Some(72.5)
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[6].credit_completed,
-            73.5
+            72.5
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].message,
+            Some("בוצעו החלפות בין קורסים עם מספר קטן יותר של נקודות, לכן נוצרו 1 נקודות חסרות שעברו הלאה.".to_string())
         );
 
         assert_eq!(
             user.degree_status.course_bank_requirements[7].credit_requirement,
-            Some(6.5)
+            Some(7.5)
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[7].credit_completed,
-            0.5
+            3.5
         );
 
         assert_eq!(
@@ -1258,16 +1331,20 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[8].credit_completed,
-            0.0
+            2.0
         );
 
         assert_eq!(
             user.degree_status.overflow_msgs[0],
-            "עברו 0.5 נקודות משרשרת מדעית לרשימה ב".to_string()
+            "בחובה היו 1 נקודות חסרות שנוספו לדרישה של רשימה ב".to_string()
         );
         assert_eq!(
             user.degree_status.overflow_msgs[1],
-            "יש לסטודנט 0 נקודות עודפות".to_string()
+            "עברו 7.5 נקודות מבחירת העשרה לבחירה חופשית".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[2],
+            "יש לסטודנט 5.5 נקודות עודפות".to_string()
         );
     }
 }

@@ -47,6 +47,20 @@ impl CourseStatus {
         }
     }
 
+    pub fn extract_semester(&self) -> f32 {
+        match self.semester.clone() {
+            Some(semester) => {
+                let semester: Vec<&str> = semester.split("_").collect();
+                semester.last().unwrap().parse::<f32>().unwrap()
+            }
+            None => 0.0
+        }
+    }
+
+    pub fn valid_for_bank(&self, bank_name: &str) -> bool {
+        return self.r#type.is_none() || (self.modified && self.r#type.clone().unwrap() == bank_name);
+    }
+
     pub fn set_state(&mut self) {
         self.state = self
             .passed()
@@ -76,12 +90,6 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Reshima A.
     pub rule: Rule,
     pub credit: Option<f32>,
-}
-
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
-pub struct CourseTableRow {
-    pub number: u32,
-    pub course_banks: Vec<String>, // שמות הבנקים. שימו לב לקבוצת ההתמחות
 }
 
 #[derive(Clone, Debug, PartialEq)]

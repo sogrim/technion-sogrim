@@ -21,10 +21,17 @@ pub struct UserDetails {
 }
 
 impl UserDetails {
+    fn find_course(&self, number: u32) -> Option<CourseStatus> {
+        for course_status in &self.degree_status.course_statuses {
+            if course_status.course.number == number {
+                return Some(course_status.clone());
+            }
+        }
+        None
+    }
 
     pub fn get_mut_course_status(&mut self, number: u32) -> Option<&mut CourseStatus> {
-        // TODO: find the first course with type None
-        for course_status in &mut self.degree_status.course_statuses {
+        for course_status in &mut self.degree_status.course_statuses.iter_mut().rev() {
             if course_status.course.number == number {
                 return Some(course_status);
             }
@@ -32,14 +39,48 @@ impl UserDetails {
         None
     }
 
-    pub fn passed_course(&self, number: u32) -> bool {
-        for course_status in &self.degree_status.course_statuses {
-            if course_status.course.number == number && course_status.passed() {
-                return true;
+    // Find the best match according to the following rules:
+    // 1. If all optional courses type's are none take the last course
+    // 2. If one of the courses type is bank_name returns the last course with the corresponding type.
+    pub fn find_best_match_for_course(&mut self, optional_courses_list: &Vec<u32>, bank_name: &str, ignore_courses: &Vec<u32>) -> Option<&mut CourseStatus> {
+        // TODO: think about how to support student with the same course number twice (for example Ben with his 2 projects)
+        let mut best_match = None;
+        for course_status in &mut self.degree_status.course_statuses.iter_mut().rev() {
+            if optional_courses_list.contains(&course_status.course.number) {
+                if best_match.is_none() && course_status.r#type.is_none() {
+                    best_match = Some(course_status);
+                }
+                else if let Some(course_type) = course_status.r#type.clone() {
+                    if course_type == bank_name && !ignore_courses.contains(&course_status.course.number){
+                        best_match = Some(course_status);
+                        break;
+                    }
+                }
             }
+
         }
-        false
+
+        best_match
     }
+
+    pub fn passed_course(&self, number: u32) -> bool {
+        if let Some(course_status) = self.find_course(number) {
+            course_status.passed()
+        } else {
+            false
+        }
+    }
+
+    // TODO: probably need to remove this
+    // pub fn get_course_semester(&self, number: u32) -> Option<f32> {
+    //     if let Some(course_status) = self.find_course(number) {
+    //         let semester = course_status.semester.unwrap();
+    //         let v: Vec<&str> = semester.split("_").collect();
+    //         return Some(v.last().unwrap().parse::<f32>().unwrap());
+    //     } else {
+    //         None
+    //     }
+    // }
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
