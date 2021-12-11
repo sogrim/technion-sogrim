@@ -10,22 +10,23 @@ export interface RequirmentItemProps {
 }
 
 export const RequirmentItem: React.FC<RequirmentItemProps> = ({
-  bankRequirment
+  bankRequirment,
 }) => {
+ 
 
   const { course_bank_name,
           credit_completed, 
-          credit_requirment, 
+          credit_requirement, 
           course_completed, 
           course_requirement, 
           bank_rule_name } = bankRequirment;
 
   const progress = bank_rule_name === ACCUMULATE_COURSES ? 
         (course_completed / course_requirement * 100)  
-      : (credit_completed / credit_requirment * 100);
+      : (credit_completed / credit_requirement * 100);
   const subtitle = bank_rule_name === ACCUMULATE_COURSES ?
     `השלמת ${course_completed} מתוך ${course_requirement} קורסים`
-    : `השלמת ${credit_completed} מתוך ${credit_requirment} נק״ז` // TODO: add done/not done , types
+    : `השלמת ${credit_completed} מתוך ${credit_requirement} נק״ז` // TODO: add done/not done , types
   
   
   const ProgressCircular: React.FC<{value: number;}> = ({

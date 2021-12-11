@@ -8,10 +8,7 @@ export class UIStore {
   public userDisplay: any;
   public showMainStatus: boolean = false;
   public semesterTab: number = 0;
-  
-  // TODO: public scrollToTopRef: HTMLDivElement = null;
-  // TODO: public notificationParams: NotificationParams = initalNotificationParams;
-
+ 
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });

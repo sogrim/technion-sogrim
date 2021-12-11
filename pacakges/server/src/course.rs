@@ -1,12 +1,15 @@
-use std::collections::HashMap;
-use actix_web::{Error, error::ErrorBadRequest};
-use serde::{Serialize, Deserialize};
 use crate::core::*;
+use actix_web::error::ErrorInternalServerError;
+use actix_web::{error::ErrorBadRequest, Error};
+use serde::de::{Error as Err, Unexpected, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::collections::HashMap;
+use std::iter::FromIterator;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Course {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub number : u32,
+    pub number: u32,
     pub credit: f32,
     pub name: String,
 }
@@ -22,46 +25,60 @@ pub enum CourseState {
 pub struct CourseStatus {
     pub course: Course,
     pub state: Option<CourseState>,
-    pub semester : Option<String>,
-    pub grade : Option<Grade>,
-    pub r#type : Option<String>, // if none, nissan cries
-    pub additional_msg : Option<String>,
+    pub semester: Option<String>,
+    pub grade: Option<Grade>,
+    pub r#type: Option<String>, // if none, nissan cries
+    pub additional_msg: Option<String>,
+    pub modified: bool,
 }
 
 impl CourseStatus {
-
     const MALAG_EXCEPTIONS: &'static [u32] = &[324033]; //TODO think about this
-    
+
     pub fn passed(&self) -> bool {
         match &self.grade {
-            Some(grade) => {
-                match grade{
-                    Grade::Grade(grade) => grade >= &55,
-                    Grade::Binary(val) => *val,
-                    Grade::ExemptionWithoutCredit => true,
-                    Grade::ExemptionWithCredit => true,
-                } 
+            Some(grade) => match grade {
+                Grade::Grade(grade) => grade >= &55,
+                Grade::Binary(val) => *val,
+                Grade::ExemptionWithoutCredit => true,
+                Grade::ExemptionWithCredit => true,
             },
             None => false,
         }
     }
 
-    pub fn set_state(&mut self){
-        self.state = self.passed().then(||{
-            CourseState::Complete
-        }).or(Some(CourseState::NotComplete));
+    pub fn extract_semester(&self) -> f32 {
+        match self.semester.clone() {
+            Some(semester) => {
+                let semester: Vec<&str> = semester.split('_').collect();
+                semester.last().unwrap().parse::<f32>().unwrap()
+            }
+            None => 0.0,
+        }
     }
-    pub fn set_type(&mut self, r#type: String) -> &mut Self{
+
+    pub fn valid_for_bank(&self, bank_name: &str) -> bool {
+        self.r#type.is_none() || (self.modified && self.r#type.clone().unwrap() == bank_name)
+    }
+
+    pub fn set_state(&mut self) {
+        self.state = self
+            .passed()
+            .then(|| CourseState::Complete)
+            .or(Some(CourseState::NotComplete));
+    }
+    pub fn set_type(&mut self, r#type: String) -> &mut Self {
         self.r#type = Some(r#type);
         self
     }
-    pub fn set_msg(&mut self, msg: String) -> &mut Self{
+    pub fn set_msg(&mut self, msg: String) -> &mut Self {
         self.additional_msg = Some(msg);
         self
     }
 
     pub fn is_malag(&self) -> bool {
-        self.course.number / 1000 == 324 && !Self::MALAG_EXCEPTIONS.contains(&self.course.number) // TODO: check if there are more terms
+        self.course.number / 1000 == 324 && !Self::MALAG_EXCEPTIONS.contains(&self.course.number)
+        // TODO: check if there are more terms
     }
     pub fn is_sport(&self) -> bool {
         self.course.number / 1000 == 394 // TODO: check if there are more terms
@@ -70,22 +87,70 @@ impl CourseStatus {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CourseBank {
-    pub name: String, // for example, Hova, Rshima A.
+    pub name: String, // for example, Hova, Reshima A.
     pub rule: Rule,
-    pub credit: f32,
-    pub message: String, //TODO remove
+    pub credit: Option<f32>,
 }
 
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
-pub struct CourseTableRow {
-    pub number: u32,
-    pub course_banks: Vec<String> // שמות הבנקים. שימו לב לקבוצת ההתמחות
+#[derive(Clone, Debug, PartialEq)]
+pub enum Grade {
+    Grade(u8),
+    Binary(bool),
+    ExemptionWithoutCredit,
+    ExemptionWithCredit,
 }
 
-fn contains_course_number(str : &str) -> bool{
-    for word in str.split_whitespace(){
+impl Serialize for Grade {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *self {
+            Grade::Grade(grade) => serializer.serialize_str(grade.to_string().as_str()),
+            Grade::Binary(val) if val => serializer.serialize_str("עבר"),
+            Grade::Binary(_) => serializer.serialize_str("נכשל"),
+            Grade::ExemptionWithoutCredit => serializer.serialize_str("פטור ללא ניקוד"),
+            Grade::ExemptionWithCredit => serializer.serialize_str("פטור עם ניקוד"),
+        }
+    }
+}
+struct StrVisitor;
+
+impl<'de> Visitor<'de> for StrVisitor {
+    type Value = Grade;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a valid string representation of a grade")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: Err,
+    {
+        match v {
+            "עבר" => Ok(Grade::Binary(true)),
+            "נכשל" => Ok(Grade::Binary(false)),
+            "פטור ללא ניקוד" => Ok(Grade::ExemptionWithoutCredit),
+            "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
+            _ if v.parse::<u8>().is_ok() => Ok(Grade::Grade(v.parse::<u8>().unwrap())),
+            _ => Err(Err::invalid_type(Unexpected::Str(v), &self)),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Grade {
+    fn deserialize<D>(deserializer: D) -> Result<Grade, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(StrVisitor)
+    }
+}
+
+fn contains_course_number(str: &str) -> bool {
+    for word in str.split_whitespace() {
         let course_number = word.parse::<u32>();
-        match course_number{
+        match course_number {
             Ok(number) if 10000 < number && number < 999999 => return true,
             Ok(_) => continue,
             Err(_) => continue,
@@ -94,305 +159,224 @@ fn contains_course_number(str : &str) -> bool{
     false
 }
 
-pub fn parse_copy_paste_from_ug(ug_data: &str) -> Result<Vec<CourseStatus>, Error>{
+pub fn vec_to_map(vec: Vec<Course>) -> HashMap<u32, Course> {
+    HashMap::from_iter(
+        vec.clone()
+            .iter()
+            .map(|course| course.number)
+            .zip(vec.into_iter()),
+    )
+}
+
+pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     let mut courses = HashMap::<u32, CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
-    let mut semester_counter = 0.0;
+    let mut semester_counter: f32 = 0.0;
 
-    for line_ref in ug_data.split_terminator("\n"){
+    for line_ref in data.split_terminator('\n') {
         let line = line_ref.to_string();
-        
-        semester = if line.contains("אביב") || line.contains("חורף") || line.contains("קיץ"){
-            semester_counter += if line.contains("קיץ"){
+
+        let is_spring = line.contains("אביב");
+        let is_winter = line.contains("חורף");
+        let is_summer = line.contains("קיץ");
+
+        semester = if is_spring || is_summer || is_winter {
+            semester_counter += if is_summer || semester_counter.fract() != 0.0 {
                 0.5
-            } 
-            else if semester_counter != (semester_counter as u32) as f64 {
-                0.5
-            }
-            else{
+            } else {
                 1.0
             };
 
-            let semester_term = line
-                .split_whitespace()
-                .next()
-                .ok_or(ErrorBadRequest("Parse Error: Missing Whitespace"))?;
+            let semester_term = if is_spring {
+                "אביב"
+            } else if is_summer {
+                "קיץ"
+            } else if is_winter {
+                "חורף"
+            } else {
+                return Err(ErrorInternalServerError(
+                    "Something really unexpected happened",
+                ));
+            };
 
             format!("{}_{}", semester_term, semester_counter)
-        }
-        else {
+        } else {
             semester
         };
-            
-        if !contains_course_number(&line){
+
+        if !contains_course_number(&line) || line.contains('*') {
             continue;
         }
 
-        let line_parts : Vec<_> = line.split('\t').collect();
-        let grade_str = line_parts[0];
-        let grade = match grade_str.parse::<u8>(){
-            Ok(num) => Some(Grade::Grade(num)),
-            Err(_) => {
-                if grade_str == "פטור ללא ניקוד"{
-                    Some(Grade::ExemptionWithoutCredit)
-                }
-                else if grade_str == "פטור עם ניקוד"{
-                    Some(Grade::ExemptionWithCredit)
-                }
-                else if grade_str == "עבר" || grade_str == "נכשל" { //TODO כתוב נכשל או שכתוב לא עבר?
-                    Some(Grade::Binary(grade_str == "עבר"))
-                }
-                else{
-                    None
-                }
-            },
+        let (course, grade) = if data.starts_with("גיליון ציונים") {
+            parse_course_status_pdf_format(line)?
+        } else {
+            parse_course_status_ug_format(line)?
         };
-        let course_parts : Vec<_> = line_parts[2].split_whitespace().collect();
-        let credit = line_parts[1]
-            .parse::<f32>()
-            .map_err(|err|{
-                ErrorBadRequest(err.to_string())
-            })?;
-        let number = course_parts
-            .last()
-            .ok_or(ErrorBadRequest("Parse Error: Empty Course Parts"))?
-            .parse::<u32>()
-            .map_err(|err|{
-                ErrorBadRequest(err.to_string())
-            })?;
-        let name = course_parts[..course_parts.len() - 1].join(" ").trim().to_string();
-        let mut course = CourseStatus{
-            course : Course{
-                number,
-                credit,
-                name,
-            },
-            semester : (!semester.is_empty()).then(|| semester.clone()),
-            grade : grade.clone(),
+
+        let mut course_status = CourseStatus {
+            course,
+            semester: (!semester.is_empty()).then(|| semester.clone()),
+            grade: grade.clone(),
             ..Default::default()
         };
-        course.set_state();
-        if course.is_sport(){
-            sport_courses.push(course);
+        course_status.set_state();
+        if course_status.is_sport() {
+            sport_courses.push(course_status);
             continue;
         }
-        *courses.entry(number).or_insert(course) = course.clone();
+        *courses
+            .entry(course_status.course.number)
+            .or_insert(course_status) = course_status.clone();
     }
     let mut vec_courses: Vec<_> = courses.into_values().collect();
     vec_courses.append(&mut sport_courses);
     Ok(vec_courses)
 }
 
-#[cfg(test)]
-mod tests{
-    use super::*;
-    use actix_rt::test;
-    use dotenv::dotenv;
+fn parse_course_status_ug_format(line: String) -> Result<(Course, Option<Grade>), Error> {
+    let line_parts: Vec<_> = line.split('\t').collect();
+    let grade_str = line_parts[0];
+    let grade = match grade_str.parse::<u8>() {
+        Ok(num) => Some(Grade::Grade(num)),
+        Err(_) => {
+            if grade_str == "פטור ללא ניקוד" {
+                Some(Grade::ExemptionWithoutCredit)
+            } else if grade_str == "פטור עם ניקוד" {
+                Some(Grade::ExemptionWithCredit)
+            } else if grade_str == "עבר" || grade_str == "נכשל" {
+                //TODO כתוב נכשל או שכתוב לא עבר?
+                Some(Grade::Binary(grade_str == "עבר"))
+            } else {
+                None
+            }
+        }
+    };
+    let course_parts: Vec<_> = line_parts[2].split_whitespace().collect();
+    let credit = line_parts[1]
+        .parse::<f32>()
+        .map_err(|err| ErrorBadRequest(err.to_string()))?;
+    let number = course_parts
+        .last()
+        .ok_or_else(|| ErrorBadRequest("Parse Error: Empty Course Parts"))?
+        .parse::<u32>()
+        .map_err(|err| ErrorBadRequest(err.to_string()))?;
+    let name = course_parts[..course_parts.len() - 1]
+        .join(" ")
+        .trim()
+        .to_string();
+    Ok((
+        Course {
+            credit,
+            number,
+            name,
+        },
+        grade,
+    ))
+}
 
-    #[test]
-    async fn test_ug_course_parser(){
-        
-        let contents = std::fs::read_to_string("ug_ctrl_c_ctrl_v.txt")
-            .expect("Something went wrong reading the file");
-        let mut courses_display = parse_copy_paste_from_ug(&contents).expect("failed to parse ug data");
-        courses_display.sort_by(|a, b| a.course.credit.partial_cmp(&b.course.credit).unwrap() );
-        for course_display in courses_display{
-            println!("{:?}", course_display);
-        };
+fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>), Error> {
+    let number = line
+        .split(' ')
+        .next()
+        .ok_or_else(|| ErrorBadRequest("Bad Format"))?
+        .parse::<u32>()
+        .map_err(|err| ErrorBadRequest(err.to_string()))?;
+
+    let mut index = 0;
+    let mut credit = 0.0;
+    let mut word;
+    for part in line.split(' ') {
+        word = part.to_string();
+        // When a grade is missing, a hyphen (מקף) char is written instead, without any whitespaces between it and the credit.
+        // This means that the credit part is no longer parsable as f32, and therefore the hyphen must be manually removed.
+        // This won't create a problem later in the code since 'word' only lives in the for-loop scope.
+        if word.contains('-') && word.contains('.') {
+            word = word.replace('-', "").trim().to_string();
+        }
+        if word.parse::<f32>().is_ok() && word.contains('.') {
+            credit = word
+                .chars()
+                .rev()
+                .collect::<String>()
+                .parse::<f32>()
+                .unwrap();
+            break;
+        }
+        index += 1;
     }
-    
-    #[test]
-    async fn test_create_degree_status_mock(){
-        
-        let degree_status = DegreeStatus{
-            course_statuses: vec![
-                CourseStatus{ 
-                    course: Course{ 
-                        number: 234125, 
-                        credit: 5.5, 
-                        name: "אינפי 1 לניסנים".into() 
-                    }, 
-                    state: Some(CourseState::Complete), 
-                    semester: Some("חורף_1".into()), 
-                    grade: Some(Grade::Grade(98)), 
-                    r#type: Some("חובה".into()),
-                    additional_msg: None,
-                },
-                CourseStatus{ 
-                    course: Course{ 
-                        number: 234126, 
-                        credit: 5.0, 
-                        name: "אינפי 2 לניסנים".into() 
-                    }, 
-                    state: Some(CourseState::NotComplete), 
-                    semester: Some("אביב_2".into()), 
-                    grade: Some(Grade::Grade(45)), 
-                    r#type: Some("חובה".into()),
-                    additional_msg: None,
-                },
-                CourseStatus{ 
-                    course: Course{ 
-                        number: 234125, 
-                        credit: 4.0, 
-                        name: "אינפי 3 לניסנים".into() 
-                    }, 
-                    state: Some(CourseState::Complete), 
-                    semester: Some("חורף_3".into()), 
-                    grade: Some(Grade::Binary(true)), 
-                    r#type: Some("חובה".into()),
-                    additional_msg: None, 
-                },
-                CourseStatus{ 
-                    course: Course{ 
-                        number: 234127, 
-                        credit: 3.0, 
-                        name: "קורס בחירה כלשהו".into() 
-                    }, 
-                    state: Some(CourseState::Complete), 
-                    semester: Some("חורף_3".into()), 
-                    grade: Some(Grade::ExemptionWithCredit), 
-                    r#type: Some("רשימה א'".into()),
-                    additional_msg: None, 
-                },
-    
-            ],
-            course_bank_requirements: vec![
-                Requirement{ 
-                    course_bank_name: "חובה".into(), 
-                    credit_requirment: 84.0, 
-                    credit_complete: 9.5, 
-                    message: Some("תראה את ניסן הגבר הזה כמה אינפים הוא עשה".into()),
-                },
-                Requirement{ 
-                    course_bank_name: "בחירה חופשית".into(),  
-                    credit_requirment: 2.0, 
-                    ..Default::default()
-                }
-            ],
-            credit_overflow_msgs: vec![
-                r#"2.5 נק"ז עובר משרשרת מדעית לרשימה ב'"#.to_string(),
-                r#"2.0 נק"ז עובר מרשימה ב' לבחירה חופשית"#.to_string(),
-            ],
-            total_credit: 76.5,
-        };
-    
-        //let serialized = bson::to_bson(&degree_status).unwrap();
-        std::fs::write(
-            "degree_status_mock.json", 
-        serde_json::to_string_pretty(&degree_status)
-            .expect("json serialization failed")
-        ).expect("Unable to write file");
-    }
-    
-    #[test]
-    async fn test_ser_deser_course(){
-        
-        let course = Course{
-            number: 234,
-            credit: 2.5,
-            name: "some_course".into(),
-        };
-        let serialized = bson::to_bson(&course).unwrap();
-        println!("{}", serialized);
-        let doc = bson::to_document(&serialized).unwrap();
-        println!("{}", doc);
-        let deserialized  = bson::from_document::<Course>(doc).unwrap();
-        println!("{:?}", deserialized);
-        
-        let vec = vec![course.clone(), course];
-        let serialized_vec = bson::to_bson(&vec).unwrap();
-        println!("{}", serialized_vec);
-        let doc_vec = bson::doc!{"vec" : serialized_vec};
-        println!("{}", doc_vec);
-    
-    }
-    #[test]
-    async fn test_add_courses_to_db(){
-        dotenv().ok();
-        let contents = std::fs::read_to_string("courses.txt")
-            .expect("Something went wrong reading the file");
-        let mut counter = 0;
-        let mut unique_lines = std::collections::HashSet::new();
-        let mut courses = Vec::new();
-        let options = mongodb::options::ClientOptions::parse(
-            std::env::var("URI").unwrap())
-        .await
-        .unwrap();
-        let client = mongodb::Client::with_options(options).unwrap();
-        // Ping the server to see if you can connect to the cluster
-        client
-            .database("admin")
-            .run_command(bson::doc! {"ping": 1}, None)
-            .await
-            .unwrap();
-        println!("Connected successfully.");
-        for line_ref in contents.split_terminator("\r\n"){
-            //println!("{}", line_ref);
-            if !unique_lines.insert(line_ref){
-                continue;   
-            };
-            let res  = serde_json::from_str::<Course>(line_ref);
-            if res.is_ok(){
-                let course = res.unwrap();   
-                match client
-                    .database("debug")
-                    .collection::<Course>("Courses")
-                    .insert_one(
-                        course.clone(),
-                        None
-                    )
-                    .await{
-                        Ok(res) => println!("{:?}", res),
-                        Err(err) => eprintln!("{:?}", err),
-                    };
-                courses.push(course); 
-                counter += 1;
-            }
-            else{
-                println!("{} --- {:?}", line_ref, res);
+
+    let name = line.split_whitespace().collect::<Vec<&str>>()[1..index].join(" ");
+
+    let grade_str = line
+        .split(' ')
+        .last()
+        .ok_or_else(|| ErrorBadRequest("Bad Format"))?
+        .trim();
+
+    let grade = match grade_str as &str {
+        "ניקוד" => {
+            if line.contains("ללא") {
+                Some(Grade::ExemptionWithoutCredit)
+            } else {
+                Some(Grade::ExemptionWithCredit)
             }
         }
-        let special_courses = vec![
-            Course{
-                number : 234129,
-                credit : 3.0,
-                name: r#"מב.לתורת הקבוצות ואוטומטים למדמ"ח"#.to_string(),
-            },
-            Course{
-                number : 236716,
-                credit : 3.0,
-                name: r#"מודלים גאומטריים במערכות תיב"מ"#.to_string(),
-            },
-            Course{
-                number : 104223,
-                credit : 4.0,
-                name: r#"מד"ח וטורי פוריה"#.to_string(),
-            },
-            Course{
-                number : 104035,
-                credit : 5.0,
-                name: r#"משוואות דיפ' רגילות ואינפי 2ח'"#.to_string(),
-            },
-            Course{
-                number : 46746,
-                credit : 3.0,
-                name: r#"אלג' ויישומים בראייה ממוחשבת"#.to_string(),
-            },
-        ];
-        for special_course in special_courses.iter(){
-            match client
-                .database("staging")
-                .collection::<Course>("Courses")
-                .insert_one(
-                    special_course,
-                    None
-                )
-                .await{
-                    Ok(res) => println!("{:?}", res),
-                    Err(err) => eprintln!("{:?}", err),
-                };
-        }
-        println!("{:?}", counter);
-    }
+        "עבר" => Some(Grade::Binary(true)),
+        "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
+        _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
+    };
+    Ok((
+        Course {
+            number,
+            credit,
+            name,
+        },
+        grade,
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    #[allow(unused)]
+    use super::*;
+    #[allow(unused)]
+    use actix_rt::test;
+
+    // TODO: uncomment this test after we fix it
+    // #[allow(clippy::float_cmp)]
+    // #[test]
+    // async fn test_both_parsers() {
+    //     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
+    //         .expect("Something went wrong reading the file");
+    //     let from_ug = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
+    //         .expect("Something went wrong reading the file");
+    //     let mut courses_display_from_pdf =
+    //         parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
+    //     let mut courses_display_from_ug =
+    //         parse_copy_paste_data(&from_ug).expect("failed to parse ug data");
+    //     courses_display_from_pdf
+    //         .sort_by(|a, b| a.course.number.partial_cmp(&b.course.number).unwrap());
+    //     courses_display_from_ug
+    //         .sort_by(|a, b| a.course.number.partial_cmp(&b.course.number).unwrap());
+    //     for i in 0..courses_display_from_pdf.len() {
+    //         assert_eq!(
+    //             courses_display_from_ug[i].grade,
+    //             courses_display_from_pdf[i].grade
+    //         );
+    //         assert_eq!(
+    //             courses_display_from_ug[i].semester,
+    //             courses_display_from_pdf[i].semester
+    //         );
+    //         assert_eq!(
+    //             courses_display_from_ug[i].course.number,
+    //             courses_display_from_pdf[i].course.number
+    //         );
+    //         assert_eq!(
+    //             courses_display_from_ug[i].course.credit,
+    //             courses_display_from_pdf[i].course.credit
+    //         );
+    //     }
+    // }
 }

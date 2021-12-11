@@ -33,7 +33,7 @@ export type CourseBankReq = { // TODO: check with Liad after apdated.
     bank_rule_name: string;
     course_bank_name: string;
     credit_completed: number;
-    credit_requirment: number;
+    credit_requirement: number;
     course_completed: number;
     course_requirement: number;
     message?: string;
