@@ -73,8 +73,6 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
 }) => {
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<keyof RowData>('grade');
-  const [selected, setSelected] = React.useState<readonly string[]>([]);
-  const [dense, setDense] = React.useState(false);
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
@@ -83,17 +81,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-  };
-
-  const handleClick = (event: React.MouseEvent<unknown>, name: string) => {    
-  };
- 
-
-  const handleChangeDense = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setDense(event.target.checked);
-  };
-
-  const isSelected = (name: string) => selected.indexOf(name) !== -1;
+  };  
 
   return (
     <Box sx={{ width: '100%', display: 'flex', alignItems: 'center'}}>
@@ -102,35 +90,28 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
           <Table
             
             aria-labelledby="tableTitle"
-            size={dense ? 'small' : 'medium'}
+            size={'small'}
           >
             <EnhancedTableHead
               order={order}
               orderBy={orderBy}
               onRequestSort={handleRequestSort}
             />
-            <TableBody>
-              {/* if you don't need to support IE11, you can replace the `stableSort` call with:
-              rows.slice().sort(getComparator(order, orderBy)) */}
+            <TableBody>         
               {stableSort(rows, getComparator(order, orderBy))                
-                .map((row, index) => {
-                  const isItemSelected = isSelected(row.name as string);
+                .map((row, index) => {                  
                   const labelId = `enhanced-table-checkbox-${index}`;
                   return (
-                      < SemesterTableRow row={row} isItemSelected={isItemSelected} labelId={labelId} />                   
+                      < SemesterTableRow row={row} labelId={labelId} />                   
                   );
                 })}              
             </TableBody>
           </Table>
         </TableContainer>    
         <TableFooter>
-            hogale
+            Add a new row
         </TableFooter>    
-      </Paper>
-      {/* <FormControlLabel
-        control={<Switch checked={dense} onChange={handleChangeDense} />}
-        label="Dense padding"
-      /> */}
+      </Paper>      
     </Box>
   );
 }

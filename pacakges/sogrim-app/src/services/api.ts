@@ -36,7 +36,7 @@ export const postUserUgData = async (authToken: any, ugData: string): Promise<Us
     const fallback: UserState = {} as UserState;
     let res: UserState;
     try {
-        res = (await axios.post(`${API_URL}/user/ug_data`, ugData, { 
+        res = (await axios.post(`${API_URL}/user/courses`, ugData, { 
             headers: {
             'authorization': `${authToken}`,        
         }

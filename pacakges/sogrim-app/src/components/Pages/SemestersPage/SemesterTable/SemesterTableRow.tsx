@@ -8,13 +8,11 @@ import { RowData } from "./SemesterTabsConsts";
 
 export interface SemesterTableRowProps {
     row: RowData;
-    isItemSelected: boolean;
     labelId: string;
 }
 
 const SemesterTableRowComp: React.FC<SemesterTableRowProps> = ({
-    row,
-    isItemSelected,
+    row,    
     labelId
 }) => {
 
@@ -23,11 +21,9 @@ const SemesterTableRowComp: React.FC<SemesterTableRowProps> = ({
     return (
         <TableRow
             hover            
-            role="checkbox"
-            aria-checked={isItemSelected}
+            role="checkbox"            
             tabIndex={-1}
-            key={row.name}
-            selected={isItemSelected}
+            key={row.name}            
             sx={{ width: '1200px'}}
         >                      
             { !isCrudRowOn ? <ReadOnlyRow row={row} labelId={labelId}/> :  <CRUDRow row={row} labelId={labelId}/>}
