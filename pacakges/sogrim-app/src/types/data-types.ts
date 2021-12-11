@@ -12,11 +12,6 @@ export enum CourseState {
     NotComplete = 'NotComplete',
 }
 
-export enum GradeTypes {
-    ExemptionWithoutCredit = 'ExemptionWithoutCredit',
-    ExemptionWithCredit = 'ExemptionWithCredit',
-}
-
 export type Course = {
     credit: number;
     name: string;
@@ -25,19 +20,22 @@ export type Course = {
 
 export type CourseStatus = {
     course: Course;
-    grade: null | GradeTypes | {
-        Grade?: number;
-    };
+    grade: string;
     semester: string;
     state: CourseState;
     type: string;
-
+    modified: boolean;
 };
 
+export const ACCUMULATE_COURSES = 'accumulate courses';
+
 export type CourseBankReq = { // TODO: check with Liad after apdated.
+    bank_rule_name: string;
     course_bank_name: string;
-    credit_complete: number;
-    credit_requirment: number;
+    credit_completed: number;
+    credit_requirement: number;
+    course_completed: number;
+    course_requirement: number;
     message?: string;
     done?: boolean;
     type: string; 
@@ -46,7 +44,7 @@ export type CourseBankReq = { // TODO: check with Liad after apdated.
 export type DegreeStatus = {
     course_bank_requirements: CourseBankReq[];
     course_statuses: CourseStatus[];
-    credit_overflow_msgs: string[];
+    overflow_msgs: string[];
     total_credit: number;
 };
 

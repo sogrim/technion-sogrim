@@ -41,7 +41,7 @@ const AppStepperComp: React.FC = () => {
   } } = useStore();
 
   const { userAuthToken } = useAuth();
-  const { data, isLoading, isError, refetch} = useUserState(userAuthToken);
+  const { data, isLoading, refetch} = useUserState(userAuthToken);
   const { data: tcData, isLoading: tcIsLoading, isError: tcIsError} = useComputeEndGame(userAuthToken, triggerCompute);
 
   React.useEffect(() => {
@@ -56,7 +56,7 @@ const AppStepperComp: React.FC = () => {
       }
       refreshStepper();
 
-    }, [coursesModalOpen, catalogsModalOpen, data])
+    }, [coursesModalOpen, catalogsModalOpen, data, setActiveStep, userRegistrationState, refetch, isLoading])
 
 
 
@@ -122,7 +122,7 @@ const AppStepperComp: React.FC = () => {
             <StepContent>
               <Typography color='white' >{step.description}</Typography>
               <Box sx={{ mb: 2 }}>
-                <div>
+                <Box>
                   <Button
                     variant="contained"
                     onClick={() => handleOnClick(index)}
@@ -137,7 +137,7 @@ const AppStepperComp: React.FC = () => {
                   >
                     חזור
                   </Button>
-                </div>
+                </Box>
               </Box>
             </StepContent>
           </Step>

@@ -36,7 +36,7 @@ export const postUserUgData = async (authToken: any, ugData: string): Promise<Us
     const fallback: UserState = {} as UserState;
     let res: UserState;
     try {
-        res = (await axios.post(`${API_URL}/user/ug_data`, ugData, { 
+        res = (await axios.post(`${API_URL}/user/courses`, ugData, { 
             headers: {
             'authorization': `${authToken}`,        
         }
@@ -69,7 +69,7 @@ export const putUserState = async (authToken: any, updatedUserState: UserDetails
     const fallback: UserDetails = {} as UserDetails;
     let res: UserDetails;
     try {
-        res = (await axios.post(`${API_URL}/user`, updatedUserState, { // TODO: check method with benny.
+        res = (await axios.put(`${API_URL}/user/details`, updatedUserState, { 
             headers: {
             'authorization': `${authToken}`,        
         }

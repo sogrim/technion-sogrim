@@ -7,17 +7,11 @@ export class UIStore {
   public currentTab: TabState = TabState.DoneTab;
   public userDisplay: any;
   public showMainStatus: boolean = false;
-  private userState: UserState | null = null;
-  // TODO: public scrollToTopRef: HTMLDivElement = null;
-  // TODO: public notificationParams: NotificationParams = initalNotificationParams;
-
+  public semesterTab: number = 0;
+ 
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
-  }
-
-  get showDegreeStatusCard() {
-    return this.rootStore.dataStore.userHasDegreeStatus;
   }
 
   setUserDisplay = (userDisplay: any) => {
@@ -36,8 +30,8 @@ export class UIStore {
     this.showMainStatus = status;
   }
 
-  setUserUIState = (userState: UserState) => {
-    this.userState = userState;
+  setSemesterTab = (semesterTab: number) => {
+    this.semesterTab = semesterTab;
   }
 
   userRegistrationState = (userState: UserState): UserRegistrationState => {    

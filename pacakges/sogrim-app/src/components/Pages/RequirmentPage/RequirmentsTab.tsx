@@ -7,7 +7,7 @@ import { CreditOverflow } from './CreditOverflow';
 interface RequirmentsTabProps {
 }
 
-const RequirmentsTabComp: React.FC<RequirmentsTabProps> = () => {
+const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
   
     return (
         <Box sx={{
@@ -25,5 +25,5 @@ const RequirmentsTabComp: React.FC<RequirmentsTabProps> = () => {
 };
 
 
-export const RequirmentsTab = observer(RequirmentsTabComp);
+export const RequirmentsPage = observer(RequirmentsPageComp);
 

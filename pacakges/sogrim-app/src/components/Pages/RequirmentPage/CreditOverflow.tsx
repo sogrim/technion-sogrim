@@ -12,7 +12,7 @@ const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
 
     const { data: userState }  = useUserState();
 
-    const overflowMsg: string[] = userState?.details?.degree_status?.credit_overflow_msgs || [];
+    const overflowMsg: string[] = userState?.details?.degree_status?.overflow_msgs || [];
 
     return (
         <div>

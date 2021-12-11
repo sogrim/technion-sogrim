@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
 import { UserRegistrationState } from "../../types/ui-types";
 import { AppStepper } from "../Banner/AppStepper";
-import { PagesTabs } from "./Tabs";
+import { PagesTabs } from "./PagesTabs";
 
 const AppPagesComp: React.FC = () => {
 
@@ -17,7 +17,7 @@ const AppPagesComp: React.FC = () => {
     const [ rs, setRs ] = React.useState<UserRegistrationState>();
 
     const { userAuthToken } = useAuth();
-    const { data, isLoading, isError, refetch} = useUserState(userAuthToken);
+    const { data, isLoading, refetch} = useUserState(userAuthToken);
 
     React.useEffect(() => {
       const refreshStepper = async() => {
@@ -31,14 +31,13 @@ const AppPagesComp: React.FC = () => {
       }
       refreshStepper();
 
-    }, [data])
+    }, [data, isLoading, refetch, setRs, userRegistrationState])
 
     return ( 
         <Box sx={sxPages} >
             { rs !== UserRegistrationState.Ready ? 
                 <AppStepper /> : <PagesTabs/>
-            }
-               
+            }  
         </Box> 
         );
 }

@@ -9,7 +9,6 @@ export default function useUpdateUserCatalog(authToken: any) {
         'userCatalog',
         (updatedUserCatalog: string) => putUserCatalog(authToken, updatedUserCatalog), {
             onSuccess: (newData: UserState) => {
-                console.log('from catalog update response', newData);            
                 queryClient.setQueryData('userState', () => {
                     const current = newData;                        
                     return current;
