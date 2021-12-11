@@ -13,7 +13,7 @@ const SemesterTabsComp = () => {
 
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null)
   const { userAuthToken } = useAuth();
-  const { data, isLoading, isError} = useUserState(userAuthToken);
+  const { data, isLoading} = useUserState(userAuthToken);
 
   const { uiStore: {
           semesterTab: value,
@@ -40,11 +40,11 @@ const SemesterTabsComp = () => {
 
   useEffect(() => {
     if(data && !isLoading) {
-      if (data.details.degree_status.course_statuses) {
+      if (data?.details?.degree_status?.course_statuses) {
         setAllSemesters(getAllUserSemesters(data.details.degree_status.course_statuses));
       }
     }    
-  }, [data, isLoading])
+  }, [data, getAllUserSemesters, isLoading])
 
   return (
     <Box  sx={{
@@ -61,13 +61,14 @@ const SemesterTabsComp = () => {
             scrollButtons
         >
           { allSemesters?.map( (semester, index) => <Tab sx={{fontSize: '30px'}} 
-              label={semesterNaming(semester)} key={semester} />)}
+                                                  label={semesterNaming(semester)} key={index} />)}
         </Tabs>     
           { allSemesters?.map( (semester, index) => 
-          <Box sx={{ display: 'flex', justifyContent: 'center', }}> 
-             <TabPanel key={semester} value={value} index={index}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', }}  key={index}> 
+             <TabPanel value={value} index={index} >
               {(data?.details?.degree_status?.course_statuses) ? 
-              <SemesterTable rows={generateRows(semester, data.details.degree_status.course_statuses)}/> : null}
+              <SemesterTable  rows={generateRows(semester, data.details.degree_status.course_statuses)}
+                              semester={semester} /> : null}
             </TabPanel>
           </Box>
           )}

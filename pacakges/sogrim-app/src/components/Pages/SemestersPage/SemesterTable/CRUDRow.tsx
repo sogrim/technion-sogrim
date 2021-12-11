@@ -1,70 +1,103 @@
 import { MenuItem, TableCell, TextField  } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { RowData } from "./SemesterTabsConsts";
-
 export interface CRUDRowProps {
     row: RowData;
     labelId: string;
+    handleChange(e: React.ChangeEvent<HTMLInputElement>, cellId: string): void;
 }
 
-const currencies = [
+// TODO: changes mock to real data from server
+const courseStateMock = [
   {
-    value: 'USD',
-    label: '$',
+    value: 'בוצע',
+    label: 'בוצע',
   },
   {
-    value: 'EUR',
-    label: '€',
+    value: 'לא בוצע',
+    label: 'לא בוצע',
+  },  
+];
+
+const courseTypeMock = [
+  {
+    value: 'חובה',
   },
   {
-    value: 'BTC',
-    label: '฿',
+    value: 'שרשרת מדעית',
   },
   {
-    value: 'JPY',
-    label: '¥',
-  },
+    value: 'רשימה א׳',
+  }, 
+  {
+    value: 'רשימה ב׳',
+  },   
+  {
+    value: 'ספורט',
+  }, 
+  {
+    value: 'פרוייקט',
+  }, 
 ];
 
 const CRUDRowComp: React.FC<CRUDRowProps> = ({
     row,    
-    labelId
-}) => {
-    return (
-       <>
-            <TableCell
-                align='center'
-                component="th"
-                id={labelId}
-                scope="row"
-                padding="none"
-                width={'250px'}
-            >
-                <TextField id="outlined-basic" label={row.name} variant="outlined" size="small"/>                
-            </TableCell>
+    labelId,
+    handleChange,
+}) => {      
+  const { name, courseNumber, credit, grade, state, type} = row;  
+
+  return (
+      <>
+          <TableCell
+              align='center'
+              component="th"
+              id={labelId}
+              scope="row"
+              padding="none"
+              width={'250px'}
+          >
+              <TextField id="course-name" 
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(e, "course-name")}
+                        label={name} variant="outlined" size="small"/>                
+          </TableCell>
+          <TableCell align="center" width={'200px'}>
+              <TextField id="course-number" 
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(e, "course-number")}
+                          label={courseNumber} variant="outlined" size="small"/>                                
+          </TableCell>
+          <TableCell align="center" width={'50px'}>
+              <TextField id="course-credit" 
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(e, "course-credit")}
+                          label={credit} variant="outlined" size="small" type="number"/>  
+          </TableCell>
+            <TableCell align="center" width={'100px'} >
+              <TextField id="course-grade" 
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(e, "course-grade")}
+                        label={grade} variant="outlined" size="small" type="number"/>  
+          </TableCell>
             <TableCell align="center" width={'200px'}>
-                <TextField id="outlined-basic" label={row.courseNumber} variant="outlined" size="small"/>                                
-            </TableCell>
-            <TableCell align="center" width={'50px'}>
-                <TextField id="outlined-basic" label={row.credit} variant="outlined" size="small" type="number"/>  
-            </TableCell>
-             <TableCell align="center" width={'100px'} >
-                <TextField id="outlined-basic" label={row.grade} variant="outlined" size="small" type="number"/>  
-            </TableCell>
-             <TableCell align="center" width={'200px'}>
-                <TextField select id="outlined-basic" label={row.type} variant="outlined" size="small" fullWidth/>  
-            </TableCell>
-             <TableCell align="center" width={'200px'}>
-                <TextField select id="outlined-basic" label={row.state} variant="outlined" size="small" fullWidth> 
-                {currencies.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                    </MenuItem>
-          ))}
-                </TextField>
-            </TableCell>
-        </>
-    )
+              <TextField id="course-type" select
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(e, "course-type")}
+                        label={type} variant="outlined" size="small" fullWidth> 
+                {courseTypeMock.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                          {option.value}
+                          </MenuItem>
+                ))}
+              </TextField>
+          </TableCell>
+          <TableCell align="center" width={'200px'}>
+              <TextField select id="course-state" label={state} variant="outlined" size="small" fullWidth> 
+              {courseStateMock.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                  {option.value}
+                  </MenuItem>
+        ))}
+              </TextField>
+          </TableCell>
+      </>
+  )
 }
 
 export const CRUDRow = observer(CRUDRowComp);

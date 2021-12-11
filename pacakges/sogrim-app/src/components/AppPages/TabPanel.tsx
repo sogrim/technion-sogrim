@@ -16,7 +16,7 @@ export const TabPanel: React.FC<TabPanelProps> = ({
 
 
   return (
-    <div
+    <Box
       role="tabpanel"
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
@@ -28,7 +28,7 @@ export const TabPanel: React.FC<TabPanelProps> = ({
        
       )}
     </Box>
-    </div>
+    </Box>
   );
 }
 const sxPages = {

@@ -26,7 +26,7 @@ const AppComp: React.FC = () => {
         setUserDisplay(jwtDecode(userAuthToken))
       }      
     }
-  }, [googleSession]);
+  }, [isAuthenticated, googleSession, userAuthToken, setUserDisplay]);
 
   const theme = useMemo(() => getAppTheme(mode), [mode]);
   

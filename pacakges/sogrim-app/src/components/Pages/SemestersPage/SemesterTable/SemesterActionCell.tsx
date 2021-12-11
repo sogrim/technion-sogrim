@@ -1,4 +1,4 @@
-import { TableRow, TableCell, Input, IconButton  } from "@mui/material";
+import { TableCell, IconButton  } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { RowData } from "./SemesterTabsConsts";
 import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
@@ -8,17 +8,21 @@ export interface SemesterActionCellProps {
     row: RowData;  
     isCrudRowOn: boolean;
     setIsCrudRowOn: (newState: boolean) => void;
+    handleSave: (newRowData: RowData) => void;
 }
 
 const SemesterActionCellComp: React.FC<SemesterActionCellProps> = ({
     row,
     isCrudRowOn,
-    setIsCrudRowOn
+    setIsCrudRowOn,
+    handleSave
 }) => {
 
     const handleEditRowCLick = () => {
-        setIsCrudRowOn(!isCrudRowOn);
-        console.log('hi there')
+        if (isCrudRowOn) {
+            handleSave(row);
+        }
+        setIsCrudRowOn(!isCrudRowOn);        
     }
 
     return (    

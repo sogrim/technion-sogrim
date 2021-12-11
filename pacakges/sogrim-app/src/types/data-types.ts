@@ -18,18 +18,13 @@ export type Course = {
     _id: number;
 }
 
-type GradeNumber = {
-        Grade?: number;
-    }
-export type Grade = null | 'ExemptionWithoutCredit' | 'ExemptionWithCredit' | GradeNumber;
-
 export type CourseStatus = {
     course: Course;
-    grade: Grade;
+    grade: string;
     semester: string;
     state: CourseState;
     type: string;
-
+    modified: boolean;
 };
 
 export const ACCUMULATE_COURSES = 'accumulate courses';

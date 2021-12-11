@@ -17,7 +17,7 @@ const AppPagesComp: React.FC = () => {
     const [ rs, setRs ] = React.useState<UserRegistrationState>();
 
     const { userAuthToken } = useAuth();
-    const { data, isLoading, isError, refetch} = useUserState(userAuthToken);
+    const { data, isLoading, refetch} = useUserState(userAuthToken);
 
     React.useEffect(() => {
       const refreshStepper = async() => {
@@ -31,7 +31,7 @@ const AppPagesComp: React.FC = () => {
       }
       refreshStepper();
 
-    }, [data])
+    }, [data, isLoading, refetch, setRs, userRegistrationState])
 
     return ( 
         <Box sx={sxPages} >

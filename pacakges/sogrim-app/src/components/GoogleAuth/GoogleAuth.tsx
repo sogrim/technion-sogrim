@@ -1,4 +1,3 @@
-import jwtDecode from "jwt-decode"
 import { useEffect, useState } from "react"
 import { useAuth } from "../../hooks/useAuth";
 import { GoogleClinetSession } from "../../types/auth-types";
@@ -6,7 +5,7 @@ import { GoogleClinetSession } from "../../types/auth-types";
 export default function GoogleAuth() {
   
   const [gsiScriptLoaded, setGsiScriptLoaded] = useState(false);  
-  const { googleSession, setGoogleSession, setCredential } = useAuth();
+  const { setGoogleSession, setCredential } = useAuth();
     
   useEffect(() => {      
     if (gsiScriptLoaded) return;
@@ -14,8 +13,7 @@ export default function GoogleAuth() {
     const handleGoogleSignIn = (res: CredentialResponse) => {        
 
       if (res.credential) {
-          setCredential(res);
-          const user = jwtDecode(res.credential);
+          setCredential(res);          
       }
       setGoogleSession(GoogleClinetSession.DONE);
     }
@@ -48,7 +46,7 @@ export default function GoogleAuth() {
       window.google?.accounts.id.cancel()
       document.getElementById("google-button-div")?.remove()
     }
-    }, []);
+    }, [gsiScriptLoaded, setCredential, setGoogleSession]);
 
     return <> 
         <div id="g_id_onload"

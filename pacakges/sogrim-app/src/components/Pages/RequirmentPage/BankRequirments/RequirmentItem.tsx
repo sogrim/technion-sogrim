@@ -2,15 +2,9 @@ import * as React from 'react';
 import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
 import CardActions from '@mui/material/CardActions';
-
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { ACCUMULATE_COURSES, CourseBankReq } from '../../../../types/data-types';
 import { Box, CardActionArea, Chip, CircularProgress } from '@mui/material';
-import DoneOutlinedIcon from '@mui/icons-material/DoneOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-
 export interface RequirmentItemProps {
   bankRequirment: CourseBankReq;
 }
@@ -70,12 +64,7 @@ export const RequirmentItem: React.FC<RequirmentItemProps> = ({
       <CardHeader 
         avatar={
           <ProgressCircular value={progress} />
-        }       
-        // action={
-        //   <IconButton aria-label="settings">
-        //     <MoreVertIcon />
-        //   </IconButton>
-        //}
+        }
         title={<Typography component={'span'}> {course_bank_name} </Typography>}
         subheader={subtitle}
       />            

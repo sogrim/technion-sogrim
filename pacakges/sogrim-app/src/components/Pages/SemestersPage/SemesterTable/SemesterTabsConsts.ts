@@ -1,12 +1,10 @@
-import { Grade } from "../../../../types/data-types";
-
 export interface RowData {    
     name: string;
-    courseNumber: number;
+    courseNumber: number; // TODO: convert to string., accordint to server.
     credit: number;
     state: string;
     type: string;
-    grade: string | number;    
+    grade: string;    
 }
 
 export interface HeadCell {

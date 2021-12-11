@@ -12,7 +12,11 @@ import { observer } from 'mobx-react-lite';
 import { getComparator, Order, stableSort } from './SemesterTableUtils';
 import { RowData, headCells } from './SemesterTabsConsts';
 import { SemesterTableRow } from './SemesterTableRow';
-import { Paper, TableFooter } from '@mui/material';
+import { Paper } from '@mui/material';
+import useUserState from '../../../../hooks/apiHooks/useUserState';
+import { useAuth } from "../../../../hooks/useAuth";
+import { useStore } from "../../../../hooks/useStore";
+import useUpdateUserState from '../../../../hooks/apiHooks/useUpdateUserState';
 
 interface EnhancedTableProps {
   onRequestSort: (event: React.MouseEvent<unknown>, property: keyof RowData) => void;
@@ -66,13 +70,16 @@ const EnhancedTableHead: React.FC<EnhancedTableProps> = ({
 
 export interface SemesterTableProps {
     rows: RowData[],
+    semester: string;
 }
 
 const SemesterTableComp: React.FC<SemesterTableProps> = ({
     rows,
+    semester,
 }) => {
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<keyof RowData>('grade');
+  const [tableRows] = React.useState<RowData[]>(rows)
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
@@ -81,8 +88,23 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-  };  
+  };
 
+    const { userAuthToken } = useAuth();
+    const { data } = useUserState(userAuthToken);
+    const { mutate } = useUpdateUserState(userAuthToken)
+
+    const { dataStore: {
+        updateCourseInUserDetails,
+    }} = useStore();
+
+    const handleSave = (newRowData: RowData) => {
+      if (data && data?.details) {
+        const newUserDetails = updateCourseInUserDetails(newRowData, semester, data?.details)
+        mutate(newUserDetails);
+      }
+    }
+    
   return (
     <Box sx={{ width: '100%', display: 'flex', alignItems: 'center'}}>
       <Paper sx={{ width: '100%', mb: 2 }}>        
@@ -98,19 +120,19 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
               onRequestSort={handleRequestSort}
             />
             <TableBody>         
-              {stableSort(rows, getComparator(order, orderBy))                
+              {stableSort(tableRows, getComparator(order, orderBy))                
                 .map((row, index) => {                  
                   const labelId = `enhanced-table-checkbox-${index}`;
                   return (
-                      < SemesterTableRow row={row} labelId={labelId} />                   
+                      < SemesterTableRow row={row} labelId={labelId} handleSave={handleSave} key={index} />                   
                   );
                 })}              
             </TableBody>
           </Table>
         </TableContainer>    
-        <TableFooter>
+        {/* <TableFooter>
             Add a new row
-        </TableFooter>    
+        </TableFooter>     */}
       </Paper>      
     </Box>
   );

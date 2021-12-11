@@ -69,7 +69,7 @@ export const putUserState = async (authToken: any, updatedUserState: UserDetails
     const fallback: UserDetails = {} as UserDetails;
     let res: UserDetails;
     try {
-        res = (await axios.post(`${API_URL}/user`, updatedUserState, { // TODO: check method with benny.
+        res = (await axios.put(`${API_URL}/user/details`, updatedUserState, { 
             headers: {
             'authorization': `${authToken}`,        
         }

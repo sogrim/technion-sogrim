@@ -1,7 +1,7 @@
 import { makeAutoObservable } from 'mobx';
 import { createData } from '../components/Pages/SemestersPage/SemesterTable/SemesterTableUtils';
 import { RowData } from '../components/Pages/SemestersPage/SemesterTable/SemesterTabsConsts';
-import { CourseStatus, Grade } from '../types/data-types';
+import { CourseState, CourseStatus, UserDetails } from '../types/data-types';
 import { RootStore } from './RootStore';
 
 export class DataStore {
@@ -24,12 +24,13 @@ export class DataStore {
     return allSemesters;
   }
 
-  private displayGrade = (grade: Grade) => {
+  private displayGrade = (grade: string) => {
     if (!grade) {
       return '-';
     }       
     return grade.toString();
   }
+
   generateRows = (semester: string, courseList: CourseStatus[]) => {
     const allSemesterCourses = new Set<CourseStatus>();
     courseList.forEach(course => {
@@ -48,5 +49,34 @@ export class DataStore {
     return rows;
   }
 
+  updateCourseInUserDetails = (rowData: RowData, semester: string, userDetails: UserDetails): UserDetails => {
+    const courseList = userDetails?.degree_status.course_statuses ?? [];
+
+    const updateCourseRow: CourseStatus = {
+      course: {
+        _id: rowData.courseNumber,
+        credit: rowData.credit,
+        name: rowData.name,        
+      },
+      state: rowData.state as CourseState,
+      type: rowData.type,          
+      grade: rowData.grade,
+      semester: semester,
+      modified: true,
+    }
+
+    // TODO: handle change course ID...
+    const updatedCourseStatus: CourseStatus[] = courseList.map( course => course.course._id !== rowData.courseNumber ? 
+                                      course :
+                                      updateCourseRow);
+                                      
+    const newUserDetails = {...userDetails};
+    if (newUserDetails.degree_status?.course_statuses) {
+      newUserDetails.degree_status.course_statuses = updatedCourseStatus;
+      newUserDetails.modified = true;
+    }    
+
+    return newUserDetails;
+  }
  
 }

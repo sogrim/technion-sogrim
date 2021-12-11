@@ -1,4 +1,3 @@
-import { Grade } from "../../../../types/data-types";
 import { RowData } from "./SemesterTabsConsts";
 
 export type Order = 'asc' | 'desc';
@@ -41,7 +40,7 @@ export const createData = (
     name: string,
     courseNumber: number,
     credit: number,       
-    grade: string | number,
+    grade: string,
     type: string,
     state: string,     
 ): RowData => {
