@@ -173,7 +173,7 @@ struct BankRuleHandler<'a> {
     course_list: Vec<u32>,
     courses: &'a HashMap<u32, Course>,
     credit_overflow: f32,
-    courses_overflow: Option<u32>,
+    courses_overflow: u32,
     catalog_replacements: HashMap<u32, Replacements>,
     common_replacements: HashMap<u32, Replacements>,
     ignore_courses: Vec<u32>,
@@ -194,10 +194,7 @@ impl<'a> BankRuleHandler<'a> {
     fn iterate_course_list(&mut self) -> CreditInfo {
         // return sum_credits, count_courses, missing_points
         let mut sum_credits = self.credit_overflow;
-        let mut count_courses = match &self.courses_overflow {
-            Some(num_courses) => *num_courses,
-            None => 0,
-        };
+        let mut count_courses = self.courses_overflow;
         let mut missing_credits = 0.0;
         for course_number in &self.course_list {
             let mut course_added = false;
@@ -223,10 +220,10 @@ impl<'a> BankRuleHandler<'a> {
                                 self.courses[course_number].name
                             ));
                         } else {
-                            course_status.additional_msg = Some(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n שים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
+                            course_status.additional_msg = Some(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
                         }
                     } else {
-                        course_status.additional_msg = Some(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n שים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
+                        course_status.additional_msg = Some(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
                     }
 
                     if course_status.course.credit < self.courses[course_number].credit {
@@ -516,7 +513,7 @@ impl<'a> DegreeStatusHandler<'a> {
         course_list_for_bank: Vec<u32>,
         credit_overflow: f32,
         missing_credits_from_prev_banks: f32,
-        courses_overflow: Option<u32>,
+        courses_overflow: u32,
     ) {
         let mut course_list = self.get_modified_courses(&bank.name);
         course_list.extend(course_list_for_bank);
@@ -643,12 +640,9 @@ impl<'a> DegreeStatusHandler<'a> {
                 self.calculate_overflows(&bank.name, CreditsTransfer::OverflowCredits);
             let missing_credits =
                 self.calculate_overflows(&bank.name, CreditsTransfer::MissingCredits);
-            let mut courses_overflow = None;
-            if matches!(bank.rule, Rule::AccumulateCourses(_)) {
-                courses_overflow = Some(
-                    self.calculate_overflows(&bank.name, CreditsTransfer::OverflowCourses) as u32,
-                );
-            }
+            let courses_overflow = 
+                self.calculate_overflows(&bank.name, CreditsTransfer::OverflowCourses) as u32;
+
             self.handle_bank_rule(
                 &bank,
                 course_list_for_bank,
@@ -854,7 +848,7 @@ mod tests {
             course_list,
             courses: &courses,
             credit_overflow,
-            courses_overflow: None,
+            courses_overflow: 0,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -907,7 +901,7 @@ mod tests {
             course_list,
             courses: &HashMap::new(),
             credit_overflow,
-            courses_overflow: None,
+            courses_overflow: 0,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -947,7 +941,7 @@ mod tests {
             course_list,
             courses: &HashMap::new(),
             credit_overflow,
-            courses_overflow: Some(1),
+            courses_overflow: 1,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -999,7 +993,7 @@ mod tests {
             course_list,
             courses: &HashMap::new(),
             credit_overflow,
-            courses_overflow: None,
+            courses_overflow: 0,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -1047,7 +1041,7 @@ mod tests {
             course_list,
             courses: &HashMap::new(),
             credit_overflow,
-            courses_overflow: None,
+            courses_overflow: 0,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -1071,7 +1065,7 @@ mod tests {
             course_list,
             courses: &HashMap::new(),
             credit_overflow,
-            courses_overflow: None,
+            courses_overflow: 0,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -1109,7 +1103,7 @@ mod tests {
             course_list,
             courses: &HashMap::new(),
             credit_overflow,
-            courses_overflow: None,
+            courses_overflow: 0,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -1191,7 +1185,7 @@ mod tests {
             course_list,
             courses: &courses,
             credit_overflow,
-            courses_overflow: None,
+            courses_overflow: 0,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -1254,7 +1248,7 @@ mod tests {
             course_list,
             courses: &HashMap::new(),
             credit_overflow,
-            courses_overflow: None,
+            courses_overflow: 0,
             catalog_replacements: HashMap::new(),
             common_replacements: HashMap::new(),
             ignore_courses: Vec::new(),
@@ -1316,11 +1310,11 @@ mod tests {
 
         calculate_degree_status(catalog, course::vec_to_map(vec_courses), &mut user);
         //FOR VIEWING IN JSON FORMAT
-        std::fs::write(
-            "degree_status.json",
-            serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
-        )
-        .expect("Unable to write file");
+        // std::fs::write(
+        //     "degree_status.json",
+        //     serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
+        // )
+        // .expect("Unable to write file");
 
         // check output
         assert_eq!(
