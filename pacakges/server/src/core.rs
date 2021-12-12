@@ -262,11 +262,11 @@ impl<'a> BankRuleHandler<'a> {
 
         // handle courses in course list which the user didn't complete or any replacement for them
         for course_number in &self.course_list {
-            let course_replacements = self.create_optional_courses_list(*course_number);
+            let optional_courses = self.create_optional_courses_list(*course_number);
             if self
                 .user
                 .find_best_match_for_course(
-                    &course_replacements,
+                    &optional_courses,
                     &self.bank_name,
                     &self.ignore_courses,
                 )
@@ -333,9 +333,9 @@ impl<'a> BankRuleHandler<'a> {
             //check if the user completed one of the chains.
             let mut completed_chain = true;
             for course_number in chain {
-                let course_replacements = self.create_optional_courses_list(*course_number);
+                let optional_courses = self.create_optional_courses_list(*course_number);
                 let course_status = self.user.find_best_match_for_course(
-                    &course_replacements,
+                    &optional_courses,
                     &self.bank_name,
                     &self.ignore_courses,
                 );
