@@ -21,14 +21,14 @@ pub struct UserDetails {
 }
 
 impl UserDetails {
-    fn find_course(&self, number: u32) -> Option<CourseStatus> {
-        for course_status in &self.degree_status.course_statuses {
-            if course_status.course.number == number {
-                return Some(course_status.clone());
-            }
-        }
-        None
-    }
+    // fn find_course(&self, number: u32) -> Option<CourseStatus> {
+    //     for course_status in &self.degree_status.course_statuses {
+    //         if course_status.course.number == number {
+    //             return Some(course_status.clone());
+    //         }
+    //     }
+    //     None
+    // }
 
     pub fn get_mut_course_status(&mut self, number: u32) -> Option<&mut CourseStatus> {
         for course_status in &mut self.degree_status.course_statuses.iter_mut().rev() {
@@ -68,13 +68,13 @@ impl UserDetails {
         best_match
     }
 
-    pub fn passed_course(&self, number: u32) -> bool {
-        if let Some(course_status) = self.find_course(number) {
-            course_status.passed()
-        } else {
-            false
-        }
-    }
+    // pub fn passed_course(&self, number: u32) -> bool {
+    //     if let Some(course_status) = self.find_course(number) {
+    //         course_status.passed()
+    //     } else {
+    //         false
+    //     }
+    // }
 
     // TODO: probably need to remove this
     // pub fn get_course_semester(&self, number: u32) -> Option<f32> {

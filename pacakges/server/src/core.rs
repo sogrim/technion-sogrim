@@ -1,4 +1,4 @@
-use crate::catalog::{Catalog, Replacements};
+use crate::catalog::{Catalog, OptionalCourses};
 use crate::course::{Course, CourseBank, CourseState, CourseStatus};
 use crate::user::UserDetails;
 use bson::doc;
@@ -19,8 +19,13 @@ pub enum Logic {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Mandatory {
-    courses: Vec<u32>,
-    logic: Logic,
+    courses: Vec<OptionalCourses> 
+    // The user needs to pass one of the courses in each list. (To support complex requirements)
+    // for example:
+    // [[1,2],
+    //  [3,4],
+    //  [5,6]]
+    // The user needs to pass the courses: 1 or 2, and 3 or 4, and 5 or 6.
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -174,13 +179,13 @@ struct BankRuleHandler<'a> {
     courses: &'a HashMap<u32, Course>,
     credit_overflow: f32,
     courses_overflow: u32,
-    catalog_replacements: HashMap<u32, Replacements>,
-    common_replacements: HashMap<u32, Replacements>,
+    catalog_replacements: HashMap<u32, OptionalCourses>,
+    common_replacements: HashMap<u32, OptionalCourses>,
     ignore_courses: Vec<u32>,
 }
 
 impl<'a> BankRuleHandler<'a> {
-    fn create_course_replacements(&self, course_number: u32) -> Replacements {
+    fn create_optional_courses_list(&self, course_number: u32) -> OptionalCourses {
         let mut course_list = vec![course_number];
         if let Some(optional_replacements) = self.catalog_replacements.get(&course_number) {
             course_list.append(&mut (optional_replacements.clone()));
@@ -198,9 +203,9 @@ impl<'a> BankRuleHandler<'a> {
         let mut missing_credits = 0.0;
         for course_number in &self.course_list {
             let mut course_added = false;
-            let course_replacements = self.create_course_replacements(*course_number);
+            let optional_courses = self.create_optional_courses_list(*course_number);
             if let Some(course_status) = self.user.find_best_match_for_course(
-                &course_replacements,
+                &optional_courses,
                 &self.bank_name,
                 &self.ignore_courses,
             ) {
@@ -215,15 +220,12 @@ impl<'a> BankRuleHandler<'a> {
                         self.catalog_replacements.get(&course_status.course.number)
                     {
                         if catalog_replacements.contains(&course_status.course.number) {
-                            course_status.additional_msg = Some(format!(
-                                "קורס זה מחליף את הקורס {}",
-                                self.courses[course_number].name
-                            ));
+                            course_status.set_msg(format!("קורס זה מחליף את הקורס {}", self.courses[course_number].name));
                         } else {
-                            course_status.additional_msg = Some(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
+                            course_status.set_msg(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
                         }
                     } else {
-                        course_status.additional_msg = Some(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
+                        course_status.set_msg(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_number].name));
                     }
 
                     if course_status.course.credit < self.courses[course_number].credit {
@@ -234,7 +236,7 @@ impl<'a> BankRuleHandler<'a> {
 
                 // After choosing the correct course for the total credits, we want to ignore all other replacements for this course.
                 // TODO: verify with the coordinators that a course and its replacement can't be both added to the total credit.
-                for course_number in course_replacements {
+                for course_number in optional_courses {
                     if let Some(course_status) = self.user.get_mut_course_status(course_number) {
                         if course_status.valid_for_bank(&self.bank_name) {
                             course_status.set_type(self.bank_name.clone());
@@ -260,7 +262,7 @@ impl<'a> BankRuleHandler<'a> {
 
         // handle courses in course list which the user didn't complete or any replacement for them
         for course_number in &self.course_list {
-            let course_replacements = self.create_course_replacements(*course_number);
+            let course_replacements = self.create_optional_courses_list(*course_number);
             if self
                 .user
                 .find_best_match_for_course(
@@ -331,7 +333,7 @@ impl<'a> BankRuleHandler<'a> {
             //check if the user completed one of the chains.
             let mut completed_chain = true;
             for course_number in chain {
-                let course_replacements = self.create_course_replacements(*course_number);
+                let course_replacements = self.create_optional_courses_list(*course_number);
                 let course_status = self.user.find_best_match_for_course(
                     &course_replacements,
                     &self.bank_name,
@@ -363,31 +365,31 @@ impl<'a> BankRuleHandler<'a> {
         specialization_groups: &SpecializationGroups,
         completed_groups: &mut Vec<String>,
     ) -> f32 {
-        //TODO: support replacements
         let credit_info = self.iterate_course_list();
         for specialization_group in &specialization_groups.groups_list {
             //check if the user completed all the specialization groups requirements
-            let mut completed_group = true;
+            let mut completed_group = false;
             if let Some(mandatory) = &specialization_group.mandatory {
-                completed_group = matches!(&mandatory.logic, Logic::And);
-                for course_number in &mandatory.courses {
-                    match &mandatory.logic {
-                        Logic::Or => completed_group |= self.user.passed_course(*course_number),
-                        Logic::And => completed_group &= self.user.passed_course(*course_number),
+                for courses in &mandatory.courses {
+                    for course_number in courses {
+                        let optional_courses = self.create_optional_courses_list(*course_number);
+                        if let Some(course_status) = self.user.find_best_match_for_course(&optional_courses, &self.bank_name, &self.ignore_courses) {
+                            completed_group |= course_status.passed();
+                        }
+                    }
+                    if !completed_group {
+                        break;
                     }
                 }
             }
             let mut count_courses = 0;
             for course_number in &specialization_group.course_list {
-                if self.user.passed_course(*course_number) {
-                    self.user
-                        .degree_status
-                        .course_statuses
-                        .iter_mut()
-                        .find(|c| c.course.number == *course_number)
-                        .unwrap()
-                        .set_msg(specialization_group.name.clone());
-                    count_courses += 1;
+                let optional_courses = self.create_optional_courses_list(*course_number);
+                if let Some(course_status) = self.user.find_best_match_for_course(&optional_courses, &self.bank_name, &self.ignore_courses) {
+                    if course_status.passed() {
+                        course_status.add_msg(&specialization_group.name);
+                        count_courses += 1;
+                    }
                 }
             }
             completed_group &= count_courses >= specialization_group.courses_sum;

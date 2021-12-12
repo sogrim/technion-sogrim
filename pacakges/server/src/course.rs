@@ -75,6 +75,16 @@ impl CourseStatus {
         self.additional_msg = Some(msg);
         self
     }
+    pub fn add_msg(&mut self, msg: &str) -> &mut Self {
+        let mut new_msg = "".to_string();
+        if let Some(old_msg) = &self.additional_msg {
+            new_msg = old_msg.clone();
+            new_msg.push('\n');
+        }
+        new_msg.push_str(msg);
+        self.additional_msg = Some(new_msg);
+        self
+    }
 
     pub fn is_malag(&self) -> bool {
         self.course.number / 1000 == 324 && !Self::MALAG_EXCEPTIONS.contains(&self.course.number)
