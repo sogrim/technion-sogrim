@@ -31,7 +31,7 @@ pub struct Mandatory {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
-    pub credit: f32, // may be redundant, it seems that SpecializationGroup restrictions are number of courses and not number of credits
+    // pub credit: f32, // may be redundant, it seems that SpecializationGroup restrictions are number of courses and not number of credits
     pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
     pub course_list: Vec<u32>,
     pub mandatory: Option<Mandatory>,
@@ -318,6 +318,7 @@ impl<'a> BankRuleHandler<'a> {
     pub fn free_choice(self) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
+            // TODO: fix free choice
             if course_status.r#type.is_none()
                 && self.ignore_courses.contains(&course_status.course.number)
             {
@@ -368,26 +369,36 @@ impl<'a> BankRuleHandler<'a> {
         let credit_info = self.iterate_course_list();
         for specialization_group in &specialization_groups.groups_list {
             //check if the user completed all the specialization groups requirements
-            let mut completed_group = false;
+            let mut completed_group = true;
             if let Some(mandatory) = &specialization_group.mandatory {
                 for courses in &mandatory.courses {
-                    for course_number in courses {
+                    let mut completed_current_demand = false;
+                    for course_number in courses { // check if the user completed one of courses
                         let optional_courses = self.create_optional_courses_list(*course_number);
-                        if let Some(course_status) = self.user.find_best_match_for_course(&optional_courses, &self.bank_name, &self.ignore_courses) {
-                            completed_group |= course_status.passed();
+                        let course_status = self.user.find_best_match_for_course(&optional_courses, &self.bank_name, &self.ignore_courses);
+                        if let Some(course_status) = course_status {
+                            // We assume that there is no overlap in mandatory courses from different groups
+                            completed_current_demand |= course_status.passed();
+                            break;
                         }
                     }
-                    if !completed_group {
+                    completed_group &= completed_current_demand;
+                    if !completed_group { // The user didn't completed one of the mandatory courses
                         break;
                     }
                 }
             }
+            if !completed_group {
+                continue;
+            }
             let mut count_courses = 0;
+            let mut chosen_courses = Vec::new();
             for course_number in &specialization_group.course_list {
                 let optional_courses = self.create_optional_courses_list(*course_number);
-                if let Some(course_status) = self.user.find_best_match_for_course(&optional_courses, &self.bank_name, &self.ignore_courses) {
-                    if course_status.passed() {
-                        course_status.add_msg(&specialization_group.name);
+                let course_status = self.user.find_best_match_for_course(&optional_courses, &self.bank_name, &self.ignore_courses);
+                if let Some(course_status) = course_status {
+                    if course_status.passed() && course_status.specialization_group_name.is_none() {
+                        chosen_courses.push(course_status.course.number);
                         count_courses += 1;
                     }
                 }
@@ -395,6 +406,12 @@ impl<'a> BankRuleHandler<'a> {
             completed_group &= count_courses >= specialization_group.courses_sum;
             if completed_group {
                 completed_groups.push(specialization_group.name.clone());
+                for course_number in chosen_courses {
+                    let course_status = self.user.get_mut_course_status(course_number);
+                    if let Some(course_status) = course_status {
+                        course_status.set_specialization_group_name(&specialization_group.name);
+                    }
+                }
             }
         }
 
@@ -1270,6 +1287,144 @@ mod tests {
 
         // check sum credits
         assert_eq!(res, 9.0);
+    }
+
+    #[test]
+    async fn test_specialization_group() {
+        // for debugging
+        let mut user = create_user();
+        let courses = HashMap::from([
+            (
+                104031,
+                Course {
+                    number: 104031,
+                    credit: 5.5,
+                    name: "infi1m".to_string(),
+                },
+            ),
+            (
+                104166,
+                Course {
+                    number: 104166,
+                    credit: 5.5,
+                    name: "Algebra alef".to_string(),
+                },
+            ),
+            (
+                1,
+                Course {
+                    number: 1,
+                    credit: 1.0,
+                    name: "".to_string(),
+                },
+            ),
+            (
+                2,
+                Course {
+                    number: 2,
+                    credit: 2.0,
+                    name: "".to_string(),
+                },
+            ),
+            (
+                114052,
+                Course {
+                        number: 114052,
+                        credit: 3.5,
+                        name: "פיסיקה 2".to_string(),
+                }
+            ),
+            (
+                114054,
+                Course {
+                    number: 114054,
+                    credit: 3.5,
+                    name: "פיסיקה 3".to_string(),
+                }
+            ),
+            (
+                236303,
+                Course {
+                    number: 236303,
+                    credit: 3.0,
+                    name: "project1".to_string(),
+                }
+            ),
+            (
+                236512,
+                Course {
+                    number: 236512,
+                    credit: 3.0,
+                    name: "project2".to_string(),
+                }
+            ),
+        ]);
+        let bank_name = "specialization group".to_string();
+        let course_list = vec![104031, 104166, 114052, 1, 2, 114054, 236303, 236512, 394645];
+        let specialization_groups = SpecializationGroups {
+            groups_list: vec![
+                SpecializationGroup { // The user completed this group with 114052, 104031
+                    name: "math".to_string(),
+                    courses_sum: 2,
+                    course_list: vec![114052, 104166, 1, 104031],
+                    mandatory: Some(Mandatory {
+                        courses: vec![vec![104031, 104166]]
+                    })// need to accomplish one of the courses 104031 or 104166 or 1
+                },
+                SpecializationGroup { // Although the user completed 4 courses from this group, he didn't complete this group because 104031 was taken to "math"
+                    name: "physics".to_string(),
+                    courses_sum: 4,
+                    course_list: vec![104031, 114054, 236303, 236512, 104166],
+                    mandatory: Some(Mandatory {
+                        courses: vec![vec![114054, 236303], vec![104166, 236512]]
+                    })
+                },
+                SpecializationGroup { // The user didn't complete the mandatory course
+                    name: "other".to_string(),
+                    courses_sum: 1,
+                    course_list: vec![104031, 114054, 236303, 236512, 104166, 394645],
+                    mandatory: Some(Mandatory {
+                        courses: vec![vec![104166]]
+                    })
+                }
+            ],
+            groups_number: 2,
+        };
+        let handle_bank_rule_processor = BankRuleHandler {
+            user: &mut user,
+            bank_name,
+            course_list,
+            courses: &courses,
+            credit_overflow:0.0,
+            courses_overflow: 0,
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+            ignore_courses: Vec::new(),
+        };
+        let mut completed_groups = Vec::<String>::new();
+        let res = handle_bank_rule_processor.specialization_group(&specialization_groups, &mut completed_groups);
+
+        // check sum credits
+        assert_eq!(res, 19.5);
+
+        // check completed groups
+        assert_eq!(completed_groups, vec!["math".to_string()]);
+
+        // check it adds the type and the group name
+        assert_eq!(
+            user.degree_status.course_statuses[0].r#type,
+            Some("specialization group".to_string())
+        );
+        assert_eq!(
+            user.degree_status.course_statuses[0].specialization_group_name,
+            Some("math".to_string())
+        );
+
+        // check it doesn't add a group name to course which is not chosen for specific group
+        assert_eq!(
+            user.degree_status.course_statuses[1].specialization_group_name,
+            None
+        );
     }
 
     #[test]
