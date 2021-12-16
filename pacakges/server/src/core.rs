@@ -318,9 +318,8 @@ impl<'a> BankRuleHandler<'a> {
     pub fn free_choice(self) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            // TODO: fix free choice
             if course_status.r#type.is_none()
-                && self.ignore_courses.contains(&course_status.course.number)
+                && !self.ignore_courses.contains(&course_status.course.number)
             {
                 set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
             }
