@@ -5,7 +5,7 @@ use crate::course::{self, CourseStatus};
 use crate::db;
 use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
-use actix_web::{get, post, put, web, Error, FromRequest, HttpRequest, HttpResponse};
+use actix_web::{get, post, put, web, Error, FromRequest, HttpMessage, HttpRequest, HttpResponse};
 use bson::doc;
 use futures_util::Future;
 use mongodb::Client;
