@@ -77,7 +77,7 @@ impl CourseStatus {
         self
     }
     pub fn set_specialization_group_name(&mut self, group_name: &str) {
-        self.specialization_group_name = Some(group_name.to_string().clone());
+        self.specialization_group_name = Some(group_name.to_string());
     }
 
     pub fn is_malag(&self) -> bool {
