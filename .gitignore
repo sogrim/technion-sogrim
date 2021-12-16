@@ -1,9 +1,9 @@
 debug_text.txt
-pacakges/server/private/
-pacakges/server/target/
-pacakges/server/.vscode/settings.json
-pacakges/server/Cargo.lock
-pacakges/server/*.txt
-pacakges/server/.env
+packages/server/private/
+packages/server/target/
+packages/server/.vscode/settings.json
+packages/server/Cargo.lock
+packages/server/*.txt
+packages/server/.env
 .vscode/
 .idea/

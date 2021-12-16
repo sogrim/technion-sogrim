@@ -6,7 +6,6 @@ use petgraph::algo::toposort;
 use petgraph::Graph;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::iter::FromIterator;
 
 type Chain = Vec<u32>;
 type NumCourses = u32;
@@ -528,20 +527,20 @@ impl<'a> DegreeStatusHandler<'a> {
             courses: &self.courses,
             credit_overflow,
             courses_overflow,
-            catalog_replacements: HashMap::from_iter(
-                self.catalog
-                    .catalog_replacements
-                    .clone()
-                    .iter()
-                    .map(|replacement| (replacement.0, replacement.1.clone())),
-            ),
-            common_replacements: HashMap::from_iter(
-                self.catalog
-                    .common_replacements
-                    .clone()
-                    .iter()
-                    .map(|replacement| (replacement.0, replacement.1.clone())),
-            ),
+            catalog_replacements: self
+                .catalog
+                .catalog_replacements
+                .clone()
+                .iter()
+                .map(|replacement| (replacement.0, replacement.1.clone()))
+                .collect::<HashMap<_, _>>(),
+            common_replacements: self
+                .catalog
+                .common_replacements
+                .clone()
+                .iter()
+                .map(|replacement| (replacement.0, replacement.1.clone()))
+                .collect::<HashMap<_, _>>(),
             ignore_courses: Vec::new(),
         };
 
