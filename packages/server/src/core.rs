@@ -30,7 +30,6 @@ pub struct Mandatory {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
-    // pub credit: f32, // may be redundant, it seems that SpecializationGroup restrictions are number of courses and not number of credits
     pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
     pub course_list: Vec<u32>,
     pub mandatory: Option<Mandatory>,
