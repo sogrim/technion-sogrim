@@ -21,7 +21,6 @@ pub struct UserDetails {
 }
 
 impl UserDetails {
-
     pub fn get_mut_course_status(&mut self, number: u32) -> Option<&mut CourseStatus> {
         for course_status in &mut self.degree_status.course_statuses.iter_mut().rev() {
             if course_status.course.number == number {
