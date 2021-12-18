@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 
-use crate::{core::CreditOverflow, course::{CourseBank, CourseId}, db, user::User};
+use crate::{
+    core::CreditOverflow,
+    course::{CourseBank, CourseId},
+    db,
+    user::User,
+};
 use actix_web::{
     get,
     web::{self},

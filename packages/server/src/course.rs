@@ -83,7 +83,8 @@ impl CourseStatus {
     }
 
     pub fn is_malag(&self) -> bool {
-        self.course.id.starts_with("324") && !Self::MALAG_EXCEPTIONS.contains(&self.course.id.as_str())
+        self.course.id.starts_with("324")
+            && !Self::MALAG_EXCEPTIONS.contains(&self.course.id.as_str())
         // TODO: check if there are more terms
     }
     pub fn is_sport(&self) -> bool {
@@ -263,34 +264,35 @@ fn parse_course_status_ug_format(line: String) -> Result<(Course, Option<Grade>)
     let credit = line_parts[1]
         .parse::<f32>()
         .map_err(|err| ErrorBadRequest(err.to_string()))?;
-    let id = course_parts
-        .last()
-        .ok_or_else(|| ErrorBadRequest("Parse Error: Empty Course Parts"))?
-        .parse::<u32>()
-        .map_err(|err| ErrorBadRequest(err.to_string()))?
-        .to_string();
+    let id = {
+        let number = course_parts
+            .last()
+            .ok_or_else(|| ErrorBadRequest("Parse Error: Empty Course Parts"))?;
+        if number.parse::<f32>().is_ok() {
+            Ok(String::from(*number))
+        } else {
+            Err(ErrorBadRequest("Bad Format"))
+        }?
+    };
     let name = course_parts[..course_parts.len() - 1]
         .join(" ")
         .trim()
         .to_string();
-    Ok((
-        Course {
-            id,
-            credit,
-            name,
-        },
-        grade,
-    ))
+    Ok((Course { id, credit, name }, grade))
 }
 
 fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>), Error> {
-    let id = line
-        .split(' ')
-        .next()
-        .ok_or_else(|| ErrorBadRequest("Bad Format"))?
-        .parse::<u32>()
-        .map_err(|err| ErrorBadRequest(err.to_string()))?
-        .to_string();
+    let id = {
+        let number = line
+            .split(' ')
+            .next()
+            .ok_or_else(|| ErrorBadRequest("Bad Format"))?;
+        if number.parse::<f32>().is_ok() {
+            Ok(String::from(number))
+        } else {
+            Err(ErrorBadRequest("Bad Format"))
+        }?
+    };
 
     let mut index = 0;
     let mut credit = 0.0;
@@ -335,14 +337,7 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
         "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
         _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
     };
-    Ok((
-        Course {
-            id,
-            credit,
-            name,
-        },
-        grade,
-    ))
+    Ok((Course { id, credit, name }, grade))
 }
 
 #[cfg(test)]

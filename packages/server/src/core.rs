@@ -1,5 +1,5 @@
 use crate::catalog::{Catalog, OptionalCourses};
-use crate::course::{Course, CourseBank, CourseState, CourseStatus, CourseId};
+use crate::course::{Course, CourseBank, CourseId, CourseState, CourseStatus};
 use crate::user::UserDetails;
 use bson::doc;
 use petgraph::algo::toposort;
@@ -857,7 +857,13 @@ mod tests {
                 },
             ),
         ]);
-        let course_list = vec!["104031".to_string(), "104166".to_string(), "1".to_string(), "2".to_string(), "3".to_string()];
+        let course_list = vec![
+            "104031".to_string(),
+            "104166".to_string(),
+            "1".to_string(),
+            "2".to_string(),
+            "3".to_string(),
+        ];
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -883,19 +889,28 @@ mod tests {
         );
 
         // check it adds the not completed courses in the hove bank
-        assert_eq!(user.degree_status.course_statuses[8].course.id, "1".to_string());
+        assert_eq!(
+            user.degree_status.course_statuses[8].course.id,
+            "1".to_string()
+        );
         assert!(matches!(
             user.degree_status.course_statuses[8].state,
             Some(CourseState::NotComplete)
         ));
 
-        assert_eq!(user.degree_status.course_statuses[9].course.id, "2".to_string());
+        assert_eq!(
+            user.degree_status.course_statuses[9].course.id,
+            "2".to_string()
+        );
         assert!(matches!(
             user.degree_status.course_statuses[9].state,
             Some(CourseState::NotComplete)
         ));
 
-        assert_eq!(user.degree_status.course_statuses[10].course.id, "3".to_string());
+        assert_eq!(
+            user.degree_status.course_statuses[10].course.id,
+            "3".to_string()
+        );
         assert!(matches!(
             user.degree_status.course_statuses[10].state,
             Some(CourseState::NotComplete)
@@ -910,7 +925,12 @@ mod tests {
         // for debugging
         let mut user = create_user();
         let bank_name = "reshima a".to_string();
-        let course_list = vec!["236303".to_string(), "236512".to_string(), "1".to_string(), "2".to_string()];
+        let course_list = vec![
+            "236303".to_string(),
+            "236512".to_string(),
+            "1".to_string(),
+            "2".to_string(),
+        ];
         let credit_overflow = 5.5;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -950,7 +970,12 @@ mod tests {
         // for debugging
         let mut user = create_user();
         let bank_name = "Project".to_string();
-        let course_list = vec!["236303".to_string(), "236512".to_string(), "1".to_string(), "2".to_string()];
+        let course_list = vec![
+            "236303".to_string(),
+            "236512".to_string(),
+            "1".to_string(),
+            "2".to_string(),
+        ];
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
@@ -995,7 +1020,14 @@ mod tests {
         // user finished a chain
         let mut user = create_user();
         let bank_name = "science chain".to_string();
-        let course_list = vec!["1".to_string(), "2".to_string(), "114052".to_string(), "5".to_string(), "114054".to_string(), "111111".to_string()];
+        let course_list = vec![
+            "1".to_string(),
+            "2".to_string(),
+            "114052".to_string(),
+            "5".to_string(),
+            "114054".to_string(),
+            "111111".to_string(),
+        ];
         let chains = vec![
             vec!["1".to_string(), "2".to_string()],
             vec!["114052".to_string(), "5".to_string()],
@@ -1007,7 +1039,7 @@ mod tests {
         let handle_bank_rule_processor = BankRuleHandler {
             user: &mut user,
             bank_name,
-            course_list : course_list.clone(),
+            course_list,
             courses: &HashMap::new(),
             credit_overflow,
             courses_overflow: 0,
@@ -1043,6 +1075,20 @@ mod tests {
         // user didn't finish a chain
         let mut user = create_user();
         let bank_name = "science chain".to_string();
+        let course_list = vec![
+            "1".to_string(),
+            "2".to_string(),
+            "114052".to_string(),
+            "5".to_string(),
+            "114054".to_string(),
+            "111111".to_string(),
+        ];
+        let chains = vec![
+            vec!["1".to_string(), "2".to_string()],
+            vec!["114052".to_string(), "5".to_string()],
+            vec!["222222".to_string(), "114054".to_string()],
+            vec!["114052".to_string(), "111111".to_string()],
+        ];
         let mut chain_done = Vec::new();
         let credit_overflow = 0.0;
         let handle_bank_rule_processor = BankRuleHandler {
@@ -1351,14 +1397,29 @@ mod tests {
             ),
         ]);
         let bank_name = "specialization group".to_string();
-        let course_list = vec!["104031".to_string(), "104166".to_string(), "114052".to_string(), "1".to_string(), "2".to_string(), "114054".to_string(), "236303".to_string(), "236512".to_string(), "394645".to_string()];
+        let course_list = vec![
+            "104031".to_string(),
+            "104166".to_string(),
+            "114052".to_string(),
+            "1".to_string(),
+            "2".to_string(),
+            "114054".to_string(),
+            "236303".to_string(),
+            "236512".to_string(),
+            "394645".to_string(),
+        ];
         let specialization_groups = SpecializationGroups {
             groups_list: vec![
                 SpecializationGroup {
                     // The user completed this group with 114052, 104031
                     name: "math".to_string(),
                     courses_sum: 2,
-                    course_list: vec!["114052".to_string(), "104166".to_string(), "1".to_string(), "104031".to_string()],
+                    course_list: vec![
+                        "114052".to_string(),
+                        "104166".to_string(),
+                        "1".to_string(),
+                        "104031".to_string(),
+                    ],
                     mandatory: Some(Mandatory {
                         courses: vec![vec!["104031".to_string(), "104166".to_string()]],
                     }), // need to accomplish one of the courses 104031 or 104166 or 1
@@ -1367,16 +1428,32 @@ mod tests {
                     // Although the user completed 4 courses from this group, he didn't complete this group because 104031 was taken to "math"
                     name: "physics".to_string(),
                     courses_sum: 4,
-                    course_list: vec!["104031".to_string(), "114054".to_string(), "236303".to_string(), "236512".to_string(), "104166".to_string()],
+                    course_list: vec![
+                        "104031".to_string(),
+                        "114054".to_string(),
+                        "236303".to_string(),
+                        "236512".to_string(),
+                        "104166".to_string(),
+                    ],
                     mandatory: Some(Mandatory {
-                        courses: vec![vec!["114054".to_string(), "236303".to_string()], vec!["104166".to_string(), "236512".to_string()]],
+                        courses: vec![
+                            vec!["114054".to_string(), "236303".to_string()],
+                            vec!["104166".to_string(), "236512".to_string()],
+                        ],
                     }),
                 },
                 SpecializationGroup {
                     // The user didn't complete the mandatory course
                     name: "other".to_string(),
                     courses_sum: 1,
-                    course_list: vec!["104031".to_string(), "114054".to_string(), "236303".to_string(), "236512".to_string(), "104166".to_string(), "394645".to_string()],
+                    course_list: vec![
+                        "104031".to_string(),
+                        "114054".to_string(),
+                        "236303".to_string(),
+                        "236512".to_string(),
+                        "104166".to_string(),
+                        "394645".to_string(),
+                    ],
                     mandatory: Some(Mandatory {
                         courses: vec![vec!["104166".to_string()]],
                     }),
@@ -1462,11 +1539,11 @@ mod tests {
 
         calculate_degree_status(catalog, course::vec_to_map(vec_courses), &mut user);
         //FOR VIEWING IN JSON FORMAT
-        // std::fs::write(
-        //     "degree_status.json",
-        //     serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
-        // )
-        // .expect("Unable to write file");
+        std::fs::write(
+            "degree_status.json",
+            serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
+        )
+        .expect("Unable to write file");
 
         // check output
         assert_eq!(
