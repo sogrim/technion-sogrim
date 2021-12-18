@@ -7,7 +7,7 @@ use actix_web::{
 use mongodb::Client;
 use serde::{self, Deserialize, Serialize};
 
-pub(crate) type Replacements = Vec<u32>;
+pub(crate) type OptionalCourses = Vec<u32>;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Catalog {
@@ -19,8 +19,8 @@ pub struct Catalog {
     pub course_banks: Vec<CourseBank>,
     pub course_to_bank: Vec<(u32, String)>,
     pub credit_overflows: Vec<CreditOverflow>,
-    pub catalog_replacements: Vec<(u32, Replacements)>, // All replacements which are mentioned in the catalog
-    pub common_replacements: Vec<(u32, Replacements)>, // Common replacement which usually approved by the coordinators
+    pub catalog_replacements: Vec<(u32, OptionalCourses)>, // All replacements which are mentioned in the catalog
+    pub common_replacements: Vec<(u32, OptionalCourses)>, // Common replacement which usually approved by the coordinators
 }
 
 impl Catalog {

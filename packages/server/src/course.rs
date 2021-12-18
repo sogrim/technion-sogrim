@@ -28,6 +28,7 @@ pub struct CourseStatus {
     pub semester: Option<String>,
     pub grade: Option<Grade>,
     pub r#type: Option<String>, // if none, nissan cries
+    pub specialization_group_name: Option<String>,
     pub additional_msg: Option<String>,
     pub modified: bool,
 }
@@ -74,6 +75,9 @@ impl CourseStatus {
     pub fn set_msg(&mut self, msg: String) -> &mut Self {
         self.additional_msg = Some(msg);
         self
+    }
+    pub fn set_specialization_group_name(&mut self, group_name: &str) {
+        self.specialization_group_name = Some(group_name.to_string());
     }
 
     pub fn is_malag(&self) -> bool {
