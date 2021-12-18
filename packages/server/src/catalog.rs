@@ -1,4 +1,6 @@
-use crate::{core::CreditOverflow, course::CourseBank, db, user::User};
+use std::collections::HashMap;
+
+use crate::{core::CreditOverflow, course::{CourseBank, CourseId}, db, user::User};
 use actix_web::{
     get,
     web::{self},
@@ -7,7 +9,7 @@ use actix_web::{
 use mongodb::Client;
 use serde::{self, Deserialize, Serialize};
 
-pub(crate) type OptionalCourses = Vec<u32>;
+pub(crate) type OptionalCourses = Vec<CourseId>;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Catalog {
@@ -17,18 +19,18 @@ pub struct Catalog {
     pub total_credit: f64,
     pub description: String,
     pub course_banks: Vec<CourseBank>,
-    pub course_to_bank: Vec<(u32, String)>,
     pub credit_overflows: Vec<CreditOverflow>,
-    pub catalog_replacements: Vec<(u32, OptionalCourses)>, // All replacements which are mentioned in the catalog
-    pub common_replacements: Vec<(u32, OptionalCourses)>, // Common replacement which usually approved by the coordinators
+    pub course_to_bank: HashMap<CourseId, String>,
+    pub catalog_replacements: HashMap<CourseId, OptionalCourses>, // All replacements which are mentioned in the catalog
+    pub common_replacements: HashMap<CourseId, OptionalCourses>, // Common replacement which usually approved by the coordinators
 }
 
 impl Catalog {
-    pub fn get_course_list(&self, name: &str) -> Vec<u32> {
+    pub fn get_course_list(&self, name: &str) -> Vec<CourseId> {
         let mut course_list_for_bank = Vec::new();
-        for (course_number, bank_name) in &self.course_to_bank {
+        for (course_id, bank_name) in &self.course_to_bank {
             if *bank_name == name {
-                course_list_for_bank.push(*course_number);
+                course_list_for_bank.push(course_id.to_string());
             }
         }
         course_list_for_bank
