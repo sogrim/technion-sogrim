@@ -21,9 +21,9 @@ pub struct UserDetails {
 }
 
 impl UserDetails {
-    pub fn get_mut_course_status(&mut self, number: u32) -> Option<&mut CourseStatus> {
+    pub fn get_mut_course_status(&mut self, id: &str) -> Option<&mut CourseStatus> {
         for course_status in &mut self.degree_status.course_statuses.iter_mut().rev() {
-            if course_status.course.number == number {
+            if course_status.course.id == id {
                 return Some(course_status);
             }
         }
@@ -35,19 +35,19 @@ impl UserDetails {
     // 2. If one of the courses type is bank_name returns the last course with the corresponding type.
     pub fn find_best_match_for_course(
         &mut self,
-        optional_courses_list: &[u32],
+        optional_courses_list: &[String],
         bank_name: &str,
-        ignore_courses: &[u32],
+        ignore_courses: &[String],
     ) -> Option<&mut CourseStatus> {
         // TODO: think about how to support student with the same course number twice (for example Ben with his 2 projects)
         let mut best_match = None;
         for course_status in &mut self.degree_status.course_statuses.iter_mut().rev() {
-            if optional_courses_list.contains(&course_status.course.number) {
+            if optional_courses_list.contains(&course_status.course.id) {
                 if best_match.is_none() && course_status.r#type.is_none() {
                     best_match = Some(course_status);
                 } else if let Some(course_type) = course_status.r#type.clone() {
                     if course_type == bank_name
-                        && !ignore_courses.contains(&course_status.course.number)
+                        && !ignore_courses.contains(&course_status.course.id)
                     {
                         best_match = Some(course_status);
                         break;

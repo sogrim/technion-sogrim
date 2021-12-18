@@ -6,10 +6,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
+pub type CourseId = String;
+
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Course {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub number: u32,
+    pub id: CourseId,
     pub credit: f32,
     pub name: String,
 }
@@ -34,7 +36,7 @@ pub struct CourseStatus {
 }
 
 impl CourseStatus {
-    const MALAG_EXCEPTIONS: &'static [u32] = &[324033]; //TODO think about this
+    const MALAG_EXCEPTIONS: &'static [&'static str] = &["324033"]; //TODO think about this
 
     pub fn passed(&self) -> bool {
         match &self.grade {
@@ -81,11 +83,12 @@ impl CourseStatus {
     }
 
     pub fn is_malag(&self) -> bool {
-        self.course.number / 1000 == 324 && !Self::MALAG_EXCEPTIONS.contains(&self.course.number)
+        self.course.id.starts_with("324")
+            && !Self::MALAG_EXCEPTIONS.contains(&self.course.id.as_str())
         // TODO: check if there are more terms
     }
     pub fn is_sport(&self) -> bool {
-        self.course.number / 1000 == 394 // TODO: check if there are more terms
+        self.course.id.starts_with("394") // TODO: check if there are more terms
     }
 }
 
@@ -163,17 +166,17 @@ fn contains_course_number(str: &str) -> bool {
     false
 }
 
-pub fn vec_to_map(vec: Vec<Course>) -> HashMap<u32, Course> {
+pub fn vec_to_map(vec: Vec<Course>) -> HashMap<CourseId, Course> {
     HashMap::from_iter(
         vec.clone()
             .iter()
-            .map(|course| course.number)
+            .map(|course| course.id.clone())
             .zip(vec.into_iter()),
     )
 }
 
 pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
-    let mut courses = HashMap::<u32, CourseStatus>::new();
+    let mut courses = HashMap::<String, CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter: f32 = 0.0;
@@ -231,7 +234,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
             continue;
         }
         *courses
-            .entry(course_status.course.number)
+            .entry(course_status.course.id.clone())
             .or_insert(course_status) = course_status.clone();
     }
     let mut vec_courses: Vec<_> = courses.into_values().collect();
@@ -261,32 +264,35 @@ fn parse_course_status_ug_format(line: String) -> Result<(Course, Option<Grade>)
     let credit = line_parts[1]
         .parse::<f32>()
         .map_err(|err| ErrorBadRequest(err.to_string()))?;
-    let number = course_parts
-        .last()
-        .ok_or_else(|| ErrorBadRequest("Parse Error: Empty Course Parts"))?
-        .parse::<u32>()
-        .map_err(|err| ErrorBadRequest(err.to_string()))?;
+    let id = {
+        let number = course_parts
+            .last()
+            .ok_or_else(|| ErrorBadRequest("Parse Error: Empty Course Parts"))?;
+        if number.parse::<f32>().is_ok() {
+            Ok(String::from(*number))
+        } else {
+            Err(ErrorBadRequest("Bad Format"))
+        }?
+    };
     let name = course_parts[..course_parts.len() - 1]
         .join(" ")
         .trim()
         .to_string();
-    Ok((
-        Course {
-            credit,
-            number,
-            name,
-        },
-        grade,
-    ))
+    Ok((Course { id, credit, name }, grade))
 }
 
 fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>), Error> {
-    let number = line
-        .split(' ')
-        .next()
-        .ok_or_else(|| ErrorBadRequest("Bad Format"))?
-        .parse::<u32>()
-        .map_err(|err| ErrorBadRequest(err.to_string()))?;
+    let id = {
+        let number = line
+            .split(' ')
+            .next()
+            .ok_or_else(|| ErrorBadRequest("Bad Format"))?;
+        if number.parse::<f32>().is_ok() {
+            Ok(String::from(number))
+        } else {
+            Err(ErrorBadRequest("Bad Format"))
+        }?
+    };
 
     let mut index = 0;
     let mut credit = 0.0;
@@ -331,14 +337,7 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
         "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
         _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
     };
-    Ok((
-        Course {
-            number,
-            credit,
-            name,
-        },
-        grade,
-    ))
+    Ok((Course { id, credit, name }, grade))
 }
 
 #[cfg(test)]
