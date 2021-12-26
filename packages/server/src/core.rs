@@ -1,4 +1,4 @@
-use crate::catalog::{Catalog, OptionalCourses};
+use crate::catalog::{Catalog, OptionalReplacements};
 use crate::course::{Course, CourseBank, CourseId, CourseState, CourseStatus};
 use crate::user::UserDetails;
 use bson::doc;
@@ -23,8 +23,8 @@ pub struct Mandatory {
     // [[1,2],
     //  [3,4],
     //  [5,6]]
-    // The user needs to pass the courses: 1 or 2, and 3 or 4, and 5 or 6.
-    courses: Vec<OptionalCourses>,
+    // The user needs to pass the courses: (1 or 2), and (3 or 4), and (5 or 6).
+    courses: Vec<OptionalReplacements>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -110,6 +110,7 @@ pub struct CreditInfo {
     sum_credits: f32,
     count_courses: u32,
     missing_credits: f32,
+    handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user
 }
 
 pub fn set_order(
@@ -177,84 +178,83 @@ struct BankRuleHandler<'a> {
     courses: &'a HashMap<CourseId, Course>,
     credit_overflow: f32,
     courses_overflow: u32,
-    catalog_replacements: &'a HashMap<CourseId, OptionalCourses>,
-    common_replacements: &'a HashMap<CourseId, OptionalCourses>,
+    catalog_replacements: &'a HashMap<CourseId, OptionalReplacements>,
+    common_replacements: &'a HashMap<CourseId, OptionalReplacements>,
     ignore_courses: Vec<CourseId>,
 }
 
 impl<'a> BankRuleHandler<'a> {
-    fn create_optional_courses_list(&self, course_id: &str) -> OptionalCourses {
-        let mut course_list = vec![course_id.to_string()];
-        if let Some(optional_replacements) = self.catalog_replacements.get(course_id) {
-            course_list.append(&mut (optional_replacements.clone()));
-        }
-        if let Some(optional_replacements) = self.common_replacements.get(course_id) {
-            course_list.append(&mut (optional_replacements.clone()));
-        }
-        course_list
-    }
-
     fn iterate_course_list(&mut self) -> CreditInfo {
         // return sum_credits, count_courses, missing_points
         let mut sum_credits = self.credit_overflow;
         let mut count_courses = self.courses_overflow;
         let mut missing_credits = 0.0;
-        for course_id in self.course_list.iter() {
-            let mut course_added = false;
-            let optional_courses = self.create_optional_courses_list(course_id);
-            if let Some(course_status) = self.user.find_best_match_for_course(
-                &optional_courses,
-                &self.bank_name,
-                &self.ignore_courses,
-            ) {
-                course_added = set_type_and_add_credits(
+        let mut handled_courses = HashMap::new();
+        for course_status in self.user.degree_status.course_statuses.iter_mut() {
+            let mut course_chosen_for_bank = false;
+            if course_status.valid_for_bank(&self.bank_name) {
+                if self.course_list.contains(&course_status.course.id) {
+                    course_chosen_for_bank = true;
+                    handled_courses.insert(course_status.course.id.clone(), course_status.course.id.clone());
+                } else {
+                    // check if the course is a replacement for a course in course list
+                    // First try to find catalog replacements
+                    for course_id in &self.course_list {
+                        if let Some(catalog_replacements) = &self.catalog_replacements.get(course_id) {
+                            if catalog_replacements.contains(&course_status.course.id) {
+                                course_chosen_for_bank = true;
+                                handled_courses.insert(course_id.clone(), course_status.course.id.clone());
+                                course_status.set_msg(format!(
+                                    "קורס זה מחליף את הקורס {}",
+                                    self.courses[course_id].name
+                                ));
+                                if course_status.course.credit < self.courses[course_id].credit {
+                                    missing_credits +=
+                                        self.courses[course_id].credit - course_status.course.credit;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if !course_chosen_for_bank {
+                        // Didn't find a catalog replacement so trying to find a common replacement
+                        for course_id in &self.course_list {
+                            if let Some(common_replacements) = &self.common_replacements.get(course_id) {
+                                if common_replacements.contains(&course_status.course.id) {
+                                    course_chosen_for_bank = true;
+                                    handled_courses.insert(course_id.clone(), course_status.course.id.clone());
+                                    course_status.set_msg(format!(
+                                        "הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו",
+                                        self.courses[course_id].name
+                                    ));
+                                    if course_status.course.credit < self.courses[course_id].credit {
+                                        missing_credits +=
+                                            self.courses[course_id].credit - course_status.course.credit;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if course_chosen_for_bank {
+                if set_type_and_add_credits(
                     course_status,
                     self.bank_name.clone(),
                     &mut sum_credits,
-                );
-                if course_status.course.id != *course_id {
-                    // A replacment was chosen from catalog replacements or common replacements
-                    if let Some(catalog_replacements) =
-                        self.catalog_replacements.get(&course_status.course.id)
-                    {
-                        if catalog_replacements.contains(&course_status.course.id) {
-                            course_status.set_msg(format!(
-                                "קורס זה מחליף את הקורס {}",
-                                self.courses[course_id].name
-                            ));
-                        } else {
-                            course_status.set_msg(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_id].name));
-                        }
-                    } else {
-                        course_status.set_msg(format!("הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", self.courses[course_id].name));
-                    }
-
-                    if course_status.course.credit < self.courses[course_id].credit {
-                        missing_credits +=
-                            self.courses[course_id].credit - course_status.course.credit;
-                    }
+                ) {
+                    count_courses += 1;
                 }
-
-                // After choosing the correct course for the total credits, we want to ignore all other replacements for this course.
-                // TODO: verify with the coordinators that a course and its replacement can't be both added to the total credit.
-                for course_id in optional_courses {
-                    if let Some(course_status) = self.user.get_mut_course_status(&course_id) {
-                        if course_status.valid_for_bank(&self.bank_name) {
-                            course_status.set_type(self.bank_name.clone());
-                            course_status.modified = false;
-                            self.ignore_courses.push(course_status.course.id.clone());
-                        }
-                    }
-                }
-            }
-            if course_added {
-                count_courses += 1;
             }
         }
+
         CreditInfo {
             sum_credits,
             count_courses,
             missing_credits,
+            handled_courses,
         }
     }
 
@@ -263,16 +263,7 @@ impl<'a> BankRuleHandler<'a> {
 
         // handle courses in course list which the user didn't complete or any replacement for them
         for course_id in &self.course_list {
-            let optional_courses = self.create_optional_courses_list(course_id);
-            if self
-                .user
-                .find_best_match_for_course(
-                    &optional_courses,
-                    &self.bank_name,
-                    &self.ignore_courses,
-                )
-                .is_none()
-            {
+            if !credit_info.handled_courses.contains_key(course_id) {
                 self.user.degree_status.course_statuses.push(CourseStatus {
                     course: self.courses[course_id].clone(),
                     state: Some(CourseState::NotComplete),
@@ -334,18 +325,9 @@ impl<'a> BankRuleHandler<'a> {
             //check if the user completed one of the chains.
             let mut completed_chain = true;
             for course_id in chain {
-                let optional_courses = self.create_optional_courses_list(course_id);
-                let course_status = self.user.find_best_match_for_course(
-                    &optional_courses,
-                    &self.bank_name,
-                    &self.ignore_courses,
-                );
-                if let Some(course_status) = course_status {
-                    if course_status.passed() {
-                        chain_done.push(course_status.course.name.clone());
-                    } else {
-                        completed_chain = false;
-                        break;
+                if let Some(course_id) = credit_info.handled_courses.get(course_id) {
+                    if self.user.get_course_status(course_id).unwrap().passed() {
+                        chain_done.push(course_id.clone());
                     }
                 } else {
                     completed_chain = false;
@@ -375,16 +357,11 @@ impl<'a> BankRuleHandler<'a> {
                     let mut completed_current_demand = false;
                     for course_id in courses {
                         // check if the user completed one of courses
-                        let optional_courses = self.create_optional_courses_list(course_id);
-                        let course_status = self.user.find_best_match_for_course(
-                            &optional_courses,
-                            &self.bank_name,
-                            &self.ignore_courses,
-                        );
-                        if let Some(course_status) = course_status {
-                            // We assume that there is no overlap in mandatory courses from different groups
-                            completed_current_demand |= course_status.passed();
-                            break;
+                        if let Some(course_id) = credit_info.handled_courses.get(course_id) {
+                            if self.user.get_course_status(course_id).unwrap().passed() {
+                                completed_current_demand = true;
+                                break;
+                            }
                         }
                     }
                     completed_group &= completed_current_demand;
@@ -400,15 +377,9 @@ impl<'a> BankRuleHandler<'a> {
             let mut count_courses = 0;
             let mut chosen_courses = Vec::new();
             for course_id in &specialization_group.course_list {
-                let optional_courses = self.create_optional_courses_list(course_id);
-                let course_status = self.user.find_best_match_for_course(
-                    &optional_courses,
-                    &self.bank_name,
-                    &self.ignore_courses,
-                );
-                if let Some(course_status) = course_status {
-                    if course_status.passed() && course_status.specialization_group_name.is_none() {
-                        chosen_courses.push(course_status.course.id.clone());
+                if let Some(course_id) = credit_info.handled_courses.get(course_id) {
+                    if self.user.get_course_status(course_id).unwrap().passed() {
+                        chosen_courses.push(course_id.clone());
                         count_courses += 1;
                     }
                 }
