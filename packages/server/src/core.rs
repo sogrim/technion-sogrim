@@ -326,8 +326,9 @@ impl<'a> BankRuleHandler<'a> {
             let mut completed_chain = true;
             for course_id in chain {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
-                    if self.user.get_course_status(course_id).unwrap().passed() {
-                        chain_done.push(course_id.clone());
+                    let course_status = self.user.get_course_status(course_id).unwrap();
+                    if course_status.passed() {
+                        chain_done.push(course_status.course.name.clone());
                     }
                 } else {
                     completed_chain = false;
@@ -358,7 +359,8 @@ impl<'a> BankRuleHandler<'a> {
                     for course_id in courses {
                         // check if the user completed one of courses
                         if let Some(course_id) = credit_info.handled_courses.get(course_id) {
-                            if self.user.get_course_status(course_id).unwrap().passed() {
+                            let course_status = self.user.get_course_status(course_id).unwrap();
+                            if course_status.passed() && course_status.specialization_group_name.is_none() {
                                 completed_current_demand = true;
                                 break;
                             }
@@ -378,7 +380,8 @@ impl<'a> BankRuleHandler<'a> {
             let mut chosen_courses = Vec::new();
             for course_id in &specialization_group.course_list {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
-                    if self.user.get_course_status(course_id).unwrap().passed() {
+                    let course_status = self.user.get_course_status(course_id).unwrap();
+                    if course_status.passed() && course_status.specialization_group_name.is_none() {
                         chosen_courses.push(course_id.clone());
                         count_courses += 1;
                     }
@@ -1485,7 +1488,7 @@ mod tests {
             .await
             .expect("failed to connect to db");
         println!("Connected successfully.");
-        let contents = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
+        let contents = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
             .expect("Something went wrong reading the file");
 
         let course_statuses =
