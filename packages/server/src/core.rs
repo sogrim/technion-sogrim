@@ -236,14 +236,12 @@ impl<'a> BankRuleHandler<'a> {
                 }
             }
 
-            if course_chosen_for_bank {
-                if set_type_and_add_credits(
+            if course_chosen_for_bank && set_type_and_add_credits(
                     course_status,
                     self.bank_name.clone(),
                     &mut sum_credits,
                 ) {
-                    count_courses += 1;
-                }
+                count_courses += 1;
             }
         }
 
