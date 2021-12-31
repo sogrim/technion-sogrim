@@ -759,6 +759,22 @@ mod tests {
         ]);
     }
 
+    #[macro_export]
+    macro_rules! create_bank_rule_handler {
+        ($user:expr, $bank_name:expr, $course_list:expr, $credit_overflow:expr, $courses_overflow:expr) => {
+                BankRuleHandler {
+                    user: $user,
+                    bank_name: $bank_name,
+                    course_list: $course_list,
+                    courses: &COURSES,
+                    credit_overflow: $credit_overflow,
+                    courses_overflow: $courses_overflow,
+                    catalog_replacements: &HashMap::new(),
+                    common_replacements: &HashMap::new(),
+                }
+        };
+    }
+
     fn create_user() -> UserDetails {
         UserDetails {
             catalog: None,
@@ -865,16 +881,7 @@ mod tests {
             "2".to_string(),
             "3".to_string(),
         ];
-        let handle_bank_rule_processor = BankRuleHandler {
-            user: &mut user,
-            bank_name,
-            course_list,
-            courses: &COURSES,
-            credit_overflow: 0.0,
-            courses_overflow: 0,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
-        };
+        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let mut missing_credits_dummy = 0.0;
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
         // check it adds the type
@@ -930,16 +937,7 @@ mod tests {
             "1".to_string(),
             "2".to_string(),
         ];
-        let handle_bank_rule_processor = BankRuleHandler {
-            user: &mut user,
-            bank_name,
-            course_list,
-            courses: &COURSES,
-            credit_overflow: 5.5,
-            courses_overflow: 0,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
-        };
+        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 5.5, 0);
         let res = handle_bank_rule_processor.accumulate_credit();
         // check it adds the type
         assert_eq!(user.degree_status.course_statuses[0].r#type, None);
@@ -973,16 +971,7 @@ mod tests {
             "1".to_string(),
             "2".to_string(),
         ];
-        let handle_bank_rule_processor = BankRuleHandler {
-            user: &mut user,
-            bank_name,
-            course_list,
-            courses: &COURSES,
-            credit_overflow: 0.0,
-            courses_overflow: 1,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
-        };
+        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 1);
         let mut count_courses = 0;
         let res = handle_bank_rule_processor.accumulate_courses(&mut count_courses);
         // check it adds the type
@@ -1029,16 +1018,7 @@ mod tests {
         ];
 
         let mut chain_done = Vec::new();
-        let handle_bank_rule_processor = BankRuleHandler {
-            user: &mut user,
-            bank_name: bank_name.clone(),
-            course_list: course_list.clone(),
-            courses: &HashMap::new(),
-            credit_overflow: 0.0,
-            courses_overflow: 0,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
-        };
+        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name.clone(), course_list.clone(), 0.0, 0);
         // user didn't finish a chain
         let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
 
@@ -1089,16 +1069,7 @@ mod tests {
         let mut user = create_user();
         let bank_name = "MALAG".to_string();
         let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
-        let handle_bank_rule_processor = BankRuleHandler {
-            user: &mut user,
-            bank_name,
-            course_list,
-            courses: &HashMap::new(),
-            credit_overflow: 0.0,
-            courses_overflow: 0,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
-        };
+        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let res = handle_bank_rule_processor.malag();
 
         // check it adds the type
@@ -1163,16 +1134,7 @@ mod tests {
         user.degree_status.course_statuses[0].modified = true;
         let bank_name = "hova".to_string();
         let course_list = vec!["104031".to_string(), "104166".to_string()]; // although 104031 is in the list, it shouldn't be taken because the user modified its type
-        let handle_bank_rule_processor = BankRuleHandler {
-            user: &mut user,
-            bank_name,
-            course_list,
-            courses: &COURSES,
-            credit_overflow: 0.0,
-            courses_overflow: 0,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
-        };
+        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let mut missing_credits_dummy = 0.0;
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
 
@@ -1223,16 +1185,7 @@ mod tests {
 
         course_list.extend(degree_status_handler.get_modified_courses(&bank_name)); // should take only 114052
 
-        let handle_bank_rule_processor = BankRuleHandler {
-            user: &mut user,
-            bank_name,
-            course_list,
-            courses: &HashMap::new(),
-            credit_overflow: 0.0,
-            courses_overflow: 0,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
-        };
+        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
 
         // check it adds the type
@@ -1320,16 +1273,7 @@ mod tests {
             ],
             groups_number: 2,
         };
-        let handle_bank_rule_processor = BankRuleHandler {
-            user: &mut user,
-            bank_name,
-            course_list,
-            courses: &COURSES,
-            credit_overflow: 0.0,
-            courses_overflow: 0,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
-        };
+        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let mut completed_groups = Vec::<String>::new();
         let res = handle_bank_rule_processor
             .specialization_group(&specialization_groups, &mut completed_groups);
