@@ -176,9 +176,9 @@ pub fn vec_to_map(vec: Vec<Course>) -> HashMap<CourseId, Course> {
 }
 
 pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
-
     // Sanity validation
-    if !(data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים")){
+    if !(data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
+    {
         return Err(ErrorBadRequest("Bad Format"));
     }
 
@@ -201,11 +201,15 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
                 1.0
             };
 
-            let semester_term = match (is_spring, is_summer, is_winter){
+            let semester_term = match (is_spring, is_summer, is_winter) {
                 (true, _, _) => "אביב",
                 (_, true, _) => "קיץ",
                 (_, _, true) => "חורף",
-                _ => return Err(ErrorInternalServerError("Something really unexpected happened")),
+                _ => {
+                    return Err(ErrorInternalServerError(
+                        "Something really unexpected happened",
+                    ))
+                }
             };
 
             format!("{}_{}", semester_term, semester_counter)
@@ -317,11 +321,11 @@ mod tests {
 
         let mut from_pdf_bad_prefix = from_pdf.clone();
         from_pdf_bad_prefix.replace_range(0..0, "א");
-        
+
         assert!(parse_copy_paste_data(&from_pdf_bad_prefix).is_err());
-        
+
         let from_pdf_bad_content = from_pdf.replace("סוף גיליון ציונים", "");
-        
+
         assert!(parse_copy_paste_data(&from_pdf_bad_content).is_err());
     }
 }

@@ -194,13 +194,18 @@ impl<'a> BankRuleHandler<'a> {
             if course_status.valid_for_bank(&self.bank_name) {
                 if self.course_list.contains(&course_status.course.id) {
                     course_chosen_for_bank = true;
-                    handled_courses.insert(course_status.course.id.clone(), course_status.course.id.clone());
+                    handled_courses.insert(
+                        course_status.course.id.clone(),
+                        course_status.course.id.clone(),
+                    );
                 } else {
                     // check if course_status is a replacement for a course in course list
                     let mut course_id_in_list = None;
                     // First try to find catalog replacements
                     for course_id in &self.course_list {
-                        if let Some(catalog_replacements) = &self.catalog_replacements.get(course_id) {
+                        if let Some(catalog_replacements) =
+                            &self.catalog_replacements.get(course_id)
+                        {
                             if catalog_replacements.contains(&course_status.course.id) {
                                 course_id_in_list = Some(course_id);
                                 course_status.set_msg(format!(
@@ -214,7 +219,9 @@ impl<'a> BankRuleHandler<'a> {
                     if course_id_in_list.is_none() {
                         // Didn't find a catalog replacement so trying to find a common replacement
                         for course_id in &self.course_list {
-                            if let Some(common_replacements) = &self.common_replacements.get(course_id) {
+                            if let Some(common_replacements) =
+                                &self.common_replacements.get(course_id)
+                            {
                                 if common_replacements.contains(&course_status.course.id) {
                                     course_id_in_list = Some(course_id);
                                     course_status.set_msg(format!(
@@ -230,17 +237,16 @@ impl<'a> BankRuleHandler<'a> {
                         course_chosen_for_bank = true;
                         handled_courses.insert(course_id.clone(), course_status.course.id.clone());
                         if course_status.course.credit < self.courses[course_id].credit {
-                            missing_credits += self.courses[course_id].credit - course_status.course.credit;
+                            missing_credits +=
+                                self.courses[course_id].credit - course_status.course.credit;
                         }
                     }
                 }
             }
 
-            if course_chosen_for_bank && set_type_and_add_credits(
-                    course_status,
-                    self.bank_name.clone(),
-                    &mut sum_credits,
-                ) {
+            if course_chosen_for_bank
+                && set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits)
+            {
                 count_courses += 1;
             }
         }
@@ -353,7 +359,9 @@ impl<'a> BankRuleHandler<'a> {
                         // check if the user completed one of courses
                         if let Some(course_id) = credit_info.handled_courses.get(course_id) {
                             let course_status = self.user.get_course_status(course_id).unwrap();
-                            if course_status.passed() && course_status.specialization_group_name.is_none() {
+                            if course_status.passed()
+                                && course_status.specialization_group_name.is_none()
+                            {
                                 completed_current_demand = true;
                                 break;
                             }
@@ -679,8 +687,8 @@ mod tests {
     };
     use actix_rt::test;
     use dotenv::dotenv;
-    use std::str::FromStr;
     use lazy_static::lazy_static;
+    use std::str::FromStr;
 
     lazy_static! {
         static ref COURSES: HashMap<String, Course> = HashMap::from([
@@ -762,16 +770,16 @@ mod tests {
     #[macro_export]
     macro_rules! create_bank_rule_handler {
         ($user:expr, $bank_name:expr, $course_list:expr, $credit_overflow:expr, $courses_overflow:expr) => {
-                BankRuleHandler {
-                    user: $user,
-                    bank_name: $bank_name,
-                    course_list: $course_list,
-                    courses: &COURSES,
-                    credit_overflow: $credit_overflow,
-                    courses_overflow: $courses_overflow,
-                    catalog_replacements: &HashMap::new(),
-                    common_replacements: &HashMap::new(),
-                }
+            BankRuleHandler {
+                user: $user,
+                bank_name: $bank_name,
+                course_list: $course_list,
+                courses: &COURSES,
+                credit_overflow: $credit_overflow,
+                courses_overflow: $courses_overflow,
+                catalog_replacements: &HashMap::new(),
+                common_replacements: &HashMap::new(),
+            }
         };
     }
 
@@ -881,7 +889,8 @@ mod tests {
             "2".to_string(),
             "3".to_string(),
         ];
-        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let mut missing_credits_dummy = 0.0;
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
         // check it adds the type
@@ -937,7 +946,8 @@ mod tests {
             "1".to_string(),
             "2".to_string(),
         ];
-        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 5.5, 0);
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name, course_list, 5.5, 0);
         let res = handle_bank_rule_processor.accumulate_credit();
         // check it adds the type
         assert_eq!(user.degree_status.course_statuses[0].r#type, None);
@@ -971,7 +981,8 @@ mod tests {
             "1".to_string(),
             "2".to_string(),
         ];
-        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 1);
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 1);
         let mut count_courses = 0;
         let res = handle_bank_rule_processor.accumulate_courses(&mut count_courses);
         // check it adds the type
@@ -1018,13 +1029,14 @@ mod tests {
         ];
 
         let mut chain_done = Vec::new();
-        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name.clone(), course_list.clone(), 0.0, 0);
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name.clone(), course_list.clone(), 0.0, 0);
         // user didn't finish a chain
         let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
 
         assert!(chain_done.is_empty());
         assert_eq!(res, 7.0);
-        
+
         // ---------------------------------------------------------------------------
         user = create_user();
         chains.push(vec!["114052".to_string(), "114054".to_string()]); // user finished the chain [114052, 114054]
@@ -1060,7 +1072,7 @@ mod tests {
             chain_done,
             vec!["פיסיקה 2".to_string(), "פיסיקה 3".to_string()]
         );
-        assert_eq!(res, 7.0);   
+        assert_eq!(res, 7.0);
     }
 
     #[test]
@@ -1069,7 +1081,8 @@ mod tests {
         let mut user = create_user();
         let bank_name = "MALAG".to_string();
         let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
-        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let res = handle_bank_rule_processor.malag();
 
         // check it adds the type
@@ -1134,7 +1147,8 @@ mod tests {
         user.degree_status.course_statuses[0].modified = true;
         let bank_name = "hova".to_string();
         let course_list = vec!["104031".to_string(), "104166".to_string()]; // although 104031 is in the list, it shouldn't be taken because the user modified its type
-        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let mut missing_credits_dummy = 0.0;
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
 
@@ -1185,7 +1199,8 @@ mod tests {
 
         course_list.extend(degree_status_handler.get_modified_courses(&bank_name)); // should take only 114052
 
-        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let res = handle_bank_rule_processor.all(&mut missing_credits_dummy);
 
         // check it adds the type
@@ -1273,7 +1288,8 @@ mod tests {
             ],
             groups_number: 2,
         };
-        let handle_bank_rule_processor = create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let mut completed_groups = Vec::<String>::new();
         let res = handle_bank_rule_processor
             .specialization_group(&specialization_groups, &mut completed_groups);
@@ -1301,7 +1317,7 @@ mod tests {
         );
     }
 
-    async fn run_calculate_degree_status(file_name: &str) -> UserDetails{
+    async fn run_calculate_degree_status(file_name: &str) -> UserDetails {
         dotenv().ok();
         let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
             .await
