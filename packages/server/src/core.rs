@@ -1301,8 +1301,7 @@ mod tests {
         );
     }
 
-    #[test]
-    async fn test_legendary_function() {
+    async fn run_calculate_degree_status(file_name: &str) -> UserDetails{
         dotenv().ok();
         let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
             .await
@@ -1316,7 +1315,7 @@ mod tests {
             .await
             .expect("failed to connect to db");
         println!("Connected successfully.");
-        let contents = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
+        let contents = std::fs::read_to_string(format!("../docs/{}", file_name))
             .expect("Something went wrong reading the file");
 
         let course_statuses =
@@ -1338,14 +1337,19 @@ mod tests {
         let vec_courses = db::services::get_all_courses(&client)
             .await
             .expect("failed to get all courses");
-
         calculate_degree_status(catalog, course::vec_to_map(vec_courses), &mut user);
+        user
+    }
+
+    #[test]
+    async fn test_core_function_missing_credits() {
+        let user = run_calculate_degree_status("pdf_ctrl_c_ctrl_v.txt").await;
         //FOR VIEWING IN JSON FORMAT
-        std::fs::write(
-            "degree_status.json",
-            serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
-        )
-        .expect("Unable to write file");
+        // std::fs::write(
+        //     "degree_status.json",
+        //     serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
+        // )
+        // .expect("Unable to write file");
 
         // check output
         assert_eq!(
@@ -1452,6 +1456,95 @@ mod tests {
         assert_eq!(
             user.degree_status.overflow_msgs[2],
             "יש לסטודנט 5.5 נקודות עודפות".to_string()
+        );
+    }
+    #[test]
+    async fn test_core_function_overflow_credits() {
+        let user = run_calculate_degree_status("pdf_ctrl_c_ctrl_v_2.txt").await;
+        //FOR VIEWING IN JSON FORMAT
+        // std::fs::write(
+        //     "degree_status.json",
+        //     serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
+        // )
+        // .expect("Unable to write file");
+
+        // check output
+        assert_eq!(
+            user.degree_status.course_bank_requirements[0].credit_completed,
+            1.0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[1].credit_completed,
+            6.0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[2].course_completed,
+            0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[3].credit_completed,
+            9.0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].credit_completed,
+            0.0
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].course_completed,
+            0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].credit_completed,
+            8.0
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].message,
+            Some("הסטודנט השלים את השרשרת הבאה:\nפיסיקה 2פ',".to_string())
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].credit_requirement,
+            Some(73.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].credit_completed,
+            73.5
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[7].credit_requirement,
+            Some(6.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[7].credit_completed,
+            5.5
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[8].credit_requirement,
+            Some(2.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[8].credit_completed,
+            0.0
+        );
+
+        assert_eq!(
+            user.degree_status.overflow_msgs[0],
+            "עברו 1.5 נקודות מחובה לרשימה ב".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[1],
+            "עברו 0.5 נקודות משרשרת מדעית לרשימה ב".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[2],
+            "יש לסטודנט 0 נקודות עודפות".to_string()
         );
     }
 }
