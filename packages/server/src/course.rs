@@ -176,6 +176,12 @@ pub fn vec_to_map(vec: Vec<Course>) -> HashMap<CourseId, Course> {
 }
 
 pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
+    // Sanity validation
+    if !(data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
+    {
+        return Err(ErrorBadRequest("Bad Format"));
+    }
+
     let mut courses = HashMap::<String, CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
@@ -195,16 +201,15 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
                 1.0
             };
 
-            let semester_term = if is_spring {
-                "אביב"
-            } else if is_summer {
-                "קיץ"
-            } else if is_winter {
-                "חורף"
-            } else {
-                return Err(ErrorInternalServerError(
-                    "Something really unexpected happened",
-                ));
+            let semester_term = match (is_spring, is_summer, is_winter) {
+                (true, _, _) => "אביב",
+                (_, true, _) => "קיץ",
+                (_, _, true) => "חורף",
+                _ => {
+                    return Err(ErrorInternalServerError(
+                        "Something really unexpected happened",
+                    ))
+                }
             };
 
             format!("{}_{}", semester_term, semester_counter)
@@ -216,11 +221,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
             continue;
         }
 
-        let (course, grade) = if data.starts_with("גיליון ציונים") {
-            parse_course_status_pdf_format(line)?
-        } else {
-            parse_course_status_ug_format(line)?
-        };
+        let (course, grade) = parse_course_status_pdf_format(line)?;
 
         let mut course_status = CourseStatus {
             course,
@@ -239,46 +240,10 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     }
     let mut vec_courses: Vec<_> = courses.into_values().collect();
     vec_courses.append(&mut sport_courses);
+    if vec_courses.is_empty() {
+        return Err(ErrorBadRequest("Bad Format"));
+    }
     Ok(vec_courses)
-}
-
-fn parse_course_status_ug_format(line: String) -> Result<(Course, Option<Grade>), Error> {
-    let line_parts: Vec<_> = line.split('\t').collect();
-    let grade_str = line_parts[0];
-    let grade = match grade_str.parse::<u8>() {
-        Ok(num) => Some(Grade::Grade(num)),
-        Err(_) => {
-            if grade_str == "פטור ללא ניקוד" {
-                Some(Grade::ExemptionWithoutCredit)
-            } else if grade_str == "פטור עם ניקוד" {
-                Some(Grade::ExemptionWithCredit)
-            } else if grade_str == "עבר" || grade_str == "נכשל" {
-                //TODO כתוב נכשל או שכתוב לא עבר?
-                Some(Grade::Binary(grade_str == "עבר"))
-            } else {
-                None
-            }
-        }
-    };
-    let course_parts: Vec<_> = line_parts[2].split_whitespace().collect();
-    let credit = line_parts[1]
-        .parse::<f32>()
-        .map_err(|err| ErrorBadRequest(err.to_string()))?;
-    let id = {
-        let number = course_parts
-            .last()
-            .ok_or_else(|| ErrorBadRequest("Parse Error: Empty Course Parts"))?;
-        if number.parse::<f32>().is_ok() {
-            Ok(String::from(*number))
-        } else {
-            Err(ErrorBadRequest("Bad Format"))
-        }?
-    };
-    let name = course_parts[..course_parts.len() - 1]
-        .join(" ")
-        .trim()
-        .to_string();
-    Ok((Course { id, credit, name }, grade))
 }
 
 fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>), Error> {
@@ -342,44 +307,25 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
 
 #[cfg(test)]
 mod tests {
-    #[allow(unused)]
     use super::*;
-    #[allow(unused)]
     use actix_rt::test;
 
-    // TODO: uncomment this test after we fix it
-    // #[allow(clippy::float_cmp)]
-    // #[test]
-    // async fn test_both_parsers() {
-    //     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
-    //         .expect("Something went wrong reading the file");
-    //     let from_ug = std::fs::read_to_string("../docs/ug_ctrl_c_ctrl_v.txt")
-    //         .expect("Something went wrong reading the file");
-    //     let mut courses_display_from_pdf =
-    //         parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
-    //     let mut courses_display_from_ug =
-    //         parse_copy_paste_data(&from_ug).expect("failed to parse ug data");
-    //     courses_display_from_pdf
-    //         .sort_by(|a, b| a.course.number.partial_cmp(&b.course.number).unwrap());
-    //     courses_display_from_ug
-    //         .sort_by(|a, b| a.course.number.partial_cmp(&b.course.number).unwrap());
-    //     for i in 0..courses_display_from_pdf.len() {
-    //         assert_eq!(
-    //             courses_display_from_ug[i].grade,
-    //             courses_display_from_pdf[i].grade
-    //         );
-    //         assert_eq!(
-    //             courses_display_from_ug[i].semester,
-    //             courses_display_from_pdf[i].semester
-    //         );
-    //         assert_eq!(
-    //             courses_display_from_ug[i].course.number,
-    //             courses_display_from_pdf[i].course.number
-    //         );
-    //         assert_eq!(
-    //             courses_display_from_ug[i].course.credit,
-    //             courses_display_from_pdf[i].course.credit
-    //         );
-    //     }
-    // }
+    #[test]
+    async fn test_pdf_parser() {
+        let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
+            .expect("Something went wrong reading the file");
+        let courses_display_from_pdf =
+            parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
+
+        assert_eq!(courses_display_from_pdf.len(), 41);
+
+        let mut from_pdf_bad_prefix = from_pdf.clone();
+        from_pdf_bad_prefix.replace_range(0..0, "א");
+
+        assert!(parse_copy_paste_data(&from_pdf_bad_prefix).is_err());
+
+        let from_pdf_bad_content = from_pdf.replace("סוף גיליון ציונים", "");
+
+        assert!(parse_copy_paste_data(&from_pdf_bad_content).is_err());
+    }
 }
