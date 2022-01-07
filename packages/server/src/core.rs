@@ -288,10 +288,12 @@ impl<'a> BankRuleHandler<'a> {
         credit_info.sum_credits
     }
 
-    pub fn malag(self) -> f32 {
+    pub fn malag(self, malag_courses: &Vec<CourseId>) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            if course_status.is_malag() {
+            if malag_courses.contains(&course_status.course.id)
+            // TODO: remove this line after we get the answer from the coordinates
+            || (course_status.course.id.starts_with("324") && course_status.course.credit == 2.0) {
                 set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
             }
         }
@@ -409,6 +411,7 @@ struct DegreeStatusHandler<'a> {
     course_banks: Vec<CourseBank>,
     catalog: Catalog,
     courses: HashMap<CourseId, Course>,
+    malag_courses: Vec<CourseId>,
     credits_overflow_map: HashMap<String, f32>,
     missing_credits_map: HashMap<String, f32>,
     courses_overflow_map: HashMap<String, f32>,
@@ -557,7 +560,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 count_courses = self.handle_courses_overflow(bank, *num_courses, count_courses);
                 completed = count_courses >= *num_courses;
             }
-            Rule::Malag => sum_credits = bank_rule_handler.malag(),
+            Rule::Malag => sum_credits = bank_rule_handler.malag(&self.malag_courses),
             Rule::Sport => sum_credits = bank_rule_handler.sport(),
             Rule::FreeChoice => sum_credits = bank_rule_handler.free_choice(),
             Rule::Chains(chains) => {
@@ -654,6 +657,7 @@ impl<'a> DegreeStatusHandler<'a> {
 pub fn calculate_degree_status(
     catalog: Catalog,
     courses: HashMap<CourseId, Course>,
+    malag_courses: Vec<CourseId>,
     user: &mut UserDetails,
 ) {
     let course_banks = set_order(&catalog.course_banks, &catalog.credit_overflows);
@@ -669,6 +673,7 @@ pub fn calculate_degree_status(
         course_banks,
         catalog,
         courses,
+        malag_courses,
         credits_overflow_map: HashMap::new(),
         missing_credits_map: HashMap::new(),
         courses_overflow_map: HashMap::new(),
@@ -1083,7 +1088,7 @@ mod tests {
         let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
         let handle_bank_rule_processor =
             create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
-        let res = handle_bank_rule_processor.malag();
+        let res = handle_bank_rule_processor.malag(&vec!["324057".to_string()]);
 
         // check it adds the type
         assert_eq!(user.degree_status.course_statuses[0].r#type, None);
@@ -1192,6 +1197,7 @@ mod tests {
             course_banks: Vec::new(),
             catalog,
             courses: HashMap::new(),
+            malag_courses: Vec::new(),
             credits_overflow_map: HashMap::new(),
             missing_credits_map: HashMap::new(),
             courses_overflow_map: HashMap::new(),
@@ -1353,7 +1359,11 @@ mod tests {
         let vec_courses = db::services::get_all_courses(&client)
             .await
             .expect("failed to get all courses");
-        calculate_degree_status(catalog, course::vec_to_map(vec_courses), &mut user);
+        let malag_courses = db::services::get_all_malags(&client)
+            .await
+            .expect("failed to get all malags")
+            [0].malag_list.clone();
+        calculate_degree_status(catalog, course::vec_to_map(vec_courses), malag_courses, &mut user);
         user
     }
 
@@ -1467,7 +1477,7 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.overflow_msgs[1],
-            "עברו 7.5 נקודות מבחירת העשרה לבחירה חופשית".to_string()
+            "עברו 6 נקודות מבחירת העשרה לבחירה חופשית".to_string()
         );
         assert_eq!(
             user.degree_status.overflow_msgs[2],

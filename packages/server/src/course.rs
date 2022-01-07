@@ -36,8 +36,6 @@ pub struct CourseStatus {
 }
 
 impl CourseStatus {
-    const MALAG_EXCEPTIONS: &'static [&'static str] = &["324033"]; //TODO think about this
-
     pub fn passed(&self) -> bool {
         match &self.grade {
             Some(grade) => match grade {
@@ -82,11 +80,6 @@ impl CourseStatus {
         self.specialization_group_name = Some(group_name.to_string());
     }
 
-    pub fn is_malag(&self) -> bool {
-        self.course.id.starts_with("324")
-            && !Self::MALAG_EXCEPTIONS.contains(&self.course.id.as_str())
-        // TODO: check if there are more terms
-    }
     pub fn is_sport(&self) -> bool {
         self.course.id.starts_with("394") // TODO: check if there are more terms
     }
@@ -97,6 +90,13 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Reshima A.
     pub rule: Rule,
     pub credit: Option<f32>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Malags {
+    #[serde(rename(serialize = "_id", deserialize = "_id"))]
+    pub id: bson::oid::ObjectId,
+    pub malag_list: Vec<CourseId>
 }
 
 #[derive(Clone, Debug, PartialEq)]

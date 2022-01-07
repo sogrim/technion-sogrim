@@ -1,6 +1,6 @@
 use crate::catalog::Catalog;
 use crate::config::CONFIG;
-use crate::course::Course;
+use crate::course::{Course, Malags};
 use crate::user::User;
 use actix_web::error::{self, Error};
 pub use bson::{doc, Document};
@@ -100,6 +100,12 @@ pub mod services {
         fn_name: get_all_courses,
         db_item: Course,
         db_coll_name: "Courses"
+    );
+
+    impl_get_all!(
+        fn_name: get_all_malags,
+        db_item: Malags,
+        db_coll_name: "Malags"
     );
 
     pub async fn find_and_update_user(
