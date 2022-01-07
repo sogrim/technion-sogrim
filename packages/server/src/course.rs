@@ -96,7 +96,7 @@ pub struct CourseBank {
 pub struct Malags {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id: bson::oid::ObjectId,
-    pub malag_list: Vec<CourseId>
+    pub malag_list: Vec<CourseId>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

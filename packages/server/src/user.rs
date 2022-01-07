@@ -174,9 +174,16 @@ pub async fn compute_degree_status(
     user_details.modified = false;
 
     let vec_courses = db::services::get_all_courses(&client).await?;
-    let malag_courses = db::services::get_all_malags(&client).await?[0].malag_list.clone(); // The collection malags contain one item with the list of all malags
-    
-    core::calculate_degree_status(catalog, course::vec_to_map(vec_courses), malag_courses, user_details);
+    let malag_courses = db::services::get_all_malags(&client).await?[0]
+        .malag_list
+        .clone(); // The collection malags contain one item with the list of all malags
+
+    core::calculate_degree_status(
+        catalog,
+        course::vec_to_map(vec_courses),
+        malag_courses,
+        user_details,
+    );
 
     //TODO: remove this, we work on course so no need to back patching.
     // for course_status in user_details.degree_status.course_statuses.iter_mut() {

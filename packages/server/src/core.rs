@@ -288,12 +288,15 @@ impl<'a> BankRuleHandler<'a> {
         credit_info.sum_credits
     }
 
-    pub fn malag(self, malag_courses: &Vec<CourseId>) -> f32 {
+    // TODO: remove this when removing the condition in the if statement
+    #[allow(clippy::float_cmp)]
+    pub fn malag(self, malag_courses: &[CourseId]) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
             if malag_courses.contains(&course_status.course.id)
             // TODO: remove this line after we get the answer from the coordinates
-            || (course_status.course.id.starts_with("324") && course_status.course.credit == 2.0) {
+            || (course_status.course.id.starts_with("324") && course_status.course.credit == 2.0)
+            {
                 set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
             }
         }
@@ -1361,9 +1364,15 @@ mod tests {
             .expect("failed to get all courses");
         let malag_courses = db::services::get_all_malags(&client)
             .await
-            .expect("failed to get all malags")
-            [0].malag_list.clone();
-        calculate_degree_status(catalog, course::vec_to_map(vec_courses), malag_courses, &mut user);
+            .expect("failed to get all malags")[0]
+            .malag_list
+            .clone();
+        calculate_degree_status(
+            catalog,
+            course::vec_to_map(vec_courses),
+            malag_courses,
+            &mut user,
+        );
         user
     }
 
