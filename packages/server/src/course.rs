@@ -347,7 +347,8 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
         }
         "עבר" => Some(Grade::Binary(true)),
         "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
-        "השלים" if clean_line.contains("לא") => Some(Grade::NotComplete),
+        "השלים" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
+        "השלים(מ)" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
         _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
     };
     Ok((Course { id, credit, name }, grade))
