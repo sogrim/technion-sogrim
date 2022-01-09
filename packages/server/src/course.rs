@@ -8,7 +8,7 @@ use std::iter::FromIterator;
 
 pub type CourseId = String;
 
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Course {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id: CourseId,
@@ -16,14 +16,14 @@ pub struct Course {
     pub name: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum CourseState {
     Complete,
     NotComplete,
     InProgress,
 }
 
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct CourseStatus {
     pub course: Course,
     pub state: Option<CourseState>,
@@ -183,6 +183,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     }
 
     let mut courses = HashMap::<String, CourseStatus>::new();
+    let mut asterik_courses = Vec::<CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter: f32 = 0.0;
@@ -217,11 +218,11 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
             semester
         };
 
-        if !contains_course_number(&line) || line.contains('*') {
+        if !contains_course_number(&line) {
             continue;
         }
 
-        let (course, grade) = parse_course_status_pdf_format(line)?;
+        let (course, grade) = parse_course_status_pdf_format(&line)?;
 
         let mut course_status = CourseStatus {
             course,
@@ -234,19 +235,71 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
             sport_courses.push(course_status);
             continue;
         }
-        *courses
-            .entry(course_status.course.id.clone())
-            .or_insert(course_status) = course_status.clone();
+        if line.contains('*') {
+            // If a student decides to retake a course for which he already had a grade,
+            // and then ends up not receiving a grade (לא השלים) for that course,
+            // The previous grade for this course is the valid one.
+            // Nevertheless, for some reason BOTH of the grades will appear with asteriks (*) in the grades pdf.
+            // Thus, to make sure we don't ignore these cases, we have to save a list of every asterik-marked course,
+            // and then search this list for courses who fall in this particular case, and fix their grade.
+            asterik_courses.push(course_status);
+        } else {
+            *courses
+                .entry(course_status.course.id.clone())
+                .or_insert(course_status) = course_status.clone();
+        }
     }
     let mut vec_courses: Vec<_> = courses.into_values().collect();
+
+    // Mark potential courses who fall in aformentioned case
+    let mut marked_courses = mark_asterik_courses(&vec_courses, asterik_courses.clone());
+    // Fix the grades for said courses
+    set_grades_for_marked_courses(&mut marked_courses, asterik_courses);
+
     vec_courses.append(&mut sport_courses);
+    vec_courses.append(&mut marked_courses);
     if vec_courses.is_empty() {
         return Err(ErrorBadRequest("Bad Format"));
     }
     Ok(vec_courses)
 }
 
-fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>), Error> {
+fn mark_asterik_courses(
+    courses: &[CourseStatus],
+    asterik_courses: Vec<CourseStatus>,
+) -> Vec<CourseStatus> {
+    // The canditate courses are those which appear ONLY in the asterik list, and have no grade (Option::None).
+    let mut marked_courses = Vec::<CourseStatus>::new();
+    for candidate in asterik_courses.into_iter() {
+        if !courses.iter().any(|c| c.course.id == candidate.course.id) && candidate.grade.is_none()
+        {
+            marked_courses.push(candidate);
+        }
+    }
+    marked_courses
+}
+
+fn set_grades_for_marked_courses(
+    marked_courses: &mut Vec<CourseStatus>,
+    asterik_courses: Vec<CourseStatus>,
+) {
+    // For each marked course, we iterate the asterik list in reverse to find
+    // the closest (most chronologically advanced) not-None grade with the same course id.
+    // This grade now counts as the valid grade for the marked course.
+    for marked_course in marked_courses.iter_mut() {
+        for asterik_course in asterik_courses.iter().rev() {
+            if marked_course.course.id == asterik_course.course.id && asterik_course.grade.is_some()
+            {
+                marked_course.grade = asterik_course.grade.clone();
+                break;
+            }
+        }
+    }
+    // Retain only courses whose grades were fixed from None to Some.
+    marked_courses.retain(|c| c.grade.is_some());
+}
+
+fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>), Error> {
     let id = {
         let number = line
             .split(' ')
