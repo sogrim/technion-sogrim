@@ -253,7 +253,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
                 .or_insert(course_status) = course_status.clone();
         }
     }
-    let mut vec_courses: Vec<_> = courses.into_values().collect();
+    let mut vec_courses = courses.into_values().collect::<Vec<_>>();
 
     // Fix the grades for said courses
     set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses.clone());
