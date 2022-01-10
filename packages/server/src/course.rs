@@ -43,6 +43,7 @@ impl CourseStatus {
                 Grade::Binary(val) => *val,
                 Grade::ExemptionWithoutCredit => true,
                 Grade::ExemptionWithCredit => true,
+                Grade::NotComplete => false,
             },
             None => false,
         }
@@ -105,6 +106,7 @@ pub enum Grade {
     Binary(bool),
     ExemptionWithoutCredit,
     ExemptionWithCredit,
+    NotComplete,
 }
 
 impl Serialize for Grade {
@@ -118,6 +120,7 @@ impl Serialize for Grade {
             Grade::Binary(_) => serializer.serialize_str("נכשל"),
             Grade::ExemptionWithoutCredit => serializer.serialize_str("פטור ללא ניקוד"),
             Grade::ExemptionWithCredit => serializer.serialize_str("פטור עם ניקוד"),
+            Grade::NotComplete => serializer.serialize_str("לא השלים"),
         }
     }
 }
@@ -139,6 +142,7 @@ impl<'de> Visitor<'de> for StrVisitor {
             "נכשל" => Ok(Grade::Binary(false)),
             "פטור ללא ניקוד" => Ok(Grade::ExemptionWithoutCredit),
             "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
+            "לא השלים" => Ok(Grade::NotComplete),
             _ if v.parse::<u8>().is_ok() => Ok(Grade::Grade(v.parse::<u8>().unwrap())),
             _ => Err(Err::invalid_type(Unexpected::Str(v), &self)),
         }
@@ -183,6 +187,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     }
 
     let mut courses = HashMap::<String, CourseStatus>::new();
+    let mut asterisk_courses = Vec::<CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter: f32 = 0.0;
@@ -217,11 +222,11 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
             semester
         };
 
-        if !contains_course_number(&line) || line.contains('*') {
+        if !contains_course_number(&line) {
             continue;
         }
 
-        let (course, grade) = parse_course_status_pdf_format(line)?;
+        let (course, grade) = parse_course_status_pdf_format(&line)?;
 
         let mut course_status = CourseStatus {
             course,
@@ -234,21 +239,63 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
             sport_courses.push(course_status);
             continue;
         }
-        *courses
-            .entry(course_status.course.id.clone())
-            .or_insert(course_status) = course_status.clone();
+        if line.contains('*') {
+            // If a student decides to retake a course for which he already had a grade,
+            // and then ends up not receiving a grade (לא השלים) for that course,
+            // The previous grade for this course is the valid one.
+            // Nevertheless, the previous grade will appear with an asterisk (*) in the grades pdf.
+            // Thus, to make sure we don't ignore these cases, we have to save a list of every asterisk-marked course,
+            // and then search this list for courses who fall in this particular case, and fix their grade.
+            asterisk_courses.push(course_status);
+        } else {
+            *courses
+                .entry(course_status.course.id.clone())
+                .or_insert(course_status) = course_status.clone();
+        }
     }
-    let mut vec_courses: Vec<_> = courses.into_values().collect();
+    let mut vec_courses = courses.into_values().collect::<Vec<_>>();
+
+    // Fix the grades for said courses
+    set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses.clone());
+
     vec_courses.append(&mut sport_courses);
+
     if vec_courses.is_empty() {
         return Err(ErrorBadRequest("Bad Format"));
     }
     Ok(vec_courses)
 }
 
-fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>), Error> {
+fn set_grades_for_uncompleted_courses(
+    courses: &mut Vec<CourseStatus>,
+    asterisk_courses: Vec<CourseStatus>,
+) {
+    // The canditate course statuses are those with uncomplete (לא השלים) grades.
+    // For each uncompleted course status, we iterate the asterisk list in reverse to find
+    // the closest (most chronologically advanced) course status with a grade (anything other than NotComplete (לא השלים)).
+    // This course status will replace the old one.
+    let uncompleted_courses = courses
+        .iter_mut()
+        .filter(|c| c.grade == Some(Grade::NotComplete))
+        .collect::<Vec<_>>();
+    for uncompleted_course in uncompleted_courses {
+        for asterisk_course in asterisk_courses.iter().rev() {
+            if let Some(grade) = &asterisk_course.grade {
+                if uncompleted_course.course.id == asterisk_course.course.id
+                    && grade != &Grade::NotComplete
+                {
+                    *uncompleted_course = asterisk_course.clone();
+                    break;
+                }
+            }
+        }
+    }
+}
+
+fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>), Error> {
+    let clean_line = line.replace("*", "");
     let id = {
-        let number = line
+        let number = clean_line
             .split(' ')
             .next()
             .ok_or_else(|| ErrorBadRequest("Bad Format"))?;
@@ -262,7 +309,7 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
     let mut index = 0;
     let mut credit = 0.0;
     let mut word;
-    for part in line.split(' ') {
+    for part in clean_line.split(' ') {
         word = part.to_string();
         // When a grade is missing, a hyphen (מקף) char is written instead, without any whitespaces between it and the credit.
         // This means that the credit part is no longer parsable as f32, and therefore the hyphen must be manually removed.
@@ -282,9 +329,9 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
         index += 1;
     }
 
-    let name = line.split_whitespace().collect::<Vec<&str>>()[1..index].join(" ");
+    let name = clean_line.split_whitespace().collect::<Vec<&str>>()[1..index].join(" ");
 
-    let grade_str = line
+    let grade_str = clean_line
         .split(' ')
         .last()
         .ok_or_else(|| ErrorBadRequest("Bad Format"))?
@@ -292,7 +339,7 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
 
     let grade = match grade_str as &str {
         "ניקוד" => {
-            if line.contains("ללא") {
+            if clean_line.contains("ללא") {
                 Some(Grade::ExemptionWithoutCredit)
             } else {
                 Some(Grade::ExemptionWithCredit)
@@ -300,6 +347,8 @@ fn parse_course_status_pdf_format(line: String) -> Result<(Course, Option<Grade>
         }
         "עבר" => Some(Grade::Binary(true)),
         "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
+        "השלים" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
+        "השלים(מ)" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
         _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
     };
     Ok((Course { id, credit, name }, grade))
@@ -327,5 +376,21 @@ mod tests {
         let from_pdf_bad_content = from_pdf.replace("סוף גיליון ציונים", "");
 
         assert!(parse_copy_paste_data(&from_pdf_bad_content).is_err());
+    }
+
+    #[test]
+    async fn test_asterisk_course_edge_case() {
+        let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_3.txt")
+            .expect("Something went wrong reading the file");
+        let courses_display_from_pdf =
+            parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
+
+        let edge_case_course = courses_display_from_pdf
+            .iter()
+            .find(|c| c.course.id == "234129")
+            .unwrap();
+
+        assert_eq!(edge_case_course.grade.as_ref().unwrap(), &Grade::Grade(67));
+        assert_eq!(edge_case_course.semester.as_ref().unwrap(), "חורף_1");
     }
 }

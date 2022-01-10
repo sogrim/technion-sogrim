@@ -185,14 +185,6 @@ pub async fn compute_degree_status(
         user_details,
     );
 
-    //TODO: remove this, we work on course so no need to back patching.
-    // for course_status in user_details.degree_status.course_statuses.iter_mut() {
-    //     // Fill in courses without information
-    //     let course = &mut course_status.course;
-    //     if course.name.is_empty() {
-    //         *course = db::services::get_course_by_number(course.number, &client).await?;
-    //     }
-    // }
     let user_id = user.sub.clone();
     let document = doc! {"$set" : user.clone().into_document()};
     db::services::find_and_update_user(&user_id, document, &client).await?;
