@@ -1251,9 +1251,7 @@ mod tests {
                         "1".to_string(),
                         "104031".to_string(),
                     ],
-                    mandatory: Some(
-                        vec![vec!["104031".to_string(), "104166".to_string()]],
-                    ), // need to accomplish one of the courses 104031 or 104166 or 1
+                    mandatory: Some(vec![vec!["104031".to_string(), "104166".to_string()]]), // need to accomplish one of the courses 104031 or 104166 or 1
                 },
                 SpecializationGroup {
                     // Although the user completed 4 courses from this group and the mandatory courses,
@@ -1267,12 +1265,10 @@ mod tests {
                         "236512".to_string(),
                         "104166".to_string(),
                     ],
-                    mandatory: Some(
-                        vec![
-                            vec!["114054".to_string(), "236303".to_string()],
-                            vec!["104166".to_string(), "236512".to_string()],
-                        ],
-                    ),
+                    mandatory: Some(vec![
+                        vec!["114054".to_string(), "236303".to_string()],
+                        vec!["104166".to_string(), "236512".to_string()],
+                    ]),
                 },
                 SpecializationGroup {
                     // The user didn't complete the mandatory course
@@ -1286,9 +1282,7 @@ mod tests {
                         "104166".to_string(),
                         "394645".to_string(),
                     ],
-                    mandatory: Some(
-                        vec![vec!["104166".to_string()]],
-                    ),
+                    mandatory: Some(vec![vec!["104166".to_string()]]),
                 },
             ],
             groups_number: 2,
