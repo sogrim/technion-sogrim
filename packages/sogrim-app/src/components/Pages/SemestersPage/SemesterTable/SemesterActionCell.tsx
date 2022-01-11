@@ -8,19 +8,21 @@ export interface SemesterActionCellProps {
     row: RowData;  
     isCrudRowOn: boolean;
     setIsCrudRowOn: (newState: boolean) => void;
-    handleSave: (newRowData: RowData) => void;
+    handleSave: (newRowData: RowData, semester: string) => void;
+    semester: string;
 }
 
 const SemesterActionCellComp: React.FC<SemesterActionCellProps> = ({
     row,
     isCrudRowOn,
     setIsCrudRowOn,
-    handleSave
+    handleSave,
+    semester,
 }) => {
 
     const handleEditRowCLick = () => {
         if (isCrudRowOn) {
-            handleSave(row);
+            handleSave(row, semester);
         }
         setIsCrudRowOn(!isCrudRowOn);        
     }

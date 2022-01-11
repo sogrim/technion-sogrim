@@ -10,14 +10,15 @@ import { RowData } from "./SemesterTabsConsts";
 export interface SemesterTableRowProps {
     row: RowData;
     labelId: string;
-    handleSave(newRowData: RowData): void;
-
+    handleSave: (newRowData: RowData, semester: string) => void;
+    semester: string;
 }
 
 const SemesterTableRowComp: React.FC<SemesterTableRowProps> = ({
     row,    
     labelId,
     handleSave,
+    semester,
 }) => {
 
     const [isCrudRowOn, setIsCrudRowOn] = useState<boolean>(false);
@@ -54,7 +55,7 @@ const SemesterTableRowComp: React.FC<SemesterTableRowProps> = ({
             break;
         }
         
-        setDisplayRow(newDisplayRow);        
+        setDisplayRow(newDisplayRow);
     }  
 
     return (
@@ -68,7 +69,7 @@ const SemesterTableRowComp: React.FC<SemesterTableRowProps> = ({
             { !isCrudRowOn ? <ReadOnlyRow row={displayRow} labelId={labelId}/> :  
                                 <CRUDRow row={displayRow} labelId={labelId} handleChange={handleChange} />}
             <SemesterActionCell isCrudRowOn={isCrudRowOn} setIsCrudRowOn={setIsCrudRowOn} 
-                                row={displayRow} handleSave={handleSave} />
+                                row={displayRow} handleSave={handleSave} semester={semester} />
         </TableRow>
     )
 }

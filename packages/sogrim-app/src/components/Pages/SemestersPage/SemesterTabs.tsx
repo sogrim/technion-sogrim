@@ -5,23 +5,26 @@ import Tab from '@mui/material/Tab';
 import { TabPanel } from '../../AppPages/TabPanel';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../../../hooks/useStore';
-import useUserState from '../../../hooks/apiHooks/useUserState';
 import { useAuth } from '../../../hooks/useAuth';
 import { SemesterTable } from './SemesterTable/SemesterTable';
+import useUserState from '../../../hooks/apiHooks/useUserState';
+
 
 const SemesterTabsComp = () => {
 
-  const [allSemesters, setAllSemesters] = useState<string[] | null>(null)
+  const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
   const { userAuthToken } = useAuth();
   const { data, isLoading } = useUserState(userAuthToken);
+  
 
   const { uiStore: {
           semesterTab: value,
           setSemesterTab,
           },
           dataStore: {
+            updateCourseInUserDetails,
             getAllUserSemesters,
-            generateRows
+            
           }
   } = useStore();
 
@@ -41,10 +44,10 @@ const SemesterTabsComp = () => {
   useEffect(() => {
     if(data && !isLoading) {
       if (data?.details?.degree_status?.course_statuses) {
-        setAllSemesters(getAllUserSemesters(data.details.degree_status.course_statuses));
+        setAllSemesters(getAllUserSemesters(data.details.degree_status.course_statuses));        
       }
     }    
-  }, [data, getAllUserSemesters, isLoading])
+  }, [data, getAllUserSemesters, isLoading]);
 
   return (
     <Box  sx={{
@@ -67,8 +70,7 @@ const SemesterTabsComp = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', }}  key={index}> 
              <TabPanel value={value} index={index} >
               {(data?.details?.degree_status?.course_statuses) ? 
-              <SemesterTable  rows={generateRows(semester, data.details.degree_status.course_statuses)}
-                              semester={semester} /> : null}
+              <SemesterTable semester={semester} /> : null}
             </TabPanel>
           </Box>
           )}

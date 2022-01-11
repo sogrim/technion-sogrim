@@ -8,23 +8,54 @@ import { getComparator, Order, stableSort } from './SemesterTableUtils';
 import { RowData } from './SemesterTabsConsts';
 import { SemesterTableRow } from './SemesterTableRow';
 import { Paper } from '@mui/material';
-import useUserState from '../../../../hooks/apiHooks/useUserState';
-import { useAuth } from "../../../../hooks/useAuth";
-import { useStore } from "../../../../hooks/useStore";
-import useUpdateUserState from '../../../../hooks/apiHooks/useUpdateUserState';
 import { SemesterTableHeader } from './SemesterTableHeader';
-export interface SemesterTableProps {
-    rows: RowData[],
-    semester: string;
-}
+import { useStore } from '../../../../hooks/useStore';
+import { useAuth } from '../../../../hooks/useAuth';
+import useUserState from '../../../../hooks/apiHooks/useUserState';
+import useComputeEndGame from '../../../../hooks/apiHooks/useComputeEndGame';
+import useUpdateUserState from '../../../../hooks/apiHooks/useUpdateUserState';
+import { SemesterTableBody } from './SemesterTableBody';
+export interface SemesterTableProps {    
+    semester: string;    
+  }
 
-const SemesterTableComp: React.FC<SemesterTableProps> = ({
-    rows,
+const SemesterTableComp: React.FC<SemesterTableProps> = ({    
     semester,
 }) => {
+
+    const { dataStore: {            
+            generateRows,
+            updateCourseInUserDetails,            
+          }
+  } = useStore();
+
+  const { userAuthToken } = useAuth();
+  const { data, isLoading, refetch } = useUserState(userAuthToken);
+  const { mutate } = useUpdateUserState(userAuthToken);
+  //const { isLoading: tcIsLoading, isError: tcIsError, refetch: tcRefetch} = useComputeEndGame(userAuthToken);
+
+
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<keyof RowData>('grade');
-  const [tableRows] = React.useState<RowData[]>(rows)
+  const [tableRows, setTableRows] = React.useState<RowData[]>([]);
+
+  React.useEffect(() => {
+    if (data) {
+      setTableRows(generateRows(semester, data?.details.degree_status.course_statuses));      
+    }
+  },[ data, isLoading, generateRows, semester ]);
+
+  const handleSave = (newRowData: RowData, semester: string) => {
+    if (!isLoading && data && data?.details) {
+      const newUserDetails = updateCourseInUserDetails(newRowData, semester, data?.details);      
+      mutate(newUserDetails);
+      console.log('hi hi hi' , data?.details.degree_status.course_statuses)
+      const newnewrow = generateRows(semester, data?.details.degree_status.course_statuses);
+      console.log('~~~~~~ NEW! ', newnewrow);
+      setTableRows(newnewrow);      
+    }
+  }
+
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
@@ -34,28 +65,12 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
-
-    const { userAuthToken } = useAuth();
-    const { data } = useUserState(userAuthToken);
-    const { mutate } = useUpdateUserState(userAuthToken)
-
-    const { dataStore: {
-        updateCourseInUserDetails,
-    }} = useStore();
-
-    const handleSave = (newRowData: RowData) => {
-      if (data && data?.details) {
-        const newUserDetails = updateCourseInUserDetails(newRowData, semester, data?.details)
-        mutate(newUserDetails);
-      }
-    }
     
   return (
     <Box sx={{ width: '100%', display: 'flex', alignItems: 'center'}}>
       <Paper sx={{ width: '100%', mb: 2 }}>        
         <TableContainer sx={{ width: '1200px' }}>
-          <Table
-            
+          <Table            
             aria-labelledby="tableTitle"
             size={'small'}
           >
@@ -64,15 +79,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
               orderBy={orderBy}
               onRequestSort={handleRequestSort}
             />
-            <TableBody>         
-              {stableSort(tableRows, getComparator(order, orderBy))                
-                .map((row, index) => {                  
-                  const labelId = `enhanced-table-checkbox-${index}`;
-                  return (
-                      <SemesterTableRow row={row} labelId={labelId} handleSave={handleSave} key={index} />                   
-                  );
-                })}              
-            </TableBody>
+            <SemesterTableBody tableRows={tableRows} semester={semester} handleSave={handleSave}/>
           </Table>
         </TableContainer>    
         {/* <TableFooter>
