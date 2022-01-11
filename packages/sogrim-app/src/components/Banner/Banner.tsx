@@ -3,8 +3,6 @@ import { observer } from "mobx-react-lite";
 import { useAuth } from "../../hooks/useAuth";
 import { BannerAnonymous } from "./BannerAnonymous";
 import { BannerCards } from "./BannerCards/BannerCards";
-import { BannerTitle } from "./BannerTitle";
-
 
 const BannerComp: React.FC = () => {
 
@@ -13,8 +11,7 @@ const BannerComp: React.FC = () => {
     return ( <Box sx={sxBanner} >     
                 <StyledBox >
                     { isAuthenticated ? 
-                    <> 
-                    <BannerTitle />
+                    <>                    
                     <BannerCards />
                     </>
                     :
