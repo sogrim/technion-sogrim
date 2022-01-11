@@ -13,7 +13,7 @@ const SemesterTabsComp = () => {
 
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null)
   const { userAuthToken } = useAuth();
-  const { data, isLoading} = useUserState(userAuthToken);
+  const { data, isLoading } = useUserState(userAuthToken);
 
   const { uiStore: {
           semesterTab: value,
@@ -23,7 +23,7 @@ const SemesterTabsComp = () => {
             getAllUserSemesters,
             generateRows
           }
-      } = useStore();
+  } = useStore();
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setSemesterTab(newValue);
