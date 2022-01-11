@@ -7,8 +7,7 @@ export default function useUserState(authToken: any = undefined, trigger: boolea
     'userState', 
     () => getUserState(authToken),
     {          
-        enabled: !!authToken && trigger,
-        staleTime: 60000,
+        enabled: !!authToken && trigger,        
     },    
     )
 }

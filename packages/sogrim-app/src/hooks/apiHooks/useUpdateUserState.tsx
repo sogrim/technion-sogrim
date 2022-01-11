@@ -4,8 +4,7 @@ import { UserDetails } from '../../types/data-types';
 
 export default function useUpdateUserState(authToken: any) {    
     const queryClient =  useQueryClient();
-
-    // TODO with benny.
+    
     return useMutation(
         'userState', // The caching key
         (updatedUserState: UserDetails) => putUserState(authToken, updatedUserState), {
