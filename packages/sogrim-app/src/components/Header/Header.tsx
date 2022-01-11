@@ -30,8 +30,6 @@ const HeaderComp: React.FC<HeaderProps> = () => {
     handleMobileMenuClose();
   };
 
-
-
   return (
     <>
       <AppBar position="fixed" sx={sxAppBar}>
