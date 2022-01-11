@@ -17,22 +17,18 @@ pub enum Logic {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Mandatory {
+pub struct SpecializationGroup {
+    pub name: String,
+    pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
+    pub course_list: Vec<CourseId>,
+
     // The user needs to pass one of the courses in each list. (To support complex requirements)
     // for example:
     // [[1,2],
     //  [3,4],
     //  [5,6]]
     // The user needs to pass the courses: (1 or 2), and (3 or 4), and (5 or 6).
-    courses: Vec<OptionalReplacements>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SpecializationGroup {
-    pub name: String,
-    pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
-    pub course_list: Vec<CourseId>,
-    pub mandatory: Option<Mandatory>,
+    pub mandatory: Option<Vec<OptionalReplacements>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -358,7 +354,7 @@ impl<'a> BankRuleHandler<'a> {
             //check if the user completed all the specialization groups requirements
             let mut completed_group = true;
             if let Some(mandatory) = &specialization_group.mandatory {
-                for courses in &mandatory.courses {
+                for courses in mandatory {
                     let mut completed_current_demand = false;
                     for course_id in courses {
                         // check if the user completed one of courses
@@ -1255,9 +1251,9 @@ mod tests {
                         "1".to_string(),
                         "104031".to_string(),
                     ],
-                    mandatory: Some(Mandatory {
-                        courses: vec![vec!["104031".to_string(), "104166".to_string()]],
-                    }), // need to accomplish one of the courses 104031 or 104166 or 1
+                    mandatory: Some(
+                        vec![vec!["104031".to_string(), "104166".to_string()]],
+                    ), // need to accomplish one of the courses 104031 or 104166 or 1
                 },
                 SpecializationGroup {
                     // Although the user completed 4 courses from this group and the mandatory courses,
@@ -1271,12 +1267,12 @@ mod tests {
                         "236512".to_string(),
                         "104166".to_string(),
                     ],
-                    mandatory: Some(Mandatory {
-                        courses: vec![
+                    mandatory: Some(
+                        vec![
                             vec!["114054".to_string(), "236303".to_string()],
                             vec!["104166".to_string(), "236512".to_string()],
                         ],
-                    }),
+                    ),
                 },
                 SpecializationGroup {
                     // The user didn't complete the mandatory course
@@ -1290,9 +1286,9 @@ mod tests {
                         "104166".to_string(),
                         "394645".to_string(),
                     ],
-                    mandatory: Some(Mandatory {
-                        courses: vec![vec!["104166".to_string()]],
-                    }),
+                    mandatory: Some(
+                        vec![vec!["104166".to_string()]],
+                    ),
                 },
             ],
             groups_number: 2,
