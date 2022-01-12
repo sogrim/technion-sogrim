@@ -1,15 +1,20 @@
 import { TableCell  } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { RowData } from "./SemesterTabsConsts";
+import { RowData } from "../SemesterTabsConsts";
+import { ReadOnlyActionCell } from "./ReadOnlyActionCell";
 
 export interface ReadOnlyRowProps {
     row: RowData;
     labelId: string;
+    handleEdit: any;
+    handleDelete: any;
 }
 
 const ReadOnlyRowComp: React.FC<ReadOnlyRowProps> = ({
     row,    
-    labelId
+    labelId,
+    handleEdit,
+    handleDelete,
 }) => {
     return (
        <>
@@ -30,6 +35,7 @@ const ReadOnlyRowComp: React.FC<ReadOnlyRowProps> = ({
             <TableCell align="center" width={'100px'}>{row.grade}</TableCell>
             <TableCell align="center" width={'200px'}>{row.type}</TableCell>
             <TableCell align="center" width={'200px'}>{row.state}</TableCell>
+            <ReadOnlyActionCell row={row} handleEdit={handleEdit} handleDelete={handleDelete}/>
         </>
     )
 }

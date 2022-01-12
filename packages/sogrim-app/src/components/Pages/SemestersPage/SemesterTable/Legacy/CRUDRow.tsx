@@ -1,6 +1,6 @@
 import { MenuItem, TableCell, TextField  } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { RowData } from "./SemesterTabsConsts";
+import { RowData } from "../SemesterTabsConsts";
 export interface CRUDRowProps {
     row: RowData;
     labelId: string;
