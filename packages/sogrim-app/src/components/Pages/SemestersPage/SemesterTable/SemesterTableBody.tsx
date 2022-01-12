@@ -5,6 +5,7 @@ import { TableRow } from "@mui/material";
 import { ReadOnlyRow } from "./SemesterTableRow/ReadOnlyRow";
 import { EditableRow } from './SemesterTableRow/EditableRow';
 
+// TODO - types!!!
 interface SemesterTableBodyProps {
     tableRows: RowData[];
     handleSave: (newRowData: RowData, semester: string) => void;
@@ -28,7 +29,7 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
         credit: 0,
     });
 
-    const handleEditFormChange = (event: any) => {
+    const handleEditChange = (event: any) => {
         event.preventDefault();
 
         // const fieldName = event.target.getAttribute("name");
@@ -41,8 +42,12 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
   };
 
 
-    const handleEditClick = () => {
+    const handleEditClick = (event: any, row: RowData) => {
+        event.preventDefault();
+        setEditableRowCourseNumber(row.courseNumber);
+        setEditRow({...row});
     }; 
+ 
 
     const handleDeleteClick = () => {
     };
@@ -65,7 +70,7 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
                     >
                         {
                             editableRowCourseNumber === row.courseNumber ?
-                            <EditableRow labelId={labelId} editRow={editRow} handleEdit={handleEditFormChange} handleCancel={handleCancelClick} />
+                            <EditableRow labelId={labelId} editRow={editRow} handleEdit={handleEditChange} handleCancel={handleCancelClick} />
                             :
                             <ReadOnlyRow row={row} labelId={labelId} handleEdit={handleEditClick} handleDelete={handleDeleteClick}/>                       
 
