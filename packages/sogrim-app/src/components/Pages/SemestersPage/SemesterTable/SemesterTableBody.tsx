@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TableBody } from "@mui/material";
 import { RowData } from "./SemesterTabsConsts";
 import { TableRow } from "@mui/material";
@@ -17,8 +17,15 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     handleSave,
     semester,
 }) => {
+
+    const [semesterRows, setSemesterRows] = useState<RowData[]>([]);
+
+    useEffect(() => {
+        setSemesterRows(tableRows);
+        console.log('!!!!! im useeffecting')       
+    }, [ semesterRows ])
     
-    const [editableRowCourseNumber, setEditableRowCourseNumber] = useState<string>('');
+    const [editableRowCourseNumber, setEditableRowCourseNumber] = useState<string | null>(null);
 
     const [editRow, setEditRow] = useState<RowData>({
         courseNumber: '',
@@ -32,20 +39,30 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     const handleEditChange = (event: any) => {
         event.preventDefault();
 
-        // const fieldName = event.target.getAttribute("name");
-        // const fieldValue = event.target.value;
-
-        // const newFormData = { ...editFormData };
-        // newFormData[fieldName] = fieldValue;
-
-        // setEditFormData(newFormData);
+        const fieldName = event.target.getAttribute("name") as keyof RowData;
+        const fieldValue = event.target.value;
+        
+        let newRowData: RowData = { ...editRow };
+        // TODO: validations & all props.
+        newRowData.name = fieldValue;
+        console.log(newRowData)
+        setEditRow(newRowData);
   };
-
 
     const handleEditClick = (event: any, row: RowData) => {
         event.preventDefault();
         setEditableRowCourseNumber(row.courseNumber);
         setEditRow({...row});
+    }; 
+
+    const handleSaveClick = (event: any) => {
+        event.preventDefault();
+        const idx = semesterRows.findIndex( row => row.courseNumber === editRow.courseNumber);
+        const newSemesterRoes = [...semesterRows];
+        semesterRows[idx] = editRow;
+
+        setSemesterRows(newSemesterRoes);
+        setEditableRowCourseNumber(null);
     }; 
  
 
@@ -53,11 +70,12 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     };
 
     const handleCancelClick = () => {
+        setEditableRowCourseNumber(null);
     };
 
     return (
         <TableBody>         
-              {(tableRows)                
+              {(semesterRows)                
                 .map((row, index) => {                  
                   const labelId = `enhanced-table-checkbox-${index}`;
                   return (
@@ -70,7 +88,8 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
                     >
                         {
                             editableRowCourseNumber === row.courseNumber ?
-                            <EditableRow labelId={labelId} editRow={editRow} handleEdit={handleEditChange} handleCancel={handleCancelClick} />
+                            <EditableRow labelId={labelId} editRow={editRow} handleSave={handleSaveClick}
+                                         handleEditChange={handleEditChange} handleCancel={handleCancelClick} />
                             :
                             <ReadOnlyRow row={row} labelId={labelId} handleEdit={handleEditClick} handleDelete={handleDeleteClick}/>                       
 

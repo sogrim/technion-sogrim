@@ -5,8 +5,8 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 
 export interface EditActionCellProps {
     row: RowData;  
-    handleSave?: any;
-    handleCancel?: any;
+    handleSave: any;
+    handleCancel: any;
 }
 
 const EditActionCellComp: React.FC<EditActionCellProps> = ({
@@ -18,10 +18,10 @@ const EditActionCellComp: React.FC<EditActionCellProps> = ({
 
     return (    
             <TableCell align="center">
-                <IconButton color="primary" aria-label="save-row" component="span" onClick={() => console.log('save')}>
+                <IconButton color="primary" aria-label="save-row" component="span" onClick={handleSave}>
                    <SaveOutlinedIcon />
                 </IconButton>
-                <IconButton color="primary" aria-label="cancel-row" component="span" onClick={() => console.log('cancel')}>
+                <IconButton color="primary" aria-label="cancel-row" component="span" onClick={handleCancel}>
                     <CancelOutlinedIcon />
                 </IconButton>
             </TableCell>

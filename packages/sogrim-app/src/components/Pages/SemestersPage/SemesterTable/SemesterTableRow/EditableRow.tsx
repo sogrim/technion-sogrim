@@ -4,7 +4,8 @@ import { EditActionCell } from "./EditActionCell";
 
 export interface EditableRowProps {
     editRow: RowData;
-    handleEdit: any;
+    handleEditChange: any;
+    handleSave: any;
     handleCancel: any;
     labelId: string;
 }
@@ -45,8 +46,9 @@ const courseTypeMock = [
 
 const EditableRowComp: React.FC<EditableRowProps> = ({
     editRow,
-    handleEdit,
+    handleEditChange,
     handleCancel,
+    handleSave,
     labelId,
 }) => {      
   const { name, courseNumber, credit, grade, state, type} = editRow;  
@@ -61,7 +63,7 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
               padding="none"
               width={'250px'}
           >
-              <TextField id="course-name" name="course-name" onChange={handleEdit}                       
+              <TextField id="course-name" name="name" onChange={handleEditChange}                       
                         label={name} variant="outlined" size="small"/>                
           </TableCell>
           <TableCell align="center" width={'200px'}>
@@ -99,7 +101,7 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
         ))}
               </TextField>
           </TableCell>    
-          <EditActionCell row={editRow} />      
+          <EditActionCell row={editRow} handleSave={handleSave} handleCancel={handleCancel}/>      
       </>
   )
 }
