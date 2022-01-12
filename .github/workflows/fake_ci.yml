@@ -3,6 +3,7 @@ on:
     branches:
       - master # TODO someday will probably need to be renamed into 'main'
     paths:
+      - "**"
       - "!packages/server/**" # Trigger this CI flow if changes were made to the server ONLY
 
 name: Fake-CI
