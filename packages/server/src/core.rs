@@ -162,7 +162,6 @@ pub fn set_type_and_add_credits(
     sum_credits: &mut f32,
 ) -> bool {
     course_status.set_type(bank_name);
-    course_status.modified = false; // finished handle this course
     if course_status.passed() {
         *sum_credits += course_status.course.credit;
         true
