@@ -4,7 +4,7 @@ on:
       - master # TODO someday will probably need to be renamed into 'main'
     paths:
       - "**"
-      - "!packages/server/**" # Trigger this CI flow if changes were made to the server ONLY
+      - "!packages/server/**" # Trigger this CI flow if changes were made to ANYTHING BUT server
 
 name: Fake-CI
 
@@ -12,23 +12,15 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    steps:
-      - run: echo "IRRELEVANT"
 
   format:
     name: Format
     runs-on: ubuntu-latest
-    steps:
-      - run: echo "IRRELEVANT"
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-    steps:
-      - run: echo "IRRELEVANT"
 
   deploy:
     name: Deploy to Heroku
     runs-on: ubuntu-latest
-    steps:
-      - run: echo "IRRELEVANT"
