@@ -38,7 +38,7 @@ export function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => n
 
 export const createData = (
     name: string,
-    courseNumber: number,
+    courseNumber: string,
     credit: number,       
     grade: string,
     type: string,
