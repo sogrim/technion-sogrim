@@ -1,12 +1,10 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
 import TableContainer from '@mui/material/TableContainer';
 import { observer } from 'mobx-react-lite';
 import { getComparator, Order, stableSort } from './SemesterTableUtils';
 import { RowData } from './SemesterTabsConsts';
-import { SemesterTableRow } from './SemesterTableRow';
 import { Paper } from '@mui/material';
 import { SemesterTableHeader } from './SemesterTableHeader';
 import { useStore } from '../../../../hooks/useStore';
@@ -37,6 +35,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
 
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<keyof RowData>('grade');
+
   const [tableRows, setTableRows] = React.useState<RowData[]>([]);
 
   React.useEffect(() => {

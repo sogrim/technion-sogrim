@@ -1,0 +1,33 @@
+import { TableCell, IconButton  } from "@mui/material";
+import { observer } from "mobx-react-lite";
+import { RowData } from "../SemesterTabsConsts";
+import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+//import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+
+export interface SemesterActionCellProps {
+    row: RowData;  
+    handleEdit: any;
+    handleDelete: any;
+}
+
+const SemesterActionCellComp: React.FC<SemesterActionCellProps> = ({
+    row,
+    handleEdit,
+    handleDelete,
+}) => {
+    // TODO: types.
+
+    return (    
+            <TableCell align="center">
+                <IconButton color="primary" aria-label="edit-row" component="span" onClick={(event: any) => handleEdit(event, row)}>
+                   <ModeEditOutlineOutlinedIcon />
+                </IconButton>
+                <IconButton color="primary" aria-label="delete-row" component="span" onClick={() => handleDelete(row.courseNumber)}>
+                    <DeleteOutlinedIcon />
+                </IconButton>
+            </TableCell>
+    );       
+}
+
+export const ReadOnlyActionCell = observer(SemesterActionCellComp);
