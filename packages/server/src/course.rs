@@ -16,11 +16,57 @@ pub struct Course {
     pub name: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug)]
 pub enum CourseState {
     Complete,
     NotComplete,
     InProgress,
+    Irrelevant,
+}
+
+impl Serialize for CourseState {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *self {
+            CourseState::Complete => serializer.serialize_str("הושלם"),
+            CourseState::NotComplete => serializer.serialize_str("לא הושלם"),
+            CourseState::InProgress => serializer.serialize_str("בתהליך"),
+            CourseState::Irrelevant => serializer.serialize_str("לא רלוונטי"),
+        }
+    }
+}
+struct StateStrVisitor;
+
+impl<'de> Visitor<'de> for StateStrVisitor {
+    type Value = CourseState;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a valid string representation of a grade")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: Err,
+    {
+        match v {
+            "הושלם" => Ok(CourseState::Complete),
+            "לא הושלם" => Ok(CourseState::NotComplete),
+            "בתהליך" => Ok(CourseState::InProgress),
+            "לא רלוונטי" => Ok(CourseState::Irrelevant),
+            _ => Err(Err::invalid_type(Unexpected::Str(v), &self)),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for CourseState {
+    fn deserialize<D>(deserializer: D) -> Result<CourseState, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(StateStrVisitor)
+    }
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -124,9 +170,9 @@ impl Serialize for Grade {
         }
     }
 }
-struct StrVisitor;
+struct GradeStrVisitor;
 
-impl<'de> Visitor<'de> for StrVisitor {
+impl<'de> Visitor<'de> for GradeStrVisitor {
     type Value = Grade;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -154,7 +200,7 @@ impl<'de> Deserialize<'de> for Grade {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_str(StrVisitor)
+        deserializer.deserialize_str(GradeStrVisitor)
     }
 }
 
