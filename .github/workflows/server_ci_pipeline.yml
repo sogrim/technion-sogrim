@@ -1,14 +1,16 @@
-on: 
+on:
   pull_request:
-    branches: 
-    - master # TODO someday will probably need to be renamed into 'main'
+    branches:
+      - master # TODO someday will probably need to be renamed into 'main'
+    paths:
+      - "packages/server" # Trigger this CI flow if changes were made to the server ONLY
 
-name: Sogrim-CI
+name: Server-CI
 
 env:
   CARGO_TERM_COLOR: always
   IP: "0.0.0.0"
-  PORT: ${{secrets.PORT}} 
+  PORT: ${{secrets.PORT}}
   URI: ${{secrets.MONGO_URI_DEV}}
   CLIENT_ID: ${{secrets.CLIENT_ID}}
 
@@ -75,7 +77,6 @@ jobs:
           command: clippy
           args: --manifest-path packages/server/Cargo.toml --all-targets -- -D warnings
 
-
   deploy:
     name: Deploy to Heroku
     runs-on: ubuntu-latest
@@ -84,7 +85,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: akhileshns/heroku-deploy@v3.12.12
         with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}} 
-          heroku_app_name: "sogrim" 
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "sogrim"
           heroku_email: "benick12@gmail.com"
           procfile: "web: PORT=$PORT PROFILE=staging ./packages/server/target/release/sogrim-server"
