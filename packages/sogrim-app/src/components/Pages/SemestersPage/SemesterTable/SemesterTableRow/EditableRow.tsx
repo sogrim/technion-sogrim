@@ -1,5 +1,6 @@
 import { MenuItem, TableCell, TextField  } from "@mui/material";
 import { RowData } from "../SemesterTabsConsts";
+import { EditActionCell } from "./EditActionCell";
 
 export interface EditableRowProps {
     editRow: RowData;
@@ -8,7 +9,8 @@ export interface EditableRowProps {
     labelId: string;
 }
 
-// TODO: changes mock to real data from server
+// TODO: changes mock to real data from server with memo
+// TODO: types
 const courseStateMock = [
   {
     value: 'בוצע',
@@ -59,7 +61,7 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
               padding="none"
               width={'250px'}
           >
-              <TextField id="course-name"                         
+              <TextField id="course-name" name="course-name" onChange={handleEdit}                       
                         label={name} variant="outlined" size="small"/>                
           </TableCell>
           <TableCell align="center" width={'200px'}>
@@ -96,7 +98,8 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
                   </MenuItem>
         ))}
               </TextField>
-          </TableCell>
+          </TableCell>    
+          <EditActionCell row={editRow} />      
       </>
   )
 }
