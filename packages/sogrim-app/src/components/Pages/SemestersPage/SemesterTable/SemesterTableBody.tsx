@@ -18,12 +18,11 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     semester,
 }) => {
 
-    const [semesterRows, setSemesterRows] = useState<RowData[]>([]);
+    const [semesterRows, setSemesterRows] = useState<RowData[]>(tableRows);
 
     useEffect(() => {
         setSemesterRows(tableRows);
-        console.log('!!!!! im useeffecting')       
-    }, [ semesterRows ])
+    }, [ tableRows ])
     
     const [editableRowCourseNumber, setEditableRowCourseNumber] = useState<string | null>(null);
 
@@ -58,15 +57,19 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     const handleSaveClick = (event: any) => {
         event.preventDefault();
         const idx = semesterRows.findIndex( row => row.courseNumber === editRow.courseNumber);
-        const newSemesterRoes = [...semesterRows];
+        const newSemesterRows = [...semesterRows];
         semesterRows[idx] = editRow;
-
-        setSemesterRows(newSemesterRoes);
-        setEditableRowCourseNumber(null);
+        setSemesterRows(newSemesterRows);
+        setEditableRowCourseNumber(null);     
     }; 
  
 
-    const handleDeleteClick = () => {
+    const handleDeleteClick = (event: any, courseNumber: string) => {
+        event.preventDefault();
+        const idx = semesterRows.findIndex( row => row.courseNumber === courseNumber);
+        const newSemesterRows = [...semesterRows];
+        newSemesterRows.splice(idx, 1);
+        setSemesterRows(newSemesterRows);
     };
 
     const handleCancelClick = () => {

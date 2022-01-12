@@ -22,7 +22,7 @@ const ReadOnlyActionCellComp: React.FC<ReadOnlyActionCellProps> = ({
                 <IconButton color="primary" aria-label="edit-row" component="span" onClick={(event: any) => handleEdit(event, row)}>
                    <ModeEditOutlineOutlinedIcon />
                 </IconButton>
-                <IconButton color="primary" aria-label="delete-row" component="span" onClick={() => handleDelete(row.courseNumber)}>
+                <IconButton color="primary" aria-label="delete-row" component="span" onClick={(event: any) => handleDelete(event, row.courseNumber)}>
                     <DeleteOutlinedIcon />
                 </IconButton>
             </TableCell>
