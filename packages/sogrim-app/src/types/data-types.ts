@@ -15,7 +15,7 @@ export enum CourseState {
 export type Course = {
     credit: number;
     name: string;
-    _id: number;
+    _id: string;
 }
 
 export type CourseStatus = {

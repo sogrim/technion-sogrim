@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { TableBody } from "@mui/material";
 import { RowData } from "./SemesterTabsConsts";
 import { TableRow } from "@mui/material";
 import { ReadOnlyRow } from "./SemesterTableRow/ReadOnlyRow";
+import { EditableRow } from './SemesterTableRow/EditableRow';
 
 interface SemesterTableBodyProps {
     tableRows: RowData[];
@@ -13,16 +15,39 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     tableRows,
     handleSave,
     semester,
-}) => {    
+}) => {
+    
+    const [editableRowCourseNumber, setEditableRowCourseNumber] = useState<string>('');
+
+    const [editRow, setEditRow] = useState<RowData>({
+        courseNumber: '',
+        name: '',
+        grade: '',
+        state: '',
+        type: '',
+        credit: 0,
+    });
+
+    const handleEditFormChange = (event: any) => {
+        event.preventDefault();
+
+        // const fieldName = event.target.getAttribute("name");
+        // const fieldValue = event.target.value;
+
+        // const newFormData = { ...editFormData };
+        // newFormData[fieldName] = fieldValue;
+
+        // setEditFormData(newFormData);
+  };
 
 
-    const handleEdit = () => {
+    const handleEditClick = () => {
     }; 
 
-    const handleDelete = () => {
+    const handleDeleteClick = () => {
     };
 
-    const handleCancel = () => {
+    const handleCancelClick = () => {
     };
 
     return (
@@ -37,8 +62,15 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
                     tabIndex={-1}
                     key={row.name}            
                     sx={{ width: '1200px'}}
-                    >                      
-                        <ReadOnlyRow row={row} labelId={labelId} handleEdit={handleEdit} handleDelete={handleDelete}/>                       
+                    >
+                        {
+                            editableRowCourseNumber === row.courseNumber ?
+                            <EditableRow labelId={labelId} editRow={editRow} handleEdit={handleEditFormChange} handleCancel={handleCancelClick} />
+                            :
+                            <ReadOnlyRow row={row} labelId={labelId} handleEdit={handleEditClick} handleDelete={handleDeleteClick}/>                       
+
+                        }                     
+                        
                     </TableRow>             
                   )
                 })}              

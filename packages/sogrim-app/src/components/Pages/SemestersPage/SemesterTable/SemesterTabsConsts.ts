@@ -1,6 +1,6 @@
 export interface RowData {    
     name: string;
-    courseNumber: number; // TODO: convert to string., accordint to server.
+    courseNumber: string;
     credit: number;
     state: string;
     type: string;
@@ -23,7 +23,7 @@ export const headCells: readonly HeadCell[] = [
   },
   {
     id: 'courseNumber',
-    numeric: true,
+    numeric: false,
     disablePadding: false,
     label: 'מס׳ קורס',
   },
