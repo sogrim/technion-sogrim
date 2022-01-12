@@ -128,7 +128,7 @@ impl CourseStatus {
     }
 
     pub fn is_sport(&self) -> bool {
-        self.course.id.starts_with("394") // TODO: check if there are more terms
+        self.course.id.starts_with("394")
     }
 }
 
