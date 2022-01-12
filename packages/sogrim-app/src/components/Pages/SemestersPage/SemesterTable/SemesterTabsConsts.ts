@@ -35,7 +35,7 @@ export const headCells: readonly HeadCell[] = [
   },
   {
     id: 'grade',
-    numeric: true,
+    numeric: false,
     disablePadding: false,
     label: 'ציון',
   },

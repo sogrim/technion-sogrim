@@ -1,4 +1,6 @@
-import { MenuItem, TableCell, TextField  } from "@mui/material";
+import AutoFixNormalOutlinedIcon from '@mui/icons-material/AutoFixNormalOutlined';
+import { Grid, IconButton, MenuItem, TableCell, TextField, Tooltip  } from "@mui/material";
+import { useState } from "react";
 import { RowData } from "../SemesterTabsConsts";
 import { EditActionCell } from "./EditActionCell";
 
@@ -51,7 +53,11 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
     handleSave,
     labelId,
 }) => {      
-  const { name, courseNumber, credit, grade, state, type} = editRow;  
+  const { name, courseNumber, credit, grade, state, type} = editRow;
+
+  const [ gradeToggle, setGradeToggle] = useState<boolean>(true);
+
+  const gradeToggleClick = () => setGradeToggle(!gradeToggle);
 
   return (
       <>
@@ -66,7 +72,7 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
               <TextField id="course-name" name="name" onChange={handleEditChange}                       
                         label={name} variant="outlined" size="small"/>                
           </TableCell>
-          <TableCell align="center" width={'200px'}>
+          <TableCell align="center" width={'150px'}>
               <TextField id="course-number"
                           
                           label={courseNumber} variant="outlined" size="small"/>                                
@@ -76,12 +82,28 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
                           
                           label={credit} variant="outlined" size="small" type="number"/>  
           </TableCell>
-            <TableCell align="center" width={'100px'} >
-              <TextField id="course-grade" 
-                        
-                        label={grade} variant="outlined" size="small" type="number"/>  
+            <TableCell align="center" width={'250px'} >
+              <Grid container justifyContent={'center'} direction={'row'}>
+                  <Tooltip title='ציון לא מספרי' arrow> 
+                  <IconButton color="primary" onClick={gradeToggleClick}>
+                    <AutoFixNormalOutlinedIcon />
+                  </IconButton>
+                  </Tooltip>
+                { gradeToggle ?
+                  <TextField id="course-grade"                        
+                          label={grade} variant="outlined" size="small" type="number"/> 
+                  : 
+                  <TextField select id="course-grade" label={state} variant="outlined" size="small" sx={{width: '170px'}}> 
+              {   courseStateMock.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                  {option.value}
+                  </MenuItem>
+        ))}
+              </TextField>
+                    }
+              </Grid>
           </TableCell>
-            <TableCell align="center" width={'200px'}>
+            <TableCell align="center" width={'100px'}>
               <TextField id="course-type" select
                         
                         label={type} variant="outlined" size="small" fullWidth> 
@@ -92,7 +114,7 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
                 ))}
               </TextField>
           </TableCell>
-          <TableCell align="center" width={'200px'}>
+          <TableCell align="center" width={'100x'}>
               <TextField select id="course-state" label={state} variant="outlined" size="small" fullWidth> 
               {courseStateMock.map((option) => (
                   <MenuItem key={option.value} value={option.value}>

@@ -22,6 +22,7 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
 
     useEffect(() => {
         setSemesterRows(tableRows);
+        console.log('im use efecting')
     }, [ tableRows ])
     
     const [editableRowCourseNumber, setEditableRowCourseNumber] = useState<string | null>(null);
@@ -44,7 +45,6 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
         let newRowData: RowData = { ...editRow };
         // TODO: validations & all props.
         newRowData.name = fieldValue;
-        console.log(newRowData)
         setEditRow(newRowData);
   };
 
@@ -58,9 +58,10 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
         event.preventDefault();
         const idx = semesterRows.findIndex( row => row.courseNumber === editRow.courseNumber);
         const newSemesterRows = [...semesterRows];
-        semesterRows[idx] = editRow;
+        newSemesterRows[idx] = editRow;
         setSemesterRows(newSemesterRows);
-        setEditableRowCourseNumber(null);     
+        setEditableRowCourseNumber(null);    
+        console.log(semesterRows) 
     }; 
  
 
@@ -75,10 +76,11 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     const handleCancelClick = () => {
         setEditableRowCourseNumber(null);
     };
-
+    
     return (
         <TableBody>         
-              {(semesterRows)                
+                {
+              (semesterRows)                
                 .map((row, index) => {                  
                   const labelId = `enhanced-table-checkbox-${index}`;
                   return (

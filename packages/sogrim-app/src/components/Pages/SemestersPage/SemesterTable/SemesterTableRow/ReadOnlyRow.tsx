@@ -28,13 +28,13 @@ const ReadOnlyRowComp: React.FC<ReadOnlyRowProps> = ({
             >
                 {row.name}
             </TableCell>
-            <TableCell align="center" width={'200px'}>
+            <TableCell align="center" width={'150px'}>
                 {row.courseNumber}
             </TableCell>
             <TableCell align="center" width={'50px'}>{row.credit}</TableCell>
-            <TableCell align="center" width={'100px'}>{row.grade}</TableCell>
-            <TableCell align="center" width={'200px'}>{row.type}</TableCell>
-            <TableCell align="center" width={'200px'}>{row.state}</TableCell>
+            <TableCell align="center" width={'250px'}>{row.grade}</TableCell>
+            <TableCell align="center" width={'170px'}>{row.type}</TableCell>
+            <TableCell align="center" width={'170px'}>{row.state}</TableCell>
             <ReadOnlyActionCell row={row} handleEdit={handleEdit} handleDelete={handleDelete}/>
         </>
     )
