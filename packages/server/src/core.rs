@@ -158,7 +158,6 @@ pub fn set_type_and_add_credits(
     sum_credits: &mut f32,
 ) -> bool {
     course_status.set_type(bank_name);
-    course_status.modified = false; // finished handle this course
     if course_status.passed() {
         *sum_credits += course_status.course.credit;
         true
@@ -378,18 +377,21 @@ impl<'a> BankRuleHandler<'a> {
             if !completed_group {
                 continue;
             }
-            let mut count_courses = 0;
             let mut chosen_courses = Vec::new();
             for course_id in &specialization_group.course_list {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
                     let course_status = self.user.get_course_status(course_id).unwrap();
                     if course_status.passed() && course_status.specialization_group_name.is_none() {
                         chosen_courses.push(course_id.clone());
-                        count_courses += 1;
+                    }
+                    if (chosen_courses.len() as u8) == specialization_group.courses_sum {
+                        // Until we implement exhaustive search on the specialization groups we should add this condition, so we cover more cases.
+                        // when we find enough courses to finish this specialization group we don't need to check more courses, and then those courses can be taken to other groups.
+                        break;
                     }
                 }
             }
-            completed_group &= count_courses >= specialization_group.courses_sum;
+            completed_group &= (chosen_courses.len() as u8) == specialization_group.courses_sum;
             if completed_group {
                 completed_groups.push(specialization_group.name.clone());
                 for course_id in chosen_courses {
