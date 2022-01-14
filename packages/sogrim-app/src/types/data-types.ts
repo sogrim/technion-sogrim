@@ -7,13 +7,6 @@ export type Catalog = {
   };
 };
 
-export enum CourseState {
-  Complete = "Complete",
-  NotComplete = "NotComplete",
-  Irrelevant = "Irrelevant",
-  InProgress = "InProgress",
-}
-
 export type Course = {
   credit: number;
   name: string;
@@ -24,7 +17,7 @@ export type CourseStatus = {
   course: Course;
   grade: string;
   semester: string;
-  state: CourseState;
+  state: string;
   type: string;
   modified: boolean;
   specialization_group_name?: string;
@@ -34,7 +27,6 @@ export type CourseStatus = {
 export const ACCUMULATE_COURSES = "accumulate courses";
 
 export type CourseBankReq = {
-  // TODO: check with Liad after apdated.
   bank_rule_name: string;
   course_bank_name: string;
   credit_completed: number;

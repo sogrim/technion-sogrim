@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import { createData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTableUtils";
 import { RowData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTabsConsts";
-import { CourseState, CourseStatus, UserDetails } from "../types/data-types";
+import { CourseStatus, UserDetails } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
 export class DataStore {
@@ -83,10 +83,10 @@ export class DataStore {
     const updateCourseRow: CourseStatus = {
       course: {
         _id: rowData.courseNumber,
-        credit: rowData.credit,
+        credit: +rowData.credit,
         name: rowData.name,
       },
-      state: rowData.state as CourseState,
+      state: rowData.state,
       type: rowData.type,
       grade: rowData.grade,
       semester: semester,
@@ -98,6 +98,7 @@ export class DataStore {
     );
 
     this.userDetails.degree_status.course_statuses = updatedCourseStatus;
+    this.userDetails.modified = true;
 
     return this.userDetails;
   };
@@ -111,6 +112,7 @@ export class DataStore {
     newCourseList.splice(idx, 1);
 
     this.userDetails.degree_status.course_statuses = newCourseList;
+    this.userDetails.modified = true;
 
     return this.userDetails;
   };
@@ -121,10 +123,10 @@ export class DataStore {
     const newCourse: CourseStatus = {
       course: {
         _id: rowData.courseNumber,
-        credit: rowData.credit,
+        credit: +rowData.credit,
         name: rowData.name,
       },
-      state: rowData.state as CourseState,
+      state: rowData.state,
       type: rowData.type,
       grade: rowData.grade,
       semester: semester,
@@ -133,6 +135,7 @@ export class DataStore {
 
     courseList.push(newCourse);
     this.userDetails.degree_status.course_statuses = courseList;
+    this.userDetails.modified = true;
 
     return this.userDetails;
   };
