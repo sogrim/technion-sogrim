@@ -1,6 +1,6 @@
-import { styled, Typography } from '@mui/material';
+import { styled, Typography } from "@mui/material";
 
-import { FOOTER_TEXT, FOOTER_HEIGHT } from '../../themes/constants';
+import { FOOTER_TEXT, FOOTER_HEIGHT } from "../../themes/constants";
 
 export const Footer = () => (
   <FooterWrapper>
@@ -10,7 +10,7 @@ export const Footer = () => (
   </FooterWrapper>
 );
 
-const FooterWrapper = styled('div')(
+const FooterWrapper = styled("div")(
   ({ theme }) => `
     flex: 1;
     display: flex;

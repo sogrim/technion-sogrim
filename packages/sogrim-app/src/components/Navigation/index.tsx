@@ -1,7 +1,7 @@
-import { Drawer as MuiDrawer, styled } from '@mui/material';
+import { Drawer as MuiDrawer, styled } from "@mui/material";
 
-import { DRAWER_WIDTH } from '../../themes/constants';
-import { navClosedMixin, navOpenedMixin } from '../../themes/mixins';
+import { DRAWER_WIDTH } from "../../themes/constants";
+import { navClosedMixin, navOpenedMixin } from "../../themes/mixins";
 
 interface NavigationProps {
   open: boolean | undefined;
@@ -16,21 +16,23 @@ export const Navigation = ({ open, handleClose }: NavigationProps) => {
   );
 };
 
-const DrawerHeader = styled('div')(({ theme }) => ({
+const DrawerHeader = styled("div")(({ theme }) => ({
   ...theme.mixins.toolbar,
 }));
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(({ theme, open }) => ({
+const Drawer = styled(MuiDrawer, {
+  shouldForwardProp: (prop) => prop !== "open",
+})(({ theme, open }) => ({
   width: DRAWER_WIDTH,
   flexShrink: 0,
-  whiteSpace: 'nowrap',
-  boxSizing: 'border-box',
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
   ...(open && {
     ...navOpenedMixin(theme),
-    '& .MuiDrawer-paper': navOpenedMixin(theme),
+    "& .MuiDrawer-paper": navOpenedMixin(theme),
   }),
   ...(!open && {
     ...navClosedMixin(theme),
-    '& .MuiDrawer-paper': navClosedMixin(theme),
+    "& .MuiDrawer-paper": navClosedMixin(theme),
   }),
 }));

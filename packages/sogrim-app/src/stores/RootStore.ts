@@ -1,6 +1,6 @@
-import { makeAutoObservable } from 'mobx';
-import { DataStore } from './DataStore';
-import { UIStore } from './UiStore';
+import { makeAutoObservable } from "mobx";
+import { DataStore } from "./DataStore";
+import { UIStore } from "./UiStore";
 
 export class RootStore {
   public uiStore: UIStore;

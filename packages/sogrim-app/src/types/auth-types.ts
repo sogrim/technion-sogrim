@@ -1,4 +1,4 @@
 export enum GoogleClinetSession {
-    LOAD = 'LOAD',
-    DONE = 'DONE',
+  LOAD = "LOAD",
+  DONE = "DONE",
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Divide as HamburgerMenu } from 'hamburger-react';
+import { useState } from "react";
+import { Divide as HamburgerMenu } from "hamburger-react";
 
 interface HamburgerProps {
   toggleNavigation: () => void;

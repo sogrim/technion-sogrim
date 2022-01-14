@@ -1,11 +1,11 @@
-import { makeAutoObservable } from 'mobx';
-import { AuthService } from '../services/auth';
-import { GoogleClinetSession } from '../types/auth-types';
+import { makeAutoObservable } from "mobx";
+import { AuthService } from "../services/auth";
+import { GoogleClinetSession } from "../types/auth-types";
 
 export class AuthStore {
   private authenticated: boolean = false;
   public userCredentialResponse: CredentialResponse = {};
-  public googleSession: GoogleClinetSession = GoogleClinetSession.LOAD; 
+  public googleSession: GoogleClinetSession = GoogleClinetSession.LOAD;
 
   constructor(private readonly authService: AuthService) {
     makeAutoObservable(this);
@@ -13,14 +13,14 @@ export class AuthStore {
   }
 
   logout = () => {
-      window.google?.accounts.id.disableAutoSelect();
-      window.location.reload();
-  }
+    window.google?.accounts.id.disableAutoSelect();
+    window.location.reload();
+  };
 
   setCredential = (credential: CredentialResponse) => {
-      this.userCredentialResponse = credential;
-      this.setAuthenticated(true);
-  }
+    this.userCredentialResponse = credential;
+    this.setAuthenticated(true);
+  };
 
   private setAuthenticated(authenticated: boolean) {
     this.authenticated = authenticated;
@@ -31,7 +31,7 @@ export class AuthStore {
   }
 
   get userAuthToken() {
-    if(this.googleSession === GoogleClinetSession.DONE) {
+    if (this.googleSession === GoogleClinetSession.DONE) {
       return this.userCredentialResponse.credential;
     }
     return null;
@@ -39,5 +39,5 @@ export class AuthStore {
 
   setGoogleSession = (gss: GoogleClinetSession) => {
     this.googleSession = gss;
-  }
+  };
 }
