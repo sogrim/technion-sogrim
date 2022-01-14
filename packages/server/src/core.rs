@@ -17,22 +17,18 @@ pub enum Logic {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Mandatory {
+pub struct SpecializationGroup {
+    pub name: String,
+    pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
+    pub course_list: Vec<CourseId>,
+
     // The user needs to pass one of the courses in each list. (To support complex requirements)
     // for example:
     // [[1,2],
     //  [3,4],
     //  [5,6]]
     // The user needs to pass the courses: (1 or 2), and (3 or 4), and (5 or 6).
-    courses: Vec<OptionalReplacements>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SpecializationGroup {
-    pub name: String,
-    pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
-    pub course_list: Vec<CourseId>,
-    pub mandatory: Option<Mandatory>,
+    pub mandatory: Option<Vec<OptionalReplacements>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -162,7 +158,6 @@ pub fn set_type_and_add_credits(
     sum_credits: &mut f32,
 ) -> bool {
     course_status.set_type(bank_name);
-    course_status.modified = false; // finished handle this course
     if course_status.passed() {
         *sum_credits += course_status.course.credit;
         true
@@ -358,7 +353,7 @@ impl<'a> BankRuleHandler<'a> {
             //check if the user completed all the specialization groups requirements
             let mut completed_group = true;
             if let Some(mandatory) = &specialization_group.mandatory {
-                for courses in &mandatory.courses {
+                for courses in mandatory {
                     let mut completed_current_demand = false;
                     for course_id in courses {
                         // check if the user completed one of courses
@@ -382,18 +377,21 @@ impl<'a> BankRuleHandler<'a> {
             if !completed_group {
                 continue;
             }
-            let mut count_courses = 0;
             let mut chosen_courses = Vec::new();
             for course_id in &specialization_group.course_list {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
                     let course_status = self.user.get_course_status(course_id).unwrap();
                     if course_status.passed() && course_status.specialization_group_name.is_none() {
                         chosen_courses.push(course_id.clone());
-                        count_courses += 1;
+                    }
+                    if (chosen_courses.len() as u8) == specialization_group.courses_sum {
+                        // Until we implement exhaustive search on the specialization groups we should add this condition, so we cover more cases.
+                        // when we find enough courses to finish this specialization group we don't need to check more courses, and then those courses can be taken to other groups.
+                        break;
                     }
                 }
             }
-            completed_group &= count_courses >= specialization_group.courses_sum;
+            completed_group &= (chosen_courses.len() as u8) == specialization_group.courses_sum;
             if completed_group {
                 completed_groups.push(specialization_group.name.clone());
                 for course_id in chosen_courses {
@@ -1255,9 +1253,7 @@ mod tests {
                         "1".to_string(),
                         "104031".to_string(),
                     ],
-                    mandatory: Some(Mandatory {
-                        courses: vec![vec!["104031".to_string(), "104166".to_string()]],
-                    }), // need to accomplish one of the courses 104031 or 104166 or 1
+                    mandatory: Some(vec![vec!["104031".to_string(), "104166".to_string()]]), // need to accomplish one of the courses 104031 or 104166 or 1
                 },
                 SpecializationGroup {
                     // Although the user completed 4 courses from this group and the mandatory courses,
@@ -1271,12 +1267,10 @@ mod tests {
                         "236512".to_string(),
                         "104166".to_string(),
                     ],
-                    mandatory: Some(Mandatory {
-                        courses: vec![
-                            vec!["114054".to_string(), "236303".to_string()],
-                            vec!["104166".to_string(), "236512".to_string()],
-                        ],
-                    }),
+                    mandatory: Some(vec![
+                        vec!["114054".to_string(), "236303".to_string()],
+                        vec!["104166".to_string(), "236512".to_string()],
+                    ]),
                 },
                 SpecializationGroup {
                     // The user didn't complete the mandatory course
@@ -1290,9 +1284,7 @@ mod tests {
                         "104166".to_string(),
                         "394645".to_string(),
                     ],
-                    mandatory: Some(Mandatory {
-                        courses: vec![vec!["104166".to_string()]],
-                    }),
+                    mandatory: Some(vec![vec!["104166".to_string()]]),
                 },
             ],
             groups_number: 2,
@@ -1326,7 +1318,11 @@ mod tests {
         );
     }
 
-    async fn run_calculate_degree_status(file_name: &str) -> UserDetails {
+    // ------------------------------------------------------------------------------------------------------
+    // Test core function in a full flow
+    // ------------------------------------------------------------------------------------------------------
+
+    async fn run_calculate_degree_status(file_name: &str, catalog: &str) -> UserDetails {
         dotenv().ok();
         let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
             .await
@@ -1346,8 +1342,7 @@ mod tests {
         let course_statuses =
             course::parse_copy_paste_data(&contents).expect("failed to parse courses data");
 
-        let obj_id = bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401")
-            .expect("failed to create oid");
+        let obj_id = bson::oid::ObjectId::from_str(catalog).expect("failed to create oid");
         let catalog = db::services::get_catalog_by_id(&obj_id, &client)
             .await
             .expect("failed to get catalog");
@@ -1377,8 +1372,9 @@ mod tests {
     }
 
     #[test]
-    async fn test_core_function_missing_credits() {
-        let user = run_calculate_degree_status("pdf_ctrl_c_ctrl_v.txt").await;
+    async fn missing_credits() {
+        let user =
+            run_calculate_degree_status("pdf_ctrl_c_ctrl_v.txt", "61a102bb04c5400b98e6f401").await;
         //FOR VIEWING IN JSON FORMAT
         // std::fs::write(
         //     "degree_status.json",
@@ -1493,9 +1489,12 @@ mod tests {
             "יש לסטודנט 5.5 נקודות עודפות".to_string()
         );
     }
+
     #[test]
-    async fn test_core_function_overflow_credits() {
-        let user = run_calculate_degree_status("pdf_ctrl_c_ctrl_v_2.txt").await;
+    async fn overflow_credits() {
+        let user =
+            run_calculate_degree_status("pdf_ctrl_c_ctrl_v_2.txt", "61a102bb04c5400b98e6f401")
+                .await;
         //FOR VIEWING IN JSON FORMAT
         // std::fs::write(
         //     "degree_status.json",
@@ -1579,6 +1578,101 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.overflow_msgs[2],
+            "יש לסטודנט 0 נקודות עודפות".to_string()
+        );
+    }
+
+    #[test]
+    async fn software_engineer_itinerary() {
+        let user =
+            run_calculate_degree_status("pdf_ctrl_c_ctrl_v_3.txt", "61d84fce5c5e7813e895a27d")
+                .await;
+        // //FOR VIEWING IN JSON FORMAT
+        // std::fs::write(
+        //     "degree_status.json",
+        //     serde_json::to_string_pretty(&user.degree_status).expect("json serialization failed"),
+        // )
+        // .expect("Unable to write file");
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[0].credit_completed,
+            1.0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[1].credit_completed,
+            6.0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[2].course_completed,
+            1
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[3].credit_completed,
+            6.0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].credit_requirement,
+            Some(15.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[4].credit_completed,
+            9.5
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].credit_completed,
+            8.0
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[5].message,
+            Some("הסטודנט השלים את השרשרת הבאה:\nפיסיקה 2,פיסיקה 3,".to_string())
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].credit_requirement,
+            Some(101.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[6].credit_completed,
+            82.5
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[7].credit_requirement,
+            Some(14.5)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[7].credit_completed,
+            2.0
+        );
+
+        assert_eq!(
+            user.degree_status.course_bank_requirements[8].credit_requirement,
+            Some(4.0)
+        );
+        assert_eq!(
+            user.degree_status.course_bank_requirements[8].credit_completed,
+            3.5
+        );
+
+        assert_eq!(
+            user.degree_status.overflow_msgs[0],
+            "עברו 4 נקודות מפרויקט לרשימה א".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[1],
+            "עברו 2 נקודות משרשרת מדעית לרשימה ב".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[2],
+            "עברו 2 נקודות מבחירת העשרה לבחירה חופשית".to_string()
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[3],
             "יש לסטודנט 0 נקודות עודפות".to_string()
         );
     }
