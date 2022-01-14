@@ -12,7 +12,7 @@ export class DataStore {
     makeAutoObservable(this, { rootStore: false });
   }
 
-  initUserDetails = (newUserDitails: UserDetails) => {
+  updateStoreUserDetails = (newUserDitails: UserDetails) => {
     this.userDetails = newUserDitails;
   };
 

@@ -6,8 +6,6 @@ import { Paper } from "@mui/material";
 import { SemesterTableHeader } from "./SemesterTableHeader";
 import { useStore } from "../../../../hooks/useStore";
 import { useAuth } from "../../../../hooks/useAuth";
-import useUserState from "../../../../hooks/apiHooks/useUserState";
-import useComputeEndGame from "../../../../hooks/apiHooks/useComputeEndGame";
 import useUpdateUserState from "../../../../hooks/apiHooks/useUpdateUserState";
 import { SemesterTableBody } from "./SemesterTableBody";
 
@@ -17,40 +15,44 @@ export interface SemesterTableProps {
 
 const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
   const {
-    dataStore: { generateRows, updateCourseInUserDetails },
+    dataStore: {
+      userDetails,
+      generateRows,
+      updateCourseInUserDetails,
+      updateStoreUserDetails,
+    },
   } = useStore();
 
   const { userAuthToken } = useAuth();
-  const { data, isLoading, refetch } = useUserState(userAuthToken);
+
   const { mutate } = useUpdateUserState(userAuthToken);
 
   const [tableRows, setTableRows] = useState<RowData[]>([]);
   const [addRowToggle, setAddRowToggle] = useState<boolean>(false);
 
   useEffect(() => {
-    if (data) {
+    if (userDetails) {
       setTableRows(
-        generateRows(semester, data?.details.degree_status.course_statuses)
+        generateRows(semester, userDetails.degree_status.course_statuses)
       );
     }
-  }, [data, isLoading, generateRows, semester]);
+  }, [userDetails, generateRows, semester]);
 
   const handleSave = (newRowData: RowData, semester: string) => {
-    if (!isLoading && data && data?.details) {
-      const newUserDetails = updateCourseInUserDetails(
-        newRowData,
-        semester,
-        data?.details
-      );
-      mutate(newUserDetails);
-      console.log("hi hi hi", data?.details.degree_status.course_statuses);
-      const newnewrow = generateRows(
-        semester,
-        data?.details.degree_status.course_statuses
-      );
-      console.log("~~~~~~ NEW! ", newnewrow);
-      setTableRows(newnewrow);
-    }
+    const newUserDetails = updateCourseInUserDetails(
+      newRowData,
+      semester,
+      userDetails
+    );
+    updateStoreUserDetails(newUserDetails);
+    //mutate(newUserDetails);
+    //   console.log("hi hi hi", data?.details.degree_status.course_statuses);
+    //   const newnewrow = generateRows(
+    //     semester,
+    //     data?.details.degree_status.course_statuses
+    //   );
+    //   console.log("~~~~~~ NEW! ", newnewrow);
+    //   setTableRows(newnewrow);
   };
 
   const handleRowToggle = () => {

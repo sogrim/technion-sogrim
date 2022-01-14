@@ -16,16 +16,15 @@ const UserAppComp: React.FC = () => {
 
   const { userAuthToken } = useAuth();
   const { data, isLoading } = useUserState(userAuthToken);
-
   const {
-    dataStore: { initUserDetails },
+    dataStore: { updateStoreUserDetails },
   } = useStore();
 
   useEffect(() => {
     if (!isLoading && data) {
-      initUserDetails(data.details);
+      updateStoreUserDetails(data.details);
     }
-  }, [data, initUserDetails, isLoading]);
+  }, [data, updateStoreUserDetails, isLoading]);
 
   return (
     <ThemeProvider theme={theme}>
