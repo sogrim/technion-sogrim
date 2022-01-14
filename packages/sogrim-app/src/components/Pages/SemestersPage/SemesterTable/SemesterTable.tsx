@@ -25,7 +25,6 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
   } = useStore();
 
   const { userAuthToken } = useAuth();
-
   const { mutate } = useUpdateUserState(userAuthToken);
 
   const [tableRows, setTableRows] = useState<RowData[]>([]);
@@ -58,10 +57,6 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
         newUserDetails = deleteCourseInUserDetails(rowData, semester);
         break;
     }
-
-    const fordg = { ...newUserDetails };
-    console.log({ fordg });
-
     mutate(newUserDetails);
   };
 

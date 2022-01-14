@@ -22,10 +22,12 @@ const UserAppComp: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && data) {
+      console.log("im here ya ben zona");
       updateStoreUserDetails(data.details);
     }
   }, [data, updateStoreUserDetails, isLoading]);
 
+  console.log("~~~", isLoading);
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

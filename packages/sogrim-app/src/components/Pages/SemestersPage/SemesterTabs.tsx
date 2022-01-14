@@ -6,11 +6,12 @@ import { TabPanel } from "../../AppPages/TabPanel";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../../hooks/useStore";
 import { SemesterTable } from "./SemesterTable/SemesterTable";
+import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
 
 const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
   const {
-    uiStore: { semesterTab: value, setSemesterTab },
+    uiStore: { semesterTab: value, setSemesterTab, endGameLoading },
     dataStore: { userDetails, getAllUserSemesters },
   } = useStore();
 
@@ -60,15 +61,21 @@ const SemesterTabsComp = () => {
           />
         ))}
       </Tabs>
-      {allSemesters?.map((semester, index) => (
-        <Box sx={{ display: "flex", justifyContent: "center" }} key={index}>
-          <TabPanel value={value} index={index}>
-            {userDetails?.degree_status?.course_statuses ? (
-              <SemesterTable semester={semester} />
-            ) : null}
-          </TabPanel>
-        </Box>
-      ))}
+      {endGameLoading ? (
+        <LoadingEndGameSkeleton />
+      ) : (
+        <>
+          {allSemesters?.map((semester, index) => (
+            <Box sx={{ display: "flex", justifyContent: "center" }} key={index}>
+              <TabPanel value={value} index={index}>
+                {userDetails?.degree_status?.course_statuses ? (
+                  <SemesterTable semester={semester} />
+                ) : null}
+              </TabPanel>
+            </Box>
+          ))}
+        </>
+      )}
     </Box>
   );
 };

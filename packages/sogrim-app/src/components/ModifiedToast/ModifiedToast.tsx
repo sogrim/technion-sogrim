@@ -1,6 +1,5 @@
-import { Alert, Snackbar, Button, Grid } from "@mui/material";
+import { Alert, Snackbar, Button } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { useState } from "react";
 import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
 import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
@@ -8,13 +7,17 @@ import { useStore } from "../../hooks/useStore";
 const ModifiedToastComp = () => {
   const {
     dataStore: { modifiedStatus },
+    uiStore: { endGameRefetch },
   } = useStore();
 
   const { userAuthToken } = useAuth();
 
   const { refetch } = useComputeEndGame(userAuthToken);
 
-  const triggerComputeEndGame = () => refetch();
+  const triggerComputeEndGame = () => {
+    endGameRefetch();
+    refetch();
+  };
 
   return (
     <>
