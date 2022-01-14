@@ -10,6 +10,8 @@ export type Catalog = {
 export enum CourseState {
     Complete = 'Complete',
     NotComplete = 'NotComplete',
+    Irrelevant = 'Irrelevant',
+    InProgress = 'InProgress',
 }
 
 export type Course = {
@@ -25,6 +27,8 @@ export type CourseStatus = {
     state: CourseState;
     type: string;
     modified: boolean;
+    specialization_group_name?: string;
+    additional_msg?: string;
 };
 
 export const ACCUMULATE_COURSES = 'accumulate courses';

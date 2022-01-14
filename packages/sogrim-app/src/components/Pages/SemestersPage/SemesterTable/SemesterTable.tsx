@@ -3,7 +3,6 @@ import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
 import TableContainer from '@mui/material/TableContainer';
 import { observer } from 'mobx-react-lite';
-import { getComparator, Order, stableSort } from './SemesterTableUtils';
 import { RowData } from './SemesterTabsConsts';
 import { Paper } from '@mui/material';
 import { SemesterTableHeader } from './SemesterTableHeader';
@@ -30,11 +29,6 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
   const { userAuthToken } = useAuth();
   const { data, isLoading, refetch } = useUserState(userAuthToken);
   const { mutate } = useUpdateUserState(userAuthToken);
-  //const { isLoading: tcIsLoading, isError: tcIsError, refetch: tcRefetch} = useComputeEndGame(userAuthToken);
-
-
-  const [order, setOrder] = React.useState<Order>('asc');
-  const [orderBy, setOrderBy] = React.useState<keyof RowData>('grade');
 
   const [tableRows, setTableRows] = React.useState<RowData[]>([]);
 
@@ -54,16 +48,6 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
       setTableRows(newnewrow);      
     }
   }
-
-
-  const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
-    property: keyof RowData,
-  ) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
     
   return (
     <Box sx={{ width: '100%', display: 'flex', alignItems: 'center'}}>
@@ -73,10 +57,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
             aria-labelledby="tableTitle"
             size={'small'}
           >
-            <SemesterTableHeader
-              order={order}
-              orderBy={orderBy}
-              onRequestSort={handleRequestSort}
+            <SemesterTableHeader                
             />
             <SemesterTableBody tableRows={tableRows} semester={semester} handleSave={handleSave}/>
           </Table>

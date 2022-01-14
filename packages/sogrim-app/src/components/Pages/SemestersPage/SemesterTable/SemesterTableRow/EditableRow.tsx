@@ -1,8 +1,10 @@
+import { useState, useMemo } from "react";
+import { useStore } from '../../../../../hooks/useStore';
+import { Grid, IconButton, MenuItem, TableCell, TextField, Tooltip, Select  } from "@mui/material";
 import AutoFixNormalOutlinedIcon from '@mui/icons-material/AutoFixNormalOutlined';
-import { Grid, IconButton, MenuItem, TableCell, TextField, Tooltip  } from "@mui/material";
-import { useState } from "react";
 import { RowData } from "../SemesterTabsConsts";
 import { EditActionCell } from "./EditActionCell";
+import { courseGradeOptions, courseStateOptions } from '../SemesterTabsConsts'
 
 export interface EditableRowProps {
     editRow: RowData;
@@ -11,40 +13,6 @@ export interface EditableRowProps {
     handleCancel: any;
     labelId: string;
 }
-
-// TODO: changes mock to real data from server with memo
-// TODO: types
-const courseStateMock = [
-  {
-    value: 'בוצע',
-    label: 'בוצע',
-  },
-  {
-    value: 'לא בוצע',
-    label: 'לא בוצע',
-  },  
-];
-
-const courseTypeMock = [
-  {
-    value: 'חובה',
-  },
-  {
-    value: 'שרשרת מדעית',
-  },
-  {
-    value: 'רשימה א׳',
-  }, 
-  {
-    value: 'רשימה ב׳',
-  },   
-  {
-    value: 'ספורט',
-  }, 
-  {
-    value: 'פרוייקט',
-  }, 
-];
 
 const EditableRowComp: React.FC<EditableRowProps> = ({
     editRow,
@@ -55,9 +23,21 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
 }) => {      
   const { name, courseNumber, credit, grade, state, type} = editRow;
 
+  const { dataStore: {
+    getUserBankNames,
+  } } = useStore();
+
+  const banksNamesOptions = useMemo(() => getUserBankNames(), []);
+
+
   const [ gradeToggle, setGradeToggle] = useState<boolean>(true);
 
   const gradeToggleClick = () => setGradeToggle(!gradeToggle);
+
+  const gradeNonNumericDefualt = (gradeToTranslate: string) => {
+    const idx = courseGradeOptions.findIndex(gradeOpt => gradeOpt === gradeToTranslate);
+    return idx === -1 ? courseGradeOptions[0] : courseGradeOptions[idx];
+  }
 
   return (
       <>
@@ -73,55 +53,55 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
                         label={name} variant="outlined" size="small"/>                
           </TableCell>
           <TableCell align="center" width={'150px'}>
-              <TextField id="course-number"
-                          
-                          label={courseNumber} variant="outlined" size="small"/>                                
+              <TextField id="course-number" name="courseNumber" onChange={handleEditChange}
+                         label={courseNumber} variant="outlined" size="small"/>                 
           </TableCell>
-          <TableCell align="center" width={'50px'}>
-              <TextField id="course-credit" 
-                          
-                          label={credit} variant="outlined" size="small" type="number"/>  
+          <TableCell align="center" width={'80px'}>
+              <TextField id="course-credit" name="credit" onChange={handleEditChange}                          
+                          label={credit} variant="outlined" size="small" type="tel"/>  
           </TableCell>
             <TableCell align="center" width={'250px'} >
               <Grid container justifyContent={'center'} direction={'row'}>
-                  <Tooltip title='ציון לא מספרי' arrow> 
+                  <Tooltip title={gradeToggle ? 'ציון לא מספרי' : 'ציון מספרי'} arrow> 
                   <IconButton color="primary" onClick={gradeToggleClick}>
                     <AutoFixNormalOutlinedIcon />
                   </IconButton>
                   </Tooltip>
                 { gradeToggle ?
-                  <TextField id="course-grade"                        
+                  <TextField id="course-grade" name="grade" onChange={handleEditChange}                       
                           label={grade} variant="outlined" size="small" type="number"/> 
                   : 
-                  <TextField select id="course-grade" label={state} variant="outlined" size="small" sx={{width: '170px'}}> 
-              {   courseStateMock.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                  {option.value}
+                  <Select   id="course-grade" value={gradeNonNumericDefualt(grade)} name="grade" 
+                            onChange={(event, newValue) => handleEditChange(event, 'grade', newValue)}
+                            variant="outlined" size="small" sx={{width: '170px'}}> 
+              {   courseGradeOptions.map((option) => (
+                  <MenuItem key={option} value={option}>
+                  {option}
                   </MenuItem>
         ))}
-              </TextField>
+              </Select>
                     }
               </Grid>
           </TableCell>
-            <TableCell align="center" width={'100px'}>
-              <TextField id="course-type" select
-                        
-                        label={type} variant="outlined" size="small" fullWidth> 
-                {courseTypeMock.map((option) => (
-                          <MenuItem key={option.value} value={option.value}>
-                          {option.value}
+            <TableCell align="center" width={'170px'}>
+              <Select id="course-type" name="type" onChange={(event, newValue) => handleEditChange(event, 'type', newValue)}                 
+                        value={type} variant="outlined" size="small" fullWidth> 
+                {banksNamesOptions.map((option) => (
+                          <MenuItem key={option} value={option}>
+                          {option}
                           </MenuItem>
                 ))}
-              </TextField>
+              </Select>
           </TableCell>
-          <TableCell align="center" width={'100x'}>
-              <TextField select id="course-state" label={state} variant="outlined" size="small" fullWidth> 
-              {courseStateMock.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                  {option.value}
+          <TableCell align="center" width={'170x'}>
+              <Select id="course-state" name="state" onChange={(event, newValue) => handleEditChange(event, 'state', newValue)}
+              value={state} variant="outlined" size="small" fullWidth> 
+              {courseStateOptions.map((option) => (
+                  <MenuItem key={option} value={option}>
+                  {option}
                   </MenuItem>
         ))}
-              </TextField>
+              </Select>
           </TableCell>    
           <EditActionCell row={editRow} handleSave={handleSave} handleCancel={handleCancel}/>      
       </>
