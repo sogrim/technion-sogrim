@@ -4,6 +4,7 @@ import { Banner } from "../Banner/Banner";
 
 import { FOOTER_HEIGHT } from "../../themes/constants";
 import { AppPages } from "../AppPages/AppPages";
+import { ModifiedToast } from "../ModifiedToast/ModifiedToast";
 
 export const Layout: React.FC = ({ children }) => {
   return (
@@ -15,13 +16,14 @@ export const Layout: React.FC = ({ children }) => {
         <Banner />
       </ContentWrapper>
       <AppPages />
+      <ModifiedToast />
       {/* {<Footer />} */}
     </LayoutWrapper>
   );
 };
 
 const LayoutWrapper = styled("div")`
-  min-height: 100vh;
+  min-height: 0vh;
 `;
 
 const ContentWrapper = styled("div")`
