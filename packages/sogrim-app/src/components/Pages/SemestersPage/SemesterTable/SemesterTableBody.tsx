@@ -36,16 +36,23 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
         credit: 0,
     });
 
-    const handleEditChange = (event: any) => {
-        event.preventDefault();
-
-        const fieldName = event.target.getAttribute("name") as keyof RowData;
-        const fieldValue = event.target.value;
-        
+    const handleEditChange = (event: React.ChangeEvent<HTMLInputElement>, type?: string) => {
+        let fieldName, fieldValue;
+        console.log(event);
+        if (type) {
+            fieldName = type;
+            fieldValue = event.target.value;           
+        } else {
+            event.preventDefault();
+            fieldName = type ?? event.target?.getAttribute("name") as keyof RowData;
+            fieldValue = event.target.value; 
+        }
         let newRowData: RowData = { ...editRow };
         // TODO: validations & all props.
-        newRowData.name = fieldValue;
+        // @ts-ignore
+        newRowData[fieldName] = fieldValue;
         setEditRow(newRowData);
+        console.log(newRowData, editRow);
   };
 
     const handleEditClick = (event: any, row: RowData) => {
@@ -88,8 +95,7 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
                     hover            
                     role="checkbox"            
                     tabIndex={-1}
-                    key={row.name}            
-                    sx={{ width: '1200px'}}
+                    key={row.name}                                
                     >
                         {
                             editableRowCourseNumber === row.courseNumber ?

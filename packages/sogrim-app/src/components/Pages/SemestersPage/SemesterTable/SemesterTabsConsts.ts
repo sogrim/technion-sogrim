@@ -52,3 +52,19 @@ export const headCells: readonly HeadCell[] = [
     label: 'סטאטוס',
   },  
 ];
+
+export const courseStateOptions = [
+  'הושלם',
+  'לא הושלם',
+  'לא רלוונטי',
+  'בתהליך',
+];
+
+export const courseGradeOptions = [
+  'עבר',
+  'נכשל',
+  'פטור ללא ניקוד',  
+  'פטור עם ניקוד',
+  'לא השלים'
+];
+

@@ -16,6 +16,9 @@ const ReadOnlyRowComp: React.FC<ReadOnlyRowProps> = ({
     handleEdit,
     handleDelete,
 }) => {
+
+    const { name, courseNumber, credit, grade, type, state} = row;
+
     return (
        <>
             <TableCell
@@ -26,15 +29,15 @@ const ReadOnlyRowComp: React.FC<ReadOnlyRowProps> = ({
                 padding="none"
                 width={'250px'}
             >
-                {row.name}
+                {name}
             </TableCell>
             <TableCell align="center" width={'150px'}>
-                {row.courseNumber}
+                {courseNumber}
             </TableCell>
-            <TableCell align="center" width={'50px'}>{row.credit}</TableCell>
-            <TableCell align="center" width={'250px'}>{row.grade}</TableCell>
-            <TableCell align="center" width={'170px'}>{row.type}</TableCell>
-            <TableCell align="center" width={'170px'}>{row.state}</TableCell>
+            <TableCell align="center" width={'80px'}>{credit}</TableCell>
+            <TableCell align="center" width={'250px'}>{grade}</TableCell>
+            <TableCell align="center" width={'170px'}>{type}</TableCell>
+            <TableCell align="center" width={'170px'}>{state}</TableCell>
             <ReadOnlyActionCell row={row} handleEdit={handleEdit} handleDelete={handleDelete}/>
         </>
     )

@@ -6,10 +6,17 @@ import { RootStore } from './RootStore';
 
 export class DataStore {
 
+  public userDetails: UserDetails = {} as UserDetails;
+  public userBankNames: string[] = [];
+
   constructor(
     public readonly rootStore: RootStore,
   ) {
-    makeAutoObservable(this, { rootStore: false });
+    makeAutoObservable(this, { rootStore: false });    
+  }
+
+  initUserDetails = (newUserDitails: UserDetails) => {
+    this.userDetails = newUserDitails;
   }
 
   getAllUserSemesters = (courseList: CourseStatus[]): string[] => {
@@ -24,11 +31,26 @@ export class DataStore {
     return allSemesters;
   }
 
+  getUserBankNames = () => {
+    if(this.userBankNames.length === 0) {
+      this.generateUserBanksNames();      
+    }
+    return this.userBankNames;
+  }
+
   private displayGrade = (grade: string) => {
     if (!grade) {
       return '-';
     }       
     return grade.toString();
+  }
+
+  private generateUserBanksNames = () => {
+    const userBanksNamesList: string[] = [];
+    this.userDetails?.degree_status?.course_bank_requirements?.forEach( bankReq => {
+      userBanksNamesList.push(bankReq.course_bank_name);
+    });
+    this.userBankNames = userBanksNamesList;
   }
 
   generateRows = (semester: string, courseList: CourseStatus[]) => {
