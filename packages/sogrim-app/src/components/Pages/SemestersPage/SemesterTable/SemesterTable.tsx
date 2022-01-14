@@ -59,6 +59,9 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
         break;
     }
 
+    const fordg = { ...newUserDetails };
+    console.log({ fordg });
+
     mutate(newUserDetails);
   };
 
