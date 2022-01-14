@@ -19,7 +19,8 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
       userDetails,
       generateRows,
       updateCourseInUserDetails,
-      updateStoreUserDetails,
+      deleteCourseInUserDetails,
+      insertCourseInUserDetails,
     },
   } = useStore();
 
@@ -49,8 +50,11 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
         break;
 
       case UpdateUserDetailsAction.AfterAdd:
+        insertCourseInUserDetails(rowData, semester);
+        break;
+
       case UpdateUserDetailsAction.AfterDelete:
-        console.log("im after delete or add", rowData);
+        deleteCourseInUserDetails(rowData, semester);
         break;
     }
 
