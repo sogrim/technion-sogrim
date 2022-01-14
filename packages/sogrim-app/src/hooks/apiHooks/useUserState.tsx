@@ -8,5 +8,6 @@ export default function useUserState(
 ) {
   return useQuery<UserState>("userState", () => getUserState(authToken), {
     enabled: !!authToken && trigger,
+    staleTime: Infinity,
   });
 }

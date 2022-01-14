@@ -44,28 +44,22 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
     rowData: RowData,
     semester: string
   ) => {
+    let newUserDetails;
     switch (action) {
       case UpdateUserDetailsAction.AfterEdit:
-        updateCourseInUserDetails(rowData, semester);
+        newUserDetails = updateCourseInUserDetails(rowData, semester);
         break;
 
       case UpdateUserDetailsAction.AfterAdd:
-        insertCourseInUserDetails(rowData, semester);
+        newUserDetails = insertCourseInUserDetails(rowData, semester);
         break;
 
       case UpdateUserDetailsAction.AfterDelete:
-        deleteCourseInUserDetails(rowData, semester);
+        newUserDetails = deleteCourseInUserDetails(rowData, semester);
         break;
     }
 
-    //mutate(newUserDetails);
-    //   console.log("hi hi hi", data?.details.degree_status.course_statuses);
-    //   const newnewrow = generateRows(
-    //     semester,
-    //     data?.details.degree_status.course_statuses
-    //   );
-    //   console.log("~~~~~~ NEW! ", newnewrow);
-    //   setTableRows(newnewrow);
+    mutate(newUserDetails);
   };
 
   const handleRowToggle = () => {
