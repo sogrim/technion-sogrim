@@ -98,6 +98,8 @@ export class DataStore {
     );
 
     this.userDetails.degree_status.course_statuses = updatedCourseStatus;
+
+    return this.userDetails;
   };
 
   deleteCourseInUserDetails = (rowData: RowData, semester: string) => {
@@ -109,6 +111,8 @@ export class DataStore {
     newCourseList.splice(idx, 1);
 
     this.userDetails.degree_status.course_statuses = newCourseList;
+
+    return this.userDetails;
   };
 
   insertCourseInUserDetails = (rowData: RowData, semester: string) => {
@@ -129,5 +133,7 @@ export class DataStore {
 
     courseList.push(newCourse);
     this.userDetails.degree_status.course_statuses = courseList;
+
+    return this.userDetails;
   };
 }
