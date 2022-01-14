@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
-import Box from "@mui/material/Box";
+import { Box, Tab } from "@mui/material";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
 import { TabPanel } from "../../AppPages/TabPanel";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../../hooks/useStore";
 import { SemesterTable } from "./SemesterTable/SemesterTable";
 import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
+import { SemesterOptionsButton } from "./SemesterOptionsButton";
 
 const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
+
   const {
     uiStore: { semesterTab: value, setSemesterTab, endGameLoading },
     dataStore: { userDetails, getAllUserSemesters },
@@ -36,6 +37,8 @@ const SemesterTabsComp = () => {
     }
   }, [userDetails, getAllUserSemesters]);
 
+  const addNewSemester = () => {};
+
   return (
     <Box
       sx={{
@@ -45,22 +48,31 @@ const SemesterTabsComp = () => {
         },
       }}
     >
-      <Tabs
-        textColor="primary"
-        indicatorColor="primary"
-        value={value}
-        onChange={handleChange}
-        variant="scrollable"
-        scrollButtons
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
       >
-        {allSemesters?.map((semester, index) => (
-          <Tab
-            sx={{ fontSize: "30px" }}
-            label={semesterNaming(semester)}
-            key={index}
-          />
-        ))}
-      </Tabs>
+        <Tabs
+          textColor="primary"
+          indicatorColor="primary"
+          value={value}
+          onChange={handleChange}
+          variant="scrollable"
+          scrollButtons
+        >
+          {allSemesters?.map((semester, index) => (
+            <Tab
+              sx={{ fontSize: "30px" }}
+              label={semesterNaming(semester)}
+              key={index}
+            />
+          ))}
+        </Tabs>
+        <SemesterOptionsButton />
+      </Box>
       {endGameLoading ? (
         <LoadingEndGameSkeleton />
       ) : (
