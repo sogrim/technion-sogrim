@@ -16,6 +16,13 @@ export class DataStore {
     this.userDetails = newUserDitails;
   };
 
+  get modifiedStatus() {
+    return (
+      this.userDetails?.degree_status?.course_statuses?.length > 0 &&
+      this.userDetails?.modified
+    );
+  }
+
   getAllUserSemesters = (courseList: CourseStatus[]): string[] => {
     const allSemestersSet = new Set<string>();
     courseList.forEach((course) =>
