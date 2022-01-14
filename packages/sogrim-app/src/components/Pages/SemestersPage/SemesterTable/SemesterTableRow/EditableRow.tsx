@@ -65,14 +65,7 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
         />
       </TableCell>
       <TableCell align="center" width={"150px"}>
-        <TextField
-          id="course-number"
-          name="courseNumber"
-          onChange={handleEditChange}
-          label={courseNumber}
-          variant="outlined"
-          size="small"
-        />
+        {courseNumber}
       </TableCell>
       <TableCell align="center" width={"80px"}>
         <TextField
