@@ -1,17 +1,11 @@
-import React from 'react';
-import { observer } from 'mobx-react-lite';
-import { SemesterTabs } from './SemesterTabs';
+import React from "react";
+import { observer } from "mobx-react-lite";
+import { SemesterTabs } from "./SemesterTabs";
 
-interface SemestersTabProps {
-}
+interface SemestersTabProps {}
 
 const SemestersPageComp: React.FC<SemestersTabProps> = () => {
-    return (        
-       <SemesterTabs />
-    );
+  return <SemesterTabs />;
 };
 
-
-
 export const SemestersPage = observer(SemestersPageComp);
-

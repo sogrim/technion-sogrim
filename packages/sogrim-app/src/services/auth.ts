@@ -1,7 +1,7 @@
-import { API_URL } from './api-url'
+import { API_URL } from "./api-url";
 
 export interface LoginRequest {
-    // TODO
+  // TODO
 }
 
 export class AuthService {
@@ -23,5 +23,3 @@ export class AuthService {
     return parsedResponse;
   }
 }
-
-

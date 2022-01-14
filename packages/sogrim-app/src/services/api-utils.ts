@@ -1,6 +1,6 @@
 export async function callWithFallback<R>(
   call: Promise<R>,
-  fallback: any,
+  fallback: any
 ): Promise<R> {
   let result: R;
   try {

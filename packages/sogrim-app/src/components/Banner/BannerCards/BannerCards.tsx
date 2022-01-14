@@ -1,14 +1,12 @@
-import { Box } from '@mui/material';
-import { DegreeMainStatus } from './DegreeMainStatus';
-import { observer} from 'mobx-react-lite';
+import { Box } from "@mui/material";
+import { DegreeMainStatus } from "./DegreeMainStatus";
+import { observer } from "mobx-react-lite";
 
 const BannerCardsComp: React.FC = () => {
-
-  return (    
-        <Box >
-           <DegreeMainStatus />                   
-        </Box>                
-     
+  return (
+    <Box>
+      <DegreeMainStatus />
+    </Box>
   );
 };
 
