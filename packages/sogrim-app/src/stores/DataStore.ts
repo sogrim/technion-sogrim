@@ -77,12 +77,8 @@ export class DataStore {
     return rows;
   };
 
-  updateCourseInUserDetails = (
-    rowData: RowData,
-    semester: string,
-    userDetails: UserDetails
-  ): UserDetails => {
-    const courseList = userDetails?.degree_status.course_statuses ?? [];
+  updateCourseInUserDetails = (rowData: RowData, semester: string) => {
+    const courseList = this.userDetails?.degree_status.course_statuses ?? [];
 
     const updateCourseRow: CourseStatus = {
       course: {
@@ -97,17 +93,12 @@ export class DataStore {
       modified: true,
     };
 
-    // TODO: handle change course ID...
     const updatedCourseStatus: CourseStatus[] = courseList.map((course) =>
       course.course._id !== rowData.courseNumber ? course : updateCourseRow
     );
 
-    const newUserDetails = { ...userDetails };
-    if (newUserDetails.degree_status?.course_statuses) {
-      newUserDetails.degree_status.course_statuses = updatedCourseStatus;
-      newUserDetails.modified = true;
-    }
-
-    return newUserDetails;
+    this.userDetails.degree_status.course_statuses = updatedCourseStatus;
   };
+
+  //updateCourseInUserDetails = (rowData: RowData, semester: string) => {};
 }

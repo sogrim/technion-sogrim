@@ -72,7 +72,8 @@ export const emptyRow = {
   credit: 0,
 };
 
-export enum EditChangeOptions {
-  Add = "Add",
-  Edit = "Edit",
+export enum UpdateUserDetailsAction {
+  AfterEdit = "AfterEdit",
+  AfterAdd = "AfterAdd",
+  AfterDelete = "AfterDelete",
 }

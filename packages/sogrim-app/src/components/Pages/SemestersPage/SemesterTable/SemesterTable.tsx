@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Box, Table, TableContainer, Button } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { RowData } from "./SemesterTabsConsts";
+import { RowData, UpdateUserDetailsAction } from "./SemesterTabsConsts";
 import { Paper } from "@mui/material";
 import { SemesterTableHeader } from "./SemesterTableHeader";
 import { useStore } from "../../../../hooks/useStore";
@@ -38,13 +38,22 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
     }
   }, [userDetails, generateRows, semester]);
 
-  const handleSave = (newRowData: RowData, semester: string) => {
-    const newUserDetails = updateCourseInUserDetails(
-      newRowData,
-      semester,
-      userDetails
-    );
-    updateStoreUserDetails(newUserDetails);
+  const handleUpdateUserDetails = (
+    action: UpdateUserDetailsAction,
+    rowData: RowData,
+    semester: string
+  ) => {
+    switch (action) {
+      case UpdateUserDetailsAction.AfterEdit:
+        updateCourseInUserDetails(rowData, semester);
+        break;
+
+      case UpdateUserDetailsAction.AfterAdd:
+      case UpdateUserDetailsAction.AfterDelete:
+        console.log("im after delete or add", rowData);
+        break;
+    }
+
     //mutate(newUserDetails);
     //   console.log("hi hi hi", data?.details.degree_status.course_statuses);
     //   const newnewrow = generateRows(
@@ -75,7 +84,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
             <SemesterTableBody
               tableRows={tableRows}
               semester={semester}
-              handleSave={handleSave}
+              handleUpdateUserDetails={handleUpdateUserDetails}
               handleRowToggle={handleRowToggle}
               addRowToggle={addRowToggle}
             />

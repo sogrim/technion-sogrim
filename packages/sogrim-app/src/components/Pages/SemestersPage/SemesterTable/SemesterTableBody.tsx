@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { TableBody } from "@mui/material";
-import { emptyRow, RowData } from "./SemesterTabsConsts";
+import {
+  emptyRow,
+  RowData,
+  UpdateUserDetailsAction,
+} from "./SemesterTabsConsts";
 import { TableRow } from "@mui/material";
 import { ReadOnlyRow } from "./SemesterTableRow/ReadOnlyRow";
 import { EditableRow } from "./SemesterTableRow/EditableRow";
@@ -9,7 +13,11 @@ import { NewRow } from "./SemesterTableRow/NewRow";
 // TODO - types!!!
 interface SemesterTableBodyProps {
   tableRows: RowData[];
-  handleSave: (newRowData: RowData, semester: string) => void;
+  handleUpdateUserDetails: (
+    action: UpdateUserDetailsAction,
+    rowData: RowData,
+    semester: string
+  ) => void;
   semester: string;
   addRowToggle: boolean;
   handleRowToggle: () => void;
@@ -17,7 +25,7 @@ interface SemesterTableBodyProps {
 
 export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
   tableRows,
-  handleSave,
+  handleUpdateUserDetails,
   semester,
   addRowToggle,
   handleRowToggle,
@@ -77,7 +85,11 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     newSemesterRows[idx] = editRow;
     setSemesterRows(newSemesterRows);
     setEditableRowCourseNumber(null);
-    handleSave(editRow, semester);
+    handleUpdateUserDetails(
+      UpdateUserDetailsAction.AfterEdit,
+      editRow,
+      semester
+    );
   };
 
   const handleDeleteClick = (event: any, courseNumber: string) => {
@@ -86,9 +98,15 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
       (row) => row.courseNumber === courseNumber
     );
     const newSemesterRows = [...semesterRows];
+    const rowToDelete = { ...emptyRow };
+    rowToDelete.courseNumber = courseNumber;
     newSemesterRows.splice(idx, 1);
     setSemesterRows(newSemesterRows);
-    handleSave(editRow, semester);
+    handleUpdateUserDetails(
+      UpdateUserDetailsAction.AfterDelete,
+      rowToDelete,
+      semester
+    );
   };
 
   const handleCancelClick = () => {
@@ -107,6 +125,11 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     const newSemesterRows = [...semesterRows, editRow];
     setEditRow(emptyRow);
     setSemesterRows(newSemesterRows);
+    handleUpdateUserDetails(
+      UpdateUserDetailsAction.AfterAdd,
+      editRow,
+      semester
+    );
   };
 
   return (
