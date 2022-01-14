@@ -100,5 +100,34 @@ export class DataStore {
     this.userDetails.degree_status.course_statuses = updatedCourseStatus;
   };
 
-  //updateCourseInUserDetails = (rowData: RowData, semester: string) => {};
+  deleteCourseInUserDetails = (rowData: RowData, semester: string) => {
+    const courseList = this.userDetails?.degree_status.course_statuses ?? [];
+    const idx = courseList.findIndex(
+      (course) => course.course._id === rowData.courseNumber
+    );
+    const newCourseList = [...courseList];
+    newCourseList.splice(idx, 1);
+
+    this.userDetails.degree_status.course_statuses = newCourseList;
+  };
+
+  insertCourseInUserDetails = (rowData: RowData, semester: string) => {
+    const courseList = this.userDetails?.degree_status.course_statuses ?? [];
+
+    const newCourse: CourseStatus = {
+      course: {
+        _id: rowData.courseNumber,
+        credit: rowData.credit,
+        name: rowData.name,
+      },
+      state: rowData.state as CourseState,
+      type: rowData.type,
+      grade: rowData.grade,
+      semester: semester,
+      modified: true,
+    };
+
+    courseList.push(newCourse);
+    this.userDetails.degree_status.course_statuses = courseList;
+  };
 }
