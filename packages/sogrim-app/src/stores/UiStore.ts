@@ -8,6 +8,7 @@ export class UIStore {
   public userDisplay: any;
   public showMainStatus: boolean = false;
   public semesterTab: number = 0;
+  public endGameLoading: boolean = false;
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
@@ -52,5 +53,12 @@ export class UIStore {
       return UserRegistrationState.NoCourses;
     }
     return UserRegistrationState.NoCatalog;
+  };
+
+  endGameRefetch = () => {
+    this.endGameLoading = true;
+    setTimeout(() => {
+      this.endGameLoading = false;
+    }, 1500);
   };
 }
