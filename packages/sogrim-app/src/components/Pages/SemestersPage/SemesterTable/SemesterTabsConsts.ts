@@ -68,3 +68,18 @@ export const courseGradeOptions = [
   'לא השלים'
 ];
 
+export const emptyRow = {
+        courseNumber: '',
+        name: '',
+        grade: '',
+        state: '',
+        type: '',
+        credit: 0,
+}
+
+
+export enum EditChangeOptions {    
+    Add = "Add",
+    Edit = "Edit",
+}
+

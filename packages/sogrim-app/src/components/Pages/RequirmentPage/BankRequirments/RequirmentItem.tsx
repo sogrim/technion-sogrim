@@ -60,7 +60,7 @@ export const RequirmentItem: React.FC<RequirmentItemProps> = ({
   } 
 
   return (
-    <Card sx={{ minWidth: 350, maxWidth: 450, margin: 1, }} onClick={() => console.log('das')}>
+    <Card sx={{ minWidth: 350, maxWidth: 450, margin: 1, }}>
       <CardActionArea>
       <CardHeader 
         avatar={

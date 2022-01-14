@@ -1,7 +1,5 @@
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableContainer from '@mui/material/TableContainer';
+import { useState, useEffect } from 'react';
+import {Box, Table, TableContainer, Button} from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { RowData } from './SemesterTabsConsts';
 import { Paper } from '@mui/material';
@@ -12,6 +10,8 @@ import useUserState from '../../../../hooks/apiHooks/useUserState';
 import useComputeEndGame from '../../../../hooks/apiHooks/useComputeEndGame';
 import useUpdateUserState from '../../../../hooks/apiHooks/useUpdateUserState';
 import { SemesterTableBody } from './SemesterTableBody';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+
 export interface SemesterTableProps {    
     semester: string;    
   }
@@ -30,9 +30,10 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
   const { data, isLoading, refetch } = useUserState(userAuthToken);
   const { mutate } = useUpdateUserState(userAuthToken);
 
-  const [tableRows, setTableRows] = React.useState<RowData[]>([]);
+  const [tableRows, setTableRows] = useState<RowData[]>([]);
+  const [addRowToggle, setAddRowToggle] = useState<boolean>(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (data) {
       setTableRows(generateRows(semester, data?.details.degree_status.course_statuses));      
     }
@@ -48,9 +49,13 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
       setTableRows(newnewrow);      
     }
   }
+
+  const handleRowToggle = () => {
+    setAddRowToggle(!addRowToggle);
+  }
     
   return (
-    <Box sx={{ width: '100%', display: 'flex', alignItems: 'center'}}>
+    <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
       <Paper sx={{ width: '100%', mb: 2 }}>        
         <TableContainer sx={{ width: '1200px' }}>
           <Table            
@@ -59,13 +64,14 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({
           >
             <SemesterTableHeader                
             />
-            <SemesterTableBody tableRows={tableRows} semester={semester} handleSave={handleSave}/>
+            <SemesterTableBody tableRows={tableRows} semester={semester} handleSave={handleSave} 
+                handleRowToggle={handleRowToggle} addRowToggle={addRowToggle}/>
           </Table>
-        </TableContainer>    
-        {/* <TableFooter>
-            Add a new row
-        </TableFooter>     */}
+        </TableContainer>
       </Paper>      
+        { !addRowToggle && <Button variant="outlined" onClick={handleRowToggle} startIcon={<AddOutlinedIcon /> }>
+        הוסף קורס חדש
+        </Button> }
     </Box>
   );
 }
