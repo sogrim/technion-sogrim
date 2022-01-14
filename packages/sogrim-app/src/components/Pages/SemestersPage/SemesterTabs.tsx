@@ -5,18 +5,13 @@ import Tab from "@mui/material/Tab";
 import { TabPanel } from "../../AppPages/TabPanel";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../../hooks/useStore";
-import { useAuth } from "../../../hooks/useAuth";
 import { SemesterTable } from "./SemesterTable/SemesterTable";
-import useUserState from "../../../hooks/apiHooks/useUserState";
 
 const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
-  const { userAuthToken } = useAuth();
-  const { data, isLoading } = useUserState(userAuthToken);
-
   const {
     uiStore: { semesterTab: value, setSemesterTab },
-    dataStore: { updateCourseInUserDetails, getAllUserSemesters },
+    dataStore: { userDetails, getAllUserSemesters },
   } = useStore();
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -33,14 +28,12 @@ const SemesterTabsComp = () => {
   };
 
   useEffect(() => {
-    if (data && !isLoading) {
-      if (data?.details?.degree_status?.course_statuses) {
-        setAllSemesters(
-          getAllUserSemesters(data.details.degree_status.course_statuses)
-        );
-      }
+    if (userDetails) {
+      setAllSemesters(
+        getAllUserSemesters(userDetails.degree_status.course_statuses)
+      );
     }
-  }, [data, getAllUserSemesters, isLoading]);
+  }, [userDetails, getAllUserSemesters]);
 
   return (
     <Box
@@ -70,7 +63,7 @@ const SemesterTabsComp = () => {
       {allSemesters?.map((semester, index) => (
         <Box sx={{ display: "flex", justifyContent: "center" }} key={index}>
           <TabPanel value={value} index={index}>
-            {data?.details?.degree_status?.course_statuses ? (
+            {userDetails?.degree_status?.course_statuses ? (
               <SemesterTable semester={semester} />
             ) : null}
           </TabPanel>

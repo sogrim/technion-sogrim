@@ -77,6 +77,7 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     newSemesterRows[idx] = editRow;
     setSemesterRows(newSemesterRows);
     setEditableRowCourseNumber(null);
+    handleSave(editRow, semester);
   };
 
   const handleDeleteClick = (event: any, courseNumber: string) => {
@@ -87,6 +88,7 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     const newSemesterRows = [...semesterRows];
     newSemesterRows.splice(idx, 1);
     setSemesterRows(newSemesterRows);
+    handleSave(editRow, semester);
   };
 
   const handleCancelClick = () => {
