@@ -67,7 +67,7 @@ const SemesterTabsComp = () => {
       ) {
         newSemesterName = "חורף_" + (+splitName[1] + 1);
       } else {
-        newSemesterName = "קיץ";
+        newSemesterName = "קיץ_" + (+splitName[1] + 1);
       }
       newSemesterList.push(newSemesterName);
       setAllSemesters(newSemesterList);
