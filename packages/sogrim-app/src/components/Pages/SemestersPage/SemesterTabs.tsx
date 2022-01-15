@@ -7,7 +7,7 @@ import { useStore } from "../../../hooks/useStore";
 import { SemesterTable } from "./SemesterTable/SemesterTable";
 import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
 import { SemesterOptionsButton } from "./SemesterOptionsButton";
-import { AddSemesterFlow } from "../../../types/ui-types";
+import { SemesterOptions } from "../../../types/ui-types";
 import { useAuth } from "../../../hooks/useAuth";
 import useUpdateUserState from "../../../hooks/apiHooks/useUpdateUserState";
 
@@ -46,7 +46,7 @@ const SemesterTabsComp = () => {
     }
   }, [userDetails, getAllUserSemesters]);
 
-  const addNewSemester = (semesterType: AddSemesterFlow) => {
+  const addNewSemester = (semesterType: SemesterOptions) => {
     if (!allSemesters) {
       return;
     }
@@ -57,12 +57,12 @@ const SemesterTabsComp = () => {
     let newSemesterName;
     if (lastSemester) {
       if (
-        semesterType !== AddSemesterFlow.Summer &&
+        semesterType !== SemesterOptions.Summer &&
         lastSemester.includes("חורף")
       ) {
         newSemesterName = "אביב_" + (+splitName[1] + 1);
       } else if (
-        semesterType !== AddSemesterFlow.Summer &&
+        semesterType !== SemesterOptions.Summer &&
         lastSemester.includes("אביב")
       ) {
         newSemesterName = "חורף_" + (+splitName[1] + 1);

@@ -10,8 +10,9 @@ export enum UserRegistrationState {
   Ready = 3,
 }
 
-export enum AddSemesterFlow {
+export enum SemesterOptions {
   Idle = "Idle",
   Regular = "Regular",
   Summer = "Summer",
+  Delete = "Delete",
 }
