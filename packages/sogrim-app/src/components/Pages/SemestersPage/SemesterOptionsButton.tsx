@@ -9,9 +9,11 @@ import { IconButton, Tooltip, Box, ToggleButton } from "@mui/material";
 
 interface SemesterOptionsButtonProps {
   handleAddSemester: (semesterType: AddSemesterFlow) => void;
+  handleDeleteSemester: () => void;
 }
 export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
   handleAddSemester,
+  handleDeleteSemester,
 }) => {
   const [addSemesterFlow, setAddSemesterFlow] = useState<AddSemesterFlow>(
     AddSemesterFlow.Idle
@@ -33,6 +35,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
 
   const clickDeleteCurrentSemester = () => {
     setAddSemesterFlow(AddSemesterFlow.Idle);
+    handleDeleteSemester();
   };
 
   return (
@@ -77,11 +80,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
       )}
       {addSemesterFlow === AddSemesterFlow.Idle && (
         <Tooltip title={"מחק סמסטר נוכחי"} arrow>
-          <IconButton
-            onClick={(event) =>
-              handleSemesterTypeChange(event, AddSemesterFlow.Regular)
-            }
-          >
+          <IconButton onClick={clickDeleteCurrentSemester}>
             <DeleteIcon />
           </IconButton>
         </Tooltip>

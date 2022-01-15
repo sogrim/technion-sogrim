@@ -8,13 +8,21 @@ import { SemesterTable } from "./SemesterTable/SemesterTable";
 import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
 import { SemesterOptionsButton } from "./SemesterOptionsButton";
 import { AddSemesterFlow } from "../../../types/ui-types";
+import { useAuth } from "../../../hooks/useAuth";
+import useUpdateUserState from "../../../hooks/apiHooks/useUpdateUserState";
 
 const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
 
+  const { userAuthToken } = useAuth();
+  const { mutate } = useUpdateUserState(userAuthToken);
   const {
     uiStore: { semesterTab: value, setSemesterTab, endGameLoading },
-    dataStore: { userDetails, getAllUserSemesters },
+    dataStore: {
+      userDetails,
+      getAllUserSemesters,
+      deleteSemesterInUserDetails,
+    },
   } = useStore();
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -66,6 +74,20 @@ const SemesterTabsComp = () => {
     }
   };
 
+  const deleteSemester = () => {
+    if (allSemesters) {
+      const newUserDetails = deleteSemesterInUserDetails(allSemesters[value]);
+      const idx = allSemesters.findIndex(
+        (semester) => semester === allSemesters[value]
+      );
+      const newSemesterList = [...allSemesters];
+      newSemesterList.splice(idx, 1);
+      setAllSemesters(newSemesterList);
+      setSemesterTab(0);
+      mutate(newUserDetails);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -99,7 +121,10 @@ const SemesterTabsComp = () => {
             />
           ))}
         </Tabs>
-        <SemesterOptionsButton handleAddSemester={addNewSemester} />
+        <SemesterOptionsButton
+          handleAddSemester={addNewSemester}
+          handleDeleteSemester={deleteSemester}
+        />
       </Box>
       {endGameLoading ? (
         <LoadingEndGameSkeleton />

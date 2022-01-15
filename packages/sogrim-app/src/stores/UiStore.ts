@@ -55,10 +55,14 @@ export class UIStore {
     return UserRegistrationState.NoCatalog;
   };
 
+  finishEndGameLoading = () => {
+    this.endGameLoading = false;
+  };
+
   endGameRefetch = () => {
     this.endGameLoading = true;
     setTimeout(() => {
-      this.endGameLoading = false;
+      this.finishEndGameLoading();
     }, 1500);
   };
 }
