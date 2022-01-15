@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { GoogleClinetSession } from "../../types/auth-types";
 
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID!;
+
 export default function GoogleAuth() {
   const [gsiScriptLoaded, setGsiScriptLoaded] = useState(false);
   const { setGoogleSession, setCredential } = useAuth();
@@ -21,8 +23,7 @@ export default function GoogleAuth() {
 
       setGsiScriptLoaded(true);
       window.google.accounts.id.initialize({
-        client_id:
-          "646752534395-ptsuv4l9b4vojdad2ruussj6mo22fc86.apps.googleusercontent.com",
+        client_id: GOOGLE_CLIENT_ID,
         auto_select: true,
         callback: handleGoogleSignIn,
       });
@@ -47,10 +48,7 @@ export default function GoogleAuth() {
 
   return (
     <>
-      <div
-        id="g_id_onload"
-        data-client_id="646752534395-ptsuv4l9b4vojdad2ruussj6mo22fc86.apps.googleusercontent.com"
-      ></div>
+      <div id="g_id_onload" data-client_id={GOOGLE_CLIENT_ID}></div>
     </>
   );
 }
