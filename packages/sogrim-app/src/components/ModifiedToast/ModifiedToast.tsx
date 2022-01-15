@@ -22,7 +22,7 @@ const ModifiedToastComp = () => {
   return (
     <>
       {modifiedStatus ? (
-        <Snackbar open={true} onClose={() => console.log("hdas")}>
+        <Snackbar open={true}>
           <Alert
             icon={false}
             sx={{

@@ -47,7 +47,7 @@ export type DegreeStatus = {
 
 export type UserDetails = {
   degree_status: DegreeStatus;
-  catalog: Catalog;
+  catalog: Catalog | null;
   modified: boolean;
 };
 
