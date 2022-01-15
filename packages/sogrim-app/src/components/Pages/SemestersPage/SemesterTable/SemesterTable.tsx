@@ -17,7 +17,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
   const {
     dataStore: {
       userDetails,
-      generateRows,
+      generateRowsForSemester: generateRows,
       updateCourseInUserDetails,
       deleteCourseInUserDetails,
       insertCourseInUserDetails,

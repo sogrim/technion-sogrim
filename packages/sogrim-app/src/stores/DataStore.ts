@@ -61,7 +61,7 @@ export class DataStore {
     this.userBankNames = userBanksNamesList;
   };
 
-  generateRows = (semester: string, courseList: CourseStatus[]) => {
+  generateRowsForSemester = (semester: string, courseList: CourseStatus[]) => {
     const allSemesterCourses = new Set<CourseStatus>();
     courseList.forEach((course) => {
       if (course.semester === semester) {
@@ -77,7 +77,33 @@ export class DataStore {
           course.course.credit,
           this.displayGrade(course.grade),
           course.type,
-          course.state
+          course.state,
+          course.semester
+        )
+      )
+    );
+    return rows;
+  };
+
+  generateRowsForBank = (bank: string, courseList: CourseStatus[]) => {
+    const allSemesterCourses = new Set<CourseStatus>();
+    courseList.forEach((course) => {
+      if (course.type === bank) {
+        allSemesterCourses.add(course);
+      }
+    });
+    const rows: RowData[] = [];
+    allSemesterCourses.forEach((course) =>
+      rows.push(
+        createData(
+          course.course.name,
+          course.course._id,
+          course.course.credit,
+          this.displayGrade(course.grade),
+          course.type,
+          course.state,
+          course.semester,
+          course.additional_msg
         )
       )
     );
@@ -162,6 +188,25 @@ export class DataStore {
     this.userDetails.degree_status.course_statuses = newCourseList;
     this.userDetails.modified = true;
 
+    return this.userDetails;
+  };
+
+  updateIrrelevantCourse = (
+    course: RowData,
+    action: "לא רלוונטי" | "לא הושלם"
+  ): UserDetails => {
+    const courseList = this.userDetails?.degree_status.course_statuses ?? [];
+
+    courseList.forEach((courseListItem, idx) => {
+      if (
+        courseListItem.course._id === course.courseNumber &&
+        courseListItem.semester === course.semester
+      ) {
+        courseListItem.state = action;
+      }
+    });
+
+    this.userDetails.degree_status.course_statuses = courseList;
     return this.userDetails;
   };
 }

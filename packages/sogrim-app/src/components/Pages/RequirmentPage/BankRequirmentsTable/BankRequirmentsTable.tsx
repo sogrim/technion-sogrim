@@ -1,18 +1,19 @@
 import React from "react";
 import { observer } from "mobx-react-lite";
-import useUserState from "../../../../hooks/apiHooks/useUserState";
 import { CourseBankReq } from "../../../../types/data-types";
-
-import { Grid, Box } from "@mui/material";
+import { Box } from "@mui/material";
 import { BankRequirmentRow } from "./BankRequirmentsRow";
+import { useStore } from "../../../../hooks/useStore";
 
 interface BankRequirmentsTableProps {}
 
 const BankRequirmentsTableComp: React.FC<BankRequirmentsTableProps> = () => {
-  const { data: userState } = useUserState();
+  const {
+    dataStore: { userDetails },
+  } = useStore();
 
   const banReqList: CourseBankReq[] =
-    userState?.details?.degree_status?.course_bank_requirements ||
+    userDetails?.degree_status?.course_bank_requirements ||
     ([] as CourseBankReq[]);
 
   return (
@@ -22,12 +23,6 @@ const BankRequirmentsTableComp: React.FC<BankRequirmentsTableProps> = () => {
       ))}
     </Box>
   );
-};
-
-const sxPages = {
-  width: "70%",
-  display: "flex",
-  justifyContent: "center",
 };
 
 export const BankRequirmentsTable = observer(BankRequirmentsTableComp);
