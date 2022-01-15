@@ -19,7 +19,7 @@ const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
 
   return (
     <div>
-      <Accordion sx={{ minWidth: 600 }}>
+      <Accordion sx={{ minWidth: 400 }}>
         <AccordionSummary
           expandIcon={<ExpandMore />}
           aria-controls="overflow-collaps"
