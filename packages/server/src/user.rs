@@ -264,6 +264,5 @@ mod tests {
         let user: User = test::read_body_json(resp).await;
         assert_eq!(user.sub, "bugo-the-debugo");
         assert!(user.details.is_some());
-        assert_eq!(user.details.unwrap().degree_status.total_credit, 42.0);
     }
 }
