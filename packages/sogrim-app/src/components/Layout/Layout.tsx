@@ -16,6 +16,7 @@ const LayoutComp: React.FC = ({ children }) => {
         </Box>
         <Banner />
       </ContentWrapper>
+
       <AppPages />
       <ModifiedToast />
       {/* {<Footer />} */}

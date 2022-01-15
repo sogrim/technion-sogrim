@@ -1,21 +1,36 @@
+import { Typography } from "@mui/material";
 import { Box, styled } from "@mui/system";
 import { observer } from "mobx-react-lite";
-import { useAuth } from "../../hooks/useAuth";
-import { BannerAnonymous } from "./BannerAnonymous";
+import { useStore } from "../../hooks/useStore";
+import { UserRegistrationState } from "../../types/ui-types";
 import { BannerCards } from "./BannerCards/BannerCards";
 
 const BannerComp: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const {
+    uiStore: { userRegistrationState },
+  } = useStore();
 
   return (
     <Box sx={sxBanner}>
       <StyledBox>
-        {isAuthenticated ? (
-          <>
-            <BannerCards />
-          </>
+        {userRegistrationState === UserRegistrationState.Ready ? (
+          <BannerCards />
         ) : (
-          <BannerAnonymous />
+          <Box
+            sx={{
+              display: "flex",
+              textAlign: "center",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            <Typography variant="h3" color="white">
+              פה סוגרים את התואר!
+            </Typography>
+            <Typography variant="h5" color="white">
+              בחרו קטלוג, ייבאו קורסים ואז תגלו - כמה עוד?!
+            </Typography>
+          </Box>
         )}
       </StyledBox>
     </Box>
