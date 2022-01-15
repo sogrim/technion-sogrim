@@ -37,7 +37,7 @@ const AppStepperComp: React.FC = () => {
 
   const [activeStep, setActiveStep] = React.useState<number>(0);
   const {
-    uiStore: { userRegistrationState },
+    uiStore: { computeUserRegistrationState },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -53,7 +53,7 @@ const AppStepperComp: React.FC = () => {
       if (data && !isLoading && (!coursesModalOpen || !catalogsModalOpen)) {
         const { data: newData } = await refetch();
         if (newData) {
-          const rs = userRegistrationState(newData);
+          const rs = computeUserRegistrationState(newData.details);
           setActiveStep(rs);
         }
       }
@@ -64,7 +64,7 @@ const AppStepperComp: React.FC = () => {
     catalogsModalOpen,
     data,
     setActiveStep,
-    userRegistrationState,
+    computeUserRegistrationState,
     refetch,
     isLoading,
   ]);

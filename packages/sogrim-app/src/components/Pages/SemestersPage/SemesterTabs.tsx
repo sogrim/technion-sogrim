@@ -17,13 +17,20 @@ const SemesterTabsComp = () => {
   const { userAuthToken } = useAuth();
   const { mutate } = useUpdateUserState(userAuthToken);
   const {
-    uiStore: { semesterTab: value, setSemesterTab, endGameLoading },
+    uiStore: {
+      semesterTab: value,
+      setSemesterTab,
+      endGameLoading,
+      userRegistrationState,
+    },
     dataStore: {
       userDetails,
       getAllUserSemesters,
       deleteSemesterInUserDetails,
     },
   } = useStore();
+
+  console.log(userDetails, userRegistrationState, "in semester tab");
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setSemesterTab(newValue);
@@ -44,7 +51,7 @@ const SemesterTabsComp = () => {
         getAllUserSemesters(userDetails.degree_status.course_statuses)
       );
     }
-  }, [userDetails, getAllUserSemesters]);
+  }, [userDetails, getAllUserSemesters, userRegistrationState]);
 
   const addNewSemester = (semesterType: SemesterOptions) => {
     if (!allSemesters) {

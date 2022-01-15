@@ -1,4 +1,4 @@
-import { Box } from "@mui/system";
+import { Box, CircularProgress } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React from "react";
 import useUserState from "../../hooks/apiHooks/useUserState";
@@ -10,10 +10,8 @@ import { PagesTabs } from "./PagesTabs";
 
 const AppPagesComp: React.FC = () => {
   const {
-    uiStore: { userRegistrationState },
+    uiStore: { userRegistrationState, computeUserRegistrationState },
   } = useStore();
-
-  const [rs, setRs] = React.useState<UserRegistrationState>();
 
   const { userAuthToken } = useAuth();
   const { data, isLoading, refetch } = useUserState(userAuthToken);
@@ -23,17 +21,29 @@ const AppPagesComp: React.FC = () => {
       if (data && !isLoading) {
         const { data: newData } = await refetch();
         if (newData) {
-          const rs = userRegistrationState(newData);
-          setRs(rs);
+          computeUserRegistrationState(newData.details);
         }
       }
     };
     refreshStepper();
-  }, [data, isLoading, refetch, setRs, userRegistrationState]);
+  }, [
+    computeUserRegistrationState,
+    data,
+    isLoading,
+    refetch,
+    userRegistrationState,
+  ]);
 
+  console.log(userRegistrationState, "in app pages");
   return (
     <Box sx={sxPages}>
-      {rs !== UserRegistrationState.Ready ? <AppStepper /> : <PagesTabs />}
+      {userRegistrationState === UserRegistrationState.Loading ? (
+        <CircularProgress />
+      ) : userRegistrationState === UserRegistrationState.Ready ? (
+        <PagesTabs />
+      ) : (
+        <AppStepper />
+      )}
     </Box>
   );
 };
