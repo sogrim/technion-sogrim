@@ -42,7 +42,6 @@ export default function GoogleAuth() {
     return () => {
       // Cleanup function that runs when component unmounts
       window.google?.accounts.id.cancel();
-      document.getElementById("google-button-div")?.remove();
     };
   }, [gsiScriptLoaded, setCredential, setGoogleSession]);
 

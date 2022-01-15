@@ -18,7 +18,7 @@ export const BannerAnonymous: React.FC = () => {
       <Box sx={{ width: "100%" }}>
         <LinearProgress />
       </Box>
-      <div id="google-button-div"></div>
+      <div id="google-button-div" className={"g_id_signin"}></div>
     </Box>
   );
 };
