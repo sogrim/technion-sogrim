@@ -146,4 +146,22 @@ export class DataStore {
 
     return this.userDetails;
   };
+
+  deleteSemesterInUserDetails = (semester: string) => {
+    const courseList = this.userDetails?.degree_status.course_statuses ?? [];
+    const newCourseList = [...courseList];
+
+    courseList.forEach((course) => {
+      if (course.semester === semester) {
+        const idx = newCourseList.findIndex(
+          (courseToRemove) => courseToRemove.course._id === course.course._id
+        );
+        newCourseList.splice(idx, 1);
+      }
+    });
+    this.userDetails.degree_status.course_statuses = newCourseList;
+    this.userDetails.modified = true;
+
+    return this.userDetails;
+  };
 }
