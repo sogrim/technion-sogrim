@@ -30,8 +30,6 @@ const SemesterTabsComp = () => {
     },
   } = useStore();
 
-  console.log(userDetails, userRegistrationState, "in semester tab");
-
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setSemesterTab(newValue);
   };

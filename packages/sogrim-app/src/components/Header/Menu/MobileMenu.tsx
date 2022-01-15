@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { observer } from "mobx-react-lite";
 import { Box, Menu, MenuItem } from "@mui/material";
-import { SignOut, Settings } from "../Actions/Actions";
+import { SignOut, RemoveDetails } from "../Actions/Actions";
 import { useAuth } from "../../../hooks/useAuth";
+import { FormModal } from "../../Commom/FormModal";
+import { RemoveUserDetails } from "./RemoveUserDetails";
 
 interface MobileMenuProps {
   isMenuOpen: boolean;
@@ -17,9 +19,17 @@ const MobileMenuComp = ({
   handleMenuClose,
   anchorEl,
 }: MobileMenuProps) => {
-  const { isAuthenticated, logout } = useAuth();
+  const [isRemoveUserDetailsModalOpen, setIsRemoveUserDetailsModalOpen] =
+    useState<boolean>(false);
+  const { logout } = useAuth();
 
-  return isAuthenticated ? (
+  const closeRemoveUserDetailsModal = () =>
+    setIsRemoveUserDetailsModalOpen(false);
+
+  const handleRemoveUserDetailsClick = () =>
+    setIsRemoveUserDetailsModalOpen(true);
+
+  return (
     <Menu
       anchorEl={anchorEl}
       anchorOrigin={{
@@ -38,8 +48,11 @@ const MobileMenuComp = ({
       <Box sx={{ textAlign: "center" }}>
         <>
           <MenuItem onClick={handleMenuClose}>
-            <Settings disableTooltip />
-            הגדרות
+            <RemoveDetails
+              disableTooltip
+              onClick={handleRemoveUserDetailsClick}
+            />
+            אפס משתמש
           </MenuItem>
           <MenuItem onClick={handleMenuClose}>
             <SignOut disableTooltip onClick={logout} />
@@ -47,8 +60,17 @@ const MobileMenuComp = ({
           </MenuItem>
         </>
       </Box>
+      {isRemoveUserDetailsModalOpen && (
+        <FormModal
+          dialogContent={
+            <RemoveUserDetails handleClose={closeRemoveUserDetailsModal} />
+          }
+          handleClose={closeRemoveUserDetailsModal}
+          open={isRemoveUserDetailsModalOpen}
+        />
+      )}
     </Menu>
-  ) : null;
+  );
 };
 
 export const MobileMenu = observer(MobileMenuComp);

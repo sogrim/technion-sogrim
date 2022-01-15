@@ -7,6 +7,7 @@ import {
   Logout as LogoutIcon,
   Settings as SettingsIcon,
   Login as LoginIcon,
+  PersonRemove as PersonRemoveIconIcon,
 } from "@mui/icons-material";
 import { ActionItem } from "./ActionItem";
 
@@ -88,6 +89,18 @@ export const Settings = ({ onClick, disableTooltip = false }: ActionProps) => (
   <ActionItem
     title="Settings"
     icon={SettingsIcon}
+    onClick={onClick}
+    disableTooltip={disableTooltip}
+  />
+);
+
+export const RemoveDetails = ({
+  onClick,
+  disableTooltip = false,
+}: ActionProps) => (
+  <ActionItem
+    title="RemoveUserDetails"
+    icon={PersonRemoveIconIcon}
     onClick={onClick}
     disableTooltip={disableTooltip}
   />

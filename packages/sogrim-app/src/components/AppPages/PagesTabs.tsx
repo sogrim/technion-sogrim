@@ -16,8 +16,6 @@ export const PagesTabs: React.FC = () => {
     uiStore: { userRegistrationState },
   } = useStore();
 
-  console.log(userRegistrationState, "in pagesTabs");
-
   return (
     <Box sx={{ width: "100%", bgcolor: "background.paper" }}>
       <Tabs

@@ -34,7 +34,6 @@ const AppPagesComp: React.FC = () => {
     userRegistrationState,
   ]);
 
-  console.log(userRegistrationState, "in app pages");
   return (
     <Box sx={sxPages}>
       {userRegistrationState === UserRegistrationState.Loading ? (
