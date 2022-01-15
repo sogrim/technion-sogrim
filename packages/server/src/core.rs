@@ -859,7 +859,7 @@ mod tests {
                             name: "infi1m".to_string(),
                         },
                         state: Some(CourseState::Complete),
-                        grade: Some(Grade::Grade(85)),
+                        grade: Some(Grade::Numeric(85)),
                         ..Default::default()
                     },
                     CourseStatus {
@@ -879,7 +879,7 @@ mod tests {
                             name: "פיסיקה 2".to_string(),
                         },
                         state: Some(CourseState::Complete),
-                        grade: Some(Grade::Grade(85)),
+                        grade: Some(Grade::Numeric(85)),
                         ..Default::default()
                     },
                     CourseStatus {
@@ -889,7 +889,7 @@ mod tests {
                             name: "פיסיקה 3".to_string(),
                         },
                         state: Some(CourseState::Complete),
-                        grade: Some(Grade::Grade(85)),
+                        grade: Some(Grade::Numeric(85)),
                         ..Default::default()
                     },
                     CourseStatus {
@@ -899,7 +899,7 @@ mod tests {
                             name: "project1".to_string(),
                         },
                         state: Some(CourseState::Complete),
-                        grade: Some(Grade::Grade(85)),
+                        grade: Some(Grade::Numeric(85)),
                         ..Default::default()
                     },
                     CourseStatus {
@@ -909,7 +909,7 @@ mod tests {
                             name: "project2".to_string(),
                         },
                         state: Some(CourseState::Complete),
-                        grade: Some(Grade::Grade(85)),
+                        grade: Some(Grade::Numeric(85)),
                         ..Default::default()
                     },
                     CourseStatus {
@@ -919,7 +919,7 @@ mod tests {
                             name: "mlg".to_string(),
                         },
                         state: Some(CourseState::Complete),
-                        grade: Some(Grade::Grade(99)),
+                        grade: Some(Grade::Numeric(99)),
                         ..Default::default()
                     },
                     CourseStatus {
@@ -929,7 +929,7 @@ mod tests {
                             name: "sport".to_string(),
                         },
                         state: Some(CourseState::Complete),
-                        grade: Some(Grade::Grade(100)),
+                        grade: Some(Grade::Numeric(100)),
                         ..Default::default()
                     },
                 ],

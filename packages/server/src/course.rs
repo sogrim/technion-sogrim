@@ -85,7 +85,7 @@ impl CourseStatus {
     pub fn passed(&self) -> bool {
         match &self.grade {
             Some(grade) => match grade {
-                Grade::Grade(grade) => grade >= &55,
+                Grade::Numeric(grade) => grade >= &55,
                 Grade::Binary(val) => *val,
                 Grade::ExemptionWithoutCredit => true,
                 Grade::ExemptionWithCredit => true,
@@ -154,7 +154,7 @@ pub struct Malags {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Grade {
-    Grade(u8),
+    Numeric(u8),
     Binary(bool),
     ExemptionWithoutCredit,
     ExemptionWithCredit,
@@ -167,7 +167,7 @@ impl Serialize for Grade {
         S: Serializer,
     {
         match *self {
-            Grade::Grade(grade) => serializer.serialize_str(grade.to_string().as_str()),
+            Grade::Numeric(grade) => serializer.serialize_str(grade.to_string().as_str()),
             Grade::Binary(val) if val => serializer.serialize_str("עבר"),
             Grade::Binary(_) => serializer.serialize_str("נכשל"),
             Grade::ExemptionWithoutCredit => serializer.serialize_str("פטור ללא ניקוד"),
@@ -195,7 +195,7 @@ impl<'de> Visitor<'de> for GradeStrVisitor {
             "פטור ללא ניקוד" => Ok(Grade::ExemptionWithoutCredit),
             "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
             "לא השלים" => Ok(Grade::NotComplete),
-            _ if v.parse::<u8>().is_ok() => Ok(Grade::Grade(v.parse::<u8>().unwrap())),
+            _ if v.parse::<u8>().is_ok() => Ok(Grade::Numeric(v.parse::<u8>().unwrap())),
             _ => Err(Err::invalid_type(Unexpected::Str(v), &self)),
         }
     }
@@ -401,7 +401,7 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
         "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
         "השלים" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
         "השלים(מ)" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
-        _ => grade_str.parse::<u8>().ok().map(Grade::Grade),
+        _ => grade_str.parse::<u8>().ok().map(Grade::Numeric),
     };
     Ok((Course { id, credit, name }, grade))
 }
@@ -442,7 +442,7 @@ mod tests {
             .find(|c| c.course.id == "234129")
             .unwrap();
 
-        assert_eq!(edge_case_course.grade.as_ref().unwrap(), &Grade::Grade(67));
+        assert_eq!(edge_case_course.grade.as_ref().unwrap(), &Grade::Numeric(67));
         assert_eq!(edge_case_course.semester.as_ref().unwrap(), "חורף_1");
     }
 }
