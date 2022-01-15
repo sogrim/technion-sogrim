@@ -1,11 +1,5 @@
-import { Box } from '@mui/material';
+import { Box } from "@mui/material";
 
 export const ImportCourseButton: React.FC = ({ children }) => {
-
-  return (    
-        <Box >
-         
-        </Box>                
-     
-  );
+  return <Box></Box>;
 };

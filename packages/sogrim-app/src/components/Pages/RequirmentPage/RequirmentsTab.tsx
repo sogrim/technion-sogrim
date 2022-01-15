@@ -1,29 +1,27 @@
-import React from 'react';
-import { observer } from 'mobx-react-lite';
-import { Box } from '@mui/material';
-import { BankRequirments } from './BankRequirments/BankRequirments';
-import { CreditOverflow } from './CreditOverflow';
+import React from "react";
+import { observer } from "mobx-react-lite";
+import { Box } from "@mui/material";
+import { BankRequirments } from "./BankRequirments/BankRequirments";
+import { CreditOverflow } from "./CreditOverflow";
 
-interface RequirmentsTabProps {
-}
+interface RequirmentsTabProps {}
 
 const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
-  
-    return (
-        <Box sx={{
-            display: 'flex',
-            alignItems: 'center',
-            flexDirection: 'column',
-            gap: 3,
-            p: 1,
-            m: 1,            
-        }}>            
-            <BankRequirments />
-            <CreditOverflow />
-        </Box>
-    );
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        flexDirection: "column",
+        gap: 3,
+        p: 1,
+        m: 1,
+      }}
+    >
+      <BankRequirments />
+      <CreditOverflow />
+    </Box>
+  );
 };
 
-
 export const RequirmentsPage = observer(RequirmentsPageComp);
-

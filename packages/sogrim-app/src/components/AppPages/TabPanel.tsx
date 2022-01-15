@@ -1,6 +1,6 @@
-import * as React from 'react';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
+import * as React from "react";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -9,12 +9,10 @@ interface TabPanelProps {
 }
 
 export const TabPanel: React.FC<TabPanelProps> = ({
-    children,
-    index,
-    value,
+  children,
+  index,
+  value,
 }) => {
-
-
   return (
     <Box
       role="tabpanel"
@@ -22,19 +20,16 @@ export const TabPanel: React.FC<TabPanelProps> = ({
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
     >
-    <Box sx={sxPages}> 
-      {value === index && (        
-          <Typography component='div'>{children}</Typography>
-       
-      )}
-    </Box>
+      <Box sx={sxPages}>
+        {value === index && <Typography component="div">{children}</Typography>}
+      </Box>
     </Box>
   );
-}
+};
 const sxPages = {
-    width: '100%',
-    marginTop: '20px',
-    height: 500,    
-    display: 'flex',  
-    justifyContent: 'center',    
-}
+  width: "100%",
+  marginTop: "20px",
+  height: 500,
+  display: "flex",
+  justifyContent: "center",
+};

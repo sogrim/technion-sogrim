@@ -1,9 +1,9 @@
-import React, { ComponentType } from 'react';
-import { IconButton, Tooltip, Avatar } from '@mui/material';
+import React, { ComponentType } from "react";
+import { IconButton, Tooltip, Avatar } from "@mui/material";
 
-import { ActionIcon } from './ActionIcon';
-import { observer } from 'mobx-react-lite';
-import { useStore } from '../../../hooks/useStore';
+import { ActionIcon } from "./ActionIcon";
+import { observer } from "mobx-react-lite";
+import { useStore } from "../../../hooks/useStore";
 
 interface ActionItemProps {
   title: string;
@@ -14,14 +14,29 @@ interface ActionItemProps {
   avatar?: boolean;
 }
 
-const ActionItemComp = ({ title, icon, onClick, badgeContent, disableTooltip = false, avatar = false, }: ActionItemProps) => {
+const ActionItemComp = ({
+  title,
+  icon,
+  onClick,
+  badgeContent,
+  disableTooltip = false,
+  avatar = false,
+}: ActionItemProps) => {
+  const {
+    uiStore: { displayPicture },
+  } = useStore();
 
-  const { uiStore: {
-    displayPicture,
-  }} = useStore();
-
-  const actionType = avatar ? <Avatar src={displayPicture}/> : <ActionIcon badgeContent={badgeContent} icon={icon} />
-  const buttonIcon = <IconButton size="large" color="primary" onClick={onClick}> {actionType} </IconButton>
+  const actionType = avatar ? (
+    <Avatar src={displayPicture} />
+  ) : (
+    <ActionIcon badgeContent={badgeContent} icon={icon} />
+  );
+  const buttonIcon = (
+    <IconButton size="large" color="primary" onClick={onClick}>
+      {" "}
+      {actionType}{" "}
+    </IconButton>
+  );
 
   return disableTooltip ? (
     buttonIcon

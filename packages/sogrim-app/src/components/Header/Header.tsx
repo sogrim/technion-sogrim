@@ -1,27 +1,26 @@
-import React, { useState } from 'react';
-import { observer } from 'mobx-react-lite';
-import { AppBar, Box, Theme, Toolbar } from '@mui/material';
+import React, { useState } from "react";
+import { observer } from "mobx-react-lite";
+import { AppBar, Box, Theme, Toolbar } from "@mui/material";
 
-import { AppTitle } from './AppTitle/AppTitle';
-import { More, UserAccount } from './Actions/Actions';
-import { DefaultMenu, MobileMenu } from './Menu';
-import { useAuth } from '../../hooks/useAuth';
+import { AppTitle } from "./AppTitle/AppTitle";
+import { More, UserAccount } from "./Actions/Actions";
+import { DefaultMenu, MobileMenu } from "./Menu";
+import { useAuth } from "../../hooks/useAuth";
 
-interface HeaderProps {
-}
+interface HeaderProps {}
 
 const HeaderComp: React.FC<HeaderProps> = () => {
-  
   const { isAuthenticated } = useAuth();
-  
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState<null | HTMLElement>(null);
 
-  
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [mobileMoreAnchorEl, setMobileMoreAnchorEl] =
+    useState<null | HTMLElement>(null);
+
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => setMobileMoreAnchorEl(event.currentTarget);
+  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
+    setMobileMoreAnchorEl(event.currentTarget);
 
   const handleMobileMenuClose = () => setMobileMoreAnchorEl(null);
 
@@ -36,12 +35,25 @@ const HeaderComp: React.FC<HeaderProps> = () => {
         <Toolbar disableGutters variant="dense">
           <AppTitle />
           <Box sx={{ flexGrow: 1 }} />
-          <Box sx={{ display: { xs: 'none', md: 'flex', alignItems: 'center', margin: '80px' } }}>            
-            { isAuthenticated ? <UserAccount onClick={handleProfileMenuOpen} /> : null }
+          <Box
+            sx={{
+              display: {
+                xs: "none",
+                md: "flex",
+                alignItems: "center",
+                margin: "80px",
+              },
+            }}
+          >
+            {isAuthenticated ? (
+              <UserAccount onClick={handleProfileMenuOpen} />
+            ) : null}
           </Box>
-          { isAuthenticated ?  <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-            <More onClick={handleMobileMenuOpen} />
-          </Box> : null }         
+          {isAuthenticated ? (
+            <Box sx={{ display: { xs: "flex", md: "none" } }}>
+              <More onClick={handleMobileMenuOpen} />
+            </Box>
+          ) : null}
         </Toolbar>
       </AppBar>
       <MobileMenu
@@ -50,19 +62,21 @@ const HeaderComp: React.FC<HeaderProps> = () => {
         handleMenuClose={handleMobileMenuClose}
         anchorEl={mobileMoreAnchorEl}
       />
-      <DefaultMenu isMenuOpen={Boolean(anchorEl)} handleMenuClose={handleMenuClose} anchorEl={anchorEl} />
+      <DefaultMenu
+        isMenuOpen={Boolean(anchorEl)}
+        handleMenuClose={handleMenuClose}
+        anchorEl={anchorEl}
+      />
     </>
   );
 };
 
 export const Header = observer(HeaderComp);
 
-const sxAppBar = {   
+const sxAppBar = {
   zIndex: (theme: Theme) => theme.zIndex.drawer + 1,
-  bgcolor: (theme: Theme) => theme.palette.common.white,  
+  bgcolor: (theme: Theme) => theme.palette.common.white,
   height: 80,
-  display: 'flex',  
-  justifyContent: 'center',
- }
-
- 
+  display: "flex",
+  justifyContent: "center",
+};

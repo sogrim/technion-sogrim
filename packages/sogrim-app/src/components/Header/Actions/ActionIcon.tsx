@@ -1,7 +1,7 @@
-import { ComponentType } from 'react';
-import { Badge, Icon, useTheme } from '@mui/material';
+import { ComponentType } from "react";
+import { Badge, Icon, useTheme } from "@mui/material";
 
-import { LIGHT_MODE_THEME } from '../../../themes/constants';
+import { LIGHT_MODE_THEME } from "../../../themes/constants";
 
 interface ActionIconProps {
   badgeContent?: number;
@@ -11,7 +11,10 @@ interface ActionIconProps {
 export const ActionIcon = ({ badgeContent, icon }: ActionIconProps) => {
   const theme = useTheme();
   return badgeContent ? (
-    <Badge badgeContent={badgeContent} color={theme.palette.mode === LIGHT_MODE_THEME ? 'error' : 'primary'}>
+    <Badge
+      badgeContent={badgeContent}
+      color={theme.palette.mode === LIGHT_MODE_THEME ? "error" : "primary"}
+    >
       <Icon component={icon} />
     </Badge>
   ) : (

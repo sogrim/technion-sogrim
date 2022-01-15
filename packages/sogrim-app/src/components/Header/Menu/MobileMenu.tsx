@@ -1,9 +1,10 @@
-import React from 'react';
-import { observer} from 'mobx-react-lite';
-import { Box, Menu, MenuItem } from '@mui/material';
-import { SignOut, Settings } from '../Actions/Actions';
-import { useAuth } from '../../../hooks/useAuth';
-
+import React, { useState } from "react";
+import { observer } from "mobx-react-lite";
+import { Box, Menu, MenuItem } from "@mui/material";
+import { SignOut, RemoveDetails } from "../Actions/Actions";
+import { useAuth } from "../../../hooks/useAuth";
+import { FormModal } from "../../Commom/FormModal";
+import { RemoveUserDetails } from "./RemoveUserDetails";
 
 interface MobileMenuProps {
   isMenuOpen: boolean;
@@ -12,40 +13,63 @@ interface MobileMenuProps {
   anchorEl: HTMLElement | null;
 }
 
- const MobileMenuComp = ({ isMenuOpen, handleMenuOpen, handleMenuClose, anchorEl }: MobileMenuProps) => {
+const MobileMenuComp = ({
+  isMenuOpen,
+  handleMenuOpen,
+  handleMenuClose,
+  anchorEl,
+}: MobileMenuProps) => {
+  const [isRemoveUserDetailsModalOpen, setIsRemoveUserDetailsModalOpen] =
+    useState<boolean>(false);
+  const { logout } = useAuth();
 
-  const { isAuthenticated, logout } = useAuth();
+  const closeRemoveUserDetailsModal = () =>
+    setIsRemoveUserDetailsModalOpen(false);
+
+  const handleRemoveUserDetailsClick = () =>
+    setIsRemoveUserDetailsModalOpen(true);
 
   return (
-    isAuthenticated ? 
     <Menu
       anchorEl={anchorEl}
       anchorOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
+        vertical: "top",
+        horizontal: "right",
       }}
       id="primary-search-account-menu-mobile"
       keepMounted
       transformOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
+        vertical: "top",
+        horizontal: "right",
       }}
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <Box sx={{ textAlign: 'center' }}>         
+      <Box sx={{ textAlign: "center" }}>
         <>
-        <MenuItem onClick={handleMenuClose}>
-          <Settings disableTooltip />
-          הגדרות
-        </MenuItem>
-        <MenuItem onClick={ handleMenuClose}>
-          <SignOut disableTooltip onClick={logout} />
-          התנתקות
-        </MenuItem>
-        </>     
-        </Box>
-    </Menu> : null
+          <MenuItem onClick={handleMenuClose}>
+            <RemoveDetails
+              disableTooltip
+              onClick={handleRemoveUserDetailsClick}
+            />
+            אפס משתמש
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <SignOut disableTooltip onClick={logout} />
+            התנתקות
+          </MenuItem>
+        </>
+      </Box>
+      {isRemoveUserDetailsModalOpen && (
+        <FormModal
+          dialogContent={
+            <RemoveUserDetails handleClose={closeRemoveUserDetailsModal} />
+          }
+          handleClose={closeRemoveUserDetailsModal}
+          open={isRemoveUserDetailsModalOpen}
+        />
+      )}
+    </Menu>
   );
 };
 

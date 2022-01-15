@@ -1,45 +1,59 @@
+import { Typography } from "@mui/material";
 import { Box, styled } from "@mui/system";
 import { observer } from "mobx-react-lite";
-import { useAuth } from "../../hooks/useAuth";
-import { BannerAnonymous } from "./BannerAnonymous";
+import { useStore } from "../../hooks/useStore";
+import { UserRegistrationState } from "../../types/ui-types";
 import { BannerCards } from "./BannerCards/BannerCards";
-import { BannerTitle } from "./BannerTitle";
-
 
 const BannerComp: React.FC = () => {
+  const {
+    uiStore: { userRegistrationState },
+  } = useStore();
 
-    const { isAuthenticated } = useAuth();
+  return (
+    <Box sx={sxBanner}>
+      <StyledBox>
+        {userRegistrationState === UserRegistrationState.Ready ? (
+          <BannerCards />
+        ) : (
+          <Box
+            sx={{
+              display: "flex",
+              textAlign: "center",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            <Typography variant="h3" color="white">
+              פה סוגרים את התואר!
+            </Typography>
+            <Typography variant="h5" color="white">
+              בחרו קטלוג, ייבאו קורסים ואז תגלו - כמה עוד?!
+            </Typography>
+          </Box>
+        )}
+      </StyledBox>
+    </Box>
+  );
+};
 
-    return ( <Box sx={sxBanner} >     
-                <StyledBox >
-                    { isAuthenticated ? 
-                    <> 
-                    <BannerTitle />
-                    <BannerCards />
-                    </>
-                    :
-                    <BannerAnonymous /> }
-                </StyledBox>
-            </Box> );
-}
-
-export const Banner = observer(BannerComp)
+export const Banner = observer(BannerComp);
 
 const sxBanner = {
-    width: '100%',
-    height: 300,
-    backgroundColor: 'primary.dark',    
-    display: 'flex',  
-    justifyContent: 'center', 
-}
+  width: "100%",
+  height: 300,
+  backgroundColor: "primary.dark",
+  display: "flex",
+  justifyContent: "center",
+};
 
 const StyledBox = styled(Box)(({ theme }) => ({
-    width: '60%',
-    height: 300,
-    marginTop: '100px',
-    display: 'flex',
-    justifyContent: 'space-around',    
-    [theme.breakpoints.down('md')]: {
-      flexDirection: 'column'
-    },
+  width: "60%",
+  height: 300,
+  marginTop: "100px",
+  display: "flex",
+  justifyContent: "space-around",
+  [theme.breakpoints.down("md")]: {
+    flexDirection: "column",
+  },
 }));
