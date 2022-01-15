@@ -442,7 +442,10 @@ mod tests {
             .find(|c| c.course.id == "234129")
             .unwrap();
 
-        assert_eq!(edge_case_course.grade.as_ref().unwrap(), &Grade::Numeric(67));
+        assert_eq!(
+            edge_case_course.grade.as_ref().unwrap(),
+            &Grade::Numeric(67)
+        );
         assert_eq!(edge_case_course.semester.as_ref().unwrap(), "חורף_1");
     }
 }
