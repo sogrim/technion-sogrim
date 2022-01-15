@@ -304,11 +304,14 @@ impl<'a> BankRuleHandler<'a> {
     pub fn malag(self, malag_courses: &[CourseId]) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            if malag_courses.contains(&course_status.course.id)
-            // TODO: remove this line after we get the answer from the coordinates
-            || (course_status.course.id.starts_with("324") && course_status.course.credit == 2.0)
-            {
-                set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+            if course_status.valid_for_bank(&self.bank_name) {
+                if malag_courses.contains(&course_status.course.id)
+                // TODO: remove this line after we get the answer from the coordinates
+                || (course_status.course.id.starts_with("324") && course_status.course.credit == 2.0)
+                || !course_status.r#type.is_none() // If type is not none it means valid_for_bank returns true because the user modified this course to be malag
+                {
+                    set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+                }
             }
         }
         sum_credits
@@ -317,8 +320,10 @@ impl<'a> BankRuleHandler<'a> {
     pub fn sport(self) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            if course_status.is_sport() {
-                set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+            if course_status.valid_for_bank(&self.bank_name) {
+                if course_status.is_sport() || !course_status.r#type.is_none() { // If type is not none it means valid_for_bank returns true because the user modified this course to be sport
+                    set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+                }
             }
         }
         sum_credits
@@ -327,8 +332,10 @@ impl<'a> BankRuleHandler<'a> {
     pub fn free_choice(self) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            if course_status.r#type.is_none() {
-                set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+            if course_status.valid_for_bank(&self.bank_name) {
+                if !(course_status.semester == None && course_status.course.credit == 0.0) {
+                    set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
+                }
             }
         }
         sum_credits
