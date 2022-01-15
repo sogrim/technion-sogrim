@@ -1,3 +1,5 @@
+.vscode/
+.idea/
 debug_text.txt
 packages/server/private/
 packages/server/target/
@@ -5,5 +7,5 @@ packages/server/.vscode/settings.json
 packages/server/Cargo.lock
 packages/server/*.txt
 packages/server/.env
-.vscode/
-.idea/
+packages/sogrim-app/.env
+packages/sogrim-app/package-lock.json
