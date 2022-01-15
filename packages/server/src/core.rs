@@ -135,7 +135,7 @@ pub fn set_order(
             course_banks
                 .iter()
                 .find(|c| c.name == indices_to_names[&node])
-                .unwrap()
+                .unwrap() // TODO explain
                 .clone(),
         );
     }
@@ -325,6 +325,7 @@ impl<'a> BankRuleHandler<'a> {
             let mut completed_chain = true;
             for course_id in chain {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
+                    // unwrap can't fail because I insert this course to credit_info.handled_courses which means the user took the course
                     let course_status = self.user.get_course_status(course_id).unwrap();
                     if course_status.passed() {
                         chain_done.push(course_status.course.name.clone());
@@ -358,7 +359,8 @@ impl<'a> BankRuleHandler<'a> {
                     for course_id in courses {
                         // check if the user completed one of courses
                         if let Some(course_id) = credit_info.handled_courses.get(course_id) {
-                            let course_status = self.user.get_course_status(course_id).unwrap();
+                            // unwrap can't fail because I insert this course to credit_info.handled_courses which means the user took the course
+                            let course_status = self.user.get_course_status(course_id).unwrap(); //TODO explain
                             if course_status.passed()
                                 && course_status.specialization_group_name.is_none()
                             {
@@ -380,6 +382,7 @@ impl<'a> BankRuleHandler<'a> {
             let mut chosen_courses = Vec::new();
             for course_id in &specialization_group.course_list {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
+                    // unwrap can't fail because I insert this course to credit_info.handled_courses which means the user took the course
                     let course_status = self.user.get_course_status(course_id).unwrap();
                     if course_status.passed() && course_status.specialization_group_name.is_none() {
                         chosen_courses.push(course_id.clone());
@@ -437,32 +440,34 @@ impl<'a> DegreeStatusHandler<'a> {
             CreditsTransfer::OverflowCourses => &mut self.courses_overflow_map,
         };
         for overflow_rule in &self.catalog.credit_overflows {
-            if overflow_rule.to == bank_name && map.contains_key(&overflow_rule.from) {
-                let overflow = map[&overflow_rule.from];
-                if overflow > 0.0 {
-                    let msg = match transfer {
-                        CreditsTransfer::OverflowCredits => {
-                            format!(
-                                "עברו {} נקודות מ{} ל{}",
-                                overflow, &overflow_rule.from, &overflow_rule.to
-                            )
-                        }
-                        CreditsTransfer::OverflowCourses => {
-                            format!(
-                                "עברו {} קורסים מ{} ל{}",
-                                overflow, &overflow_rule.from, &overflow_rule.to
-                            )
-                        }
-                        CreditsTransfer::MissingCredits => {
-                            format!(
-                                "ב{} היו {} נקודות חסרות שנוספו לדרישה של {}",
-                                &overflow_rule.from, overflow, &overflow_rule.to
-                            )
-                        }
-                    };
-                    self.user.degree_status.overflow_msgs.push(msg);
-                    *map.get_mut(&overflow_rule.from).unwrap() = 0.0;
-                    sum += overflow
+            if overflow_rule.to == bank_name {
+                if let Some(overflow_rule_from) = map.get_mut(&overflow_rule.from) {
+                    let overflow = map[&overflow_rule.from];
+                    if overflow > 0.0 {
+                        let msg = match transfer {
+                            CreditsTransfer::OverflowCredits => {
+                                format!(
+                                    "עברו {} נקודות מ{} ל{}",
+                                    overflow, &overflow_rule.from, &overflow_rule.to
+                                )
+                            }
+                            CreditsTransfer::OverflowCourses => {
+                                format!(
+                                    "עברו {} קורסים מ{} ל{}",
+                                    overflow, &overflow_rule.from, &overflow_rule.to
+                                )
+                            }
+                            CreditsTransfer::MissingCredits => {
+                                format!(
+                                    "ב{} היו {} נקודות חסרות שנוספו לדרישה של {}",
+                                    &overflow_rule.from, overflow, &overflow_rule.to
+                                )
+                            }
+                        };
+                        self.user.degree_status.overflow_msgs.push(msg);
+                        *overflow_rule_from = 0.0;
+                        sum += overflow
+                    }
                 }
             }
         }
@@ -592,9 +597,10 @@ impl<'a> DegreeStatusHandler<'a> {
 
         let mut new_bank_credit = None;
         if let Some(bank_credit) = bank.credit {
-            new_bank_credit = Some(bank_credit - missing_credits + missing_credits_from_prev_banks);
-            sum_credits = self.handle_credit_overflow(bank, new_bank_credit.unwrap(), sum_credits);
-            completed &= sum_credits >= new_bank_credit.unwrap();
+            let new_credit = bank_credit - missing_credits + missing_credits_from_prev_banks;
+            new_bank_credit = Some(new_credit);
+            sum_credits = self.handle_credit_overflow(bank, new_credit, sum_credits);
+            completed &= sum_credits >= new_credit;
         } else {
             sum_credits = self.handle_credit_overflow(bank, 0.0, sum_credits);
         };
@@ -666,7 +672,7 @@ pub fn calculate_degree_status(
     user.degree_status.course_statuses.sort_by(|c1, c2| {
         c1.extract_semester()
             .partial_cmp(&c2.extract_semester())
-            .unwrap()
+            .unwrap() // unwrap can't fail because we compare only integers or "half integers" (0.5,1,1.5,2,2.5...)
     });
 
     DegreeStatusHandler {

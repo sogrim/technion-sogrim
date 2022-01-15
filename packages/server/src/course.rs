@@ -16,7 +16,7 @@ pub struct Course {
     pub name: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CourseState {
     Complete,
     NotComplete,
@@ -99,14 +99,22 @@ impl CourseStatus {
         match self.semester.clone() {
             Some(semester) => {
                 let semester: Vec<&str> = semester.split('_').collect();
-                semester.last().unwrap().parse::<f32>().unwrap()
+                semester.last().unwrap().parse::<f32>().unwrap_or(0.0) //TODO explain
             }
             None => 0.0,
         }
     }
 
     pub fn valid_for_bank(&self, bank_name: &str) -> bool {
-        self.r#type.is_none() || (self.modified && self.r#type.clone().unwrap() == bank_name)
+        if self.state == Some(CourseState::Irrelevant) {
+            return false;
+        } else {
+            if let Some(r#type) = self.r#type {
+                self.modified && r#type.clone() == bank_name
+            } else {
+                true
+            }
+        }
     }
 
     pub fn set_state(&mut self) {
