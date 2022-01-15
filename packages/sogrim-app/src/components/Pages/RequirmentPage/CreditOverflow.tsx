@@ -19,13 +19,13 @@ const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
 
   return (
     <div>
-      <Accordion sx={{ minWidth: 400 }}>
+      <Accordion defaultExpanded sx={{ minWidth: 400 }}>
         <AccordionSummary
           expandIcon={<ExpandMore />}
           aria-controls="overflow-collaps"
           id="overflow-collaps"
         >
-          <Typography>מעבר נקודות בין דרישות</Typography>
+          <Typography fontWeight={"bold"}>מעבר נקודות בין דרישות</Typography>
         </AccordionSummary>
         <AccordionDetails>
           {overflowMsg.map((ovm, id) => (
