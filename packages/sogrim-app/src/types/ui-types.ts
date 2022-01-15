@@ -8,6 +8,7 @@ export enum UserRegistrationState {
   NoCourses = 1,
   NoComputeValue = 2,
   Ready = 3,
+  Loading = 9,
 }
 
 export enum SemesterOptions {

@@ -3,6 +3,7 @@ import { Box, Tabs, Tab, Divider } from "@mui/material";
 import { TabPanel } from "./TabPanel";
 import { SemestersPage } from "../Pages/SemestersPage/SemestersPage";
 import { RequirmentsPage } from "../Pages/RequirmentPage/RequirmentsTab";
+import { useStore } from "../../hooks/useStore";
 
 export const PagesTabs: React.FC = () => {
   const [value, setValue] = React.useState(0);
@@ -10,6 +11,12 @@ export const PagesTabs: React.FC = () => {
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
+
+  const {
+    uiStore: { userRegistrationState },
+  } = useStore();
+
+  console.log(userRegistrationState, "in pagesTabs");
 
   return (
     <Box sx={{ width: "100%", bgcolor: "background.paper" }}>

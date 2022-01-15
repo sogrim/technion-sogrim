@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CssBaseline, ThemeProvider, Alert } from "@mui/material";
+import { CssBaseline, ThemeProvider } from "@mui/material";
 import { Layout } from "../Layout/Layout";
 import { getAppTheme } from "../../themes/theme";
 import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
@@ -18,16 +18,21 @@ const UserAppComp: React.FC = () => {
   const { data, isLoading } = useUserState(userAuthToken);
   const {
     dataStore: { updateStoreUserDetails },
+    uiStore: { computeUserRegistrationState, userRegistrationState },
   } = useStore();
 
   useEffect(() => {
     if (!isLoading && data) {
-      console.log("im here ya ben zona");
       updateStoreUserDetails(data.details);
     }
-  }, [data, updateStoreUserDetails, isLoading]);
+  }, [
+    data,
+    updateStoreUserDetails,
+    isLoading,
+    userRegistrationState,
+    computeUserRegistrationState,
+  ]);
 
-  console.log("~~~", isLoading);
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

@@ -5,8 +5,9 @@ import { Banner } from "../Banner/Banner";
 import { FOOTER_HEIGHT } from "../../themes/constants";
 import { AppPages } from "../AppPages/AppPages";
 import { ModifiedToast } from "../ModifiedToast/ModifiedToast";
+import { observer } from "mobx-react-lite";
 
-export const Layout: React.FC = ({ children }) => {
+const LayoutComp: React.FC = ({ children }) => {
   return (
     <LayoutWrapper>
       <ContentWrapper>
@@ -30,3 +31,5 @@ const ContentWrapper = styled("div")`
   display: flex;
   min-height: calc(30vh - ${FOOTER_HEIGHT}px);
 `;
+
+export const Layout = observer(LayoutComp);
