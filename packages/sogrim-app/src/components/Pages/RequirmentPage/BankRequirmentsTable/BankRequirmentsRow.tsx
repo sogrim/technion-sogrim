@@ -1,4 +1,4 @@
-import React from "react";
+import { useMemo } from "react";
 import { observer } from "mobx-react-lite";
 import {
   Accordion,
@@ -6,6 +6,7 @@ import {
   AccordionSummary,
   Box,
   Typography,
+  Tooltip,
   Chip,
 } from "@mui/material";
 import { ExpandMore } from "@mui/icons-material";
@@ -15,7 +16,8 @@ import {
 } from "../../../../types/data-types";
 import { LinearProgressBar } from "./LinearProgressBar";
 import { BankChip } from "./BankChip";
-
+import { useStore } from "../../../../hooks/useStore";
+import { BankRequirmentContent } from "./BankRequirmentContent";
 interface BankRequirmentRowProps {
   bankRequirment: CourseBankReq;
 }
@@ -23,6 +25,22 @@ interface BankRequirmentRowProps {
 const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
   bankRequirment,
 }) => {
+  const {
+    dataStore: { userDetails, generateRowsForBank },
+  } = useStore();
+
+  const bankCourses = useMemo(
+    () =>
+      generateRowsForBank(
+        bankRequirment?.course_bank_name,
+        userDetails?.degree_status?.course_statuses
+      ),
+    [
+      bankRequirment?.course_bank_name,
+      generateRowsForBank,
+      userDetails?.degree_status?.course_statuses,
+    ]
+  );
   const {
     course_bank_name,
     credit_completed,
@@ -66,6 +84,16 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
             >
               <Typography fontWeight={"bold"}>{course_bank_name}</Typography>
               <BankChip progress={progress} />
+              {bankRequirment.message && (
+                <Tooltip title={bankRequirment.message} arrow>
+                  <Chip
+                    sx={{ marginRight: "8px" }}
+                    label="מידע נוסף"
+                    variant="outlined"
+                    size="small"
+                  />
+                </Tooltip>
+              )}
             </Box>
 
             <Typography>{subtitle}</Typography>
@@ -75,7 +103,9 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
           </Box>
         </Box>
       </AccordionSummary>
-      <AccordionDetails> ya nazi</AccordionDetails>
+      <AccordionDetails>
+        <BankRequirmentContent bankCourses={bankCourses} />
+      </AccordionDetails>
     </Accordion>
   );
 };

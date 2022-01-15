@@ -5,6 +5,8 @@ export interface RowData {
   state: string;
   type: string;
   grade: string;
+  semester: string;
+  msg?: string;
 }
 
 export interface HeadCell {
@@ -70,6 +72,7 @@ export const emptyRow = {
   state: "",
   type: "",
   credit: 0,
+  semester: "",
 };
 
 export enum UpdateUserDetailsAction {
