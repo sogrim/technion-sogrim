@@ -135,7 +135,7 @@ pub fn set_order(
             course_banks
                 .iter()
                 .find(|c| c.name == indices_to_names[&node])
-                .unwrap() // TODO explain
+                .unwrap() // unwrap can't fail because we create this map such as to include all banks
                 .clone(),
         );
     }
@@ -325,11 +325,14 @@ impl<'a> BankRuleHandler<'a> {
             let mut completed_chain = true;
             for course_id in chain {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
-                    // unwrap can't fail because I insert this course to credit_info.handled_courses which means the user took the course
-                    let course_status = self.user.get_course_status(course_id).unwrap();
-                    if course_status.passed() {
-                        chain_done.push(course_status.course.name.clone());
-                    }
+                    if let Some(course_status) = self.user.get_course_status(course_id) {
+                        if course_status.passed() {
+                            chain_done.push(course_status.course.name.clone());
+                        } else {
+                            completed_chain = false;
+                            break;
+                        }
+                    }   
                 } else {
                     completed_chain = false;
                     break;
@@ -359,13 +362,13 @@ impl<'a> BankRuleHandler<'a> {
                     for course_id in courses {
                         // check if the user completed one of courses
                         if let Some(course_id) = credit_info.handled_courses.get(course_id) {
-                            // unwrap can't fail because I insert this course to credit_info.handled_courses which means the user took the course
-                            let course_status = self.user.get_course_status(course_id).unwrap(); //TODO explain
-                            if course_status.passed()
-                                && course_status.specialization_group_name.is_none()
-                            {
-                                completed_current_demand = true;
-                                break;
+                            if let Some(course_status) = self.user.get_course_status(course_id) {
+                                if course_status.passed()
+                                    && course_status.specialization_group_name.is_none()
+                                {
+                                    completed_current_demand = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -382,15 +385,15 @@ impl<'a> BankRuleHandler<'a> {
             let mut chosen_courses = Vec::new();
             for course_id in &specialization_group.course_list {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
-                    // unwrap can't fail because I insert this course to credit_info.handled_courses which means the user took the course
-                    let course_status = self.user.get_course_status(course_id).unwrap();
-                    if course_status.passed() && course_status.specialization_group_name.is_none() {
-                        chosen_courses.push(course_id.clone());
-                    }
-                    if (chosen_courses.len() as u8) == specialization_group.courses_sum {
-                        // Until we implement exhaustive search on the specialization groups we should add this condition, so we cover more cases.
-                        // when we find enough courses to finish this specialization group we don't need to check more courses, and then those courses can be taken to other groups.
-                        break;
+                    if let Some(course_status) = self.user.get_course_status(course_id) {
+                        if course_status.passed() && course_status.specialization_group_name.is_none() {
+                            chosen_courses.push(course_id.clone());
+                        }
+                        if (chosen_courses.len() as u8) == specialization_group.courses_sum {
+                            // Until we implement exhaustive search on the specialization groups we should add this condition, so we cover more cases.
+                            // when we find enough courses to finish this specialization group we don't need to check more courses, and then those courses can be taken to other groups.
+                            break;
+                        }
                     }
                 }
             }
@@ -442,7 +445,7 @@ impl<'a> DegreeStatusHandler<'a> {
         for overflow_rule in &self.catalog.credit_overflows {
             if overflow_rule.to == bank_name {
                 if let Some(overflow_rule_from) = map.get_mut(&overflow_rule.from) {
-                    let overflow = map[&overflow_rule.from];
+                    let overflow = *overflow_rule_from;
                     if overflow > 0.0 {
                         let msg = match transfer {
                             CreditsTransfer::OverflowCredits => {
@@ -575,7 +578,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 if completed {
                     let mut new_msg = "הסטודנט השלים את השרשרת הבאה:\n".to_string();
                     for course in chain_done {
-                        new_msg += &format!("{},", course);
+                        new_msg += &format!("{}\n", course);
                     }
                     msg = Some(new_msg);
                 }
@@ -1544,7 +1547,7 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[5].message,
-            Some("הסטודנט השלים את השרשרת הבאה:\nפיסיקה 2פ',".to_string())
+            Some("הסטודנט השלים את השרשרת הבאה:\nפיסיקה 2פ'\n".to_string())
         );
 
         assert_eq!(
@@ -1635,7 +1638,7 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[5].message,
-            Some("הסטודנט השלים את השרשרת הבאה:\nפיסיקה 2,פיסיקה 3,".to_string())
+            Some("הסטודנט השלים את השרשרת הבאה:\nפיסיקה 2\nפיסיקה 3\n".to_string())
         );
 
         assert_eq!(

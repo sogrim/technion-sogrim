@@ -109,8 +109,8 @@ impl CourseStatus {
         if self.state == Some(CourseState::Irrelevant) {
             return false;
         } else {
-            if let Some(r#type) = self.r#type {
-                self.modified && r#type.clone() == bank_name
+            if let Some(r#type) = &self.r#type {
+                self.modified && r#type == bank_name
             } else {
                 true
             }
