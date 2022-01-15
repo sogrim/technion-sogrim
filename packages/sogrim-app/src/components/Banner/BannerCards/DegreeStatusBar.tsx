@@ -9,11 +9,11 @@ const LinearProgressWithLabel = (
   props: LinearProgressProps & { value: number }
 ) => {
   return (
-    <Box sx={{ display: "flex", alignItems: "center" }}>
-      <Box sx={{ width: "100%", mr: 1 }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Box sx={{ width: "100%" }}>
         <LinearProgress variant="determinate" {...props} color="secondary" />
       </Box>
-      <Box sx={{ minWidth: 35 }}>
+      <Box sx={{ minWidth: 35, marginLeft: -1 }}>
         <Typography variant="body2" color="text.secondary">{`${Math.round(
           props.value
         )}%`}</Typography>
