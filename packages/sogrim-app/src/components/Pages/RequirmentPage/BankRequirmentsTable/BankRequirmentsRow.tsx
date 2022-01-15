@@ -6,9 +6,15 @@ import {
   AccordionSummary,
   Box,
   Typography,
+  Chip,
 } from "@mui/material";
 import { ExpandMore } from "@mui/icons-material";
-import { CourseBankReq } from "../../../../types/data-types";
+import {
+  ACCUMULATE_COURSES,
+  CourseBankReq,
+} from "../../../../types/data-types";
+import { LinearProgressBar } from "./LinearProgressBar";
+import { BankChip } from "./BankChip";
 
 interface BankRequirmentRowProps {
   bankRequirment: CourseBankReq;
@@ -26,6 +32,16 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
     bank_rule_name,
   } = bankRequirment;
 
+  const progress =
+    bank_rule_name === ACCUMULATE_COURSES
+      ? (course_completed / course_requirement) * 100
+      : (credit_completed / credit_requirement) * 100;
+
+  const subtitle =
+    bank_rule_name === ACCUMULATE_COURSES
+      ? `השלמת ${course_completed} מתוך ${course_requirement} קורסים`
+      : `השלמת ${credit_completed} מתוך ${credit_requirement} נק״ז`;
+
   return (
     <Accordion sx={{ minWidth: 700 }}>
       <AccordionSummary
@@ -33,9 +49,33 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
         aria-controls="req-row-collaps"
         id="req-row-collaps"
       >
-        <Typography fontWeight={"bold"}>{course_bank_name}</Typography>
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignContent: "baseline",
+                alignItems: "baseline",
+              }}
+            >
+              <Typography fontWeight={"bold"}>{course_bank_name}</Typography>
+              <BankChip progress={progress} />
+            </Box>
+
+            <Typography>{subtitle}</Typography>
+          </Box>
+          <Box sx={{ minWidth: 200 }}>
+            <LinearProgressBar value={progress} />
+          </Box>
+        </Box>
       </AccordionSummary>
-      <AccordionDetails></AccordionDetails>
+      <AccordionDetails> ya nazi</AccordionDetails>
     </Accordion>
   );
 };
