@@ -8,7 +8,7 @@ import { useStore } from "../../hooks/useStore";
 import { useAuth } from "../../hooks/useAuth";
 import { UserApp } from "./UserApp";
 import { AnonymousApp } from "./AnonymousApp";
-import { GoogleClinetSession } from "../../types/auth-types";
+import { GoogleClinetSession as GoogleClientSession } from "../../types/auth-types";
 import jwtDecode from "jwt-decode";
 
 const AppComp: React.FC = () => {
@@ -22,7 +22,7 @@ const AppComp: React.FC = () => {
   const { isAuthenticated, googleSession, userAuthToken } = useAuth();
 
   useEffect(() => {
-    if (googleSession === GoogleClinetSession.DONE) {
+    if (googleSession === GoogleClientSession.DONE) {
       if (userAuthToken) {
         setUserDisplay(jwtDecode(userAuthToken));
       }
