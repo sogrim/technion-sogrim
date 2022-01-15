@@ -219,10 +219,17 @@ impl<'a> BankRuleHandler<'a> {
                         {
                             if catalog_replacements.contains(&course_status.course.id) {
                                 course_id_in_list = Some(course_id);
-                                course_status.set_msg(format!(
-                                    "קורס זה מחליף את הקורס {}",
-                                    self.courses[course_id].name
-                                ));
+                                if let Some(course) = self.courses.get(course_id) {
+                                    course_status.set_msg(format!(
+                                        "קורס זה מחליף את הקורס {}",
+                                        course.name
+                                    ));
+                                } else {
+                                    // Shouldn't get here but to prevent crash in case of a bug we use the course id instead
+                                    course_status.set_msg(format!(
+                                        "קורס זה מחליף את הקורס {}", course_id
+                                    ));
+                                }
                                 break;
                             }
                         }
@@ -235,10 +242,17 @@ impl<'a> BankRuleHandler<'a> {
                             {
                                 if common_replacements.contains(&course_status.course.id) {
                                     course_id_in_list = Some(course_id);
-                                    course_status.set_msg(format!(
-                                        "הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו",
-                                        self.courses[course_id].name
-                                    ));
+                                    if let Some(course) = self.courses.get(course_id) {
+                                        course_status.set_msg(format!(
+                                            "הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו",
+                                            course.name
+                                        ));
+                                    } else {
+                                        // Shouldn't get here but to prevent crash in case of a bug we use the course id instead
+                                        course_status.set_msg(format!(
+                                            "הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות.\n נא לשים לב כי נדרש אישור מהרכזות בשביל החלפה זו", course_id
+                                        ));
+                                    }
                                     break;
                                 }
                             }
@@ -247,9 +261,11 @@ impl<'a> BankRuleHandler<'a> {
                     if let Some(course_id) = course_id_in_list {
                         course_chosen_for_bank = true;
                         handled_courses.insert(course_id.clone(), course_status.course.id.clone());
-                        if course_status.course.credit < self.courses[course_id].credit {
-                            missing_credits +=
-                                self.courses[course_id].credit - course_status.course.credit;
+                        if let Some(course) = self.courses.get(course_id) {
+                            if course_status.course.credit < course.credit {
+                                missing_credits +=
+                                    course.credit - course_status.course.credit;
+                            }
                         }
                     }
                 }
@@ -276,8 +292,17 @@ impl<'a> BankRuleHandler<'a> {
         // handle courses in course list which the user didn't complete or any replacement for them
         for course_id in &self.course_list {
             if !credit_info.handled_courses.contains_key(course_id) {
+                let course = if let Some(course) = self.courses.get(course_id) {
+                    course.clone()
+                } else {
+                    Course {
+                        id: course_id.clone(),
+                        credit: 0.0,
+                        name: "שגיאה - קורס זה לא נמצא במאגר הקורסים של האתר".to_string(),
+                    }
+                };
                 self.user.degree_status.course_statuses.push(CourseStatus {
-                    course: self.courses[course_id].clone(),
+                    course,
                     state: Some(CourseState::NotComplete),
                     r#type: Some(self.bank_name.clone()),
                     ..Default::default()
@@ -1730,4 +1755,57 @@ mod tests {
             "יש לסטודנט 0 נקודות עודפות".to_string()
         );
     }
+
+    // #[test]
+    // async fn find_not_exisiting_courses() {
+    //     // remove this after we add all courses to the db
+    //     dotenv().ok();
+    //     let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
+    //         .await
+    //         .expect("failed to parse URI");
+
+    //     let client = mongodb::Client::with_options(options).unwrap();
+    //     // Ping the server to see if you can connect to the cluster
+    //     client
+    //         .database("admin")
+    //         .run_command(bson::doc! {"ping": 1}, None)
+    //         .await
+    //         .expect("failed to connect to db");
+    //     println!("Connected successfully.");
+    //     let contents = std::fs::read_to_string(format!("../docs/{}", "pdf_ctrl_c_ctrl_v_4.txt"))
+    //         .expect("Something went wrong reading the file");
+
+    //     let course_statuses =
+    //         course::parse_copy_paste_data(&contents).expect("failed to parse courses data");
+
+    //     let obj_id = bson::oid::ObjectId::from_str("61d84fce5c5e7813e895a27d").expect("failed to create oid");
+    //     let catalog = db::services::get_catalog_by_id(&obj_id, &client)
+    //         .await
+    //         .expect("failed to get catalog");
+    //     let mut user = UserDetails {
+    //         catalog: None,
+    //         degree_status: DegreeStatus {
+    //             course_statuses,
+    //             ..Default::default()
+    //         },
+    //         modified: false,
+    //     };
+    //     let vec_courses = db::services::get_all_courses(&client)
+    //         .await
+    //         .expect("failed to get all courses");
+    //     let malag_courses = db::services::get_all_malags(&client)
+    //         .await
+    //         .expect("failed to get all malags")[0]
+    //         .malag_list
+    //         .clone();
+
+    //     let courses = course::vec_to_map(vec_courses);
+    //     for course in catalog.course_to_bank {
+    //         if course.1 == "חובה" {
+    //             if !courses.contains_key(&course.0) {
+    //                 println!("{}\n", course.0);
+    //             }
+    //         }
+    //     }
+    // }
 }
