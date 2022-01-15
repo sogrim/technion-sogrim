@@ -7,6 +7,7 @@ import { useStore } from "../../../hooks/useStore";
 import { SemesterTable } from "./SemesterTable/SemesterTable";
 import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
 import { SemesterOptionsButton } from "./SemesterOptionsButton";
+import { AddSemesterFlow } from "../../../types/ui-types";
 
 const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
@@ -37,7 +38,33 @@ const SemesterTabsComp = () => {
     }
   }, [userDetails, getAllUserSemesters]);
 
-  const addNewSemester = () => {};
+  const addNewSemester = (semesterType: AddSemesterFlow) => {
+    if (!allSemesters) {
+      return;
+    }
+    const lastSemester = allSemesters.slice(-1)[0];
+    const LastSemesterName = lastSemester.replace("_", " ");
+    const splitName = LastSemesterName.split(" ");
+    const newSemesterList = [...allSemesters];
+    let newSemesterName;
+    if (lastSemester) {
+      if (
+        semesterType !== AddSemesterFlow.Summer &&
+        lastSemester.includes("חורף")
+      ) {
+        newSemesterName = "אביב_" + (+splitName[1] + 1);
+      } else if (
+        semesterType !== AddSemesterFlow.Summer &&
+        lastSemester.includes("אביב")
+      ) {
+        newSemesterName = "חורף_" + (+splitName[1] + 1);
+      } else {
+        newSemesterName = "קיץ";
+      }
+      newSemesterList.push(newSemesterName);
+      setAllSemesters(newSemesterList);
+    }
+  };
 
   return (
     <Box
@@ -62,6 +89,7 @@ const SemesterTabsComp = () => {
           onChange={handleChange}
           variant="scrollable"
           scrollButtons
+          sx={{ maxWidth: "1050px" }}
         >
           {allSemesters?.map((semester, index) => (
             <Tab
@@ -71,7 +99,7 @@ const SemesterTabsComp = () => {
             />
           ))}
         </Tabs>
-        <SemesterOptionsButton />
+        <SemesterOptionsButton handleAddSemester={addNewSemester} />
       </Box>
       {endGameLoading ? (
         <LoadingEndGameSkeleton />
