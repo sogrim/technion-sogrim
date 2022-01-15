@@ -142,10 +142,26 @@ pub fn set_order(
     ordered_course_banks
 }
 
-pub fn reset_type_for_unmodified_courses(user_details: &mut UserDetails) {
+pub fn reset_type_for_unmodified_and_irrelevant_courses(user_details: &mut UserDetails) {
     for course_status in &mut user_details.degree_status.course_statuses {
         if !course_status.modified {
             course_status.r#type = None;
+        } else {
+            if let Some(state) = &course_status.state {
+                if *state == CourseState::Irrelevant {
+                    course_status.r#type = None;
+                }
+            }
+        }
+    }
+}
+
+pub fn remove_irrelevant_courses_from_bank_requirements(user_details: &UserDetails, catalog: &mut Catalog) {
+    for course_status in &user_details.degree_status.course_statuses {
+        if let Some(state) = &course_status.state {
+            if *state == CourseState::Irrelevant {
+                catalog.course_to_bank.remove(&course_status.course.id);
+            }
         }
     }
 }
@@ -665,13 +681,14 @@ impl<'a> DegreeStatusHandler<'a> {
 }
 
 pub fn calculate_degree_status(
-    catalog: Catalog,
+    mut catalog: Catalog,
     courses: HashMap<CourseId, Course>,
     malag_courses: Vec<CourseId>,
     user: &mut UserDetails,
 ) {
     let course_banks = set_order(&catalog.course_banks, &catalog.credit_overflows);
-    reset_type_for_unmodified_courses(user);
+    reset_type_for_unmodified_and_irrelevant_courses(user);
+    remove_irrelevant_courses_from_bank_requirements(user, &mut catalog);
     user.degree_status.course_statuses.sort_by(|c1, c2| {
         c1.extract_semester()
             .partial_cmp(&c2.extract_semester())
@@ -948,6 +965,27 @@ mod tests {
 
         // check sum credits
         assert_eq!(res, 5.5);
+    }
+
+    #[test]
+    async fn test_irrelevant_course() {
+        // for debugging
+        let mut user = create_user();
+        user.degree_status.course_statuses[2].state = Some(CourseState::Irrelevant); // change 114052 to be irrelevant
+        let bank_name = "hova".to_string();
+        let course_list = vec![
+            "104031".to_string(),
+            "114052".to_string(),
+        ];
+        let handle_bank_rule_processor =
+            create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        let mut missing_credits_dummy = 0.0;
+        handle_bank_rule_processor.all(&mut missing_credits_dummy);
+
+        assert_eq!(
+            user.degree_status.course_statuses[2].r#type,
+            None
+        );
     }
 
     #[test]
