@@ -19,7 +19,6 @@ export const ExportGilion: React.FC<ImportGilionProps> = ({ handleClose }) => {
   const { mutate } = useUpdateUserUgData(userAuthToken);
 
   const handleChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // TODO: check prevent.
     // TODO: xss attacks.
     e.preventDefault();
     setUgText(e.target.value);
@@ -35,18 +34,18 @@ export const ExportGilion: React.FC<ImportGilionProps> = ({ handleClose }) => {
       <DialogTitle>יבא קורסים</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          ניתן ליבא את הקורסים שביצאתם מגיליון הציונים. נכנסים ל-ug ומעתיקים את
-          תוכן הגליון לכאן. יבוא קורסים ידרוס את כלל הקורסים והנתונים הקודמים
-          שלך!
+          נכנסים למערכת student ומגישים בקשה לגיליון ציונים. לאחר שהבקשה אושרה,
+          יש לפתוח את גיליון הציונים (ולא תעודת ציונים!) בדפדפן כרום, ולהעתיק את
+          כל התוכן לתיבה מתחת
         </DialogContentText>
         <Link
           color={(theme: Theme) => theme.palette.secondary.dark}
-          href="http://ug3.technion.ac.il/Tadpis.html"
+          href="https://students.technion.ac.il/local/docsgenerator/"
           underline="hover"
           target="_blank"
           rel="noopener"
         >
-          {"עבור לגיליון הציונים בלימודי הסמכה"}
+          {"עבור למערכת הנפקת הבקשות עבור גיליון הציונים"}
         </Link>
         <TextField
           autoFocus
@@ -56,7 +55,7 @@ export const ExportGilion: React.FC<ImportGilionProps> = ({ handleClose }) => {
           label="העתק לכאן את גיליון הציונים"
           multiline
           rows={4}
-          placeholder="הכנס לגיליון הציונים ב-ug, והעתק את כולו לכאן."
+          placeholder="הכנס לגיליון הציונים ב-student, והעתק את כולו לכאן."
           onChange={handleChangeTextField}
         />
       </DialogContent>
