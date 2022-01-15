@@ -146,17 +146,18 @@ pub fn reset_type_for_unmodified_and_irrelevant_courses(user_details: &mut UserD
     for course_status in &mut user_details.degree_status.course_statuses {
         if !course_status.modified {
             course_status.r#type = None;
-        } else {
-            if let Some(state) = &course_status.state {
-                if *state == CourseState::Irrelevant {
-                    course_status.r#type = None;
-                }
+        } else if let Some(state) = &course_status.state {
+            if *state == CourseState::Irrelevant {
+                course_status.r#type = None;
             }
         }
     }
 }
 
-pub fn remove_irrelevant_courses_from_bank_requirements(user_details: &UserDetails, catalog: &mut Catalog) {
+pub fn remove_irrelevant_courses_from_bank_requirements(
+    user_details: &UserDetails,
+    catalog: &mut Catalog,
+) {
     for course_status in &user_details.degree_status.course_statuses {
         if let Some(state) = &course_status.state {
             if *state == CourseState::Irrelevant {
@@ -220,15 +221,12 @@ impl<'a> BankRuleHandler<'a> {
                             if catalog_replacements.contains(&course_status.course.id) {
                                 course_id_in_list = Some(course_id);
                                 if let Some(course) = self.courses.get(course_id) {
-                                    course_status.set_msg(format!(
-                                        "קורס זה מחליף את הקורס {}",
-                                        course.name
-                                    ));
+                                    course_status
+                                        .set_msg(format!("קורס זה מחליף את הקורס {}", course.name));
                                 } else {
                                     // Shouldn't get here but to prevent crash in case of a bug we use the course id instead
-                                    course_status.set_msg(format!(
-                                        "קורס זה מחליף את הקורס {}", course_id
-                                    ));
+                                    course_status
+                                        .set_msg(format!("קורס זה מחליף את הקורס {}", course_id));
                                 }
                                 break;
                             }
@@ -263,8 +261,7 @@ impl<'a> BankRuleHandler<'a> {
                         handled_courses.insert(course_id.clone(), course_status.course.id.clone());
                         if let Some(course) = self.courses.get(course_id) {
                             if course_status.course.credit < course.credit {
-                                missing_credits +=
-                                    course.credit - course_status.course.credit;
+                                missing_credits += course.credit - course_status.course.credit;
                             }
                         }
                     }
@@ -329,14 +326,14 @@ impl<'a> BankRuleHandler<'a> {
     pub fn malag(self, malag_courses: &[CourseId]) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            if course_status.valid_for_bank(&self.bank_name) {
-                if malag_courses.contains(&course_status.course.id)
-                // TODO: remove this line after we get the answer from the coordinates
-                || (course_status.course.id.starts_with("324") && course_status.course.credit == 2.0)
-                || !course_status.r#type.is_none() // If type is not none it means valid_for_bank returns true because the user modified this course to be malag
-                {
-                    set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
-                }
+            if course_status.valid_for_bank(&self.bank_name)
+                && (malag_courses.contains(&course_status.course.id)
+            // TODO: remove this line after we get the answer from the coordinates
+            || (course_status.course.id.starts_with("324") && course_status.course.credit == 2.0)
+            || course_status.r#type.is_some())
+            // If type is not none it means valid_for_bank returns true because the user modified this course to be malag
+            {
+                set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
             }
         }
         sum_credits
@@ -345,10 +342,11 @@ impl<'a> BankRuleHandler<'a> {
     pub fn sport(self) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            if course_status.valid_for_bank(&self.bank_name) {
-                if course_status.is_sport() || !course_status.r#type.is_none() { // If type is not none it means valid_for_bank returns true because the user modified this course to be sport
-                    set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
-                }
+            if course_status.valid_for_bank(&self.bank_name)
+                && (course_status.is_sport() || course_status.r#type.is_some())
+            // If type is not none it means valid_for_bank returns true because the user modified this course to be sport
+            {
+                set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
             }
         }
         sum_credits
@@ -357,10 +355,10 @@ impl<'a> BankRuleHandler<'a> {
     pub fn free_choice(self) -> f32 {
         let mut sum_credits = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
-            if course_status.valid_for_bank(&self.bank_name) {
-                if !(course_status.semester == None && course_status.course.credit == 0.0) {
-                    set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
-                }
+            if course_status.valid_for_bank(&self.bank_name)
+                && !(course_status.semester == None && course_status.course.credit == 0.0)
+            {
+                set_type_and_add_credits(course_status, self.bank_name.clone(), &mut sum_credits);
             }
         }
         sum_credits
@@ -380,7 +378,7 @@ impl<'a> BankRuleHandler<'a> {
                             completed_chain = false;
                             break;
                         }
-                    }   
+                    }
                 } else {
                     completed_chain = false;
                     break;
@@ -434,7 +432,9 @@ impl<'a> BankRuleHandler<'a> {
             for course_id in &specialization_group.course_list {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
                     if let Some(course_status) = self.user.get_course_status(course_id) {
-                        if course_status.passed() && course_status.specialization_group_name.is_none() {
+                        if course_status.passed()
+                            && course_status.specialization_group_name.is_none()
+                        {
                             chosen_courses.push(course_id.clone());
                         }
                         if (chosen_courses.len() as u8) == specialization_group.courses_sum {
@@ -1005,19 +1005,13 @@ mod tests {
         let mut user = create_user();
         user.degree_status.course_statuses[2].state = Some(CourseState::Irrelevant); // change 114052 to be irrelevant
         let bank_name = "hova".to_string();
-        let course_list = vec![
-            "104031".to_string(),
-            "114052".to_string(),
-        ];
+        let course_list = vec!["104031".to_string(), "114052".to_string()];
         let handle_bank_rule_processor =
             create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
         let mut missing_credits_dummy = 0.0;
         handle_bank_rule_processor.all(&mut missing_credits_dummy);
 
-        assert_eq!(
-            user.degree_status.course_statuses[2].r#type,
-            None
-        );
+        assert_eq!(user.degree_status.course_statuses[2].r#type, None);
     }
 
     #[test]

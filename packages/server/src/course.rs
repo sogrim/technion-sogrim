@@ -107,13 +107,11 @@ impl CourseStatus {
 
     pub fn valid_for_bank(&self, bank_name: &str) -> bool {
         if self.state == Some(CourseState::Irrelevant) {
-            return false;
+            false
+        } else if let Some(r#type) = &self.r#type {
+            self.modified && r#type == bank_name
         } else {
-            if let Some(r#type) = &self.r#type {
-                self.modified && r#type == bank_name
-            } else {
-                true
-            }
+            true
         }
     }
 
