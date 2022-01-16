@@ -76,7 +76,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
       }}
     >
       <Paper sx={{ width: "100%", mb: 2 }}>
-        <TableContainer sx={{ width: "1200px" }}>
+        <TableContainer sx={{ width: "1300px" }}>
           <Table aria-labelledby="tableTitle" size={"small"}>
             <SemesterTableHeader />
             <SemesterTableBody

@@ -87,10 +87,10 @@ const NewRowComp: React.FC<NewRowProps> = ({
           type="tel"
         />
       </TableCell>
-      <TableCell align="center" width={"250px"}>
+      <TableCell align="center" width={"270px"}>
         <Grid container justifyContent={"center"} direction={"row"}>
           <Tooltip title={gradeToggle ? "ציון לא מספרי" : "ציון מספרי"} arrow>
-            <IconButton color="primary" onClick={gradeToggleClick}>
+            <IconButton size="small" color="primary" onClick={gradeToggleClick}>
               <AutoFixNormalOutlinedIcon />
             </IconButton>
           </Tooltip>
