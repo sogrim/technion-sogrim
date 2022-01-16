@@ -21,7 +21,9 @@ export const FAQItem: React.FC<FAQItemProps> = ({ faqItem }) => {
       >
         <Typography fontWeight={"bold"}>{faqItem.title}</Typography>
       </AccordionSummary>
-      <AccordionDetails>{faqItem.content}</AccordionDetails>
+      <AccordionDetails>
+        <Typography> {faqItem.content} </Typography>
+      </AccordionDetails>
     </Accordion>
   );
 };
