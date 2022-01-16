@@ -26,7 +26,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
     setAddSemesterFlow(clickType);
   };
 
-  const clickAddSemester = (semesterType: SemesterOptions) => {
+  const clickControl = (semesterType: SemesterOptions) => {
     if (semesterType !== SemesterOptions.Idle) {
       handleAddSemester(semesterType);
     }
@@ -60,7 +60,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
             <Tooltip title={"סמסטר רגיל"} arrow>
               <ToggleButton
                 value={SemesterOptions.Regular}
-                onClick={() => clickAddSemester(SemesterOptions.Regular)}
+                onClick={() => clickControl(SemesterOptions.Regular)}
               >
                 <LocalLibraryIcon />
               </ToggleButton>
@@ -68,7 +68,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
             <Tooltip title={"סמסטר קיץ"} arrow>
               <ToggleButton
                 value={SemesterOptions.Summer}
-                onClick={() => clickAddSemester(SemesterOptions.Summer)}
+                onClick={() => clickControl(SemesterOptions.Summer)}
               >
                 <BeachAccessIcon />
               </ToggleButton>
@@ -76,7 +76,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
             <Tooltip title={"בטל"} arrow>
               <ToggleButton
                 value={SemesterOptions.Regular}
-                onClick={() => clickAddSemester(SemesterOptions.Idle)}
+                onClick={() => clickControl(SemesterOptions.Idle)}
               >
                 <CancelPresentationIcon />
               </ToggleButton>
@@ -92,14 +92,24 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
         </Tooltip>
       ) : (
         semesterFlow === SemesterOptions.Delete && (
-          <Tooltip title={"האם אתה בטוח? לחץ לאישור מחיקה"} arrow>
-            <IconButton
-              color={"secondary"}
-              onClick={clickConfirmDeleteCurrentSemester}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </Tooltip>
+          <>
+            <Tooltip title={"בטל"} arrow>
+              <IconButton
+                value={SemesterOptions.Regular}
+                onClick={() => clickControl(SemesterOptions.Idle)}
+              >
+                <CancelPresentationIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={"האם אתה בטוח? לחץ לאישור מחיקה"} arrow>
+              <IconButton
+                color={"secondary"}
+                onClick={clickConfirmDeleteCurrentSemester}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </>
         )
       )}
     </Box>
