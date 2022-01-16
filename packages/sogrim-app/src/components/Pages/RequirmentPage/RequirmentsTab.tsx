@@ -1,8 +1,8 @@
-import React from "react";
-import { observer } from "mobx-react-lite";
 import { Box } from "@mui/material";
-import { CreditOverflow } from "./CreditOverflow";
+import { observer } from "mobx-react-lite";
+import React from "react";
 import { BankRequirmentsTable } from "./BankRequirmentsTable/BankRequirmentsTable";
+import { CreditOverflow } from "./CreditOverflow";
 
 interface RequirmentsTabProps {}
 
@@ -17,7 +17,6 @@ const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
         }}
       >
         <BankRequirmentsTable />
-
         <CreditOverflow />
       </Box>
     </div>

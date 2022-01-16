@@ -117,13 +117,13 @@ export class DataStore {
 
   generateRowsForBank = (bank: string, courseList: CourseStatus[]) => {
     const allSemesterCourses = new Set<CourseStatus>();
-    courseList.forEach((course) => {
+    courseList?.forEach((course) => {
       if (course.type === bank) {
         allSemesterCourses.add(course);
       }
     });
     const rows: RowData[] = [];
-    allSemesterCourses.forEach((course) =>
+    allSemesterCourses?.forEach((course) =>
       rows.push(
         createData(
           course.course.name,
