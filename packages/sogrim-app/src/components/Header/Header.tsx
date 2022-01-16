@@ -1,16 +1,22 @@
 import React, { useState } from "react";
 import { observer } from "mobx-react-lite";
-import { AppBar, Box, Theme, Toolbar } from "@mui/material";
+import { AppBar, Box, Theme, Toolbar, Button } from "@mui/material";
 
 import { AppTitle } from "./AppTitle/AppTitle";
 import { More, UserAccount } from "./Actions/Actions";
 import { DefaultMenu, MobileMenu } from "./Menu";
 import { useAuth } from "../../hooks/useAuth";
+import { useStore } from "../../hooks/useStore";
+import { PageState } from "../../types/ui-types";
 
 interface HeaderProps {}
 
 const HeaderComp: React.FC<HeaderProps> = () => {
   const { isAuthenticated } = useAuth();
+
+  const {
+    uiStore: { currentPage, setPage },
+  } = useStore();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] =
@@ -29,6 +35,9 @@ const HeaderComp: React.FC<HeaderProps> = () => {
     handleMobileMenuClose();
   };
 
+  const navButtonText =
+    currentPage === PageState.FAQ ? "לעמוד הראשי" : "שאלות ותשובות";
+
   return (
     <>
       <AppBar position="fixed" sx={sxAppBar}>
@@ -45,10 +54,16 @@ const HeaderComp: React.FC<HeaderProps> = () => {
               },
             }}
           >
-            {isAuthenticated ? (
-              <UserAccount onClick={handleProfileMenuOpen} />
-            ) : null}
+            <Box>
+              <Button sx={{ margin: 2 }} variant="outlined" onClick={setPage}>
+                {navButtonText}
+              </Button>
+              {isAuthenticated ? (
+                <UserAccount onClick={handleProfileMenuOpen} />
+              ) : null}
+            </Box>
           </Box>
+
           {isAuthenticated ? (
             <Box sx={{ display: { xs: "flex", md: "none" } }}>
               <More onClick={handleMobileMenuOpen} />
