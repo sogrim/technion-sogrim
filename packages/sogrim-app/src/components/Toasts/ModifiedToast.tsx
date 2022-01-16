@@ -40,6 +40,7 @@ const ModifiedToastComp = () => {
               סגור את התואר!
             </Button>
             <Button
+              disabled
               sx={{ margin: "0px 5px 0px 5px" }}
               size="small"
               variant="outlined"

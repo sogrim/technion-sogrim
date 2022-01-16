@@ -15,7 +15,7 @@ export type Course = {
 
 export type CourseStatus = {
   course: Course;
-  grade: string;
+  grade: string | null;
   semester: string;
   state: string;
   type: string;

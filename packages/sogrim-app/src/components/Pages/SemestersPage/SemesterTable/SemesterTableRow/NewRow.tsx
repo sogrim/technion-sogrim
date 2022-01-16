@@ -1,17 +1,16 @@
-import { useState, useMemo } from "react";
-import { useStore } from "../../../../../hooks/useStore";
+import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
 import {
   Grid,
   IconButton,
   MenuItem,
+  Select,
   TableCell,
   TextField,
   Tooltip,
-  Select,
 } from "@mui/material";
-import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
-import { RowData } from "../SemesterTabsConsts";
-import { courseGradeOptions, courseStateOptions } from "../SemesterTabsConsts";
+import { useMemo, useState } from "react";
+import { useStore } from "../../../../../hooks/useStore";
+import { courseGradeOptions, RowData } from "../SemesterTabsConsts";
 import { NewRowActionCell } from "./NewRowActionCell";
 
 export interface NewRowProps {
@@ -35,7 +34,10 @@ const NewRowComp: React.FC<NewRowProps> = ({
 
   const { name, courseNumber, credit, grade } = newRow;
 
-  const banksNamesOptions = useMemo(() => getUserBankNames(), []);
+  const banksNamesOptions = useMemo(
+    () => getUserBankNames(),
+    [getUserBankNames]
+  );
 
   const [gradeToggle, setGradeToggle] = useState<boolean>(true);
   const [nonNumericGrade, setNonNumericGrade] = useState<string>("");

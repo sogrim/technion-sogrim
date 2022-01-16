@@ -4,7 +4,7 @@ export interface RowData {
   credit: string | number;
   state: string;
   type: string;
-  grade: string;
+  grade: string | null;
   semester: string;
   msg?: string;
 }
