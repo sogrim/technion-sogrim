@@ -4,26 +4,19 @@ const validCourseNumber = (courseNumber: string) => {
   return /^\d+$/.test(courseNumber) && courseNumber.length === 6;
 };
 
-const duplicateCourseNumberInTheSameSemester = (
-  courseNumber: string,
-  semesterRows: RowData[]
-) => {
-  console.log(semesterRows);
-  semesterRows.forEach((course) => {
-    if (course.courseNumber === courseNumber) {
-      return false;
-    }
-  });
-  return true;
-};
-
 const validCourseCredit = (credit: string | number) => {
   const isNumberOrFloat = Number(credit);
-  return !!(isNumberOrFloat && +credit >= 0 && (+credit * 2) % 1 === 0);
+  return (
+    isNumberOrFloat === 0 ||
+    !!(isNumberOrFloat && +credit >= 0 && (+credit * 2) % 1 === 0)
+  );
 };
 
 const validGrade = (grade: any) => {
   const gradeNumber = Number(grade);
+  if (grade === "") {
+    return true;
+  }
   if (isNaN(grade)) {
     if (courseGradeOptions.indexOf(grade) > -1) {
       return true;
@@ -73,11 +66,13 @@ export const courseFromUserValidations = (
   }
 
   let newState = "לא הושלם";
+  let newGrade = course.grade === "" ? null : course.grade;
   if (
-    course.grade === "עבר" ||
-    course.grade === "פטור ללא ניקוד" ||
-    course.grade === "פטור עם ניקוד" ||
-    +course.grade >= 55
+    course.grade &&
+    (course.grade === "עבר" ||
+      course.grade === "פטור ללא ניקוד" ||
+      course.grade === "פטור עם ניקוד" ||
+      +course.grade >= 55)
   ) {
     newState = "הושלם";
   }
@@ -88,7 +83,7 @@ export const courseFromUserValidations = (
     credit: course.credit,
     state: newState,
     type: course.type,
-    grade: course.grade,
+    grade: newGrade,
   };
 
   return {

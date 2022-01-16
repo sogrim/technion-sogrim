@@ -44,7 +44,7 @@ export class DataStore {
     return this.userBankNames;
   };
 
-  private displayGrade = (grade: string) => {
+  private displayGrade = (grade: string | null) => {
     if (!grade) {
       return "-";
     }

@@ -91,7 +91,9 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
         </Typography>
         {course.msg && (
           <Tooltip title={course.msg} arrow>
-            <HelpIcon />
+            <IconButton>
+              <HelpIcon />
+            </IconButton>
           </Tooltip>
         )}
         {showIgnoreIcon === IgnoreIconState.ShowIgnoe ? (

@@ -35,7 +35,10 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
     dataStore: { getUserBankNames },
   } = useStore();
 
-  const banksNamesOptions = useMemo(() => getUserBankNames(), []);
+  const banksNamesOptions = useMemo(
+    () => getUserBankNames(),
+    [getUserBankNames]
+  );
 
   const [gradeToggle, setGradeToggle] = useState<boolean>(true);
   const [nonNumericGrade, setNonNumericGrade] = useState<string>("");
