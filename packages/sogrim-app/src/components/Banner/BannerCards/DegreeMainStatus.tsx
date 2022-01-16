@@ -34,7 +34,7 @@ const DegreeMainStatusComp: React.FC = () => {
     pointsDone / totalCredit >= 1 ? 100 : (pointsDone / totalCredit) * 100;
 
   return showMainStatus ? (
-    <Card sx={{ minWidth: 275 }}>
+    <Card sx={{ minWidth: 275, maxHeight: 150 }}>
       <CardContent>
         <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
           סטאטוס תואר

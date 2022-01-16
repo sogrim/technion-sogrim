@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import { createData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTableUtils";
 import { RowData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTabsConsts";
-import { CourseStatus, UserDetails } from "../types/data-types";
+import { CourseStatus, UserDetails, CourseState } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
 export class DataStore {
@@ -42,6 +42,36 @@ export class DataStore {
       this.generateUserBanksNames();
     }
     return this.userBankNames;
+  };
+
+  getUserGPA = (): number => {
+    const courseList = this.userDetails?.degree_status.course_statuses ?? [];
+    let sum = 0,
+      credit = 0;
+    courseList.forEach((course) => {
+      const courserGrade = course.grade ? Number(course.grade) : null;
+      if (courserGrade === 0 || !!courserGrade) {
+        sum += courserGrade * course.course.credit;
+        credit += course.course.credit;
+      }
+    });
+    if (credit === 0) {
+      return 0;
+    }
+    const avg = sum / credit;
+    return Math.round((avg + Number.EPSILON) * 100) / 100;
+  };
+
+  getNumberOfBankComplete = (): number => {
+    const bankList =
+      this.userDetails?.degree_status?.course_bank_requirements ?? [];
+    let count = 0;
+    bankList.forEach((bank) => {
+      if (bank.completed) {
+        count++;
+      }
+    });
+    return count;
   };
 
   private displayGrade = (grade: string | null) => {
@@ -120,7 +150,7 @@ export class DataStore {
         credit: +rowData.credit,
         name: rowData.name,
       },
-      state: rowData.state,
+      state: rowData.state as CourseState,
       type: rowData.type,
       grade: rowData.grade,
       semester: semester,
@@ -160,7 +190,7 @@ export class DataStore {
         credit: +rowData.credit,
         name: rowData.name,
       },
-      state: rowData.state,
+      state: rowData.state as CourseState,
       type: rowData.type,
       grade: rowData.grade,
       semester: semester,
