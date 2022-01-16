@@ -1,7 +1,7 @@
 export interface RowData {
   name: string;
   courseNumber: string;
-  credit: number;
+  credit: string | number;
   state: string;
   type: string;
   grade: string;
@@ -71,7 +71,7 @@ export const emptyRow = {
   grade: "",
   state: "",
   type: "",
-  credit: 0,
+  credit: "0",
   semester: "",
 };
 

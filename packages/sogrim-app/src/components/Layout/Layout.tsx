@@ -4,7 +4,7 @@ import { Banner } from "../Banner/Banner";
 
 import { FOOTER_HEIGHT } from "../../themes/constants";
 import { AppPages } from "../AppPages/AppPages";
-import { ModifiedToast } from "../ModifiedToast/ModifiedToast";
+import { ModifiedToast } from "../Toasts/ModifiedToast";
 import { observer } from "mobx-react-lite";
 
 const LayoutComp: React.FC = ({ children }) => {
