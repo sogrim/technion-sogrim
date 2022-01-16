@@ -1,3 +1,5 @@
+import { CourseGradeOptions, CourseState } from "../../../../types/data-types";
+
 export interface RowData {
   name: string;
   courseNumber: string;
@@ -55,9 +57,14 @@ export const headCells: readonly HeadCell[] = [
   },
 ];
 
-export const courseStateOptions = ["הושלם", "לא הושלם", "לא רלוונטי", "בתהליך"];
+export const courseStateOptions: CourseState[] = [
+  "הושלם",
+  "לא הושלם",
+  "לא רלוונטי",
+  "בתהליך",
+];
 
-export const courseGradeOptions = [
+export const courseGradeOptions: CourseGradeOptions[] = [
   "עבר",
   "נכשל",
   "פטור ללא ניקוד",

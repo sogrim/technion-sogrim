@@ -13,11 +13,19 @@ export type Course = {
   _id: string;
 };
 
+export type CourseState = "הושלם" | "לא הושלם" | "לא רלוונטי" | "בתהליך";
+export type CourseGradeOptions =
+  | "עבר"
+  | "נכשל"
+  | "פטור ללא ניקוד"
+  | "פטור עם ניקוד"
+  | "לא השלים";
+
 export type CourseStatus = {
   course: Course;
   grade: string | null;
   semester: string;
-  state: string;
+  state: CourseState;
   type: string;
   modified: boolean;
   specialization_group_name?: string;
@@ -34,7 +42,7 @@ export type CourseBankReq = {
   course_completed: number;
   course_requirement: number;
   message?: string;
-  done?: boolean;
+  completed?: boolean;
   type: string;
 };
 
