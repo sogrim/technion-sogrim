@@ -8,6 +8,7 @@ import { useStore } from "../../../../hooks/useStore";
 import { useAuth } from "../../../../hooks/useAuth";
 import useUpdateUserState from "../../../../hooks/apiHooks/useUpdateUserState";
 import { SemesterTableBody } from "./SemesterTableBody";
+import { ErrorToast } from "../../../Toasts/ErrorToast";
 
 export interface SemesterTableProps {
   semester: string;
@@ -22,6 +23,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
       deleteCourseInUserDetails,
       insertCourseInUserDetails,
     },
+    uiStore: { errorMsg },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -92,6 +94,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
           הוסף קורס חדש
         </Button>
       )}
+      <ErrorToast msg={errorMsg} />
     </Box>
   );
 };

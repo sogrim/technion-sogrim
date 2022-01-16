@@ -1,11 +1,14 @@
 import { Alert, Snackbar } from "@mui/material";
 import { observer } from "mobx-react-lite";
+import { useStore } from "../../hooks/useStore";
 
 interface ErrorToastProps {
   msg: string;
-  handleClose: any;
 }
-const ErrorToastComp: React.FC<ErrorToastProps> = ({ msg, handleClose }) => {
+const ErrorToastComp: React.FC<ErrorToastProps> = ({ msg }) => {
+  const {
+    uiStore: { setErrorMsg },
+  } = useStore();
   return (
     <>
       <Snackbar
@@ -19,7 +22,7 @@ const ErrorToastComp: React.FC<ErrorToastProps> = ({ msg, handleClose }) => {
             width: "100%",
           }}
           severity="error"
-          onClose={handleClose}
+          onClose={() => setErrorMsg("")}
         >
           {msg}
         </Alert>
