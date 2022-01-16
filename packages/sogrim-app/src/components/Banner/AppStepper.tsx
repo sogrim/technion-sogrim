@@ -14,6 +14,7 @@ import { useAuth } from "../../hooks/useAuth";
 import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
 import { observer } from "mobx-react-lite";
 import useUserState from "../../hooks/apiHooks/useUserState";
+import { ErrorToast } from "../Toasts/ErrorToast";
 
 const steps = [
   {
@@ -37,7 +38,7 @@ const AppStepperComp: React.FC = () => {
 
   const [activeStep, setActiveStep] = React.useState<number>(0);
   const {
-    uiStore: { computeUserRegistrationState },
+    uiStore: { computeUserRegistrationState, setErrorMsg, errorMsg },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -127,6 +128,10 @@ const AppStepperComp: React.FC = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
+  const handleError = (msg: string) => {
+    setErrorMsg(msg);
+  };
+
   return (
     <Box sx={{ minWidth: 400, marginTop: "20px" }}>
       <Stepper activeStep={activeStep} orientation="vertical">
@@ -169,7 +174,12 @@ const AppStepperComp: React.FC = () => {
         ))}
       </Stepper>
       <FormModal
-        dialogContent={<ExportGilion handleClose={coursesHandleClose} />}
+        dialogContent={
+          <ExportGilion
+            handleClose={coursesHandleClose}
+            handleError={handleError}
+          />
+        }
         handleClose={coursesHandleClose}
         open={coursesModalOpen}
       />
@@ -178,6 +188,7 @@ const AppStepperComp: React.FC = () => {
         handleClose={catalogsHandleClose}
         open={catalogsModalOpen}
       />
+      <ErrorToast msg={errorMsg} />
     </Box>
   );
 };
