@@ -11,7 +11,7 @@ export const PagesTabs: React.FC = () => {
     setValue(newValue);
   };
   return (
-    <Box sx={{ width: "100%", bgcolor: "background.paper" }}>
+    <Box sx={{ width: "100%" }}>
       <Tabs
         textColor="secondary"
         indicatorColor="secondary"

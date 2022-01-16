@@ -52,7 +52,6 @@ export const AppPages = observer(AppPagesComp);
 const sxPages = {
   width: "100%",
   marginTop: "20px",
-  height: 500,
   display: "flex",
   justifyContent: "center",
 };

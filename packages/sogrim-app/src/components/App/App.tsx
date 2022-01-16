@@ -1,15 +1,16 @@
-import { useMemo, useState, useEffect } from "react";
-import GoogleAuth from "../GoogleAuth/GoogleAuth";
 import { ThemeProvider } from "@mui/material";
-import { getAppTheme } from "../../themes/theme";
-import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
-import { observer } from "mobx-react-lite";
-import { useStore } from "../../hooks/useStore";
-import { useAuth } from "../../hooks/useAuth";
-import { UserApp } from "./UserApp";
-import { AnonymousApp } from "./AnonymousApp";
-import { GoogleClinetSession as GoogleClientSession } from "../../types/auth-types";
 import jwtDecode from "jwt-decode";
+import { observer } from "mobx-react-lite";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import { useStore } from "../../hooks/useStore";
+import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
+import { getAppTheme } from "../../themes/theme";
+import { GoogleClinetSession as GoogleClientSession } from "../../types/auth-types";
+import { Footer } from "../Footer/Footer";
+import GoogleAuth from "../GoogleAuth/GoogleAuth";
+import { AnonymousApp } from "./AnonymousApp";
+import { UserApp } from "./UserApp";
 
 const AppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
@@ -35,6 +36,7 @@ const AppComp: React.FC = () => {
     <ThemeProvider theme={theme}>
       <GoogleAuth />
       {isAuthenticated ? <UserApp /> : <AnonymousApp />}
+      <Footer />
     </ThemeProvider>
   );
 };

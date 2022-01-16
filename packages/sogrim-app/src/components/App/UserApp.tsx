@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
 import { CssBaseline, ThemeProvider } from "@mui/material";
-import { Layout } from "../Layout/Layout";
-import { getAppTheme } from "../../themes/theme";
-import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
 import { observer } from "mobx-react-lite";
-import { useAuth } from "../../hooks/useAuth";
+import { useEffect, useMemo, useState } from "react";
 import useUserState from "../../hooks/apiHooks/useUserState";
+import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
+import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
+import { getAppTheme } from "../../themes/theme";
+import { Layout } from "../Layout/Layout";
 
 const UserAppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
