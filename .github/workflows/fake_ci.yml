@@ -27,8 +27,22 @@ jobs:
     steps:
       - run: echo "IRRELEVANT"
 
+  # deploy:
+  #   name: Deploy to Heroku
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: echo "IRRELEVANT"
+  # FIXME: TEMPORARY TO TRIGGER CI
   deploy:
     name: Deploy to Heroku
     runs-on: ubuntu-latest
+    needs: [test, clippy, format]
     steps:
-      - run: echo "IRRELEVANT"
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "sogrim"
+          heroku_email: "benick12@gmail.com"
+          procfile: "web: PORT=$PORT PROFILE=staging ./target/release/sogrim-server"
+          appdir: "packages/server"
