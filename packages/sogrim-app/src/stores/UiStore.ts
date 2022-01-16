@@ -19,10 +19,10 @@ export class UIStore {
     makeAutoObservable(this, { rootStore: false });
   }
 
-  setPage = () => {
+  setPage = (isAuthenticated: boolean) => {
     if (this.currentPage === PageState.Main) {
       this.currentPage = PageState.FAQ;
-    } else {
+    } else if (isAuthenticated) {
       this.currentPage = PageState.Main;
     }
   };

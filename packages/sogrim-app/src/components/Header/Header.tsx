@@ -36,7 +36,9 @@ const HeaderComp: React.FC<HeaderProps> = () => {
   };
 
   const navButtonText =
-    currentPage === PageState.FAQ ? "לעמוד הראשי" : "שאלות ותשובות";
+    currentPage === PageState.FAQ && isAuthenticated
+      ? "לעמוד הראשי"
+      : "שאלות ותשובות";
 
   return (
     <>
@@ -55,7 +57,11 @@ const HeaderComp: React.FC<HeaderProps> = () => {
             }}
           >
             <Box>
-              <Button sx={{ margin: 2 }} variant="outlined" onClick={setPage}>
+              <Button
+                sx={{ margin: 2 }}
+                variant="outlined"
+                onClick={() => setPage(isAuthenticated)}
+              >
                 {navButtonText}
               </Button>
               {isAuthenticated ? (
