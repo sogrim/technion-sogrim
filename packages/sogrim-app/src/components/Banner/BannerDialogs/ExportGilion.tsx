@@ -1,25 +1,28 @@
-import React, { useState } from "react";
+import { Link, Theme } from "@mui/material";
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { Link, Theme } from "@mui/material";
+import TextField from "@mui/material/TextField";
+import React, { useEffect, useState } from "react";
 import useUpdateUserUgData from "../../../hooks/apiHooks/useUpdateUgData";
 import { useAuth } from "../../../hooks/useAuth";
 export interface ImportGilionProps {
   handleClose: () => void;
+  handleError: (msg: string) => void;
 }
 
-export const ExportGilion: React.FC<ImportGilionProps> = ({ handleClose }) => {
+export const ExportGilion: React.FC<ImportGilionProps> = ({
+  handleClose,
+  handleError,
+}) => {
   const [ugText, setUgText] = useState<string | null>(null);
   const { userAuthToken } = useAuth();
 
-  const { mutate } = useUpdateUserUgData(userAuthToken);
+  const { mutate, isError } = useUpdateUserUgData(userAuthToken);
 
   const handleChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // TODO: xss attacks.
     e.preventDefault();
     setUgText(e.target.value);
   };
@@ -29,6 +32,14 @@ export const ExportGilion: React.FC<ImportGilionProps> = ({ handleClose }) => {
     }
     handleClose();
   };
+
+  useEffect(() => {
+    const errorMsg = isError
+      ? "ייבוא גיליון הציונים כשל. האם העתקתם את כל גיליון הציונים (ולא תעודת ציונים!) , דרך דפדפן כרום?"
+      : "";
+    handleError(errorMsg);
+  }, [handleError, isError]);
+
   return (
     <>
       <DialogTitle>יבא קורסים</DialogTitle>
