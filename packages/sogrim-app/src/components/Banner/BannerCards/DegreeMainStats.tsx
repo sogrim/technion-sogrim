@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useStore } from "../../../hooks/useStore";
 import { observer } from "mobx-react-lite";
-import { Typography, Card, CardContent } from "@mui/material";
+import { Typography, Card, CardContent, Button } from "@mui/material";
 
 const DegreeMainStatsComp: React.FC = () => {
   const {
@@ -40,6 +40,13 @@ const DegreeMainStatsComp: React.FC = () => {
         <Typography sx={{ fontSize: 18 }} color="text.primary">
           {`השלמת ${banksDone} מתוך ${totalBanks} דרישות בתואר`}
         </Typography>
+        <Button
+          disabled
+          sx={{ display: "flex", justifyContent: "center" }}
+          size="small"
+        >
+          {"לעמוד הסטטיסטיקות (בקרוב)"}
+        </Button>
       </CardContent>
     </Card>
   ) : null;
