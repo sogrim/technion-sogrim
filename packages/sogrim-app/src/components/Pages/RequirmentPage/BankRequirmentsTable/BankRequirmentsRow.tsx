@@ -85,7 +85,14 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
               <Typography fontWeight={"bold"}>{course_bank_name}</Typography>
               <BankChip progress={progress} />
               {bankRequirment.message && (
-                <Tooltip title={bankRequirment.message} arrow>
+                <Tooltip
+                  title={
+                    <Typography fontSize={"16px"}>
+                      {bankRequirment.message}
+                    </Typography>
+                  }
+                  arrow
+                >
                   <Chip
                     sx={{ marginRight: "8px" }}
                     label="מידע נוסף"
