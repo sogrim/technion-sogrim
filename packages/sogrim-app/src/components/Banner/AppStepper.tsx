@@ -49,8 +49,14 @@ const AppStepperComp: React.FC = () => {
   } = useComputeEndGame(userAuthToken, triggerCompute);
 
   React.useEffect(() => {
+    let unmounted = false;
     const refreshStepper = async () => {
-      if (data && !isLoading && (!coursesModalOpen || !catalogsModalOpen)) {
+      if (
+        !unmounted &&
+        data &&
+        !isLoading &&
+        (!coursesModalOpen || !catalogsModalOpen)
+      ) {
         const { data: newData } = await refetch();
         if (newData) {
           const rs = computeUserRegistrationState(newData.details);
@@ -58,7 +64,12 @@ const AppStepperComp: React.FC = () => {
         }
       }
     };
-    refreshStepper();
+    if (!unmounted) {
+      refreshStepper();
+    }
+    return () => {
+      unmounted = true;
+    };
   }, [
     coursesModalOpen,
     catalogsModalOpen,
@@ -70,11 +81,16 @@ const AppStepperComp: React.FC = () => {
   ]);
 
   React.useEffect(() => {
-    if (tcIsError) {
+    let unmounted = false;
+
+    if (!unmounted && tcIsError) {
       // TODO: error state
-    } else if (tcData && !tcIsLoading) {
+    } else if (!unmounted && tcData && !tcIsLoading) {
       setTriggerCompute(false);
     }
+    return () => {
+      unmounted = true;
+    };
   }, [tcData, tcIsLoading, tcIsError]);
 
   const coursesHandleClickOpen = () => {
