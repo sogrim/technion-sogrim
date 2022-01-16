@@ -12,7 +12,7 @@ import {
 import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
 import { RowData } from "../SemesterTabsConsts";
 import { EditActionCell } from "./EditActionCell";
-import { courseGradeOptions, courseStateOptions } from "../SemesterTabsConsts";
+import { courseGradeOptions } from "../SemesterTabsConsts";
 
 export interface EditableRowProps {
   editRow: RowData;
@@ -136,24 +136,8 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
           ))}
         </Select>
       </TableCell>
-      <TableCell align="center" width={"170x"}>
-        <Select
-          id="course-state"
-          name="state"
-          onChange={(event, newValue) =>
-            handleEditChange(event, "state", newValue)
-          }
-          value={state}
-          variant="outlined"
-          size="small"
-          fullWidth
-        >
-          {courseStateOptions.map((option) => (
-            <MenuItem key={option} value={option}>
-              {option}
-            </MenuItem>
-          ))}
-        </Select>
+      <TableCell align="center" width={"170px"}>
+        {state}
       </TableCell>
       <EditActionCell
         row={editRow}

@@ -39,9 +39,6 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
   const { userAuthToken } = useAuth();
   const { mutate } = useUpdateUserState(userAuthToken);
 
-  const generateKey = (course: RowData) =>
-    course.courseNumber + course.semester;
-
   const decodeSemesterNumber = (semester: string) => {
     if (semester) {
       const name = semester.replace("_", " ");
@@ -68,7 +65,6 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
   };
   return (
     <Box
-      key={generateKey(course)}
       sx={{
         marginTop: "2px",
         p: 1,

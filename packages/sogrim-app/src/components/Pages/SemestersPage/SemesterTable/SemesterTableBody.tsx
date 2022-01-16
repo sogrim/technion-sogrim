@@ -9,6 +9,8 @@ import { TableRow } from "@mui/material";
 import { ReadOnlyRow } from "./SemesterTableRow/ReadOnlyRow";
 import { EditableRow } from "./SemesterTableRow/EditableRow";
 import { NewRow } from "./SemesterTableRow/NewRow";
+import { courseFromUserValidations } from "./CourseValidator";
+import { ErrorToast } from "../../../Toasts/ErrorToast";
 
 // TODO - types!!!
 interface SemesterTableBodyProps {
@@ -35,6 +37,7 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
     string | null
   >(null);
   const [editRow, setEditRow] = useState<RowData>(emptyRow);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   useEffect(() => {
     setSemesterRows(tableRows);
@@ -46,6 +49,10 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
       setEditRow(emptyRow);
     }
   }, [addRowToggle]);
+
+  const clickCloseErrorToast = () => {
+    setErrorMsg("");
+  };
 
   const handleEditChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -61,7 +68,6 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
       fieldValue = event.target.value;
     }
     let newRowData: RowData = { ...editRow };
-    // TODO: validations & all props.
     // @ts-ignore
     newRowData[fieldName] = fieldValue;
     setEditRow(newRowData);
@@ -78,16 +84,23 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
 
   const handleSaveClick = (event: any) => {
     event.preventDefault();
+    let validationsStatus = courseFromUserValidations(editRow, semesterRows);
+    if (validationsStatus.error) {
+      setEditRow(emptyRow);
+      setEditableRowCourseNumber(null);
+      setErrorMsg(validationsStatus.msg);
+      return;
+    }
     const idx = semesterRows.findIndex(
       (row) => row.courseNumber === editRow.courseNumber
     );
     const newSemesterRows = [...semesterRows];
-    newSemesterRows[idx] = editRow;
+    newSemesterRows[idx] = validationsStatus.newRowData;
     setSemesterRows(newSemesterRows);
     setEditableRowCourseNumber(null);
     handleUpdateUserDetails(
       UpdateUserDetailsAction.AfterEdit,
-      editRow,
+      validationsStatus.newRowData,
       semester
     );
   };
@@ -120,55 +133,67 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
   const handleAddClick = (event: any) => {
     event.preventDefault();
 
-    //TODO: validations
+    let validationsStatus = courseFromUserValidations(editRow, semesterRows);
+    if (validationsStatus.error) {
+      setEditRow(emptyRow);
+      setEditableRowCourseNumber(null);
+      setErrorMsg(validationsStatus.msg);
+      return;
+    }
 
-    const newSemesterRows = [...semesterRows, editRow];
+    const newSemesterRows = [...semesterRows, validationsStatus.newRowData];
     setEditRow(emptyRow);
     setSemesterRows(newSemesterRows);
     handleUpdateUserDetails(
       UpdateUserDetailsAction.AfterAdd,
-      editRow,
+      validationsStatus.newRowData,
       semester
     );
   };
 
-  return (
-    <TableBody>
-      {semesterRows.map((row, index) => {
-        const labelId = `table-row-${index}`;
-        return (
-          <TableRow hover tabIndex={-1} key={row.courseNumber}>
-            {editableRowCourseNumber === row.courseNumber ? (
-              <EditableRow
-                labelId={labelId}
-                editRow={editRow}
-                handleSave={handleSaveClick}
-                handleEditChange={handleEditChange}
-                handleCancel={handleCancelClick}
-              />
-            ) : (
-              <ReadOnlyRow
-                row={row}
-                labelId={labelId}
-                handleEdit={handleEditClick}
-                handleDelete={handleDeleteClick}
-              />
-            )}
-          </TableRow>
-        );
-      })}
+  const generateKey = (course: RowData, idx: number) =>
+    course.courseNumber + course.semester + idx;
 
-      {addRowToggle && (
-        <TableRow>
-          <NewRow
-            labelId={"new-row"}
-            newRow={editRow}
-            handleAdd={handleAddClick}
-            handleEditChange={handleEditChange}
-            handleCancel={handleCancelClick}
-          />
-        </TableRow>
-      )}
-    </TableBody>
+  return (
+    <>
+      <TableBody>
+        {semesterRows.map((row, index) => {
+          const labelId = `table-row-${index}`;
+          return (
+            <TableRow hover tabIndex={-1} key={generateKey(row, index)}>
+              {editableRowCourseNumber === row.courseNumber ? (
+                <EditableRow
+                  labelId={labelId}
+                  editRow={editRow}
+                  handleSave={handleSaveClick}
+                  handleEditChange={handleEditChange}
+                  handleCancel={handleCancelClick}
+                />
+              ) : (
+                <ReadOnlyRow
+                  row={row}
+                  labelId={labelId}
+                  handleEdit={handleEditClick}
+                  handleDelete={handleDeleteClick}
+                />
+              )}
+            </TableRow>
+          );
+        })}
+
+        {addRowToggle && (
+          <TableRow>
+            <NewRow
+              labelId={"new-row"}
+              newRow={editRow}
+              handleAdd={handleAddClick}
+              handleEditChange={handleEditChange}
+              handleCancel={handleCancelClick}
+            />
+          </TableRow>
+        )}
+      </TableBody>
+      <ErrorToast msg={errorMsg} handleClose={clickCloseErrorToast} />
+    </>
   );
 };

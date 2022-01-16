@@ -143,24 +143,8 @@ const NewRowComp: React.FC<NewRowProps> = ({
           ))}
         </Select>
       </TableCell>
-      <TableCell align="center" width={"170x"}>
-        <Select
-          id="course-state"
-          name="state"
-          onChange={(event, newValue) =>
-            handleEditChange(event, "state", newValue)
-          }
-          value={newRow.state}
-          variant="outlined"
-          size="small"
-          fullWidth
-        >
-          {courseStateOptions.map((option) => (
-            <MenuItem key={option} value={option}>
-              {option}
-            </MenuItem>
-          ))}
-        </Select>
+      <TableCell align="center" width={"170px"}>
+        {newRow.state}
       </TableCell>
       <NewRowActionCell handleAdd={handleAdd} handleCancel={handleCancel} />
     </>
