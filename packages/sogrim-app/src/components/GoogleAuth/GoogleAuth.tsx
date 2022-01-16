@@ -3,7 +3,6 @@ import { useAuth } from "../../hooks/useAuth";
 import { GoogleClinetSession } from "../../types/auth-types";
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID!;
-console.log(GOOGLE_CLIENT_ID.includes(`"`));
 
 export default function GoogleAuth() {
   const [gsiScriptLoaded, setGsiScriptLoaded] = useState(false);
