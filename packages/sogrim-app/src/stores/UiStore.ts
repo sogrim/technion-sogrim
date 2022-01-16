@@ -12,6 +12,8 @@ export class UIStore {
   public userRegistrationState: UserRegistrationState =
     UserRegistrationState.Loading;
 
+  public errorMsg: string = "";
+
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
   }
@@ -34,6 +36,10 @@ export class UIStore {
 
   setSemesterTab = (semesterTab: number) => {
     this.semesterTab = semesterTab;
+  };
+
+  setErrorMsg = (newErrorMsg: string) => {
+    this.errorMsg = newErrorMsg;
   };
 
   computeUserRegistrationState = (

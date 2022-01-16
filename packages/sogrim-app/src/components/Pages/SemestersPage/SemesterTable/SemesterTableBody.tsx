@@ -1,18 +1,16 @@
-import { useState, useEffect } from "react";
-import { TableBody } from "@mui/material";
+import { TableBody, TableRow } from "@mui/material";
+import { useEffect, useState } from "react";
+import { useStore } from "../../../../hooks/useStore";
+import { courseFromUserValidations } from "./CourseValidator";
+import { EditableRow } from "./SemesterTableRow/EditableRow";
+import { NewRow } from "./SemesterTableRow/NewRow";
+import { ReadOnlyRow } from "./SemesterTableRow/ReadOnlyRow";
 import {
   emptyRow,
   RowData,
   UpdateUserDetailsAction,
 } from "./SemesterTabsConsts";
-import { TableRow } from "@mui/material";
-import { ReadOnlyRow } from "./SemesterTableRow/ReadOnlyRow";
-import { EditableRow } from "./SemesterTableRow/EditableRow";
-import { NewRow } from "./SemesterTableRow/NewRow";
-import { courseFromUserValidations } from "./CourseValidator";
-import { ErrorToast } from "../../../Toasts/ErrorToast";
 
-// TODO - types!!!
 interface SemesterTableBodyProps {
   tableRows: RowData[];
   handleUpdateUserDetails: (
@@ -32,12 +30,14 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
   addRowToggle,
   handleRowToggle,
 }) => {
+  const {
+    uiStore: { setErrorMsg },
+  } = useStore();
   const [semesterRows, setSemesterRows] = useState<RowData[]>(tableRows);
   const [editableRowCourseNumber, setEditableRowCourseNumber] = useState<
     string | null
   >(null);
   const [editRow, setEditRow] = useState<RowData>(emptyRow);
-  const [errorMsg, setErrorMsg] = useState<string>("");
 
   useEffect(() => {
     setSemesterRows(tableRows);
@@ -49,10 +49,6 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
       setEditRow(emptyRow);
     }
   }, [addRowToggle]);
-
-  const clickCloseErrorToast = () => {
-    setErrorMsg("");
-  };
 
   const handleEditChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -193,7 +189,6 @@ export const SemesterTableBody: React.FC<SemesterTableBodyProps> = ({
           </TableRow>
         )}
       </TableBody>
-      <ErrorToast msg={errorMsg} handleClose={clickCloseErrorToast} />
     </>
   );
 };

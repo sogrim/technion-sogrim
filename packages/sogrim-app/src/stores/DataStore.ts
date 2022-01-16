@@ -107,6 +107,7 @@ export class DataStore {
         )
       )
     );
+
     return rows;
   };
 
@@ -207,6 +208,8 @@ export class DataStore {
     });
 
     this.userDetails.degree_status.course_statuses = courseList;
+    this.userDetails.modified = true;
+
     return this.userDetails;
   };
 }
