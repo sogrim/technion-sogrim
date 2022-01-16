@@ -1,9 +1,10 @@
 import { RootStore } from "./RootStore";
 import { makeAutoObservable } from "mobx";
-import { TabState, UserRegistrationState } from "../types/ui-types";
+import { PageState, TabState, UserRegistrationState } from "../types/ui-types";
 import { UserDetails } from "../types/data-types";
 
 export class UIStore {
+  public currentPage: PageState = PageState.Main;
   public currentTab: TabState = TabState.DoneTab;
   public userDisplay: any;
   public showMainStatus: boolean = false;
@@ -17,6 +18,14 @@ export class UIStore {
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
   }
+
+  setPage = () => {
+    if (this.currentPage === PageState.Main) {
+      this.currentPage = PageState.FAQ;
+    } else {
+      this.currentPage = PageState.Main;
+    }
+  };
 
   setUserDisplay = (userDisplay: any) => {
     this.userDisplay = userDisplay;

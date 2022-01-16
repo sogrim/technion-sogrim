@@ -6,8 +6,13 @@ import { FOOTER_HEIGHT } from "../../themes/constants";
 import { AppPages } from "../AppPages/AppPages";
 import { ModifiedToast } from "../Toasts/ModifiedToast";
 import { observer } from "mobx-react-lite";
+import { useStore } from "../../hooks/useStore";
+import { PageState } from "../../types/ui-types";
 
-const LayoutComp: React.FC = ({ children }) => {
+const LayoutComp: React.FC = () => {
+  const {
+    uiStore: { currentPage },
+  } = useStore();
   return (
     <LayoutWrapper>
       <ContentWrapper>
@@ -16,8 +21,12 @@ const LayoutComp: React.FC = ({ children }) => {
         </Box>
         <Banner />
       </ContentWrapper>
+      {currentPage === PageState.Main ? (
+        <AppPages />
+      ) : (
+        currentPage === PageState.FAQ && <h1>hi</h1>
+      )}
 
-      <AppPages />
       <ModifiedToast />
       {/* {<Footer />} */}
     </LayoutWrapper>

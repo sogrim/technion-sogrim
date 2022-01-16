@@ -3,6 +3,11 @@ export enum TabState {
   PlanningTan = "PlanningTan",
 }
 
+export enum PageState {
+  Main = "Main",
+  FAQ = "FAQ",
+}
+
 export enum UserRegistrationState {
   NoCatalog = 0,
   NoCourses = 1,
