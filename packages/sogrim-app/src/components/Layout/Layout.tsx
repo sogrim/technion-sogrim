@@ -8,6 +8,7 @@ import { ModifiedToast } from "../Toasts/ModifiedToast";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../hooks/useStore";
 import { PageState } from "../../types/ui-types";
+import { FAQPage } from "../Pages/FAQPage/FAQPage";
 
 const LayoutComp: React.FC = () => {
   const {
@@ -24,7 +25,7 @@ const LayoutComp: React.FC = () => {
       {currentPage === PageState.Main ? (
         <AppPages />
       ) : (
-        currentPage === PageState.FAQ && <h1>hi</h1>
+        currentPage === PageState.FAQ && <FAQPage />
       )}
 
       <ModifiedToast />
