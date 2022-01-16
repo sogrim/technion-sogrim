@@ -26,13 +26,15 @@ export interface RemoveUserDetailsProps {
 export const RemoveUserDetails: React.FC<RemoveUserDetailsProps> = ({
   handleClose,
 }) => {
-  const { userAuthToken } = useAuth();
+  const { userAuthToken, logout } = useAuth();
   const { mutate } = useUpdateUserState(userAuthToken);
 
   const handleSend = () => {
     mutate(emptyUserDetails);
     handleClose();
-    window.location.reload();
+    setTimeout(() => {
+      logout();
+    }, 300);
   };
 
   return (
