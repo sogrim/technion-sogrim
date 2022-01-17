@@ -21,11 +21,15 @@ const DefaultMenuComp = ({
     useState<boolean>(false);
   const { logout } = useAuth();
 
-  const closeRemoveUserDetailsModal = () =>
+  const closeRemoveUserDetailsModal = () => {
     setIsRemoveUserDetailsModalOpen(false);
+    handleMenuClose();
+  };
 
-  const handleRemoveUserDetailsClick = () =>
+  const handleRemoveUserDetailsClick = () => {
     setIsRemoveUserDetailsModalOpen(true);
+    handleMenuClose();
+  };
 
   return (
     <Menu
@@ -35,12 +39,12 @@ const DefaultMenuComp = ({
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={handleMenuClose}>
-        <RemoveDetails disableTooltip onClick={handleRemoveUserDetailsClick} />
+      <MenuItem onClick={handleRemoveUserDetailsClick}>
+        <RemoveDetails disableTooltip />
         אפס משתמש
       </MenuItem>
-      <MenuItem onClick={handleMenuClose}>
-        <SignOut disableTooltip onClick={logout} />
+      <MenuItem onClick={logout}>
+        <SignOut disableTooltip />
         התנתקות
       </MenuItem>
       {isRemoveUserDetailsModalOpen && (
