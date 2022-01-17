@@ -25,7 +25,7 @@ const BankRequirmentsTableComp: React.FC<BankRequirmentsTableProps> = () => {
   }, [userDetails]);
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, marginBottom: 15 }}>
       {bankReq?.map((banReq, id) => (
         <BankRequirmentRow key={id} bankRequirment={banReq} />
       ))}
