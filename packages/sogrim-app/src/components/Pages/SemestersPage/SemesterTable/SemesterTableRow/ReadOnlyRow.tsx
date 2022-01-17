@@ -36,7 +36,7 @@ const ReadOnlyRowComp: React.FC<ReadOnlyRowProps> = ({
       <TableCell align="center" width={"80px"}>
         {credit}
       </TableCell>
-      <TableCell align="center" width={"250px"}>
+      <TableCell align="center" width={"270px"}>
         {grade}
       </TableCell>
       <TableCell align="center" width={"170px"}>
