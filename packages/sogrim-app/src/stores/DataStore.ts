@@ -157,8 +157,11 @@ export class DataStore {
       modified: true,
     };
 
-    const updatedCourseStatus: CourseStatus[] = courseList.map((course) =>
-      course.course._id !== rowData.courseNumber ? course : updateCourseRow
+    const updatedCourseStatus: CourseStatus[] = courseList.map((courseStatus) =>
+      courseStatus.course._id === rowData.courseNumber &&
+      courseStatus.semester === rowData.semester
+        ? updateCourseRow
+        : courseStatus
     );
 
     this.userDetails.degree_status.course_statuses = updatedCourseStatus;
