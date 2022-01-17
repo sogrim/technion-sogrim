@@ -73,6 +73,7 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
         display: "flex",
         alignItems: "center",
         flexDirection: "column",
+        marginBottom: 15,
       }}
     >
       <Paper sx={{ width: "100%", mb: 2 }}>
