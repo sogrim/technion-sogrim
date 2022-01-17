@@ -14,6 +14,7 @@ const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
           display: "flex",
           p: 1,
           gap: 3,
+          paddingBottom: "55px",
         }}
       >
         <BankRequirmentsTable />
