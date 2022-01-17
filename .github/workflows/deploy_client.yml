@@ -1,0 +1,21 @@
+on:
+  push:
+    branches:
+      - master # TODO someday will probably need to be renamed into 'main'
+    paths:
+      - "packages/sogrim-app/**" # Trigger this CI flow if changes were made to client subtree ONLY
+
+name: Deploy client to Heroku
+
+jobs:
+  deploy-client:
+    name: Deploy Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{secrets.HEROKU_CLIENT_API_KEY}}
+          heroku_app_name: "sogrim-app"
+          heroku_email: "nissan.ohana@gmail.com"
+          appdir: "packages/sogrim-app"
