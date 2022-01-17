@@ -81,7 +81,7 @@ const EditableRowComp: React.FC<EditableRowProps> = ({
           type="tel"
         />
       </TableCell>
-      <TableCell align="center" width={"250px"}>
+      <TableCell align="center" width={"270px"}>
         <Grid container justifyContent={"center"} direction={"row"}>
           <Tooltip title={gradeToggle ? "ציון לא מספרי" : "ציון מספרי"} arrow>
             <IconButton color="primary" onClick={gradeToggleClick}>
