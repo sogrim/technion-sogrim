@@ -99,7 +99,8 @@ pub async fn login(client: web::Data<Client>, req: HttpRequest) -> Result<HttpRe
         .ok_or_else(|| ErrorInternalServerError("Middleware Internal Error"))?;
 
     let document = doc! {"$setOnInsert" : User::new_document(user_id)};
-    db::services::find_and_update_user(user_id, document, &client).await
+    let updated_user = db::services::find_and_update_user(user_id, document, &client).await?;
+    Ok(HttpResponse::Ok().json(updated_user))
 }
 
 #[put("/user/catalog")]
@@ -116,12 +117,13 @@ pub async fn add_catalog(
             details.catalog = Some(DisplayCatalog::from(catalog));
             details.degree_status = DegreeStatus::default();
             details.modified = true;
-            db::services::find_and_update_user(
+            let updated_user = db::services::find_and_update_user(
                 &user.sub.clone(),
                 doc! {"$set" : user.into_document()},
                 &client,
             )
-            .await
+            .await?;
+            Ok(HttpResponse::Ok().json(updated_user))
         }
         None => Err(ErrorInternalServerError("No data exists for user")),
     }
@@ -138,12 +140,13 @@ pub async fn add_courses(
             details.degree_status = DegreeStatus::default();
             details.degree_status.course_statuses = course::parse_copy_paste_data(&data)?;
             details.modified = true;
-            db::services::find_and_update_user(
+            let updated_user = db::services::find_and_update_user(
                 &user.sub.clone(),
                 doc! {"$set" : user.into_document()},
                 &client,
             )
-            .await
+            .await?;
+            Ok(HttpResponse::Ok().json(updated_user))
         }
         None => Err(ErrorInternalServerError("No data exists for user")),
     }
