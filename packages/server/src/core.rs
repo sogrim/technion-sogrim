@@ -10,13 +10,6 @@ use std::collections::HashMap;
 
 type Chain = Vec<CourseId>;
 type NumCourses = u32;
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum Logic {
-    Or,
-    And,
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
@@ -1739,7 +1732,10 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[5].message,
-            Some(messages::completed_chain_msg(&["פיסיקה 2".to_string(), "פיסיקה 3".to_string()]))
+            Some(messages::completed_chain_msg(&[
+                "פיסיקה 2".to_string(),
+                "פיסיקה 3".to_string()
+            ]))
         );
 
         assert_eq!(
