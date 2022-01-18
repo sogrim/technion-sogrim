@@ -40,6 +40,10 @@ impl Catalog {
         }
         course_list_for_bank
     }
+
+    pub fn get_course_bank_by_name(&self, name: &str) -> Option<&CourseBank> {
+        self.course_banks.iter().find(|bank| bank.name == name)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -111,6 +115,6 @@ mod tests {
 
         // Check for valid json response
         let vec_catalogs: Vec<DisplayCatalog> = test::read_body_json(resp).await;
-        assert_eq!(vec_catalogs[0].name, "מדמח תלת שנתי");
+        assert_eq!(vec_catalogs[0].name, "2019-2020 מדמח תלת שנתי");
     }
 }
