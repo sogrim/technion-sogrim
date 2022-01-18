@@ -111,6 +111,6 @@ mod tests {
 
         // Check for valid json response
         let vec_catalogs: Vec<DisplayCatalog> = test::read_body_json(resp).await;
-        assert_eq!(vec_catalogs[0].name, "מדמח תלת שנתי");
+        assert_eq!(vec_catalogs[0].name, "2019-2020 מדמח תלת שנתי");
     }
 }

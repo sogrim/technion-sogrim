@@ -11,6 +11,7 @@ mod config;
 mod core;
 mod course;
 mod db;
+mod messages;
 mod user;
 
 #[actix_web::main]
