@@ -40,6 +40,10 @@ impl Catalog {
         }
         course_list_for_bank
     }
+
+    pub fn get_course_bank_by_name(&self, name: &str) -> Option<&CourseBank> {
+        self.course_banks.iter().find(|bank| bank.name == name)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

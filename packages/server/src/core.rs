@@ -472,6 +472,26 @@ struct DegreeStatusHandler<'a> {
 }
 
 impl<'a> DegreeStatusHandler<'a> {
+    fn find_next_bank(&self, bank_name: &str) -> Option<&CourseBank> {
+        for overflow_rule in &self.catalog.credit_overflows {
+            if overflow_rule.from == bank_name {
+                return self.catalog.get_course_bank_by_name(&overflow_rule.to);
+            }
+        }
+        None
+    }
+    fn find_next_bank_with_credit_requirement(&self, bank_name: &str) -> Option<String> {
+        let mut current_bank = bank_name.to_string();
+        while let Some(course_bank) = self.find_next_bank(&current_bank) {
+            if course_bank.credit.is_none() {
+                current_bank = course_bank.name.clone();
+            } else {
+                return Some(course_bank.name.clone());
+            }
+        }
+        None
+    }
+
     fn get_modified_courses(&self, bank_name: &str) -> Vec<CourseId> {
         let mut modified_courses = Vec::new();
         for course_status in &self.user.degree_status.course_statuses {
@@ -494,23 +514,39 @@ impl<'a> DegreeStatusHandler<'a> {
                 if let Some(overflow) = map.get_mut(&overflow_rule.from) {
                     if *overflow > 0.0 {
                         let msg = match transfer {
-                            CreditsTransfer::OverflowCredits => messages::credit_overflow_msg(
+                            CreditsTransfer::OverflowCredits => {
+                                if let Some(course_bank) =
+                                    self.catalog.get_course_bank_by_name(&overflow_rule.from)
+                                {
+                                    if course_bank.credit.is_some() {
+                                        Some(messages::credit_overflow_msg(
+                                            *overflow,
+                                            &overflow_rule.from,
+                                            &overflow_rule.to,
+                                        ))
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            }
+                            CreditsTransfer::OverflowCourses => {
+                                Some(messages::courses_overflow_msg(
+                                    *overflow,
+                                    &overflow_rule.from,
+                                    &overflow_rule.to,
+                                ))
+                            }
+                            CreditsTransfer::MissingCredits => Some(messages::missing_credit_msg(
                                 *overflow,
                                 &overflow_rule.from,
                                 &overflow_rule.to,
-                            ),
-                            CreditsTransfer::OverflowCourses => messages::courses_overflow_msg(
-                                *overflow,
-                                &overflow_rule.from,
-                                &overflow_rule.to,
-                            ),
-                            CreditsTransfer::MissingCredits => messages::missing_credit_msg(
-                                *overflow,
-                                &overflow_rule.from,
-                                &overflow_rule.to,
-                            ),
+                            )),
                         };
-                        self.user.degree_status.overflow_msgs.push(msg);
+                        if let Some(msg) = msg {
+                            self.user.degree_status.overflow_msgs.push(msg);
+                        }
                         sum += *overflow;
                         *overflow = 0.0;
                     }
@@ -603,7 +639,6 @@ impl<'a> DegreeStatusHandler<'a> {
                 if missing_credit > 0.0 {
                     self.missing_credit_map
                         .insert(bank.name.clone(), missing_credit);
-                    msg = Some(messages::catalog_missing_credit_msg(missing_credit));
                 }
             }
             Rule::AccumulateCredit => sum_credits = bank_rule_handler.accumulate_credit(),
@@ -682,6 +717,15 @@ impl<'a> DegreeStatusHandler<'a> {
                 self.calculate_overflows(&bank.name, CreditsTransfer::MissingCredits);
             let courses_overflow =
                 self.calculate_overflows(&bank.name, CreditsTransfer::OverflowCourses) as u32;
+
+            if bank.credit.is_none() {
+                if let Some(to_bank_name) = self.find_next_bank_with_credit_requirement(&bank.name)
+                {
+                    self.user.degree_status.overflow_msgs.push(
+                        messages::credit_overflow_detailed_msg(&bank.name, &to_bank_name),
+                    );
+                }
+            }
 
             self.handle_bank_rule(
                 &bank,
@@ -1515,10 +1559,6 @@ mod tests {
             user.degree_status.course_bank_requirements[6].credit_completed,
             72.5
         );
-        assert_eq!(
-            user.degree_status.course_bank_requirements[6].message,
-            Some("בוצעו החלפות בין קורסים עם מספר קטן יותר של נקודות, לכן נוצרו 1 נקודות חסרות שעברו הלאה.".to_string())
-        );
 
         assert_eq!(
             user.degree_status.course_bank_requirements[7].credit_requirement,
@@ -1540,15 +1580,19 @@ mod tests {
 
         assert_eq!(
             user.degree_status.overflow_msgs[0],
-            "בחובה היו 1 נקודות חסרות שנוספו לדרישה של רשימה ב".to_string()
+            messages::credit_overflow_detailed_msg("פרויקט", "רשימה א")
         );
         assert_eq!(
             user.degree_status.overflow_msgs[1],
-            "עברו 6 נקודות מבחירת העשרה לבחירה חופשית".to_string()
+            messages::missing_credit_msg(1.0, "חובה", "רשימה ב")
         );
         assert_eq!(
             user.degree_status.overflow_msgs[2],
-            "יש לסטודנט 5.5 נקודות עודפות".to_string()
+            messages::credit_overflow_msg(6.0, "בחירת העשרה", "בחירה חופשית")
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[3],
+            messages::credit_leftovers_msg(5.5)
         );
     }
 
@@ -1600,7 +1644,7 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[5].message,
-            Some("הסטודנט השלים את השרשרת הבאה:\nפיסיקה 2פ'\n".to_string())
+            Some(messages::completed_chain_msg(&["פיסיקה 2פ'".to_string()]))
         );
 
         assert_eq!(
@@ -1632,15 +1676,19 @@ mod tests {
 
         assert_eq!(
             user.degree_status.overflow_msgs[0],
-            "עברו 1.5 נקודות מחובה לרשימה ב".to_string()
+            messages::credit_overflow_detailed_msg("פרויקט", "רשימה א")
         );
         assert_eq!(
             user.degree_status.overflow_msgs[1],
-            "עברו 0.5 נקודות משרשרת מדעית לרשימה ב".to_string()
+            messages::credit_overflow_msg(1.5, "חובה", "רשימה ב")
         );
         assert_eq!(
             user.degree_status.overflow_msgs[2],
-            "יש לסטודנט 0 נקודות עודפות".to_string()
+            messages::credit_overflow_msg(0.5, "שרשרת מדעית", "רשימה ב")
+        );
+        assert_eq!(
+            user.degree_status.overflow_msgs[3],
+            messages::credit_leftovers_msg(0.0)
         );
     }
 
@@ -1691,7 +1739,7 @@ mod tests {
         );
         assert_eq!(
             user.degree_status.course_bank_requirements[5].message,
-            Some("הסטודנט השלים את השרשרת הבאה:\nפיסיקה 2\nפיסיקה 3\n".to_string())
+            Some(messages::completed_chain_msg(&["פיסיקה 2".to_string(), "פיסיקה 3".to_string()]))
         );
 
         assert_eq!(
@@ -1723,72 +1771,19 @@ mod tests {
 
         assert_eq!(
             user.degree_status.overflow_msgs[0],
-            "עברו 4 נקודות מפרויקט לרשימה א".to_string()
+            messages::credit_overflow_detailed_msg("פרויקט", "רשימה א")
         );
         assert_eq!(
             user.degree_status.overflow_msgs[1],
-            "עברו 2 נקודות משרשרת מדעית לרשימה ב".to_string()
+            messages::credit_overflow_msg(2.0, "שרשרת מדעית", "רשימה ב")
         );
         assert_eq!(
             user.degree_status.overflow_msgs[2],
-            "עברו 2 נקודות מבחירת העשרה לבחירה חופשית".to_string()
+            messages::credit_overflow_msg(2.0, "בחירת העשרה", "בחירה חופשית")
         );
         assert_eq!(
             user.degree_status.overflow_msgs[3],
-            "יש לסטודנט 0 נקודות עודפות".to_string()
+            messages::credit_leftovers_msg(0.0)
         );
     }
-
-    // #[test]
-    // async fn find_not_exisiting_courses() {
-    //     // remove this after we add all courses to the db
-    //     dotenv().ok();
-    //     let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
-    //         .await
-    //         .expect("failed to parse URI");
-
-    //     let client = mongodb::Client::with_options(options).unwrap();
-    //     // Ping the server to see if you can connect to the cluster
-    //     client
-    //         .database("admin")
-    //         .run_command(bson::doc! {"ping": 1}, None)
-    //         .await
-    //         .expect("failed to connect to db");
-    //     println!("Connected successfully.");
-    //     let contents = std::fs::read_to_string(format!("../docs/{}", "pdf_ctrl_c_ctrl_v_4.txt"))
-    //         .expect("Something went wrong reading the file");
-
-    //     let course_statuses =
-    //         course::parse_copy_paste_data(&contents).expect("failed to parse courses data");
-
-    //     let obj_id = bson::oid::ObjectId::from_str("61d84fce5c5e7813e895a27d").expect("failed to create oid");
-    //     let catalog = db::services::get_catalog_by_id(&obj_id, &client)
-    //         .await
-    //         .expect("failed to get catalog");
-    //     let mut user = UserDetails {
-    //         catalog: None,
-    //         degree_status: DegreeStatus {
-    //             course_statuses,
-    //             ..Default::default()
-    //         },
-    //         modified: false,
-    //     };
-    //     let vec_courses = db::services::get_all_courses(&client)
-    //         .await
-    //         .expect("failed to get all courses");
-    //     let malag_courses = db::services::get_all_malags(&client)
-    //         .await
-    //         .expect("failed to get all malags")[0]
-    //         .malag_list
-    //         .clone();
-
-    //     let courses = course::vec_to_map(vec_courses);
-    //     for course in catalog.course_to_bank {
-    //         if course.1 == "חובה" {
-    //             if !courses.contains_key(&course.0) {
-    //                 println!("{}\n", course.0);
-    //             }
-    //         }
-    //     }
-    // }
 }
