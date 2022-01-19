@@ -1,4 +1,4 @@
-use crate::{course::Course, db};
+use crate::{db, resources::course::Course};
 use actix_web::{delete, error::ErrorBadRequest, get, put, web, Error, HttpResponse};
 use bson::doc;
 use mongodb::Client;
