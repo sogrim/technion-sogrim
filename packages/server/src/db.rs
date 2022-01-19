@@ -159,13 +159,6 @@ pub mod services {
         db_coll_name: "Catalogs"
     );
 
-    impl_delete!(
-        fn_name: delete_catalog,
-        db_item: Catalog,
-        db_key_type: &ObjectId,
-        db_coll_name: "Catalogs"
-    );
-
     // =============== COURSE CRUD ===============
 
     impl_get!(

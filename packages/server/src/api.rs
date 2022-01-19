@@ -42,3 +42,8 @@ pub async fn delete_course(
         .await
         .map(|_| HttpResponse::Ok().finish())
 }
+
+// TODO: CRUD for catalog
+// get catalog by id
+// get all catalogs
+// update or create catalog (HTTP PUT)
