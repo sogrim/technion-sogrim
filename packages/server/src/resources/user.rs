@@ -90,20 +90,3 @@ impl FromRequest for User {
         Self::from_request(req, &mut Payload::None)
     }
 }
-
-// DEBUG..
-
-// #[derive(Clone, Debug, Deserialize, Serialize)]
-// struct DebugResponse {
-//     s: String,
-// }
-// impl From<String> for DebugResponse {
-//     fn from(s: String) -> Self {
-//         DebugResponse { s }
-//     }
-// }
-
-// #[get("/user/debug")]
-// pub async fn debug(content: String) -> HttpResponse {
-//     HttpResponse::Ok().json(DebugResponse::from(content))
-// }
