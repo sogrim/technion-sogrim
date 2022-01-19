@@ -1,4 +1,4 @@
-use crate::{course::Course, db};
+use crate::{db, resources::course::Course};
 use actix_web::{delete, error::ErrorBadRequest, get, put, web, Error, HttpResponse};
 use bson::doc;
 use mongodb::Client;
@@ -44,6 +44,5 @@ pub async fn delete_course(
 }
 
 // TODO: CRUD for catalog
-// get catalog by id
-// get all catalogs
-// update or create catalog (HTTP PUT)
+// get catalog by id (HTTP GET)
+// update or create catalog by id (HTTP PUT)

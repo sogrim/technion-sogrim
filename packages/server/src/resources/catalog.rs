@@ -1,18 +1,8 @@
+use crate::{core::types::CreditOverflow, resources::course::CourseBank};
+use serde::{self, Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{
-    core::CreditOverflow,
-    course::{CourseBank, CourseId},
-    db,
-    user::User,
-};
-use actix_web::{
-    get,
-    web::{self},
-    Error, HttpResponse,
-};
-use mongodb::Client;
-use serde::{self, Deserialize, Serialize};
+use super::course::CourseId;
 
 pub(crate) type OptionalReplacements = Vec<CourseId>;
 
@@ -63,58 +53,5 @@ impl From<Catalog> for DisplayCatalog {
             total_credit: catalog.total_credit,
             description: catalog.description,
         }
-    }
-}
-
-#[get("/catalogs")]
-pub async fn get_all_catalogs(
-    client: web::Data<Client>,
-    _: User, //TODO think about whether this is necessary
-) -> Result<HttpResponse, Error> {
-    db::services::get_all_catalogs(&client)
-        .await
-        .map(|catalogs| HttpResponse::Ok().json(catalogs))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::auth;
-    use crate::config::CONFIG;
-    use actix_rt::test;
-    use actix_web::{
-        test::{self},
-        web, App,
-    };
-    use dotenv::dotenv;
-    use mongodb::Client;
-
-    #[test]
-    pub async fn test_get_all_catalogs() {
-        dotenv().ok();
-        let client = Client::with_uri_str(CONFIG.uri)
-            .await
-            .expect("failed to connect");
-
-        let app = test::init_service(
-            App::new()
-                .wrap(auth::AuthenticateMiddleware)
-                .app_data(web::Data::new(client.clone()))
-                .service(super::get_all_catalogs),
-        )
-        .await;
-
-        // Create and send request
-        let resp = test::TestRequest::get()
-            .uri("/catalogs")
-            .insert_header(("authorization", "bugo-the-debugo"))
-            .send_request(&app)
-            .await;
-
-        assert!(resp.status().is_success());
-
-        // Check for valid json response
-        let vec_catalogs: Vec<DisplayCatalog> = test::read_body_json(resp).await;
-        assert_eq!(vec_catalogs[0].name, "2019-2020 מדמח תלת שנתי");
     }
 }
