@@ -79,13 +79,14 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
         <Typography fontWeight={500}>{course.name} </Typography>
         <Chip
           label={`${course.credit} נק"ז`}
-          sx={{ minWidth: "5px" }}
+          sx={{ minWidth: "55px" }}
           variant="outlined"
           size="small"
         />
         {course.state !== "הושלם" && (
           <Chip
             label="לא בוצע"
+            sx={{ minWidth: "55px" }}
             color="secondary"
             variant="outlined"
             size="small"
