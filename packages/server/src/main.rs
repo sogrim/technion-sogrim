@@ -5,6 +5,7 @@ use actix_web::{middleware::Logger, web, App, HttpServer};
 use dotenv::dotenv;
 use mongodb::Client;
 
+mod api;
 mod auth;
 mod catalog;
 mod config;
@@ -35,6 +36,10 @@ async fn main() -> std::io::Result<()> {
             .service(user::compute_degree_status)
             .service(user::update_details)
             .service(user::debug)
+            .service(api::get_all_courses)
+            .service(api::get_course_by_id)
+            .service(api::create_or_update_course)
+            .service(api::delete_course)
     })
     .bind((CONFIG.ip, CONFIG.port))?
     .run()

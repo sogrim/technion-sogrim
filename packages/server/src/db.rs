@@ -25,15 +25,15 @@ pub mod services {
 
         ) => {
             #[allow(dead_code)] // TODO: remove this
-            pub async fn $fn_name(item: $db_key_type, client: &Client) -> Result<$db_item, Error> {
+            pub async fn $fn_name(id: $db_key_type, client: &Client) -> Result<$db_item, Error> {
                 match client
                     .database(CONFIG.profile)
                     .collection::<$db_item>(format!("{}s", stringify!($db_item)).as_str())
-                    .find_one(doc! {"_id" : item}, None)
+                    .find_one(doc! {"_id" : id}, None)
                     .await
                 {
-                    Ok(Some(item)) => Ok(item),
-                    Ok(None) => Err(error::ErrorNotFound(item.to_string())),
+                    Ok(Some(id)) => Ok(id),
+                    Ok(None) => Err(error::ErrorNotFound(id.to_string())),
                     Err(err) => {
                         eprintln!("{:#?}", err);
                         Err(error::ErrorInternalServerError(err.to_string()))
@@ -138,6 +138,8 @@ pub mod services {
         };
     }
 
+    // =============== CATALOG CRUD ===============
+
     impl_get!(
         fn_name: get_catalog_by_id,
         db_item: Catalog,
@@ -164,8 +166,10 @@ pub mod services {
         db_coll_name: "Catalogs"
     );
 
+    // =============== COURSE CRUD ===============
+
     impl_get!(
-        fn_name: get_course_by_number,
+        fn_name: get_course_by_id,
         db_item: Course,
         db_key_type: &str
     );
@@ -195,6 +199,8 @@ pub mod services {
         db_item: Malags,
         db_coll_name: "Malags"
     );
+
+    // =============== USER CRUD ===============
 
     impl_get!(fn_name: get_user_by_id, db_item: User, db_key_type: &str);
 
