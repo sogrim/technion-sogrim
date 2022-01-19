@@ -92,7 +92,7 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
           />
         )}
       </Box>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0 }}>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
         <Typography fontWeight={50}>
           סמסטר {decodeSemesterNumber(course.semester)}
         </Typography>
