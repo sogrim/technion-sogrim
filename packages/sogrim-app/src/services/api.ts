@@ -27,7 +27,7 @@ export const putUserCatalog = async (
   try {
     res =
       (await axios.put(
-        `${API_URL}/user/catalog`,
+        `${API_URL}/students/catalog`,
         userCatalogId || ({} as UserState),
         {
           headers: {
@@ -48,7 +48,7 @@ export const postUserUgData = async (
   // const fallback: UserState = {} as UserState;
   let res: UserState;
 
-  res = await axios.post(`${API_URL}/user/courses`, ugData, {
+  res = await axios.post(`${API_URL}/students/courses`, ugData, {
     headers: {
       authorization: `${authToken}`,
     },
@@ -61,7 +61,7 @@ export const getUserState = async (authToken: any): Promise<UserState> => {
   const fallback: UserState = {} as UserState;
   let data: UserState;
   try {
-    const res = await axios.get(`${API_URL}/user/login`, {
+    const res = await axios.get(`${API_URL}/students/login`, {
       headers: {
         authorization: `${authToken}`,
       },
@@ -81,7 +81,7 @@ export const putUserState = async (
   let res: UserDetails;
   try {
     res =
-      (await axios.put(`${API_URL}/user/details`, updatedUserState, {
+      (await axios.put(`${API_URL}/students/details`, updatedUserState, {
         headers: {
           authorization: `${authToken}`,
         },
@@ -97,7 +97,7 @@ export const getComputeEndGame = async (authToken: any): Promise<UserState> => {
   let res: UserState;
   try {
     res =
-      (await axios.get(`${API_URL}/user/compute`, {
+      (await axios.get(`${API_URL}/students/degree-status`, {
         headers: {
           authorization: `${authToken}`,
         },

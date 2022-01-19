@@ -28,7 +28,8 @@ pub async fn get_all_catalogs(
         .map(|catalogs| HttpResponse::Ok().json(catalogs))
 }
 
-#[get("/user/login")]
+//TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
+#[get("/students/login")]
 pub async fn login(client: web::Data<Client>, req: HttpRequest) -> Result<HttpResponse, Error> {
     let extensions = req.extensions();
     let user_id = extensions
@@ -40,7 +41,7 @@ pub async fn login(client: web::Data<Client>, req: HttpRequest) -> Result<HttpRe
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
-#[put("/user/catalog")]
+#[put("/students/catalog")]
 pub async fn add_catalog(
     client: web::Data<Client>,
     catalog_id: String,
@@ -66,7 +67,7 @@ pub async fn add_catalog(
     }
 }
 
-#[post("/user/courses")]
+#[post("/students/courses")]
 pub async fn add_courses(
     client: web::Data<Client>,
     data: String,
@@ -90,7 +91,7 @@ pub async fn add_courses(
 }
 
 // here "modified" becomes false
-#[get("/user/compute")]
+#[get("/students/degree-status")]
 pub async fn compute_degree_status(
     client: web::Data<Client>,
     mut user: User,
@@ -132,7 +133,7 @@ pub async fn compute_degree_status(
 }
 
 // here "modified" becomes true
-#[put("/user/details")]
+#[put("/students/details")]
 pub async fn update_details(
     client: web::Data<Client>,
     details: web::Json<UserDetails>,
