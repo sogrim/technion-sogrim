@@ -24,7 +24,7 @@ pub mod services {
             db_key_type : $db_key_type:ty
 
         ) => {
-            #[allow(dead_code)]
+            #[allow(dead_code)] // TODO: remove this
             pub async fn $fn_name(item: $db_key_type, client: &Client) -> Result<$db_item, Error> {
                 match client
                     .database(CONFIG.profile)
@@ -77,6 +77,7 @@ pub mod services {
             db_coll_name : $db_coll_name:literal
 
         ) => {
+            #[allow(dead_code)] // TODO: remove this
             pub async fn $fn_name(
                 id: $db_key_type,
                 document: Document,
@@ -109,10 +110,58 @@ pub mod services {
         };
     }
 
+    #[macro_export]
+    macro_rules! impl_delete {
+        (
+            fn_name : $fn_name:ident,
+            db_item : $db_item:ty,
+            db_key_type : $db_key_type:ty,
+            db_coll_name : $db_coll_name:literal
+
+        ) => {
+            #[allow(dead_code)] // TODO: remove this
+            pub async fn $fn_name(id: $db_key_type, client: &Client) -> Result<(), Error> {
+                match client
+                    .database(CONFIG.profile)
+                    .collection::<$db_item>($db_coll_name)
+                    .delete_one(doc! {"_id" : id}, None)
+                    .await
+                {
+                    Ok(_) => Ok(()),
+                    Err(err) => {
+                        let err = format!("monogdb driver error: {}", err);
+                        eprintln!("{}", err);
+                        Err(ErrorInternalServerError(err))
+                    }
+                }
+            }
+        };
+    }
+
     impl_get!(
         fn_name: get_catalog_by_id,
         db_item: Catalog,
         db_key_type: &ObjectId
+    );
+
+    impl_get_all!(
+        fn_name: get_all_catalogs,
+        db_item: DisplayCatalog,
+        db_coll_name: "Catalogs"
+    );
+
+    impl_update!(
+        fn_name: find_and_update_catalog,
+        db_item: Catalog,
+        db_key_type: &ObjectId,
+        db_coll_name: "Catalogs"
+    );
+
+    impl_delete!(
+        fn_name: delete_catalog,
+        db_item: Catalog,
+        db_key_type: &ObjectId,
+        db_coll_name: "Catalogs"
     );
 
     impl_get!(
@@ -121,17 +170,23 @@ pub mod services {
         db_key_type: &str
     );
 
-    impl_get!(fn_name: get_user_by_id, db_item: User, db_key_type: &str);
-
-    impl_get_all!(
-        fn_name: get_all_catalogs,
-        db_item: DisplayCatalog,
-        db_coll_name: "Catalogs"
-    );
-
     impl_get_all!(
         fn_name: get_all_courses,
         db_item: Course,
+        db_coll_name: "Courses"
+    );
+
+    impl_update!(
+        fn_name: find_and_update_course,
+        db_item: Course,
+        db_key_type: &str,
+        db_coll_name: "Courses"
+    );
+
+    impl_delete!(
+        fn_name: delete_course,
+        db_item: Course,
+        db_key_type: &str,
         db_coll_name: "Courses"
     );
 
@@ -140,6 +195,8 @@ pub mod services {
         db_item: Malags,
         db_coll_name: "Malags"
     );
+
+    impl_get!(fn_name: get_user_by_id, db_item: User, db_key_type: &str);
 
     impl_update!(
         fn_name: find_and_update_user,
