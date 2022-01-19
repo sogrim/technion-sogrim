@@ -1,6 +1,10 @@
 use crate::config::CONFIG;
+use crate::core::bank_rule::BankRuleHandler;
+use crate::core::degree_status::{compute, DegreeStatusHandler};
 use crate::core::parser;
+use crate::core::types::{SpecializationGroup, SpecializationGroups};
 use crate::db;
+use crate::resources::catalog::Catalog;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade};
 use crate::resources::user::UserDetails;
 use actix_rt::test;
@@ -9,6 +13,8 @@ use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use super::degree_status::DegreeStatus;
+use super::types::Requirement;
 use super::*;
 
 #[test]
@@ -730,7 +736,7 @@ async fn run_calculate_degree_status(file_name: &str, catalog: &str) -> UserDeta
         .expect("failed to get all malags")[0]
         .malag_list
         .clone();
-    calculate_degree_status(
+    compute(
         catalog,
         course::vec_to_map(vec_courses),
         malag_courses,

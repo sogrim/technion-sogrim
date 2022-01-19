@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use crate::core::Rule;
+use crate::core::types::Rule;
 
 pub type CourseId = String;
 

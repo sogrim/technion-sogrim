@@ -8,7 +8,10 @@ use bson::doc;
 use mongodb::Client;
 
 use crate::{
-    core::{self, parser, DegreeStatus},
+    core::{
+        degree_status::{self, DegreeStatus},
+        parser,
+    },
     db,
     middleware::auth::Sub,
     resources::{
@@ -119,7 +122,7 @@ pub async fn compute_degree_status(
         .malag_list
         .clone(); // The collection malags contain one item with the list of all malags
 
-    core::calculate_degree_status(
+    degree_status::compute(
         catalog,
         course::vec_to_map(vec_courses),
         malag_courses,

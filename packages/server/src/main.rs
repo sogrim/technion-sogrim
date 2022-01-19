@@ -9,7 +9,6 @@ mod api;
 mod config;
 mod core;
 mod db;
-mod messages;
 mod middleware;
 mod resources;
 

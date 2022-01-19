@@ -9,7 +9,7 @@ use mongodb::Client;
 
 #[allow(clippy::float_cmp)]
 #[test]
-async fn test_user_login() {
+async fn test_student_login() {
     dotenv().ok();
     let client = Client::with_uri_str(CONFIG.uri)
         .await
@@ -25,7 +25,7 @@ async fn test_user_login() {
 
     // Create and send request
     let resp = test::TestRequest::get()
-        .uri("/user/login")
+        .uri("/students/login")
         .insert_header(("authorization", "bugo-the-debugo"))
         .send_request(&app)
         .await;

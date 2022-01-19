@@ -1,5 +1,4 @@
-use crate::core::CreditOverflow;
-use crate::resources::course::CourseBank;
+use crate::{core::types::CreditOverflow, resources::course::CourseBank};
 use serde::{self, Deserialize, Serialize};
 use std::collections::HashMap;
 
