@@ -2,16 +2,15 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::resources::{
-    catalog::Catalog,
-    course::{Course, CourseBank, CourseId, CourseState, CourseStatus},
-    user::UserDetails,
-};
-
 use super::{
     bank_rule::BankRuleHandler,
     messages, toposort,
     types::{CreditTransfer, Requirement, Rule},
+};
+use crate::resources::{
+    catalog::Catalog,
+    course::{Course, CourseBank, CourseId, CourseState, CourseStatus},
+    user::UserDetails,
 };
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
