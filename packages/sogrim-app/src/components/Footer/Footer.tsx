@@ -1,4 +1,5 @@
 import GitHubIcon from "@mui/icons-material/GitHub";
+import InfoIcon from "@mui/icons-material/Info";
 import { AppBar, Box, Link, Typography } from "@mui/material";
 
 export const Footer: React.FC = () => {
@@ -38,6 +39,24 @@ export const Footer: React.FC = () => {
             Github
           </Link>
           <GitHubIcon sx={{ height: "18px", width: "18px" }} />
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 0.75,
+            alignItems: "center",
+          }}
+        >
+          <Link
+            href="https://docs.google.com/forms/d/e/1FAIpQLSe7GbkAkIdTgJ3QkGmJMHhkIpjWz_I0ZX608FlxVLeT0cyJJQ/viewform?usp=sf_link"
+            underline="hover"
+            target="_blank"
+            rel="noopener"
+            color="white"
+          >
+            בעיות והצעות - פנו אלינו
+          </Link>
+          <InfoIcon sx={{ height: "18px", width: "18px" }} />
         </Box>
       </Box>
     </AppBar>
