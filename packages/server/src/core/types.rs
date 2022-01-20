@@ -63,9 +63,9 @@ pub struct CreditOverflow {
     pub to: String,
 }
 
-pub enum CreditsTransfer {
-    OverflowCredits,
-    MissingCredits,
+pub enum CreditTransfer {
+    OverflowCredit,
+    MissingCredit,
     OverflowCourses,
 }
 
@@ -85,7 +85,7 @@ pub struct Requirement {
     pub message: Option<String>,
 }
 pub struct CreditInfo {
-    pub sum_credits: f32,
+    pub sum_credit: f32,
     pub count_courses: u32,
     pub missing_credit: f32,
     pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user

@@ -23,16 +23,16 @@ pub struct BankRuleHandler<'a> {
 }
 
 impl<'a> BankRuleHandler<'a> {
-    // This function sets the type of the course and adds its credit to sum_credits.
-    // Returns true if the credits have been added, false otherwise.
-    pub fn set_type_and_add_credits(
+    // This function sets the type of the course and adds its credit to sum_credit.
+    // Returns true if the credit have been added, false otherwise.
+    pub fn set_type_and_add_credit(
         course_status: &mut CourseStatus,
         bank_name: String,
-        sum_credits: &mut f32,
+        sum_credit: &mut f32,
     ) -> bool {
         course_status.set_type(bank_name);
         if course_status.passed() {
-            *sum_credits += course_status.course.credit;
+            *sum_credit += course_status.course.credit;
             true
         } else {
             false
@@ -40,8 +40,8 @@ impl<'a> BankRuleHandler<'a> {
     }
 
     fn iterate_course_list(&mut self) -> CreditInfo {
-        // return sum_credits, count_courses, missing_points
-        let mut sum_credits = self.credit_overflow;
+        // return sum_credit, count_courses, missing_points
+        let mut sum_credit = self.credit_overflow;
         let mut count_courses = self.courses_overflow;
         let mut missing_credit = 0.0;
         let mut handled_courses = HashMap::new();
@@ -111,10 +111,10 @@ impl<'a> BankRuleHandler<'a> {
             }
 
             if course_chosen_for_bank
-                && Self::set_type_and_add_credits(
+                && Self::set_type_and_add_credit(
                     course_status,
                     self.bank_name.clone(),
-                    &mut sum_credits,
+                    &mut sum_credit,
                 )
             {
                 count_courses += 1;
@@ -122,7 +122,7 @@ impl<'a> BankRuleHandler<'a> {
         }
 
         CreditInfo {
-            sum_credits,
+            sum_credit,
             count_courses,
             missing_credit,
             handled_courses,
@@ -153,24 +153,24 @@ impl<'a> BankRuleHandler<'a> {
             }
         }
         *missing_credit = credit_info.missing_credit;
-        credit_info.sum_credits
+        credit_info.sum_credit
     }
 
     pub fn accumulate_credit(mut self) -> f32 {
         let credit_info = self.iterate_course_list();
-        credit_info.sum_credits
+        credit_info.sum_credit
     }
 
     pub fn accumulate_courses(mut self, count_courses: &mut u32) -> f32 {
         let credit_info = self.iterate_course_list();
         *count_courses = credit_info.count_courses;
-        credit_info.sum_credits
+        credit_info.sum_credit
     }
 
     // TODO: remove this when removing the condition in the if statement
     #[allow(clippy::float_cmp)]
     pub fn malag(self, malag_courses: &[CourseId]) -> f32 {
-        let mut sum_credits = self.credit_overflow;
+        let mut sum_credit = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
             if course_status.valid_for_bank(&self.bank_name)
                 && (malag_courses.contains(&course_status.course.id)
@@ -179,47 +179,47 @@ impl<'a> BankRuleHandler<'a> {
             || course_status.r#type.is_some())
             // If type is not none it means valid_for_bank returns true because the user modified this course to be malag
             {
-                Self::set_type_and_add_credits(
+                Self::set_type_and_add_credit(
                     course_status,
                     self.bank_name.clone(),
-                    &mut sum_credits,
+                    &mut sum_credit,
                 );
             }
         }
-        sum_credits
+        sum_credit
     }
 
     pub fn sport(self) -> f32 {
-        let mut sum_credits = self.credit_overflow;
+        let mut sum_credit = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
             if course_status.valid_for_bank(&self.bank_name)
                 && (course_status.is_sport() || course_status.r#type.is_some())
             // If type is not none it means valid_for_bank returns true because the user modified this course to be sport
             {
-                Self::set_type_and_add_credits(
+                Self::set_type_and_add_credit(
                     course_status,
                     self.bank_name.clone(),
-                    &mut sum_credits,
+                    &mut sum_credit,
                 );
             }
         }
-        sum_credits
+        sum_credit
     }
 
     pub fn free_choice(self) -> f32 {
-        let mut sum_credits = self.credit_overflow;
+        let mut sum_credit = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
             if course_status.valid_for_bank(&self.bank_name)
                 && !(course_status.semester == None && course_status.course.credit == 0.0)
             {
-                Self::set_type_and_add_credits(
+                Self::set_type_and_add_credit(
                     course_status,
                     self.bank_name.clone(),
-                    &mut sum_credits,
+                    &mut sum_credit,
                 );
             }
         }
-        sum_credits
+        sum_credit
     }
 
     pub fn chain(mut self, chains: &[Chain], chain_done: &mut Vec<String>) -> f32 {
@@ -243,12 +243,12 @@ impl<'a> BankRuleHandler<'a> {
                 }
             }
             if completed_chain {
-                return credit_info.sum_credits;
+                return credit_info.sum_credit;
             } else {
                 chain_done.clear();
             }
         }
-        credit_info.sum_credits
+        credit_info.sum_credit
     }
 
     pub fn specialization_group(
@@ -315,6 +315,6 @@ impl<'a> BankRuleHandler<'a> {
             }
         }
 
-        credit_info.sum_credits
+        credit_info.sum_credit
     }
 }

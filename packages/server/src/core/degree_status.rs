@@ -11,7 +11,7 @@ use crate::resources::{
 use super::{
     bank_rule::BankRuleHandler,
     messages, toposort,
-    types::{CreditsTransfer, Requirement, Rule},
+    types::{CreditTransfer, Requirement, Rule},
 };
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -52,7 +52,7 @@ pub struct DegreeStatusHandler<'a> {
     pub catalog: Catalog,
     pub courses: HashMap<CourseId, Course>,
     pub malag_courses: Vec<CourseId>,
-    pub credits_overflow_map: HashMap<String, f32>,
+    pub credit_overflow_map: HashMap<String, f32>,
     pub missing_credit_map: HashMap<String, f32>,
     pub courses_overflow_map: HashMap<String, f32>,
 }
@@ -88,19 +88,19 @@ impl<'a> DegreeStatusHandler<'a> {
         modified_courses
     }
 
-    fn calculate_overflows(&mut self, bank_name: &str, transfer: CreditsTransfer) -> f32 {
+    fn calculate_overflows(&mut self, bank_name: &str, transfer: CreditTransfer) -> f32 {
         let mut sum = 0.0;
         let map = match transfer {
-            CreditsTransfer::OverflowCredits => &mut self.credits_overflow_map,
-            CreditsTransfer::MissingCredits => &mut self.missing_credit_map,
-            CreditsTransfer::OverflowCourses => &mut self.courses_overflow_map,
+            CreditTransfer::OverflowCredit => &mut self.credit_overflow_map,
+            CreditTransfer::MissingCredit => &mut self.missing_credit_map,
+            CreditTransfer::OverflowCourses => &mut self.courses_overflow_map,
         };
         for overflow_rule in &self.catalog.credit_overflows {
             if overflow_rule.to == bank_name {
                 if let Some(overflow) = map.get_mut(&overflow_rule.from) {
                     if *overflow > 0.0 {
                         let msg = match transfer {
-                            CreditsTransfer::OverflowCredits => {
+                            CreditTransfer::OverflowCredit => {
                                 if let Some(course_bank) =
                                     self.catalog.get_course_bank_by_name(&overflow_rule.from)
                                 {
@@ -117,14 +117,14 @@ impl<'a> DegreeStatusHandler<'a> {
                                     None
                                 }
                             }
-                            CreditsTransfer::OverflowCourses => {
+                            CreditTransfer::OverflowCourses => {
                                 Some(messages::courses_overflow_msg(
                                     *overflow,
                                     &overflow_rule.from,
                                     &overflow_rule.to,
                                 ))
                             }
-                            CreditsTransfer::MissingCredits => Some(messages::missing_credit_msg(
+                            CreditTransfer::MissingCredit => Some(messages::missing_credit_msg(
                                 *overflow,
                                 &overflow_rule.from,
                                 &overflow_rule.to,
@@ -146,18 +146,18 @@ impl<'a> DegreeStatusHandler<'a> {
         &mut self,
         bank: &CourseBank,
         bank_credit: f32,
-        sum_credits: f32,
+        sum_credit: f32,
     ) -> f32 {
-        if sum_credits <= bank_credit {
-            self.user.degree_status.total_credit += sum_credits;
-            sum_credits
+        if sum_credit <= bank_credit {
+            self.user.degree_status.total_credit += sum_credit;
+            sum_credit
         } else {
-            match self.credits_overflow_map.get_mut(&bank.name) {
-                Some(bank_overflow_item) => *bank_overflow_item += sum_credits - bank_credit,
+            match self.credit_overflow_map.get_mut(&bank.name) {
+                Some(bank_overflow_item) => *bank_overflow_item += sum_credit - bank_credit,
                 None => {
                     let _ = self
-                        .credits_overflow_map
-                        .insert(bank.name.clone(), sum_credits - bank_credit);
+                        .credit_overflow_map
+                        .insert(bank.name.clone(), sum_credit - bank_credit);
                 }
             };
             self.user.degree_status.total_credit += bank_credit;
@@ -181,11 +181,11 @@ impl<'a> DegreeStatusHandler<'a> {
     }
 
     fn calculate_credit_leftovers(&mut self) -> f32 {
-        let mut sum_credits = 0.0;
-        for credit_overflow in &mut self.credits_overflow_map.values() {
-            sum_credits += *credit_overflow;
+        let mut sum_credit = 0.0;
+        for credit_overflow in &mut self.credit_overflow_map.values() {
+            sum_credit += *credit_overflow;
         }
-        sum_credits
+        sum_credit
     }
 
     fn handle_bank_rule(
@@ -211,7 +211,7 @@ impl<'a> DegreeStatusHandler<'a> {
         };
 
         // Initialize necessary variable for rules handling
-        let mut sum_credits;
+        let mut sum_credit;
         let mut count_courses = 0; // for accumulate courses rule
         let mut missing_credit = 0.0; // for all rule
         let mut completed = true;
@@ -221,30 +221,30 @@ impl<'a> DegreeStatusHandler<'a> {
 
         match &bank.rule {
             Rule::All => {
-                sum_credits = bank_rule_handler.all(&mut missing_credit);
+                sum_credit = bank_rule_handler.all(&mut missing_credit);
                 if missing_credit > 0.0 {
                     self.missing_credit_map
                         .insert(bank.name.clone(), missing_credit);
                 }
             }
-            Rule::AccumulateCredit => sum_credits = bank_rule_handler.accumulate_credit(),
+            Rule::AccumulateCredit => sum_credit = bank_rule_handler.accumulate_credit(),
             Rule::AccumulateCourses(num_courses) => {
-                sum_credits = bank_rule_handler.accumulate_courses(&mut count_courses);
+                sum_credit = bank_rule_handler.accumulate_courses(&mut count_courses);
                 count_courses = self.handle_courses_overflow(bank, *num_courses, count_courses);
                 completed = count_courses >= *num_courses;
             }
-            Rule::Malag => sum_credits = bank_rule_handler.malag(&self.malag_courses),
-            Rule::Sport => sum_credits = bank_rule_handler.sport(),
-            Rule::FreeChoice => sum_credits = bank_rule_handler.free_choice(),
+            Rule::Malag => sum_credit = bank_rule_handler.malag(&self.malag_courses),
+            Rule::Sport => sum_credit = bank_rule_handler.sport(),
+            Rule::FreeChoice => sum_credit = bank_rule_handler.free_choice(),
             Rule::Chains(chains) => {
-                sum_credits = bank_rule_handler.chain(chains, &mut chain_done);
+                sum_credit = bank_rule_handler.chain(chains, &mut chain_done);
                 completed = !chain_done.is_empty();
                 if completed {
                     msg = Some(messages::completed_chain_msg(&chain_done));
                 }
             }
             Rule::SpecializationGroups(specialization_groups) => {
-                sum_credits = bank_rule_handler
+                sum_credit = bank_rule_handler
                     .specialization_group(specialization_groups, &mut groups_done_list);
                 completed = groups_done_list.len() >= specialization_groups.groups_number.into();
                 msg = Some(messages::completed_specialization_groups_msg(
@@ -252,7 +252,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 ));
             }
             Rule::Wildcard(_) => {
-                sum_credits = 0.0; // TODO: change this
+                sum_credit = 0.0; // TODO: change this
             }
         }
 
@@ -260,10 +260,10 @@ impl<'a> DegreeStatusHandler<'a> {
         if let Some(bank_credit) = bank.credit {
             let new_credit = bank_credit - missing_credit + missing_credit_from_prev_banks;
             new_bank_credit = Some(new_credit);
-            sum_credits = self.handle_credit_overflow(bank, new_credit, sum_credits);
-            completed &= sum_credits >= new_credit;
+            sum_credit = self.handle_credit_overflow(bank, new_credit, sum_credit);
+            completed &= sum_credit >= new_credit;
         } else {
-            sum_credits = self.handle_credit_overflow(bank, 0.0, sum_credits);
+            sum_credit = self.handle_credit_overflow(bank, 0.0, sum_credit);
         };
 
         self.user
@@ -278,7 +278,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 } else {
                     None
                 },
-                credit_completed: sum_credits,
+                credit_completed: sum_credit,
                 course_completed: count_courses,
                 completed,
                 message: msg,
@@ -298,13 +298,14 @@ impl<'a> DegreeStatusHandler<'a> {
         for bank in self.course_banks.clone() {
             let course_list_for_bank = self.catalog.get_course_list(&bank.name);
             let credit_overflow =
-                self.calculate_overflows(&bank.name, CreditsTransfer::OverflowCredits);
+                self.calculate_overflows(&bank.name, CreditTransfer::OverflowCredit);
             let missing_credit =
-                self.calculate_overflows(&bank.name, CreditsTransfer::MissingCredits);
+                self.calculate_overflows(&bank.name, CreditTransfer::MissingCredit);
             let courses_overflow =
-                self.calculate_overflows(&bank.name, CreditsTransfer::OverflowCourses) as u32;
+                self.calculate_overflows(&bank.name, CreditTransfer::OverflowCourses) as u32;
 
             if bank.credit.is_none() {
+                // Add a message where this bank's credit are counted.
                 if let Some(to_bank_name) = self.find_next_bank_with_credit_requirement(&bank.name)
                 {
                     self.user.degree_status.overflow_msgs.push(
@@ -321,12 +322,14 @@ impl<'a> DegreeStatusHandler<'a> {
                 courses_overflow,
             );
         }
-        let credit_leftovers = self.calculate_credit_leftovers(); // if different from 0 then the user has extra credits he doesn't use
+
+        let credit_leftovers = self.calculate_credit_leftovers(); // if different from 0 then the user has extra credit he doesn't use
         self.user.degree_status.total_credit += credit_leftovers;
         self.user
             .degree_status
             .overflow_msgs
             .push(messages::credit_leftovers_msg(credit_leftovers));
+
         self.handle_leftovers(); // Need to consult with Nissan and Benny
     }
 }
@@ -352,7 +355,7 @@ pub fn compute(
         catalog,
         courses,
         malag_courses,
-        credits_overflow_map: HashMap::new(),
+        credit_overflow_map: HashMap::new(),
         missing_credit_map: HashMap::new(),
         courses_overflow_map: HashMap::new(),
     }

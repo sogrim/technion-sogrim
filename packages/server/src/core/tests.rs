@@ -296,7 +296,7 @@ async fn test_rule_all() {
         Some(CourseState::NotComplete)
     ));
 
-    // check sum credits
+    // check sum credit
     assert_eq!(res, 5.5);
 }
 
@@ -346,7 +346,7 @@ async fn test_rule_accumulate_credit() {
     assert_eq!(user.degree_status.course_statuses[7].r#type, None);
     assert_eq!(user.degree_status.course_statuses.len(), 8);
 
-    // check sum credits
+    // check sum credit
     assert_eq!(res, 11.5);
 }
 
@@ -385,7 +385,7 @@ async fn test_rule_accumulate_courses() {
     //check num courses
     assert_eq!(count_courses, 3);
 
-    // check sum credits
+    // check sum credit
     assert_eq!(res, 6.0);
 }
 
@@ -447,7 +447,7 @@ async fn test_rule_chain() {
     assert_eq!(user.degree_status.course_statuses[7].r#type, None);
     assert_eq!(user.degree_status.course_statuses.len(), 8);
 
-    // check sum credits
+    // check sum credit
     assert_eq!(
         chain_done,
         vec!["פיסיקה 2".to_string(), "פיסיקה 3".to_string()]
@@ -479,7 +479,7 @@ async fn test_rule_malag() {
     assert_eq!(user.degree_status.course_statuses[7].r#type, None);
     assert_eq!(user.degree_status.course_statuses.len(), 8);
 
-    // check sum credits
+    // check sum credit
     assert_eq!(res, 2.0);
 }
 
@@ -515,7 +515,7 @@ async fn test_rule_sport() {
     );
     assert_eq!(user.degree_status.course_statuses.len(), 8);
 
-    // check sum credits
+    // check sum credit
     assert_eq!(res, 1.0);
 }
 
@@ -553,7 +553,7 @@ async fn test_modified() {
     ); // We considered 104031 as reshima alef so the user didn't complete this course for hova
     assert_eq!(user.degree_status.course_statuses.len(), 9);
 
-    // check sum credits
+    // check sum credit
     assert_eq!(res, 0.0);
 
     let mut user = create_user();
@@ -573,7 +573,7 @@ async fn test_modified() {
         catalog,
         courses: HashMap::new(),
         malag_courses: Vec::new(),
-        credits_overflow_map: HashMap::new(),
+        credit_overflow_map: HashMap::new(),
         missing_credit_map: HashMap::new(),
         courses_overflow_map: HashMap::new(),
     };
@@ -595,7 +595,7 @@ async fn test_modified() {
     );
     assert_eq!(user.degree_status.course_statuses.len(), 8);
 
-    // check sum credits
+    // check sum credit
     assert_eq!(res, 9.0);
 }
 
@@ -669,7 +669,7 @@ async fn test_specialization_group() {
     let res = handle_bank_rule_processor
         .specialization_group(&specialization_groups, &mut completed_groups);
 
-    // check sum credits
+    // check sum credit
     assert_eq!(res, 19.5);
 
     // check completed groups
@@ -865,7 +865,7 @@ async fn test_missing_credit() {
 }
 
 #[test]
-async fn test_overflow_credits() {
+async fn test_overflow_credit() {
     let user =
         run_calculate_degree_status("pdf_ctrl_c_ctrl_v_2.txt", "61a102bb04c5400b98e6f401").await;
     //FOR VIEWING IN JSON FORMAT
