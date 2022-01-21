@@ -1,4 +1,4 @@
-pub mod degree_status;
+pub mod degree;
 pub mod messages;
 pub mod parser;
 pub mod toposort;

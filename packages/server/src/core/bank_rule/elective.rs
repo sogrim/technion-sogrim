@@ -1,7 +1,7 @@
 use super::BankRuleHandler;
 
 impl<'a> BankRuleHandler<'a> {
-    pub fn free_choice(self) -> f32 {
+    pub fn elective(self) -> f32 {
         let mut sum_credit = self.credit_overflow;
         for course_status in &mut self.user.degree_status.course_statuses {
             if course_status.valid_for_bank(&self.bank_name)

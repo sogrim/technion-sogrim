@@ -22,7 +22,7 @@ fn remove_irrelevant_courses_from_catalog(user_details: &UserDetails, catalog: &
     }
 }
 
-pub fn compute(user: &mut UserDetails, catalog: &mut Catalog) {
+pub fn preprocess(user: &mut UserDetails, catalog: &mut Catalog) {
     reset_type_for_unmodified_and_irrelevant_courses(user);
     remove_irrelevant_courses_from_catalog(user, catalog);
     user.degree_status.course_statuses.sort_by(|c1, c2| {

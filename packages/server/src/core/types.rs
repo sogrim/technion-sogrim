@@ -35,7 +35,7 @@ pub enum Rule {
     AccumulateCourses(NumCourses),
     Malag,
     Sport,
-    FreeChoice,
+    Elective,
     Chains(Vec<Chain>), // למשל שרשרת מדעית.
     SpecializationGroups(SpecializationGroups),
     Wildcard(bool), // קלף משוגע עבור להתמודד עם
@@ -49,7 +49,7 @@ impl ToString for Rule {
             Rule::AccumulateCourses(_) => "accumulate courses".into(),
             Rule::Malag => "malag".into(),
             Rule::Sport => "sport".into(),
-            Rule::FreeChoice => "free choice".into(),
+            Rule::Elective => "elective".into(),
             Rule::Chains(_) => "chains".into(),
             Rule::SpecializationGroups(_) => "specialization groups".into(),
             Rule::Wildcard(_) => "wildcard".into(),

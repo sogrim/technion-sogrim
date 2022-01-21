@@ -1,7 +1,6 @@
-pub mod calculate_overflows;
 pub mod compute_bank;
 pub mod compute_status;
-pub mod handle_overflow;
+pub mod overflow;
 pub mod preprocessing;
 
 use std::collections::HashMap;
@@ -84,7 +83,7 @@ pub fn compute(
     let course_banks = toposort::set_order(&catalog.course_banks, &catalog.credit_overflows);
 
     // prepare the data for user status computation
-    preprocessing::compute(user, &mut catalog);
+    preprocessing::preprocess(user, &mut catalog);
 
     DegreeStatusHandler {
         user,

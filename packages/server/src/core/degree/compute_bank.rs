@@ -57,7 +57,7 @@ impl<'a> DegreeStatusHandler<'a> {
             }
             Rule::Malag => sum_credit = bank_rule_handler.malag(&self.malag_courses),
             Rule::Sport => sum_credit = bank_rule_handler.sport(),
-            Rule::FreeChoice => sum_credit = bank_rule_handler.free_choice(),
+            Rule::Elective => sum_credit = bank_rule_handler.elective(),
             Rule::Chains(chains) => {
                 sum_credit = bank_rule_handler.chain(chains, &mut chain_done);
                 completed = !chain_done.is_empty();

@@ -9,7 +9,7 @@ use mongodb::Client;
 
 use crate::{
     core::{
-        degree_status::{self, DegreeStatus},
+        degree::{self, DegreeStatus},
         parser,
     },
     db,
@@ -122,7 +122,7 @@ pub async fn compute_degree_status(
         .malag_list
         .clone(); // The collection malags contain one item with the list of all malags
 
-    degree_status::compute(
+    degree::compute(
         catalog,
         course::vec_to_map(vec_courses),
         malag_courses,
