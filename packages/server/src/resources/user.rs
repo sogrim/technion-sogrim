@@ -1,5 +1,8 @@
+use super::catalog::DisplayCatalog;
+use super::course::CourseStatus;
 use crate::core::degree_status::DegreeStatus;
 use crate::db;
+use crate::impl_from_request;
 use crate::middleware::auth::Sub;
 use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
@@ -9,9 +12,6 @@ use futures_util::Future;
 use mongodb::Client;
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
-
-use super::catalog::DisplayCatalog;
-use super::course::CourseStatus;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
@@ -64,29 +64,4 @@ impl User {
     }
 }
 
-impl FromRequest for User {
-    type Error = Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
-
-    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let req = req.clone();
-        Box::pin(async move {
-            let client = match req.app_data::<web::Data<Client>>() {
-                Some(client) => client,
-                None => return Err(ErrorInternalServerError("Db client was not initialized!")),
-            };
-            match req.extensions().get::<Sub>() {
-                Some(user_id) => db::services::get_user_by_id(user_id, client)
-                    .await
-                    .map_err(ErrorInternalServerError),
-                None => Err(ErrorUnauthorized(
-                    "Authorization process did not complete successfully!",
-                )),
-            }
-        })
-    }
-
-    fn extract(req: &HttpRequest) -> Self::Future {
-        Self::from_request(req, &mut Payload::None)
-    }
-}
+impl_from_request!(resource = User, getter = get_user_by_id);
