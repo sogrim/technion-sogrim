@@ -9,6 +9,7 @@ import { getAppTheme } from "../../themes/theme";
 import { GoogleClinetSession as GoogleClientSession } from "../../types/auth-types";
 import { Footer } from "../Footer/Footer";
 import GoogleAuth from "../GoogleAuth/GoogleAuth";
+import { AdminApp } from "./AdimnApp";
 import { AnonymousApp } from "./AnonymousApp";
 
 const AppComp: React.FC = () => {
@@ -34,7 +35,7 @@ const AppComp: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <GoogleAuth />
-      {isAuthenticated ? <> שלום</> : <AnonymousApp />}
+      {isAuthenticated ? <AdminApp /> : <AnonymousApp />}
       <Footer />
     </ThemeProvider>
   );
