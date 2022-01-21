@@ -23,8 +23,8 @@ use crate::{
 
 #[get("/catalogs")]
 pub async fn get_all_catalogs(
-    client: web::Data<Client>,
     _: User, //TODO think about whether this is necessary
+    client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
     db::services::get_all_catalogs(&client)
         .await
@@ -46,9 +46,9 @@ pub async fn login(client: web::Data<Client>, req: HttpRequest) -> Result<HttpRe
 
 #[put("/students/catalog")]
 pub async fn add_catalog(
-    client: web::Data<Client>,
-    catalog_id: String,
     mut user: User,
+    catalog_id: String,
+    client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
     match &mut user.details {
         Some(details) => {
@@ -72,9 +72,9 @@ pub async fn add_catalog(
 
 #[post("/students/courses")]
 pub async fn add_courses(
-    client: web::Data<Client>,
-    data: String,
     mut user: User,
+    data: String,
+    client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
     match &mut user.details {
         Some(details) => {
@@ -96,8 +96,8 @@ pub async fn add_courses(
 // here "modified" becomes false
 #[get("/students/degree-status")]
 pub async fn compute_degree_status(
-    client: web::Data<Client>,
     mut user: User,
+    client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
     let mut user_details = user
         .details
@@ -138,9 +138,9 @@ pub async fn compute_degree_status(
 // here "modified" becomes true
 #[put("/students/details")]
 pub async fn update_details(
-    client: web::Data<Client>,
-    details: web::Json<UserDetails>,
     mut user: User,
+    details: web::Json<UserDetails>,
+    client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
     let user_id = user.sub.clone();
     user.details = Some(details.into_inner());
