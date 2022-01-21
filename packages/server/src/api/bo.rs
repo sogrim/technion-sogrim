@@ -1,10 +1,17 @@
-use crate::{db, resources::course::Course};
+#[allow(unused_imports)] // TODO: uncomment this for authentication
+use crate::{
+    db,
+    resources::{admin::Admin, course::Course},
+};
 use actix_web::{delete, error::ErrorBadRequest, get, put, web, Error, HttpResponse};
 use bson::doc;
 use mongodb::Client;
 
 #[get("/courses")]
-pub async fn get_all_courses(client: web::Data<Client>) -> Result<HttpResponse, Error> {
+pub async fn get_all_courses(
+    //_: Admin,  // TODO: uncomment this for authentication
+    client: web::Data<Client>,
+) -> Result<HttpResponse, Error> {
     db::services::get_all_courses(&client)
         .await
         .map(|courses| HttpResponse::Ok().json(courses))
@@ -12,8 +19,9 @@ pub async fn get_all_courses(client: web::Data<Client>) -> Result<HttpResponse, 
 
 #[get("/courses/{id}")]
 pub async fn get_course_by_id(
-    client: web::Data<Client>,
+    //_: Admin, // TODO: uncomment this for authentication
     id: web::Path<String>,
+    client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
     db::services::get_course_by_id(&id, &client)
         .await
@@ -22,9 +30,10 @@ pub async fn get_course_by_id(
 
 #[put("/courses/{id}")]
 pub async fn create_or_update_course(
-    client: web::Data<Client>,
+    //_: Admin, // TODO: uncomment this for authentication
     id: web::Path<String>,
     course: web::Json<Course>,
+    client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
     let course_doc = bson::to_document(&course).map_err(ErrorBadRequest)?;
     let document = doc! {"$setOnInsert" : course_doc};
@@ -35,8 +44,9 @@ pub async fn create_or_update_course(
 
 #[delete("/courses/{id}")]
 pub async fn delete_course(
-    client: web::Data<Client>,
+    //_: Admin, // TODO: uncomment this for authentication
     id: web::Path<String>,
+    client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
     db::services::delete_course(&id, &client)
         .await
