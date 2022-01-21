@@ -1,5 +1,5 @@
 pub mod bank_rule;
-pub mod degree;
+pub mod degree_status;
 pub mod messages;
 pub mod parser;
 pub mod toposort;

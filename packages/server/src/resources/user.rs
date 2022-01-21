@@ -1,4 +1,4 @@
-use crate::core::degree::DegreeStatus;
+use crate::core::degree_status::DegreeStatus;
 use crate::db;
 use crate::middleware::auth::Sub;
 use actix_web::dev::Payload;

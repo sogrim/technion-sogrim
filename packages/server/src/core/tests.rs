@@ -1,6 +1,6 @@
 use crate::config::CONFIG;
 use crate::core::bank_rule::BankRuleHandler;
-use crate::core::degree::{DegreeStatus, DegreeStatusHandler};
+use crate::core::degree_status::{DegreeStatus, DegreeStatusHandler};
 use crate::core::parser;
 use crate::core::types::{SpecializationGroup, SpecializationGroups};
 use crate::db;
@@ -735,7 +735,7 @@ async fn run_calculate_degree_status(file_name: &str, catalog: &str) -> UserDeta
         .expect("failed to get all malags")[0]
         .malag_list
         .clone();
-    degree::compute(
+    degree_status::compute(
         catalog,
         course::vec_to_map(vec_courses),
         malag_courses,
