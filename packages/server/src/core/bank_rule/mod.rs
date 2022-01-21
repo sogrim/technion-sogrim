@@ -2,7 +2,7 @@ pub mod accumulate;
 pub mod all;
 pub mod chain;
 pub mod free_choice;
-pub mod iterate_impl;
+pub mod iterate_list;
 pub mod malag;
 pub mod specialization_groups;
 pub mod sport;

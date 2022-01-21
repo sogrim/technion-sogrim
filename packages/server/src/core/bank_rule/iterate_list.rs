@@ -6,7 +6,7 @@ use crate::core::types::CreditInfo;
 use super::BankRuleHandler;
 
 #[macro_export]
-macro_rules! check_if_a_replacement {
+macro_rules! check_if_replacement {
     ($self:ident, $course_status: expr, $course_id_in_list: expr, $replacements: ident, $replacements_msg: ident) => {
         for course_id in &$self.course_list {
             if let Some(replacements) =
@@ -49,7 +49,7 @@ impl<'a> BankRuleHandler<'a> {
                     // check if course_status is a replacement for a course in course list
                     let mut course_id_in_list = None;
                     // First try to find catalog replacements
-                    check_if_a_replacement!(
+                    check_if_replacement!(
                         self,
                         course_status,
                         course_id_in_list,
@@ -59,7 +59,7 @@ impl<'a> BankRuleHandler<'a> {
 
                     if course_id_in_list.is_none() {
                         // Didn't find a catalog replacement so trying to find a common replacement
-                        check_if_a_replacement!(
+                        check_if_replacement!(
                             self,
                             course_status,
                             course_id_in_list,
