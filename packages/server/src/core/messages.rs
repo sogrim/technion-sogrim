@@ -94,3 +94,7 @@ pub fn credit_leftovers_msg(credit: f32) -> String {
         format!("יש לך {} נקודות עודפות", credit)
     }
 }
+
+pub fn cannot_find_course() -> String {
+    "שגיאה - קורס לא נמצא".to_string()
+}

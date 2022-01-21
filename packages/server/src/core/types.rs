@@ -35,7 +35,7 @@ pub enum Rule {
     AccumulateCourses(NumCourses),
     Malag,
     Sport,
-    FreeChoice,
+    Elective,
     Chains(Vec<Chain>), // למשל שרשרת מדעית.
     SpecializationGroups(SpecializationGroups),
     Wildcard(bool), // קלף משוגע עבור להתמודד עם
@@ -49,7 +49,7 @@ impl ToString for Rule {
             Rule::AccumulateCourses(_) => "accumulate courses".into(),
             Rule::Malag => "malag".into(),
             Rule::Sport => "sport".into(),
-            Rule::FreeChoice => "free choice".into(),
+            Rule::Elective => "elective".into(),
             Rule::Chains(_) => "chains".into(),
             Rule::SpecializationGroups(_) => "specialization groups".into(),
             Rule::Wildcard(_) => "wildcard".into(),
@@ -63,9 +63,9 @@ pub struct CreditOverflow {
     pub to: String,
 }
 
-pub enum CreditsTransfer {
-    OverflowCredits,
-    MissingCredits,
+pub enum CreditTransfer {
+    OverflowCredit,
+    MissingCredit,
     OverflowCourses,
 }
 
@@ -85,7 +85,7 @@ pub struct Requirement {
     pub message: Option<String>,
 }
 pub struct CreditInfo {
-    pub sum_credits: f32,
+    pub sum_credit: f32,
     pub count_courses: u32,
     pub missing_credit: f32,
     pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user
