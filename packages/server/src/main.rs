@@ -5,13 +5,12 @@ use actix_web::{middleware::Logger, web, App, HttpServer};
 use dotenv::dotenv;
 use mongodb::Client;
 
-mod auth;
-mod catalog;
+mod api;
 mod config;
 mod core;
-mod course;
 mod db;
-mod user;
+mod middleware;
+mod resources;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -24,16 +23,19 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(client.clone()))
-            .wrap(auth::AuthenticateMiddleware)
+            .wrap(middleware::auth::AuthenticateMiddleware)
             .wrap(Cors::permissive())
             .wrap(Logger::default())
-            .service(catalog::get_all_catalogs)
-            .service(user::login)
-            .service(user::add_catalog)
-            .service(user::add_courses)
-            .service(user::compute_degree_status)
-            .service(user::update_details)
-            .service(user::debug)
+            .service(api::students::get_all_catalogs)
+            .service(api::students::login)
+            .service(api::students::add_catalog)
+            .service(api::students::add_courses)
+            .service(api::students::compute_degree_status)
+            .service(api::students::update_details)
+            .service(api::bo::get_all_courses)
+            .service(api::bo::get_course_by_id)
+            .service(api::bo::create_or_update_course)
+            .service(api::bo::delete_course)
     })
     .bind((CONFIG.ip, CONFIG.port))?
     .run()

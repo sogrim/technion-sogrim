@@ -22,6 +22,7 @@ export const FAQPage: React.FC = () => {
 const sxPages = {
   width: "100%",
   marginTop: "20px",
+  marginBottom: "50px",
   display: "flex",
   justifyContent: "center",
 };

@@ -66,7 +66,7 @@ export const courseFromUserValidations = (
   }
 
   let newState = "לא הושלם";
-  let newGrade = course.grade === "" ? null : course.grade;
+  let newGrade = course.grade === "" ? undefined : course.grade;
   if (
     course.grade &&
     (course.grade === "עבר" ||

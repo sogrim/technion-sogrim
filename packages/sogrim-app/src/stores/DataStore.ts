@@ -74,11 +74,11 @@ export class DataStore {
     return count;
   };
 
-  private displayGrade = (grade: string | null) => {
-    if (!grade) {
+  private displayContent = (content: string | undefined) => {
+    if (!content) {
       return "-";
     }
-    return grade.toString();
+    return content.toString();
   };
 
   private generateUserBanksNames = () => {
@@ -105,10 +105,11 @@ export class DataStore {
           course.course.name,
           course.course._id,
           course.course.credit,
-          this.displayGrade(course.grade),
-          course.type,
+          course.semester,
           course.state,
-          course.semester
+          this.displayContent(course.grade),
+          this.displayContent(course.type),
+          course.additional_msg
         )
       )
     );
@@ -129,10 +130,10 @@ export class DataStore {
           course.course.name,
           course.course._id,
           course.course.credit,
-          this.displayGrade(course.grade),
-          course.type,
-          course.state,
           course.semester,
+          course.state,
+          this.displayContent(course.grade),
+          this.displayContent(course.type),
           course.additional_msg
         )
       )

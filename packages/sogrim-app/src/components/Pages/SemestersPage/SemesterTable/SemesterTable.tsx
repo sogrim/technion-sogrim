@@ -73,10 +73,9 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
         display: "flex",
         alignItems: "center",
         flexDirection: "column",
-        marginBottom: 15,
       }}
     >
-      <Paper sx={{ width: "100%", mb: 2 }}>
+      <Paper sx={{ width: "100%", mb: addRowToggle ? 10 : 2 }}>
         <TableContainer sx={{ width: "1300px" }}>
           <Table aria-labelledby="tableTitle" size={"small"}>
             <SemesterTableHeader />
@@ -91,7 +90,11 @@ const SemesterTableComp: React.FC<SemesterTableProps> = ({ semester }) => {
         </TableContainer>
       </Paper>
       {!addRowToggle && (
-        <Button variant="outlined" onClick={handleRowToggle}>
+        <Button
+          variant="outlined"
+          sx={{ marginBottom: 10 }}
+          onClick={handleRowToggle}
+        >
           הוסף קורס חדש
         </Button>
       )}

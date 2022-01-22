@@ -72,27 +72,35 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
         border: "1px solid #d1d1d1",
         display: "flex",
         justifyContent: "space-between",
+        alignItems: "center",
       }}
     >
-      <Box sx={{ display: "flex" }}>
+      <Box sx={{ display: "flex", gap: 1 }}>
         <Typography fontWeight={500}>{course.name} </Typography>
+        <Chip
+          label={`${course.credit} נק"ז`}
+          sx={{ minWidth: "55px" }}
+          variant="outlined"
+          size="small"
+        />
         {course.state !== "הושלם" && (
           <Chip
-            sx={{ marginRight: "8px" }}
             label="לא בוצע"
+            sx={{ minWidth: "55px" }}
+            color="secondary"
             variant="outlined"
             size="small"
           />
         )}
       </Box>
-      <Box sx={{ display: "flex" }}>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
         <Typography fontWeight={50}>
           סמסטר {decodeSemesterNumber(course.semester)}
         </Typography>
         {course.msg && (
           <Tooltip sx={{ fontSize: "14px" }} title={course.msg} arrow>
             <IconButton>
-              <HelpIcon />
+              <HelpIcon fontSize={"small"} sx={{ marginLeft: "-10px" }} />
             </IconButton>
           </Tooltip>
         )}

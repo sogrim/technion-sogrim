@@ -51,24 +51,36 @@ const SemesterTabsComp = () => {
     }
   }, [userDetails, getAllUserSemesters, userRegistrationState]);
 
+  const findLastNonSummerSemester = (): string | undefined => {
+    return allSemesters!!
+      .slice()
+      .reverse()
+      .find((semester) => !semester.includes("קיץ"));
+  };
+
   const addNewSemester = (semesterType: SemesterOptions) => {
     if (!allSemesters) {
       return;
     }
-    const lastSemester = allSemesters.slice(-1)[0];
+    let lastNonSummerSemester = findLastNonSummerSemester();
+    let lastSemester = allSemesters.slice(-1)[0];
+    if (!lastSemester) {
+      // TODO: add user funcunality for chosing אביב או חורף
+      lastSemester = "אביב_0";
+    }
     const LastSemesterName = lastSemester.replace("_", " ");
     const splitName = LastSemesterName.split(" ");
     const newSemesterList = [...allSemesters];
     let newSemesterName;
-    if (lastSemester) {
+    if (lastSemester && lastNonSummerSemester) {
       if (
         semesterType !== SemesterOptions.Summer &&
-        lastSemester.includes("חורף")
+        lastNonSummerSemester.includes("חורף")
       ) {
         newSemesterName = "אביב_" + (+splitName[1] + 1);
       } else if (
         semesterType !== SemesterOptions.Summer &&
-        lastSemester.includes("אביב")
+        lastNonSummerSemester.includes("אביב")
       ) {
         newSemesterName = "חורף_" + (+splitName[1] + 1);
       } else {
