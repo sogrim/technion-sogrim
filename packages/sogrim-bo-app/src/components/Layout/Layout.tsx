@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { Header } from "../Header/Header";
-import { PagesTabs } from "../Pages/PagesTabs";
+import { PagesTabs } from "../Pages/PagesTabs/PagesTabs";
 
 const LayoutComp: React.FC = () => {
   return (
