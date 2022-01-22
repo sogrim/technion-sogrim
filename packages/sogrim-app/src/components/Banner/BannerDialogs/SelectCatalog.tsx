@@ -24,8 +24,6 @@ export interface SelectCatalogProps {
 export const SelectCatalog: React.FC<SelectCatalogProps> = ({
   handleClose,
 }) => {
-  // TODO: add warrning message - if you re-write the catalog, the data is irelevant.
-
   const [selectedCatalog, setSelectedCatalog] =
     React.useState<Catalog | null>();
   const [catalogs, setCatalogs] = React.useState<Catalog[]>([] as Catalog[]);
@@ -39,7 +37,10 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
     if (isError) {
       // TODO: handle error
     } else if (data && !isLoading) {
-      setCatalogs(data);
+      const sortedCatalogs = data.sort((first, second) =>
+        first.name <= second.name ? 1 : -1
+      );
+      setCatalogs(sortedCatalogs);
     }
   }, [data, isLoading, isError]);
 

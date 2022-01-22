@@ -10,7 +10,7 @@ import useUpdateUserState from "../../../hooks/apiHooks/useUpdateUserState";
 import { UserDetails } from "../../../types/data-types";
 
 const emptyUserDetails: UserDetails = {
-  catalog: null,
+  catalog: undefined,
   modified: false,
   degree_status: {
     course_statuses: [],

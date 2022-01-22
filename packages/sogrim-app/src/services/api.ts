@@ -1,8 +1,8 @@
 import axios from "axios";
-import { UserDetails, UserState } from "../types/data-types";
+import { UserDetails, UserState, Catalog } from "../types/data-types";
 import { API_URL } from "./api-url";
 
-export const getCatalogs = async (authToken: any): Promise<any> => {
+export const getCatalogs = async (authToken: any): Promise<Catalog[]> => {
   let fallback: any;
   let res: any;
   try {

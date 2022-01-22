@@ -5,8 +5,8 @@ export interface RowData {
   courseNumber: string;
   credit: string | number;
   state: string;
-  type: string;
-  grade: string | null;
+  type?: string;
+  grade?: string;
   semester: string;
   msg?: string;
 }

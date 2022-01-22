@@ -13,7 +13,7 @@ export interface ImportGilionProps {
   handleError: (msg: string) => void;
 }
 
-export const ExportGilion: React.FC<ImportGilionProps> = ({
+export const ImportGilion: React.FC<ImportGilionProps> = ({
   handleClose,
   handleError,
 }) => {
