@@ -1,6 +1,9 @@
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import useCourses from "../../hooks/apiHooks/useCourses";
+import { useAuth } from "../../hooks/useAuth";
+import { useStore } from "../../hooks/useStore";
 import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
 import { getAppTheme } from "../../themes/theme";
 import { Layout } from "../Layout/Layout";
@@ -11,10 +14,21 @@ const AdminAppComp: React.FC = () => {
   );
   const theme = useMemo(() => getAppTheme(mode), [mode]);
 
+  const {
+    dataStore: { setCourses },
+  } = useStore();
+
+  const { userAuthToken } = useAuth();
+
+  const { data, isLoading } = useCourses(userAuthToken);
+  useEffect(() => {
+    setCourses(data);
+  }, [data, setCourses]);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Layout />
+      {isLoading ? <div> טוען </div> : <Layout />}
     </ThemeProvider>
   );
 };

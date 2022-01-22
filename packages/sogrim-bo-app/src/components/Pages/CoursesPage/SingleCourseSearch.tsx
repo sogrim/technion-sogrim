@@ -1,4 +1,11 @@
-import { Box } from "@mui/material";
+import {
+  Box,
+  Card,
+  Typography,
+  CardContent,
+  CardActions,
+  Button,
+} from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React, { useState } from "react";
 import { useStore } from "../../../hooks/useStore";
@@ -12,26 +19,61 @@ const SingleCourseSearchComp: React.FC<SingleCourseSearchProps> = () => {
   const {
     dataStore: { getCourseById },
   } = useStore();
-  const [course, setCourse] = useState<Course | null>();
+  const [course, setCourse] = useState<Course | undefined>();
   const [searchType, setSearchType] = useState<SearchType>("course-name");
 
-  //   const onChangeCourse = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //     e.preventDefault();
-  //     const value = e.target.value as SearchOption;
-  //     const course = getCourseById(value._id);
-  //     setCourse(course);
-  //   };
-
   const onChangeValue = (so: SearchOption) => {
-    console.log(so);
+    const course = getCourseById(so._id);
+    if (course) {
+      setCourse(course);
+    }
   };
+
+  const handleChangeSearchType = () => {
+    const newSearchType =
+      searchType === "course-name" ? "course-number" : "course-name";
+    setSearchType(newSearchType);
+  };
+
+  const searchTypeButtonTitle =
+    searchType === "course-name" ? "חפש לפי מס׳ קורס" : "חפש לפי שם ";
   return (
-    <Box>
-      <SeatchFiled
-        searchLable={course?.name ?? "חפש קורס"}
-        searchType={searchType}
-        onChangeValue={onChangeValue}
-      />
+    <Box sx={{ display: "flex", gap: 5, alignItems: "center" }}>
+      <Box sx={{ display: "flex", gap: 2, flexDirection: "column" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Typography sx={{ fontSize: 20 }}>חפש קורס</Typography>
+          <Button
+            variant="outlined"
+            onClick={handleChangeSearchType}
+            size="small"
+          >
+            {searchTypeButtonTitle}
+          </Button>
+        </Box>
+
+        <SeatchFiled
+          searchLable={course?.name ?? "חפש קורס"}
+          searchType={searchType}
+          onChangeValue={onChangeValue}
+        />
+      </Box>
+      <Card sx={{ minWidth: 350, minHeight: 130 }}>
+        {course ? (
+          <>
+            <CardContent>
+              <Typography sx={{ fontSize: 20 }}>{course.name}</Typography>
+              <Typography sx={{ fontSize: 20 }}>{course._id}</Typography>
+              <Typography sx={{ fontSize: 16 }}>
+                {course.credit} {" נק״ז"}
+              </Typography>
+            </CardContent>
+          </>
+        ) : (
+          <CardContent>
+            <Typography sx={{ fontSize: 20 }}>לא נבחר קורס</Typography>
+          </CardContent>
+        )}
+      </Card>
     </Box>
   );
 };

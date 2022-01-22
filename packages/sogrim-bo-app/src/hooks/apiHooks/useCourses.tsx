@@ -1,7 +1,7 @@
 import { useQuery } from "react-query";
 import { getCourses } from "../../services/api";
 
-export default function useUserState(
+export default function useCourses(
   authToken: any = undefined,
   trigger: boolean = true
 ) {

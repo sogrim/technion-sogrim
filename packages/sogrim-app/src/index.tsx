@@ -37,5 +37,4 @@ ReactDOM.render(
   document.getElementById("root")
 );
 
-// TODO: check about this
 reportWebVitals();

@@ -4,33 +4,36 @@ import { SearchType, SearchOption } from "../types/ui-types";
 import { RootStore } from "./RootStore";
 
 export class DataStore {
+  public courses: Course[] = [];
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
   }
 
-  getSearchOptionByType = (searchType: SearchType): SearchOption[] => {
-    const x = [
-      {
-        name: "niso",
-        _id: "1",
-      },
-      {
-        name: "leelush",
-        _id: "2",
-      },
-      {
-        name: "david",
-        _id: "3",
-      },
-    ];
-    return x;
+  setCourses = (newCoursesList: Course[]) => {
+    this.courses = newCoursesList;
   };
 
-  getCourseById = (id: string): Course => {
-    return {
-      name: "אחלה קורס",
-      _id: "012345",
-      credit: 5.5,
-    };
+  getSearchOptionByType = (searchType: SearchType): SearchOption[] => {
+    const searchOptions: SearchOption[] = [];
+    if (searchType === "course-name") {
+      this.courses.forEach((course) => {
+        const newSearchCourse: SearchOption = {
+          name: course.name + " - " + course._id,
+          _id: course._id,
+        };
+        searchOptions.push(newSearchCourse);
+      });
+    }
+    return searchOptions;
+  };
+
+  getCourseById = (id: string): Course | null => {
+    let courseToReturn: Course | null = null;
+    this.courses.forEach((course) => {
+      if (course._id === id) {
+        courseToReturn = course;
+      }
+    });
+    return courseToReturn;
   };
 }

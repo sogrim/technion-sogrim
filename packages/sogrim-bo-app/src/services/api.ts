@@ -1,24 +1,26 @@
 import axios from "axios";
+import { Course } from "../types/data-types";
 import { API_URL } from "./api-url";
 
 /////////////////////////////////////////////////////////////////////////////
 // Courses API
 /////////////////////////////////////////////////////////////////////////////
 
-export const getCourses = async (authToken: any): Promise<any> => {
-  let fallback: any;
-  let res: any;
+export const getCourses = async (authToken: any): Promise<Course[]> => {
+  let fallback: Course[] = [];
+  let data: Course[];
   try {
-    res =
+    const res =
       (await axios.get(`${API_URL}/courses`, {
         headers: {
           authorization: `${authToken}`,
         },
       })) || fallback;
+    data = res.data || fallback;
   } catch {
-    res = fallback;
+    data = fallback;
   }
-  return res.data;
+  return data;
 };
 
 export const getCourse = async (
@@ -37,7 +39,7 @@ export const getCourse = async (
   } catch {
     res = fallback;
   }
-  return res.data;
+  return res;
 };
 
 export const updateCourse = async (
@@ -57,7 +59,7 @@ export const updateCourse = async (
   } catch {
     res = fallback;
   }
-  return res.data;
+  return res;
 };
 
 export const deleteCourse = async (
@@ -76,7 +78,7 @@ export const deleteCourse = async (
   } catch {
     res = fallback;
   }
-  return res.data;
+  return res;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -96,7 +98,7 @@ export const getCatalogs = async (authToken: any): Promise<any> => {
   } catch {
     res = fallback;
   }
-  return res.data;
+  return res;
 };
 
 export const getCatalog = async (
@@ -115,7 +117,7 @@ export const getCatalog = async (
   } catch {
     res = fallback;
   }
-  return res.data;
+  return res;
 };
 
 export const updateCatalog = async (
@@ -135,5 +137,5 @@ export const updateCatalog = async (
   } catch {
     res = fallback;
   }
-  return res.data;
+  return res;
 };
