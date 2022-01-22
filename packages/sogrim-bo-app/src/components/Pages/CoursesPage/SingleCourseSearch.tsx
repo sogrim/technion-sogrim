@@ -1,8 +1,8 @@
-import { Box, Button, Card, CardContent, Typography } from "@mui/material";
+import { Box, Card, CardContent, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import React, { useState } from "react";
+import React from "react";
 import { useStore } from "../../../hooks/useStore";
-import { SearchOption, SearchType } from "../../../types/ui-types";
+import { SearchOption } from "../../../types/ui-types";
 import { SeatchFiled } from "../../Search/SearchField";
 
 interface SingleCourseSearchProps {}
