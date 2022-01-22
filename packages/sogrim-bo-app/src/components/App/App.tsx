@@ -30,6 +30,10 @@ const AppComp: React.FC = () => {
     }
   }, [isAuthenticated, googleSession, userAuthToken, setUserDisplay]);
 
+  // TODO: remove this
+  // const x = new bson.ObjectID();
+  // console.log(x.toString());
+
   const theme = useMemo(() => getAppTheme(mode), [mode]);
 
   return (

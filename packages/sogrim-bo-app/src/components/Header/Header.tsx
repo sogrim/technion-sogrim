@@ -23,7 +23,7 @@ const HeaderComp: React.FC<HeaderProps> = () => {
   };
 
   return (
-    <>
+    <Box component="header">
       <AppBar position="fixed" sx={sxAppBar}>
         <Toolbar disableGutters variant="dense">
           <AppTitle />
@@ -49,7 +49,7 @@ const HeaderComp: React.FC<HeaderProps> = () => {
         handleMenuClose={handleMenuClose}
         anchorEl={anchorEl}
       />
-    </>
+    </Box>
   );
 };
 

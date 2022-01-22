@@ -1,9 +1,9 @@
-import { ThemeProvider } from "@mui/material";
+import { CssBaseline, ThemeProvider } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useMemo, useState } from "react";
 import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
 import { getAppTheme } from "../../themes/theme";
-import { Header } from "../Header/Header";
+import { Layout } from "../Layout/Layout";
 
 const AdminAppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
@@ -13,7 +13,8 @@ const AdminAppComp: React.FC = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <Header />
+      <CssBaseline />
+      <Layout />
     </ThemeProvider>
   );
 };
