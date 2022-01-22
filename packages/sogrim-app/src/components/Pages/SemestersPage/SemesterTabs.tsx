@@ -51,11 +51,18 @@ const SemesterTabsComp = () => {
     }
   }, [userDetails, getAllUserSemesters, userRegistrationState]);
 
+  const findLastNonSummerSemester = (): string | undefined => {
+    return allSemesters!!
+      .slice()
+      .reverse()
+      .find((semester) => !semester.includes("קיץ"));
+  };
+
   const addNewSemester = (semesterType: SemesterOptions) => {
     if (!allSemesters) {
       return;
     }
-    let lastSemester = allSemesters.slice(-1)[0];
+    let lastSemester = findLastNonSummerSemester();
     if (!lastSemester) {
       // TODO: add user funcunality for chosing אביב או חורף
       lastSemester = "אביב_0";
