@@ -10,7 +10,7 @@ interface SingleCourseSearchProps {}
 const SingleCourseSearchComp: React.FC<SingleCourseSearchProps> = () => {
   const {
     dataStore: { getCourseById },
-    uiStore: { currentSelectedCourseId, setCurrentSelectedCourse },
+    uiStore: { currentSelectedCourse, setCurrentSelectedCourse },
   } = useStore();
 
   const onChangeValue = (so: SearchOption) => {
@@ -28,23 +28,23 @@ const SingleCourseSearchComp: React.FC<SingleCourseSearchProps> = () => {
         </Box>
 
         <SeatchFiled
-          searchLable={currentSelectedCourseId?.name ?? "חפש קורס"}
+          searchLable={currentSelectedCourse?.name ?? "חפש קורס"}
           searchType={"course-name"}
           onChangeValue={onChangeValue}
         />
       </Box>
       <Card sx={{ minWidth: 350, minHeight: 130 }}>
-        {currentSelectedCourseId ? (
+        {currentSelectedCourse ? (
           <>
             <CardContent>
               <Typography sx={{ fontSize: 20 }}>
-                {currentSelectedCourseId.name}
+                {currentSelectedCourse.name}
               </Typography>
               <Typography sx={{ fontSize: 20 }}>
-                {currentSelectedCourseId._id}
+                {currentSelectedCourse._id}
               </Typography>
               <Typography sx={{ fontSize: 16 }}>
-                {currentSelectedCourseId.credit} {" נק״ז"}
+                {currentSelectedCourse.credit} {" נק״ז"}
               </Typography>
             </CardContent>
           </>

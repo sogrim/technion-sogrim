@@ -6,6 +6,6 @@ export type SearchOption = {
 
 export enum CoursePageMode {
   Table = "Table",
-  Update = "Edit",
-  Add = "Add",
+  Update = "Update",
+  Delete = "Delete",
 }

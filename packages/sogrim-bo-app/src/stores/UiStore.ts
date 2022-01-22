@@ -6,7 +6,7 @@ import { Course } from "../types/data-types";
 export class UIStore {
   public userDisplay: any;
   public coursePageMode: CoursePageMode = CoursePageMode.Table;
-  public currentSelectedCourseId: Course | undefined;
+  public currentSelectedCourse: Course | undefined;
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
@@ -17,7 +17,7 @@ export class UIStore {
   };
 
   setCurrentSelectedCourse = (course: Course) => {
-    this.currentSelectedCourseId = course;
+    this.currentSelectedCourse = course;
   };
 
   setUserDisplay = (userDisplay: any) => {

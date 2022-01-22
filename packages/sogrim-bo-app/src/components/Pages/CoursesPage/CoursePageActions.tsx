@@ -32,14 +32,14 @@ const CoursePageActionsComp: React.FC<CoursePageActionsProps> = () => {
         variant="contained"
         onClick={() => setCoursePageMode(CoursePageMode.Update)}
       >
-        ערוך/מחק קורס
+        ערוך / הוסף קורס
       </Button>
       <Button
         size="large"
         variant="contained"
-        onClick={() => setCoursePageMode(CoursePageMode.Add)}
+        onClick={() => setCoursePageMode(CoursePageMode.Delete)}
       >
-        הוספת קורס חדש
+        מחק קורס נוכחי
       </Button>
     </Box>
   );
