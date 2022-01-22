@@ -62,7 +62,8 @@ const SemesterTabsComp = () => {
     if (!allSemesters) {
       return;
     }
-    let lastSemester = findLastNonSummerSemester();
+    let lastNonSummerSemester = findLastNonSummerSemester();
+    let lastSemester = allSemesters.slice(-1)[0];
     if (!lastSemester) {
       // TODO: add user funcunality for chosing אביב או חורף
       lastSemester = "אביב_0";
@@ -71,15 +72,15 @@ const SemesterTabsComp = () => {
     const splitName = LastSemesterName.split(" ");
     const newSemesterList = [...allSemesters];
     let newSemesterName;
-    if (lastSemester) {
+    if (lastSemester && lastNonSummerSemester) {
       if (
         semesterType !== SemesterOptions.Summer &&
-        lastSemester.includes("חורף")
+        lastNonSummerSemester.includes("חורף")
       ) {
         newSemesterName = "אביב_" + (+splitName[1] + 1);
       } else if (
         semesterType !== SemesterOptions.Summer &&
-        lastSemester.includes("אביב")
+        lastNonSummerSemester.includes("אביב")
       ) {
         newSemesterName = "חורף_" + (+splitName[1] + 1);
       } else {
