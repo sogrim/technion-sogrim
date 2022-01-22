@@ -18,5 +18,5 @@ jobs:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           heroku_app_name: "sogrim"
           heroku_email: "benick12@gmail.com"
-          procfile: "web: PORT=$PORT PROFILE=release ./target/release/sogrim-server"
+          procfile: "web: PORT=$PORT ./target/release/sogrim-server"
           appdir: "packages/server"

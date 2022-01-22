@@ -15,9 +15,7 @@ macro_rules! impl_from_request {
                         }
                     };
                     match req.extensions().get::<Sub>() {
-                        Some(key) => db::services::$get_fn(key, client)
-                            .await
-                            .map_err(ErrorInternalServerError),
+                        Some(key) => db::services::$get_fn(key, client).await,
                         None => Err(ErrorUnauthorized(
                             "Authorization process did not complete successfully!",
                         )),
