@@ -87,6 +87,7 @@ const SemesterTabsComp = () => {
       }
       newSemesterList.push(newSemesterName);
       setAllSemesters(newSemesterList);
+      setSemesterTab(newSemesterList.length - 1); // TODO: check if thats ok
     }
   };
 
