@@ -23,10 +23,10 @@ export type CourseGradeOptions =
 
 export type CourseStatus = {
   course: Course;
-  grade: string | null;
+  grade?: string;
   semester: string;
   state: CourseState;
-  type: string;
+  type?: string;
   modified: boolean;
   specialization_group_name?: string;
   additional_msg?: string;
@@ -55,7 +55,7 @@ export type DegreeStatus = {
 
 export type UserDetails = {
   degree_status: DegreeStatus;
-  catalog: Catalog | null;
+  catalog?: Catalog;
   modified: boolean;
 };
 

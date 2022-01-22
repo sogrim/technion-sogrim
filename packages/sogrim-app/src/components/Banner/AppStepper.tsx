@@ -8,7 +8,7 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import { FormModal } from "../Commom/FormModal";
 import { SelectCatalog } from "./BannerDialogs/SelectCatalog";
-import { ExportGilion } from "./BannerDialogs/ExportGilion";
+import { ImportGilion } from "./BannerDialogs/ImportGilion";
 import { useStore } from "../../hooks/useStore";
 import { useAuth } from "../../hooks/useAuth";
 import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
@@ -175,7 +175,7 @@ const AppStepperComp: React.FC = () => {
       </Stepper>
       <FormModal
         dialogContent={
-          <ExportGilion
+          <ImportGilion
             handleClose={coursesHandleClose}
             handleError={handleError}
           />

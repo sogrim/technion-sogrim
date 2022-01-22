@@ -55,7 +55,11 @@ const SemesterTabsComp = () => {
     if (!allSemesters) {
       return;
     }
-    const lastSemester = allSemesters.slice(-1)[0];
+    let lastSemester = allSemesters.slice(-1)[0];
+    if (!lastSemester) {
+      // TODO: add user funcunality for chosing אביב או חורף
+      lastSemester = "אביב_0";
+    }
     const LastSemesterName = lastSemester.replace("_", " ");
     const splitName = LastSemesterName.split(" ");
     const newSemesterList = [...allSemesters];

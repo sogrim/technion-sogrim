@@ -43,10 +43,10 @@ export const createData = (
   name: string,
   courseNumber: string,
   credit: number,
-  grade: string,
-  type: string,
-  state: string,
   semester: string,
+  state: string,
+  grade?: string,
+  type?: string,
   msg?: string
 ): RowData => {
   return {
