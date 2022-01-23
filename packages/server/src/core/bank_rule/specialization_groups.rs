@@ -7,6 +7,104 @@ use crate::{
 
 use super::BankRuleHandler;
 
+// General comment for the whole file
+// sg = specialization_group
+// sgs = specialization_groups
+
+fn check_courses_assignment_for_sgs(
+    sgs: &HashMap<u8, &SpecializationGroup>,
+    groups_indices: &Vec<u8>,
+    tag_courses: &HashMap<CourseId, u8>,
+) -> bool {
+    for index in groups_indices {
+        // check there are enough courses in this specialization group
+        if (tag_courses.values().filter(|group| *group == index).count() as u8)
+            < sgs[index].courses_sum
+        {
+            return false;
+        }
+        // check if the user completed the mandatory courses
+        if let Some(mandatory) = sgs[index].mandatory {
+            for courses in mandatory {
+                let mut completed_current_demand = false;
+                for (course_id, group) in tag_courses {
+                    // check if the user completed one of courses
+                    if group == index && courses.contains(course_id) {
+                        completed_current_demand = true;
+                        break;
+                    }
+                }
+                if !completed_current_demand {
+                    return false;
+                }
+            }
+        }
+    }
+    true
+}
+
+fn find_valid_assignment_for_courses(
+    sgs: &HashMap<u8, &SpecializationGroup>,
+    groups_indices: &Vec<u8>,
+    optional_sgs_for_courses: &HashMap<CourseId, Vec<u8>>, // list of all optional sgs for each course
+    tag_courses: &mut HashMap<CourseId, u8>,
+    index: usize,
+) -> bool {
+    if index > optional_sgs_for_courses.len() {
+        return check_courses_assignment_for_sgs(sgs, groups_indices, tag_courses);
+    }
+    if let Some((course_id, optional_groups)) = optional_sgs_for_courses.iter().nth(index) {
+        for group in optional_groups {
+            tag_courses.insert(course_id.clone(), *group);
+            if find_valid_assignment_for_courses(
+                sgs,
+                groups_indices,
+                optional_sgs_for_courses,
+                tag_courses,
+                index + 1,
+            ) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn check_if_completed_groups(
+    sgs: &HashMap<u8, &SpecializationGroup>,
+    groups_indices: &Vec<u8>,
+    courses: &[CourseId],
+) {
+    let mut optional_sgs_for_courses = HashMap::<CourseId, Vec<u8>>::new();
+    for course_id in courses {
+        let mut groups = Vec::new();
+        for index in groups_indices {
+            if sgs
+                .get(index)
+                .unwrap() // unwrap can't fail because we create this map such as to include all groups indices
+                .course_list
+                .contains(course_id)
+            {
+                groups.push(*index);
+            }
+        }
+        if !groups.is_empty() {
+            optional_sgs_for_courses.insert(course_id.clone(), groups); // course_id may belong to one of the specialization groups
+        }
+    }
+
+    let mut courses_assignment = HashMap::new();
+    if find_valid_assignment_for_courses(
+        sgs,
+        groups_indices,
+        optional_sgs_for_courses,
+        &mut courses_assignment,
+        0,
+    ) {
+        println!("we did it");
+    }
+}
+
 // generates all subsets of size specialization_groups.groups_number and check if one of them is fulfilled
 fn generate_subsets(
     specialization_groups: &HashMap<usize, &SpecializationGroup>,
