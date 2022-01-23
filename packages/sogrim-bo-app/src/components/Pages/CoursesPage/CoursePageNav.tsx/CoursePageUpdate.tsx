@@ -15,6 +15,11 @@ import { Course } from "../../../../types/data-types";
 
 interface CoursePageUpdateProps {}
 
+const emptyCourse = {
+  name: "",
+  credit: 0,
+  _id: "",
+};
 const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
   const {
     dataStore: { addCourse, updateCourse },
@@ -70,17 +75,14 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
     if (mode === "add") {
       setMode("update");
     } else {
-      setUpdatedCourse({
-        name: "",
-        credit: 0,
-        _id: "",
-      });
+      setUpdatedCourse(emptyCourse);
       setMode("add");
     }
   };
 
   const buttonModeTitle = mode === "add" ? "עדכן קורס" : "הוסף קורס";
   const buttonTitle = mode === "add" ? "הוסף קורס" : "עדכן קורס";
+  const displayCourse = mode === "add" ? emptyCourse : updatedCourse;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -90,7 +92,7 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
         required
         id="outlined-name"
         label="שם הקורס"
-        value={updatedCourse?.name}
+        value={displayCourse?.name}
         onChange={handleEditChange}
       />
       <TextField
@@ -99,7 +101,7 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
         name="_id"
         id="outlined-id"
         label="מספר הקורס"
-        value={updatedCourse?._id}
+        value={displayCourse?._id}
         onChange={handleEditChange}
       />
       <TextField
@@ -108,7 +110,7 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
         name="credit"
         id="outlined-credit"
         label="נק״ז"
-        value={updatedCourse?.credit}
+        value={displayCourse?.credit}
         onChange={handleEditChange}
       />
       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
