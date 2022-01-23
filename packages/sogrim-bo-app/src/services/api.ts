@@ -45,7 +45,7 @@ export const getCourse = async (
 export const updateCourse = async (
   authToken: any,
   courseId: string,
-  course: any
+  course: Course
 ): Promise<any> => {
   let fallback: any;
   let res: any;

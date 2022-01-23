@@ -4,9 +4,15 @@ import { CoursePageMode } from "../types/ui-types";
 import { Course } from "../types/data-types";
 
 export class UIStore {
+  public errorMsg: string = "";
+  public infoMsg: string = "";
   public userDisplay: any;
   public coursePageMode: CoursePageMode = CoursePageMode.Table;
-  public currentSelectedCourse: Course | undefined;
+  public currentSelectedCourse: Course = {
+    name: "",
+    credit: 0,
+    _id: "",
+  };
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
@@ -22,6 +28,16 @@ export class UIStore {
 
   setUserDisplay = (userDisplay: any) => {
     this.userDisplay = userDisplay;
+  };
+
+  setErrorMsg = (newErrorMsg: string) => {
+    this.infoMsg = "";
+    this.errorMsg = newErrorMsg;
+  };
+
+  setInfoMsg = (newInfoMsg: string) => {
+    this.errorMsg = "";
+    this.infoMsg = newInfoMsg;
   };
 
   get userDisplyName(): string {

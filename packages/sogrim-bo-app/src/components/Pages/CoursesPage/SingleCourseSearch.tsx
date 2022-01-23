@@ -3,7 +3,7 @@ import { observer } from "mobx-react-lite";
 import React from "react";
 import { useStore } from "../../../hooks/useStore";
 import { SearchOption } from "../../../types/ui-types";
-import { SeatchFiled } from "../../Search/SearchField";
+import { SearchFiled } from "../../Search/SearchField";
 
 interface SingleCourseSearchProps {}
 
@@ -27,14 +27,14 @@ const SingleCourseSearchComp: React.FC<SingleCourseSearchProps> = () => {
           <Typography sx={{ fontSize: 20 }}>חפש קורס</Typography>
         </Box>
 
-        <SeatchFiled
+        <SearchFiled
           searchLable={currentSelectedCourse?.name ?? "חפש קורס"}
           searchType={"course-name"}
           onChangeValue={onChangeValue}
         />
       </Box>
       <Card sx={{ minWidth: 350, minHeight: 130 }}>
-        {currentSelectedCourse ? (
+        {currentSelectedCourse._id !== "" ? (
           <>
             <CardContent>
               <Typography sx={{ fontSize: 20 }}>

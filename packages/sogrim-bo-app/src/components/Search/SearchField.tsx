@@ -1,42 +1,47 @@
-import { Autocomplete, TextField } from "@mui/material";
+import { Autocomplete, CircularProgress, TextField } from "@mui/material";
+import { observer } from "mobx-react-lite";
 import { useMemo } from "react";
 import { useStore } from "../../hooks/useStore";
 import { SearchType, SearchOption } from "../../types/ui-types";
 
-export interface SeatchFiledProps {
+export interface SearchFiledProps {
   searchLable: string;
   searchType: SearchType;
   onChangeValue: (newValue: SearchOption) => void;
 }
-export const SeatchFiled: React.FC<SeatchFiledProps> = ({
+const SearchFiledComp: React.FC<SearchFiledProps> = ({
   searchType,
   searchLable,
   onChangeValue,
 }) => {
   const {
-    dataStore: { getSearchOptionByType },
+    dataStore: { getSearchOptionByType, coursesMutate },
   } = useStore();
-  const searchOptions = useMemo(
-    () => getSearchOptionByType(searchType),
-    [searchType, getSearchOptionByType]
-  );
+
+  const searchOptions = useMemo(() => {
+    if (!coursesMutate) {
+      return getSearchOptionByType(searchType);
+    }
+    return null;
+  }, [searchType, getSearchOptionByType, coursesMutate]);
 
   const handleChangeOption = (e: React.SyntheticEvent<Element, Event>) => {
     e.preventDefault();
     let dataIndex = e.currentTarget.getAttribute("data-option-index") ?? -1;
     dataIndex = +dataIndex;
-    if (dataIndex >= 0) {
+    if (dataIndex >= 0 && searchOptions) {
       onChangeValue(searchOptions[dataIndex]);
     }
   };
-  return (
+
+  return searchOptions ? (
     <Autocomplete
       sx={{ minWidth: "400px" }}
       freeSolo
       id={searchLable}
       disableClearable
       onChange={(e) => handleChangeOption(e)}
-      options={searchOptions.map((option) => option.name)}
+      options={searchOptions?.map((option) => option.name)}
       renderInput={(params) => (
         <TextField
           {...params}
@@ -48,5 +53,9 @@ export const SeatchFiled: React.FC<SeatchFiledProps> = ({
         />
       )}
     />
+  ) : (
+    <CircularProgress />
   );
 };
+
+export const SearchFiled = observer(SearchFiledComp);

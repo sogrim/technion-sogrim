@@ -8,20 +8,27 @@ import {
 } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
+import useUpdateCourse from "../../../../hooks/apiHooks/useUpdateCourse";
 import { useStore } from "../../../../hooks/useStore";
+import { useAuth } from "../../../../hooks/useAuth";
 import { Course } from "../../../../types/data-types";
 
 interface CoursePageUpdateProps {}
 
 const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
   const {
-    dataStore: {},
+    dataStore: { addCourse, updateCourse },
     uiStore: { currentSelectedCourse },
   } = useStore();
+
+  const { userAuthToken } = useAuth();
+  const { mutate } = useUpdateCourse(userAuthToken);
 
   const [updatedCourse, setUpdatedCourse] = useState<Course | undefined>(
     currentSelectedCourse
   );
+
+  const [mode, setMode] = useState<"update" | "add">("add");
 
   useEffect(() => {
     setUpdatedCourse(currentSelectedCourse);
@@ -34,6 +41,9 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
     fieldValue = event.target.value;
     if (updatedCourse) {
       let newUpdatedCourse: Course = { ...updatedCourse };
+      if (fieldName === "credit") {
+        fieldValue = +fieldValue;
+      }
       // @ts-ignore
       newUpdatedCourse[fieldName] = fieldValue;
       setUpdatedCourse(newUpdatedCourse);
@@ -41,17 +51,37 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
   };
 
   const handleUpdateClick = () => {
-    /*
-    TODO:
-    1. validation. uniq id!
-    update or add?
-    2. insert to store.
-    3. mutate to db.
-    */
     if (updatedCourse) {
-      console.log(updatedCourse.name);
+      if (updateCourse(updatedCourse)) {
+        mutate(updatedCourse);
+      }
     }
   };
+
+  const handleAddClick = () => {
+    if (updatedCourse) {
+      if (addCourse(updatedCourse)) {
+        mutate(updatedCourse);
+      }
+    }
+  };
+
+  const changeMode = () => {
+    if (mode === "add") {
+      setMode("update");
+    } else {
+      setUpdatedCourse({
+        name: "",
+        credit: 0,
+        _id: "",
+      });
+      setMode("add");
+    }
+  };
+
+  const buttonModeTitle = mode === "add" ? "עדכן קורס" : "הוסף קורס";
+  const buttonTitle = mode === "add" ? "הוסף קורס" : "עדכן קורס";
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <TextField
@@ -64,6 +94,7 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
         onChange={handleEditChange}
       />
       <TextField
+        disabled={mode === "update"}
         required
         name="_id"
         id="outlined-id"
@@ -72,21 +103,34 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
         onChange={handleEditChange}
       />
       <TextField
+        type="number"
         required
         name="credit"
         id="outlined-credit"
         label="נק״ז"
         value={updatedCourse?.credit}
+        onChange={handleEditChange}
       />
-      <Button
-        size="large"
-        onClick={handleUpdateClick}
-        variant="contained"
-        color="info"
-      >
-        {" "}
-        עדכן{" "}
-      </Button>
+      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Button
+          sx={{ minWidth: 200 }}
+          size="large"
+          onClick={mode === "add" ? handleAddClick : handleUpdateClick}
+          variant="contained"
+          color="info"
+        >
+          {buttonTitle}
+        </Button>
+        <Button
+          sx={{ minWidth: 150 }}
+          size="large"
+          onClick={changeMode}
+          variant="outlined"
+          color="info"
+        >
+          החלף ל{buttonModeTitle}
+        </Button>
+      </Box>
       <Card>
         <CardContent>
           <Typography variant="body2" color="text.secondary">

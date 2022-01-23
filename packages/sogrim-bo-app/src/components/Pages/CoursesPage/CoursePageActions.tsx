@@ -35,6 +35,7 @@ const CoursePageActionsComp: React.FC<CoursePageActionsProps> = () => {
         ערוך / הוסף קורס
       </Button>
       <Button
+        disabled
         size="large"
         variant="contained"
         onClick={() => setCoursePageMode(CoursePageMode.Delete)}

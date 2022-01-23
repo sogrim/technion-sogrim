@@ -1,9 +1,11 @@
 import { useMutation } from "react-query";
 import { updateCourse } from "../../services/api";
+import { Course } from "../../types/data-types";
 
-export default function useUpdateCourse(authToken: any, courseId: string) {
+export default function useUpdateCourse(authToken: any) {
   return useMutation(
-    ["courses", courseId], // The caching key
-    (updatedCourse: any) => updateCourse(authToken, courseId, updatedCourse)
+    ["course"], // The caching key
+    (updatedCourse: Course) =>
+      updateCourse(authToken, updatedCourse._id, updatedCourse)
   );
 }
