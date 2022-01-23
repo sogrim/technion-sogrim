@@ -1,13 +1,11 @@
 import { Box } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React from "react";
-import { CoursePageActions } from "./CoursePageActions";
-import { CoursePageNav } from "./CoursePageNav.tsx/CoursePageNav";
-import { SingleCourseSearch } from "./SingleCourseSearch";
+import { SingleCatalogSearch } from "./SingleCatalogSearch";
 
-interface CoursePageProps {}
+interface CatalogPageProps {}
 
-const CoursePageComp: React.FC<CoursePageProps> = () => {
+const CatalogPageComp: React.FC<CatalogPageProps> = () => {
   return (
     <div style={{ width: "80%", display: "flex" }}>
       <Box
@@ -22,12 +20,10 @@ const CoursePageComp: React.FC<CoursePageProps> = () => {
           alignItems: "center",
         }}
       >
-        <SingleCourseSearch />
-        <CoursePageActions />
-        <CoursePageNav />
+        <SingleCatalogSearch />
       </Box>
     </div>
   );
 };
 
-export const CoursePage = observer(CoursePageComp);
+export const CatalogsPage = observer(CatalogPageComp);

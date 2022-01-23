@@ -1,6 +1,12 @@
-import { CircularProgress, CssBaseline, ThemeProvider } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  CssBaseline,
+  ThemeProvider,
+} from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
+import useCatalogs from "../../hooks/apiHooks/useCatalogs";
 import useCourses from "../../hooks/apiHooks/useCourses";
 import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
@@ -17,20 +23,31 @@ const AdminAppComp: React.FC = () => {
   const theme = useMemo(() => getAppTheme(mode), [mode]);
 
   const {
-    dataStore: { setCourses },
+    dataStore: { setCourses, setCatalogsIds },
   } = useStore();
 
   const { userAuthToken } = useAuth();
 
-  const { data, isLoading } = useCourses(userAuthToken);
+  const { data: courses, isLoading: coursesLoading } =
+    useCourses(userAuthToken);
+  const { data: catalogsIds, isLoading: catalogLoading } =
+    useCatalogs(userAuthToken);
+
   useEffect(() => {
-    setCourses(data);
-  }, [data, setCourses]);
+    setCourses(courses);
+    setCatalogsIds(catalogsIds);
+  }, [catalogsIds, courses, setCatalogsIds, setCourses]);
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {isLoading ? <CircularProgress /> : <Layout />}
+      {coursesLoading && catalogLoading ? (
+        <Box>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Layout />
+      )}
       <ErrorToast />
       <InfoToast />
     </ThemeProvider>

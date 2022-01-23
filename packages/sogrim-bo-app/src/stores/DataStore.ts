@@ -1,11 +1,12 @@
 import { makeAutoObservable } from "mobx";
-import { Course } from "../types/data-types";
+import { Course, ThinCatalog } from "../types/data-types";
 import { SearchType, SearchOption } from "../types/ui-types";
 import { validCourseCredit, validCourseNumber } from "../utils/validator";
 import { RootStore } from "./RootStore";
 
 export class DataStore {
   public courses: Course[] = [];
+  public catalogsIds: ThinCatalog[] = [];
   public coursesMutate: boolean = false;
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
@@ -13,6 +14,10 @@ export class DataStore {
 
   setCourses = (newCoursesList: Course[]) => {
     this.courses = newCoursesList;
+  };
+
+  setCatalogsIds = (catalogs: any) => {
+    this.catalogsIds = catalogs;
   };
 
   setCoursesMutateFalse = () => {
@@ -51,10 +56,19 @@ export class DataStore {
   getSearchOptionByType = (searchType: SearchType): SearchOption[] => {
     const searchOptions: SearchOption[] = [];
     if (searchType === "course-name") {
-      this.courses.forEach((course) => {
+      this.courses?.forEach((course) => {
         const newSearchCourse: SearchOption = {
           name: course.name + " - " + course._id,
           _id: course._id,
+        };
+        searchOptions.push(newSearchCourse);
+      });
+    }
+    if (searchType === "catalog-name") {
+      this.catalogsIds?.forEach((catalog) => {
+        const newSearchCourse: SearchOption = {
+          name: catalog.name,
+          _id: catalog._id.$oid,
         };
         searchOptions.push(newSearchCourse);
       });
@@ -97,7 +111,6 @@ export class DataStore {
       );
       return false;
     }
-    console.log("im valid");
     return true;
   };
 }

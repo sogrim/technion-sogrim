@@ -1,13 +1,15 @@
 import { RootStore } from "./RootStore";
 import { makeAutoObservable } from "mobx";
 import { CoursePageMode } from "../types/ui-types";
-import { Course } from "../types/data-types";
+import { Catalog, Course } from "../types/data-types";
 
 export class UIStore {
   public errorMsg: string = "";
   public infoMsg: string = "";
   public userDisplay: any;
   public coursePageMode: CoursePageMode = CoursePageMode.Table;
+  public catalogCRUStep: any;
+  public currentCatalog: Catalog | null = null;
   public currentSelectedCourse: Course = {
     name: "",
     credit: 0,
@@ -24,6 +26,10 @@ export class UIStore {
 
   setCurrentSelectedCourse = (course: Course) => {
     this.currentSelectedCourse = course;
+  };
+
+  setCurrentCatalog = (catalog: Catalog) => {
+    this.currentCatalog = catalog;
   };
 
   setUserDisplay = (userDisplay: any) => {

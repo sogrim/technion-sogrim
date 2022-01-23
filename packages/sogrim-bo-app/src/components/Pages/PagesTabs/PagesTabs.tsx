@@ -1,5 +1,6 @@
 import { Box, Divider, Tab, Tabs } from "@mui/material";
 import * as React from "react";
+import { CatalogsPage } from "../CatalogsPage/CatalogsPage";
 import { CoursePage } from "../CoursesPage/CoursePage";
 
 import { TabPanel } from "./TabPanel";
@@ -24,7 +25,7 @@ export const PagesTabs: React.FC = () => {
       </Tabs>
       <Divider />
       <TabPanel value={value} index={0}>
-        <h1> קטלוגס </h1>
+        <CatalogsPage />
       </TabPanel>
       <TabPanel value={value} index={1}>
         <CoursePage />

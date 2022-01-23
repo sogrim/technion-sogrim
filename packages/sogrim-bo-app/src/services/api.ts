@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Course } from "../types/data-types";
+import { Catalog, Course, ThinCatalog } from "../types/data-types";
 import { API_URL } from "./api-url";
 
 /////////////////////////////////////////////////////////////////////////////
@@ -85,39 +85,41 @@ export const deleteCourse = async (
 // Catalogs API
 /////////////////////////////////////////////////////////////////////////////
 
-export const getCatalogs = async (authToken: any): Promise<any> => {
+export const getCatalogs = async (authToken: any): Promise<ThinCatalog[]> => {
   let fallback: any;
-  let res: any;
+  let data: ThinCatalog[];
   try {
-    res =
+    const res =
       (await axios.get(`${API_URL}/catalogs`, {
         headers: {
           authorization: `${authToken}`,
         },
       })) || fallback;
+    data = res.data || fallback;
   } catch {
-    res = fallback;
+    data = fallback;
   }
-  return res;
+  return data;
 };
 
 export const getCatalog = async (
   authToken: any,
   catalogId: string
-): Promise<any> => {
+): Promise<Catalog> => {
   let fallback: any;
-  let res: any;
+  let data: Catalog;
   try {
-    res =
+    const res =
       (await axios.get(`${API_URL}/catalogs/${catalogId}`, {
         headers: {
           authorization: `${authToken}`,
         },
       })) || fallback;
+    data = res.data || fallback;
   } catch {
-    res = fallback;
+    data = fallback;
   }
-  return res;
+  return data;
 };
 
 export const updateCatalog = async (

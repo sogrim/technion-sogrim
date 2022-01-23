@@ -4,6 +4,14 @@ export type Course = {
   name: string;
 };
 
+export type ThinCatalog = {
+  name: string;
+  total_credit: number;
+  description: string;
+  _id: {
+    $oid: string;
+  };
+};
 export type Catalog = {
   _id: string;
   name: string;
