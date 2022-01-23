@@ -1,4 +1,4 @@
-import { Link, Theme } from "@mui/material";
+import { Link, Theme, Typography } from "@mui/material";
 import Button from "@mui/material/Button";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -6,6 +6,10 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
 import React, { useEffect, useState } from "react";
+import chrome from "../../../assets/chrome.png";
+import edge from "../../../assets/edge.png";
+import firefox from "../../../assets/firefox.png";
+import windows from "../../../assets/windows.png";
 import useUpdateUserUgData from "../../../hooks/apiHooks/useUpdateUgData";
 import { useAuth } from "../../../hooks/useAuth";
 export interface ImportGilionProps {
@@ -45,9 +49,44 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
       <DialogTitle>יבא קורסים</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          נכנסים למערכת student ומגישים בקשה לגיליון ציונים. לאחר שהבקשה אושרה,
-          יש לפתוח את גיליון הציונים (ולא תעודת ציונים!) בדפדפן כרום, ולהעתיק את
-          כל התוכן לתיבה מתחת
+          <Typography>
+            נכנסים למערכת student ומגישים בקשה לגיליון ציונים. לאחר שהבקשה
+            אושרה, יש לפתוח את גיליון הציונים{" "}
+            <span style={{ color: "red" }}>(ולא תעודת ציונים!)</span> בדפדפן,
+            ולהעתיק באמצעות Ctrl-A+Ctrl-C את כל התוכן לתיבה מתחת.
+          </Typography>
+          <Typography sx={{ marginTop: 1 }}>
+            מסתבכים?
+            <ul>
+              <li>ודאו שגליון הציונים שהוצאתם הוא בעברית.</li>
+              <li>
+                ודאו שאכן העתקתם את <b>כל</b> התוכן של גליון הציונים.
+              </li>
+              <li>
+                אם אתם ב-
+                <TextWithIcon
+                  {...{ text: "Windows", src: windows, alt: "windows" }}
+                />
+                , בדפדפן{" "}
+                <TextWithIcon
+                  {...{ text: "Google Chrome", src: chrome, alt: "chrome" }}
+                />
+                , יתכן ש-Ctrl-A בPDF-ים לא יעבוד כמו שצריך. במקרה זה, נסו לפתוח
+                את ה-PDF בעזרת{" "}
+                <TextWithIcon
+                  {...{ text: "Microsoft Edge", src: edge, alt: "edge" }}
+                />
+                .
+              </li>
+              <li>
+                ודאו שאתם <b>לא</b> פותחים את ה-PDF של גליון הציונים בדפדפן{" "}
+                <TextWithIcon
+                  {...{ text: "Mozilla Firefox", src: firefox, alt: "firefox" }}
+                />{" "}
+                {"("}לצערנו הוא אינו נתמך כרגע{")"}.
+              </li>
+            </ul>
+          </Typography>
         </DialogContentText>
         <Link
           color={(theme: Theme) => theme.palette.secondary.dark}
@@ -74,6 +113,27 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
         <Button onClick={handleSend}>שלח</Button>
         <Button onClick={handleClose}>בטל</Button>
       </DialogActions>
+    </>
+  );
+};
+
+interface TextWithIconProps {
+  text: string;
+  src: string;
+  alt: string;
+}
+
+const TextWithIcon: React.FC<TextWithIconProps> = ({ text, src, alt }) => {
+  return (
+    <>
+      <span style={{ fontSize: "small" }}> {text} </span>
+      <img
+        src={src}
+        alt={alt}
+        width="18px"
+        height="18px"
+        style={{ marginBottom: -4 }}
+      />
     </>
   );
 };
