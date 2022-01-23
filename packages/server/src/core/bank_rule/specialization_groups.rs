@@ -1,6 +1,58 @@
-use crate::core::types::SpecializationGroups;
+use std::collections::HashMap;
+
+use crate::{
+    core::types::{SpecializationGroup, SpecializationGroups},
+    resources::course::CourseId,
+};
 
 use super::BankRuleHandler;
+
+// generates all subsets of size specialization_groups.groups_number and check if one of them is fulfilled
+fn generate_subsets(
+    specialization_groups: &HashMap<usize, &SpecializationGroup>,
+    required_number_of_groups: usize,
+    index: u32,
+    groups_indices: &mut Vec<u32>,
+    courses: &HashMap<CourseId, CourseId>,
+) {
+    if groups_indices.len() == required_number_of_groups {
+        return;
+    }
+
+    if index > specialization_groups.len() as u32 {
+        return;
+    }
+
+    // current group in included
+    groups_indices.push(index);
+    generate_subsets(
+        specialization_groups,
+        required_number_of_groups,
+        index + 1,
+        groups_indices,
+        courses,
+    );
+
+    // current group is excluded
+    groups_indices.pop();
+    generate_subsets(
+        specialization_groups,
+        required_number_of_groups,
+        index + 1,
+        groups_indices,
+        courses,
+    );
+}
+
+fn exhaustive_search(
+    courses: &HashMap<CourseId, CourseId>,
+    specialization_groups: &SpecializationGroups,
+) {
+    let mut specialization_groups_indices = HashMap::new();
+    for (index, specialization_group) in specialization_groups.groups_list.iter().enumerate() {
+        specialization_groups_indices.insert(index, specialization_group);
+    }
+}
 
 impl<'a> BankRuleHandler<'a> {
     pub fn specialization_group(
