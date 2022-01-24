@@ -7,6 +7,9 @@ import { useStore } from "../../hooks/useStore";
 import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
 import { getAppTheme } from "../../themes/theme";
 import { Layout } from "../Layout/Layout";
+import rtlPlugin from "stylis-plugin-rtl";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
 
 const UserAppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
@@ -33,10 +36,18 @@ const UserAppComp: React.FC = () => {
     computeUserRegistrationState,
   ]);
 
+  // Create rtl cache
+  const cacheRtl = createCache({
+    key: "muirtl",
+    stylisPlugins: [rtlPlugin],
+  });
+
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Layout />
+      <CacheProvider value={cacheRtl}>
+        <CssBaseline />
+        <Layout />
+      </CacheProvider>
     </ThemeProvider>
   );
 };
