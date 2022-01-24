@@ -29,9 +29,7 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
   const { userAuthToken } = useAuth();
   const { mutate } = useUpdateCourse(userAuthToken);
 
-  const [updatedCourse, setUpdatedCourse] = useState<Course | undefined>(
-    currentSelectedCourse
-  );
+  const [updatedCourse, setUpdatedCourse] = useState<Course>(emptyCourse);
 
   const [mode, setMode] = useState<"update" | "add">("add");
 
@@ -82,7 +80,6 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
 
   const buttonModeTitle = mode === "add" ? "עדכן קורס" : "הוסף קורס";
   const buttonTitle = mode === "add" ? "הוסף קורס" : "עדכן קורס";
-  const displayCourse = mode === "add" ? emptyCourse : updatedCourse;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -92,7 +89,7 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
         required
         id="outlined-name"
         label="שם הקורס"
-        value={displayCourse?.name}
+        value={updatedCourse?.name}
         onChange={handleEditChange}
       />
       <TextField
@@ -101,7 +98,7 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
         name="_id"
         id="outlined-id"
         label="מספר הקורס"
-        value={displayCourse?._id}
+        value={updatedCourse?._id}
         onChange={handleEditChange}
       />
       <TextField
@@ -110,7 +107,7 @@ const CoursePageUpdateComp: React.FC<CoursePageUpdateProps> = () => {
         name="credit"
         id="outlined-credit"
         label="נק״ז"
-        value={displayCourse?.credit}
+        value={updatedCourse?.credit}
         onChange={handleEditChange}
       />
       <Box sx={{ display: "flex", justifyContent: "space-between" }}>

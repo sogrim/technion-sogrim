@@ -1,6 +1,8 @@
 import { Box } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React from "react";
+import { CatalogPageActions } from "./CatalogPageActions";
+import { CatalogPageStepper } from "./CatalogPageStepper/CatalogPageStepper";
 import { SingleCatalogSearch } from "./SingleCatalogSearch";
 
 interface CatalogPageProps {}
@@ -21,6 +23,8 @@ const CatalogPageComp: React.FC<CatalogPageProps> = () => {
         }}
       >
         <SingleCatalogSearch />
+        <CatalogPageActions />
+        <CatalogPageStepper />
       </Box>
     </div>
   );

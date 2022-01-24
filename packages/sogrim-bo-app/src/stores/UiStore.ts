@@ -1,6 +1,6 @@
 import { RootStore } from "./RootStore";
 import { makeAutoObservable } from "mobx";
-import { CoursePageMode } from "../types/ui-types";
+import { CatalogPageMode, CoursePageMode } from "../types/ui-types";
 import { Catalog, Course } from "../types/data-types";
 
 export class UIStore {
@@ -8,6 +8,7 @@ export class UIStore {
   public infoMsg: string = "";
   public userDisplay: any;
   public coursePageMode: CoursePageMode = CoursePageMode.Table;
+  public catalogPageMode: CatalogPageMode = CatalogPageMode.Update;
   public catalogCRUStep: any;
   public currentCatalog: Catalog | null = null;
   public currentSelectedCourse: Course = {
@@ -22,6 +23,10 @@ export class UIStore {
 
   setCoursePageMode = (mode: CoursePageMode) => {
     this.coursePageMode = mode;
+  };
+
+  setCatalogPageMode = (mode: CatalogPageMode) => {
+    this.catalogPageMode = mode;
   };
 
   setCurrentSelectedCourse = (course: Course) => {
