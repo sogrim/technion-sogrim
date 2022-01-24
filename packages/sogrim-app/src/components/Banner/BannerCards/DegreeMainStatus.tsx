@@ -48,7 +48,9 @@ const DegreeMainStatusComp: React.FC = () => {
           sx={{ display: "flex", justifyContent: "center" }}
           size="small"
         >
-          {catalogName}
+          <Typography fontSize="small" color="text.primary">
+            {catalogName}
+          </Typography>
         </Button>
       </CardContent>
     </Card>
