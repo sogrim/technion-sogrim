@@ -38,7 +38,9 @@ const DegreeMainStatsComp: React.FC = () => {
           {`ממוצע כללי: ${gpa} `}
         </Typography>
         <Typography sx={{ fontSize: 18 }} color="text.primary">
-          {`השלמת ${banksDone} מתוך ${totalBanks} דרישות בתואר`}
+          {`השלמת ${banksDone} מתוך ${
+            totalBanks ? totalBanks : "..."
+          } דרישות בתואר`}
         </Typography>
         <Button
           disabled
