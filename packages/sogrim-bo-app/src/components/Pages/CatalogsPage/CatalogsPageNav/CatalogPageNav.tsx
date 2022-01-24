@@ -2,6 +2,7 @@ import { observer } from "mobx-react-lite";
 import React from "react";
 import { CatalogPageMode } from "../../../../types/ui-types";
 import { useStore } from "../../../../hooks/useStore";
+import { CatalogPageStepper } from "../CatalogPageStepper/CatalogPageStepper";
 
 const CatalogPageNavComp: React.FC = () => {
   const {
@@ -10,7 +11,7 @@ const CatalogPageNavComp: React.FC = () => {
 
   switch (catalogPageMode) {
     case CatalogPageMode.Update:
-      return <div> hi</div>;
+      return <CatalogPageStepper />;
     case CatalogPageMode.AddNew:
       return <div> hi</div>;
   }

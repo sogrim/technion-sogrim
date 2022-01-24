@@ -12,8 +12,8 @@ interface SingleCatalogSearchProps {}
 
 const SingleCatalogSearchComp: React.FC<SingleCatalogSearchProps> = () => {
   const {
-    dataStore: { catalogsIds },
-    uiStore: { setCurrentCatalog, setErrorMsg },
+    dataStore: { catalogsIds, setCurrentCatalog },
+    uiStore: { setErrorMsg },
   } = useStore();
   const [catalogId, setCatalogId] = useState<string>("");
   const [catalogOption, setCatalogOption] = useState<ThinCatalog>();

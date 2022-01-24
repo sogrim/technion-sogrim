@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { Course, ThinCatalog } from "../types/data-types";
+import { Catalog, Course, ThinCatalog } from "../types/data-types";
 import { SearchType, SearchOption } from "../types/ui-types";
 import { validCourseCredit, validCourseNumber } from "../utils/validator";
 import { RootStore } from "./RootStore";
@@ -7,6 +7,7 @@ import { RootStore } from "./RootStore";
 export class DataStore {
   public courses: Course[] = [];
   public catalogsIds: ThinCatalog[] = [];
+  public currentCatalog: Catalog | null = null;
   public coursesMutate: boolean = false;
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
@@ -112,5 +113,21 @@ export class DataStore {
       return false;
     }
     return true;
+  };
+
+  setCurrentCatalog = (catalog: Catalog) => {
+    this.currentCatalog = catalog;
+  };
+
+  updateCatalogName = (catalogName: string) => {
+    if (this.currentCatalog) {
+      this.currentCatalog.name = catalogName;
+    }
+  };
+
+  updateCatalogTotalCredit = (totalCredit: string) => {
+    if (this.currentCatalog) {
+      this.currentCatalog.total_credit = +totalCredit;
+    }
   };
 }

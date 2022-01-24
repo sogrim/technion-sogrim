@@ -15,7 +15,7 @@ export type ThinCatalog = {
 export type Catalog = {
   _id: string;
   name: string;
-  total_credit: string;
+  total_credit: number;
   description: string;
   course_banks: CourseBank[];
   credit_overflows: CreditOverFlows[];

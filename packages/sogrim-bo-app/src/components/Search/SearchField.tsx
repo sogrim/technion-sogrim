@@ -15,7 +15,13 @@ const SearchFiledComp: React.FC<SearchFiledProps> = ({
   onChangeValue,
 }) => {
   const {
-    dataStore: { getSearchOptionByType, coursesMutate, courses, catalogsIds },
+    dataStore: {
+      getSearchOptionByType,
+      coursesMutate,
+      courses,
+      catalogsIds,
+      currentCatalog,
+    },
   } = useStore();
 
   const searchOptions = useMemo(() => {
@@ -23,7 +29,14 @@ const SearchFiledComp: React.FC<SearchFiledProps> = ({
       return getSearchOptionByType(searchType);
     }
     return null;
-  }, [searchType, getSearchOptionByType, coursesMutate, catalogsIds, courses]);
+  }, [
+    searchType,
+    getSearchOptionByType,
+    coursesMutate,
+    catalogsIds,
+    courses,
+    currentCatalog,
+  ]);
 
   const handleChangeOption = (e: React.SyntheticEvent<Element, Event>) => {
     e.preventDefault();

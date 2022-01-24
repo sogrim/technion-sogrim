@@ -6,6 +6,7 @@ import Stepper from "@mui/material/Stepper";
 import Typography from "@mui/material/Typography";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
+import { useStore } from "../../../../hooks/useStore";
 import { CatalogStepperNav } from "./CatalogStepperNav";
 
 const steps = [
@@ -17,6 +18,9 @@ const steps = [
 ];
 
 const CatalogPageStepperComp: React.FC = () => {
+  const {
+    dataStore: { currentCatalog },
+  } = useStore();
   const [activeStep, setActiveStep] = React.useState(0);
   const [completed, setCompleted] = React.useState<{
     [k: number]: boolean;
@@ -61,7 +65,7 @@ const CatalogPageStepperComp: React.FC = () => {
     handleNext();
   };
 
-  return (
+  return currentCatalog ? (
     <Box sx={{ width: "100%" }}>
       <Stepper nonLinear activeStep={activeStep}>
         {steps.map((label, index) => (
@@ -110,6 +114,8 @@ const CatalogPageStepperComp: React.FC = () => {
         )}
       </div>
     </Box>
+  ) : (
+    <Typography> ראשית, יש לטעון קורס לצפייה/עריכה</Typography>
   );
 };
 

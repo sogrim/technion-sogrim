@@ -1,5 +1,6 @@
 import React from "react";
 import { CatalogStepperPhase } from "../../../../types/ui-types";
+import { StepperP1 } from "./StepperP1";
 
 interface CatalogStepperNavProps {
   stepperPhase: CatalogStepperPhase;
@@ -7,10 +8,9 @@ interface CatalogStepperNavProps {
 const CatalogStepperNavComp: React.FC<CatalogStepperNavProps> = ({
   stepperPhase,
 }) => {
-  console.log(CatalogStepperPhase.SteeperP1, stepperPhase);
   switch (stepperPhase) {
     case CatalogStepperPhase.SteeperP1:
-      return <div> hi</div>;
+      return <StepperP1 />;
     case CatalogStepperPhase.SteeperP2:
       return <div> hi2</div>;
     case CatalogStepperPhase.SteeperP3:
