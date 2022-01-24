@@ -5,9 +5,14 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Box,
+  Divider,
+  IconButton,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { ExpandMore } from "@mui/icons-material";
+import InfoTwoToneIcon from "@mui/icons-material/InfoTwoTone";
 
 interface CreditOverflowProps {}
 
@@ -25,11 +30,27 @@ const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
           aria-controls="overflow-collaps"
           id="overflow-collaps"
         >
-          <Typography fontWeight={"bold"}>מעבר נקודות בין דרישות</Typography>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Typography fontWeight={"bold"}>הודעות חשובות</Typography>
+            <Tooltip
+              title={
+                "כאן מופיעות הודעות שכדאי לשים לב אליהן, כגון הודעות על מעברי נקודות בין דרישות, הודעה על כמות נקודות עודפות וכו'"
+              }
+              placement="bottom"
+              arrow
+            >
+              <IconButton>
+                <InfoTwoToneIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </AccordionSummary>
         <AccordionDetails>
           {overflowMsg.map((ovm, id) => (
-            <Typography key={id}> {ovm} </Typography>
+            <Box key={id} sx={{ padding: 0.5 }}>
+              <Typography> {ovm} </Typography>
+              <Divider />
+            </Box>
           ))}
         </AccordionDetails>
       </Accordion>
