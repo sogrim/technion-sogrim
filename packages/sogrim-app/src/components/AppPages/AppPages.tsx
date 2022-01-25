@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
 import { UserRegistrationState } from "../../types/ui-types";
 import { AppStepper } from "../Banner/AppStepper";
+import Disclaimer from "../Banner/Disclaimer";
 import { PagesTabs } from "./PagesTabs";
 
 const AppPagesComp: React.FC = () => {
@@ -41,7 +42,10 @@ const AppPagesComp: React.FC = () => {
       ) : userRegistrationState === UserRegistrationState.Ready ? (
         <PagesTabs />
       ) : (
-        <AppStepper />
+        <Box sx={{ flexDirection: "column" }}>
+          <AppStepper />
+          <Disclaimer />
+        </Box>
       )}
     </Box>
   );

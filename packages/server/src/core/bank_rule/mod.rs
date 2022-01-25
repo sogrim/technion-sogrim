@@ -6,6 +6,9 @@ pub mod iterate_courses;
 pub mod malag;
 pub mod specialization_groups;
 pub mod sport;
+#[allow(clippy::float_cmp)]
+#[cfg(test)]
+pub mod tests;
 
 use std::collections::HashMap;
 
