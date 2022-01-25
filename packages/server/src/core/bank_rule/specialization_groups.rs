@@ -12,27 +12,28 @@ use super::BankRuleHandler;
 // sgs = specialization_groups
 
 fn check_courses_assignment_for_sgs(
-    sgs: &HashMap<u8, &SpecializationGroup>,
+    sgs: &Vec<SpecializationGroup>,
     groups_indices: &Vec<u8>,
     course_id_to_sg_index: &HashMap<CourseId, u8>,
 ) -> bool {
-    for index in groups_indices {
+    for sg_index in groups_indices {
         // check there are enough courses in this specialization group
         if (course_id_to_sg_index
             .values()
-            .filter(|group| *group == index)
+            .filter(|group| *group == sg_index)
             .count() as u8)
-            < sgs[index].courses_sum
+            < sgs[*sg_index as usize].courses_sum
         {
+            // There are not enough courses in this assignment to complete sg requirement
             return false;
         }
-        // check if the user completed the mandatory courses
-        if let Some(mandatory) = &sgs[index].mandatory {
+        // check if the user completed the mandatory courses in sg
+        if let Some(mandatory) = &sgs[*sg_index as usize].mandatory {
             for courses in mandatory {
                 let mut completed_current_demand = false;
                 for (course_id, group) in course_id_to_sg_index {
                     // check if the user completed one of courses
-                    if group == index && courses.contains(course_id) {
+                    if group == sg_index && courses.contains(course_id) {
                         completed_current_demand = true;
                         break;
                     }
@@ -47,16 +48,16 @@ fn check_courses_assignment_for_sgs(
 }
 
 fn find_valid_assignment_for_courses(
-    sgs: &HashMap<u8, &SpecializationGroup>,
+    sgs: &Vec<SpecializationGroup>,
     groups_indices: &Vec<u8>,
     optional_sgs_for_course: &HashMap<CourseId, Vec<u8>>, // list of all optional sgs for each course
     course_id_to_sg_index: &mut HashMap<CourseId, u8>,
-    index: usize,
+    course_index: usize, // course_index-th element in optional_sgs_for_course
 ) -> bool {
-    if index >= optional_sgs_for_course.len() {
+    if course_index >= optional_sgs_for_course.len() {
         return check_courses_assignment_for_sgs(sgs, groups_indices, course_id_to_sg_index);
     }
-    if let Some((course_id, optional_groups)) = optional_sgs_for_course.iter().nth(index) {
+    if let Some((course_id, optional_groups)) = optional_sgs_for_course.iter().nth(course_index) {
         for sg_index in optional_groups {
             course_id_to_sg_index.insert(course_id.clone(), *sg_index);
             if find_valid_assignment_for_courses(
@@ -64,7 +65,7 @@ fn find_valid_assignment_for_courses(
                 groups_indices,
                 optional_sgs_for_course,
                 course_id_to_sg_index,
-                index + 1,
+                course_index + 1,
             ) {
                 return true;
             }
@@ -74,25 +75,20 @@ fn find_valid_assignment_for_courses(
 }
 
 fn check_if_completed_groups(
-    sgs: &HashMap<u8, &SpecializationGroup>,
+    sgs: &Vec<SpecializationGroup>,
     groups_indices: &Vec<u8>,
     courses: &[CourseId],
 ) {
     let mut optional_sgs_for_course = HashMap::<CourseId, Vec<u8>>::new();
     for course_id in courses {
         let mut relevant_groups_for_course = Vec::new();
-        for index in groups_indices {
-            if sgs
-                .get(index)
-                .unwrap() // unwrap can't fail because we create this map such as to include all groups indices
-                .course_list
-                .contains(course_id)
-            {
-                relevant_groups_for_course.push(*index);
+        for sg_index in groups_indices {
+            if sgs[*sg_index as usize].course_list.contains(course_id) {
+                relevant_groups_for_course.push(*sg_index);
             }
         }
         if !relevant_groups_for_course.is_empty() {
-            // course_id may belong to one or more of the specialization groups
+            // only this subset specialization groups consist course_id
             optional_sgs_for_course.insert(course_id.clone(), relevant_groups_for_course);
         }
     }
@@ -112,27 +108,27 @@ fn check_if_completed_groups(
 
 // generates all subsets of size specialization_groups.groups_number and checks if one of them is fulfilled
 fn generate_subsets(
-    sgs: &HashMap<u8, &SpecializationGroup>,
-    required_number_of_groups: usize,
-    index: u8,
+    sgs: &Vec<SpecializationGroup>,
+    required_number_of_groups: u8,
+    sg_index: u8,
     groups_indices: &mut Vec<u8>,
     courses: &[CourseId],
 ) {
-    if groups_indices.len() == required_number_of_groups {
+    if groups_indices.len() as u8 == required_number_of_groups {
         check_if_completed_groups(sgs, groups_indices, courses);
         return;
     }
 
-    if index >= sgs.len() as u8 {
+    if sg_index >= sgs.len() as u8 {
         return;
     }
 
     // current group is included
-    groups_indices.push(index);
+    groups_indices.push(sg_index);
     generate_subsets(
         sgs,
         required_number_of_groups,
-        index + 1,
+        sg_index + 1,
         groups_indices,
         courses,
     );
@@ -142,25 +138,18 @@ fn generate_subsets(
     generate_subsets(
         sgs,
         required_number_of_groups,
-        index + 1,
+        sg_index + 1,
         groups_indices,
         courses,
     );
 }
 
-fn exhaustive_search(courses: &[CourseId], sgs: &SpecializationGroups) {
-    let mut sgs_indices = HashMap::new();
-    for (index, sg) in sgs.groups_list.iter().enumerate() {
-        sgs_indices.insert(index as u8, sg);
-    }
-
-    generate_subsets(
-        &sgs_indices,
-        sgs.groups_number as usize,
-        0,
-        &mut Vec::new(),
-        courses,
-    );
+fn exhaustive_search(
+    sgs: &Vec<SpecializationGroup>,
+    required_number_of_groups: u8,
+    courses: &[CourseId],
+) {
+    generate_subsets(&sgs, required_number_of_groups, 0, &mut Vec::new(), courses);
 }
 
 #[test]
@@ -223,7 +212,11 @@ fn test_specialization_group() {
         "236512".to_string(),
         "104166".to_string(),
     ];
-    exhaustive_search(&courses, &specialization_groups);
+    exhaustive_search(
+        &specialization_groups.groups_list,
+        specialization_groups.groups_number,
+        &courses,
+    );
 }
 
 impl<'a> BankRuleHandler<'a> {
