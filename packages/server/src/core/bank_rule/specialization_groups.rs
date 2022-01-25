@@ -11,24 +11,24 @@ use super::BankRuleHandler;
 // sg = specialization_group
 // sgs = specialization_groups
 
-fn check_courses_assignment_for_sgs(
+fn is_valid_assignment(
     sgs: &[SpecializationGroup],
-    groups_indices: &[u8],
-    course_id_to_sg_index: &HashMap<CourseId, u8>,
+    groups_indices: &[usize],
+    course_id_to_sg_index: &HashMap<CourseId, usize>,
 ) -> bool {
     for sg_index in groups_indices {
         // check there are enough courses in this specialization group
         if (course_id_to_sg_index
             .values()
             .filter(|group| *group == sg_index)
-            .count() as u8)
-            < sgs[*sg_index as usize].courses_sum
+            .count())
+            < sgs[*sg_index].courses_sum
         {
             // There are not enough courses in this assignment to complete sg requirement
             return false;
         }
         // check if the user completed the mandatory courses in sg
-        if let Some(mandatory) = &sgs[*sg_index as usize].mandatory {
+        if let Some(mandatory) = &sgs[*sg_index].mandatory {
             for courses in mandatory {
                 let mut completed_current_demand = false;
                 for (course_id, group) in course_id_to_sg_index {
@@ -51,13 +51,13 @@ fn check_courses_assignment_for_sgs(
 // If an assignment is found it returns it, None otherwise.
 fn find_valid_assignment_for_courses(
     sgs: &[SpecializationGroup],
-    groups_indices: &[u8],
-    optional_sgs_for_course: &HashMap<CourseId, Vec<u8>>, // list of all optional sgs for each course
-    course_id_to_sg_index: &mut HashMap<CourseId, u8>,
+    groups_indices: &[usize],
+    optional_sgs_for_course: &HashMap<CourseId, Vec<usize>>, // list of all optional sgs for each course
+    course_id_to_sg_index: &mut HashMap<CourseId, usize>,
     course_index: usize, // course_index-th element in optional_sgs_for_course
-) -> Option<HashMap<CourseId, u8>> {
+) -> Option<HashMap<CourseId, usize>> {
     if course_index >= optional_sgs_for_course.len() {
-        if check_courses_assignment_for_sgs(sgs, groups_indices, course_id_to_sg_index) {
+        if is_valid_assignment(sgs, groups_indices, course_id_to_sg_index) {
             return Some(course_id_to_sg_index.clone());
         }
         return None;
@@ -79,16 +79,16 @@ fn find_valid_assignment_for_courses(
     None
 }
 
-fn check_if_completed_groups(
+fn get_sgs_courses_assignment(
     sgs: &[SpecializationGroup],
-    groups_indices: &[u8],
+    groups_indices: &[usize],
     courses: &[CourseId],
-) -> Option<HashMap<CourseId, u8>> {
-    let mut optional_sgs_for_course = HashMap::<CourseId, Vec<u8>>::new();
+) -> Option<HashMap<CourseId, usize>> {
+    let mut optional_sgs_for_course = HashMap::<CourseId, Vec<usize>>::new();
     for course_id in courses {
         let mut relevant_groups_for_course = Vec::new();
         for sg_index in groups_indices {
-            if sgs[*sg_index as usize].course_list.contains(course_id) {
+            if sgs[*sg_index].course_list.contains(course_id) {
                 relevant_groups_for_course.push(*sg_index);
             }
         }
@@ -109,24 +109,24 @@ fn check_if_completed_groups(
 }
 
 // generates all subsets of size specialization_groups.groups_number and checks if one of them is fulfilled
-fn generate_subsets(
+fn generate_sgs_subsets(
     sgs: &[SpecializationGroup],
-    required_number_of_groups: u8,
-    sg_index: u8,
-    groups_indices: &mut Vec<u8>,
+    required_number_of_groups: usize,
+    sg_index: usize,
+    groups_indices: &mut Vec<usize>,
     courses: &[CourseId],
-) -> Option<HashMap<CourseId, u8>> {
-    if groups_indices.len() as u8 == required_number_of_groups {
-        return check_if_completed_groups(sgs, groups_indices, courses);
+) -> Option<HashMap<CourseId, usize>> {
+    if groups_indices.len() == required_number_of_groups {
+        return get_sgs_courses_assignment(sgs, groups_indices, courses);
     }
 
-    if sg_index >= sgs.len() as u8 {
+    if sg_index >= sgs.len() {
         return None;
     }
 
     // current group is included
     groups_indices.push(sg_index);
-    if let Some(valid_assignment) = generate_subsets(
+    if let Some(valid_assignment) = generate_sgs_subsets(
         sgs,
         required_number_of_groups,
         sg_index + 1,
@@ -138,7 +138,7 @@ fn generate_subsets(
 
     // current group is excluded
     groups_indices.pop();
-    generate_subsets(
+    generate_sgs_subsets(
         sgs,
         required_number_of_groups,
         sg_index + 1,
@@ -150,8 +150,8 @@ fn generate_subsets(
 fn run_exhaustive_search(
     sgs: &SpecializationGroups,
     courses: Vec<CourseId>, // list of all courses the user completed in specialization groups bank
-) -> Option<HashMap<CourseId, u8>> {
-    generate_subsets(
+) -> Option<HashMap<CourseId, usize>> {
+    generate_sgs_subsets(
         &sgs.groups_list,
         sgs.groups_number,
         0,
@@ -183,9 +183,8 @@ impl<'a> BankRuleHandler<'a> {
         if let Some(valid_assignment) = valid_assignment_for_courses {
             for (course_id, sg_index) in valid_assignment {
                 if let Some(course_status) = self.user.get_mut_course_status(&course_id) {
-                    course_status
-                        .set_specialization_group_name(&sgs.groups_list[sg_index as usize].name);
-                    sgs_names.insert(&sgs.groups_list[sg_index as usize].name);
+                    course_status.set_specialization_group_name(&sgs.groups_list[sg_index].name);
+                    sgs_names.insert(&sgs.groups_list[sg_index].name);
                 }
             }
         }
