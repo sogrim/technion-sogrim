@@ -33,8 +33,8 @@ export type CourseBank = {
     | "Malag"
     | "Sport"
     | "Elective"
-    | AccumulateCoursesRule
-    | ChainRule;
+    | AccumulateCourses
+    | Chain;
   credit: number;
 };
 
@@ -43,10 +43,10 @@ export type CreditOverFlows = {
   to: string;
 };
 
-export type AccumulateCoursesRule = {
+export type AccumulateCourses = {
   AccumulateCourses: number;
 };
 
-export type ChainRule = {
+export type Chain = {
   Chains: string[][]; // Each string is course id
 };

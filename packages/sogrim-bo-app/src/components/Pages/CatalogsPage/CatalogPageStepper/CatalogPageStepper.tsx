@@ -9,13 +9,7 @@ import * as React from "react";
 import { useStore } from "../../../../hooks/useStore";
 import { CatalogStepperNav } from "./CatalogStepperNav";
 
-const steps = [
-  "פרטים כללים",
-  "הוספת דרישות קטלוג",
-  "הגדרות מעבר נקודות",
-  "הגדרות קורסים נוספים",
-  "סיום",
-];
+const steps = ["פרטים כללים", "דרישות", "מעבר נקודות", "החלפות קורסים", "סיום"];
 
 const CatalogPageStepperComp: React.FC = () => {
   const {
@@ -66,7 +60,7 @@ const CatalogPageStepperComp: React.FC = () => {
   };
 
   return currentCatalog ? (
-    <Box sx={{ width: "100%" }}>
+    <Box sx={{ width: "100%", m: 1 }}>
       <Stepper nonLinear activeStep={activeStep}>
         {steps.map((label, index) => (
           <Step key={label} completed={completed[index]}>
