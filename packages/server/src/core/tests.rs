@@ -660,7 +660,7 @@ async fn test_specialization_group() {
                 mandatory: Some(vec![vec!["104166".to_string()]]),
             },
         ],
-        groups_number: 2,
+        groups_number: 1,
     };
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
