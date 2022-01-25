@@ -12,8 +12,8 @@ use super::BankRuleHandler;
 // sgs = specialization_groups
 
 fn check_courses_assignment_for_sgs(
-    sgs: &Vec<SpecializationGroup>,
-    groups_indices: &Vec<u8>,
+    sgs: &[SpecializationGroup],
+    groups_indices: &[u8],
     course_id_to_sg_index: &HashMap<CourseId, u8>,
 ) -> bool {
     for sg_index in groups_indices {
@@ -50,8 +50,8 @@ fn check_courses_assignment_for_sgs(
 // This function is looking for a valid assignment for the courses which fulfill the sgs requirements
 // If an assignment is found it returns it, None otherwise.
 fn find_valid_assignment_for_courses(
-    sgs: &Vec<SpecializationGroup>,
-    groups_indices: &Vec<u8>,
+    sgs: &[SpecializationGroup],
+    groups_indices: &[u8],
     optional_sgs_for_course: &HashMap<CourseId, Vec<u8>>, // list of all optional sgs for each course
     course_id_to_sg_index: &mut HashMap<CourseId, u8>,
     course_index: usize, // course_index-th element in optional_sgs_for_course
@@ -60,6 +60,7 @@ fn find_valid_assignment_for_courses(
         if check_courses_assignment_for_sgs(sgs, groups_indices, course_id_to_sg_index) {
             return Some(course_id_to_sg_index.clone());
         }
+        return None;
     }
     if let Some((course_id, optional_groups)) = optional_sgs_for_course.iter().nth(course_index) {
         for sg_index in optional_groups {
@@ -79,8 +80,8 @@ fn find_valid_assignment_for_courses(
 }
 
 fn check_if_completed_groups(
-    sgs: &Vec<SpecializationGroup>,
-    groups_indices: &Vec<u8>,
+    sgs: &[SpecializationGroup],
+    groups_indices: &[u8],
     courses: &[CourseId],
 ) -> Option<HashMap<CourseId, u8>> {
     let mut optional_sgs_for_course = HashMap::<CourseId, Vec<u8>>::new();
@@ -109,7 +110,7 @@ fn check_if_completed_groups(
 
 // generates all subsets of size specialization_groups.groups_number and checks if one of them is fulfilled
 fn generate_subsets(
-    sgs: &Vec<SpecializationGroup>,
+    sgs: &[SpecializationGroup],
     required_number_of_groups: u8,
     sg_index: u8,
     groups_indices: &mut Vec<u8>,
@@ -137,13 +138,13 @@ fn generate_subsets(
 
     // current group is excluded
     groups_indices.pop();
-    return generate_subsets(
+    generate_subsets(
         sgs,
         required_number_of_groups,
         sg_index + 1,
         groups_indices,
         courses,
-    );
+    )
 }
 
 fn run_exhaustive_search(
@@ -175,7 +176,7 @@ impl<'a> BankRuleHandler<'a> {
             }
         }
 
-        let valid_assignment_for_courses = run_exhaustive_search(&sgs, completed_courses);
+        let valid_assignment_for_courses = run_exhaustive_search(sgs, completed_courses);
 
         // The set is to prevent duplications
         let mut sgs_names = HashSet::new();
