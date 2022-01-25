@@ -10,7 +10,7 @@ pub type NumCourses = u32;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
-    pub courses_sum: u8, //Indicates how many courses should the user accomplish in this specialization group
+    pub courses_sum: usize, //Indicates how many courses should the user accomplish in this specialization group
     pub course_list: Vec<CourseId>,
 
     // The user needs to pass one of the courses in each list. (To support complex requirements)
@@ -25,7 +25,7 @@ pub struct SpecializationGroup {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroups {
     pub groups_list: Vec<SpecializationGroup>,
-    pub groups_number: u8,
+    pub groups_number: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
