@@ -43,14 +43,8 @@ const DegreeMainStatusComp: React.FC = () => {
         <Typography sx={{ fontSize: 22 }} color="text.primary">
           {`השלמת ${pointsDone} מתוך ${totalCredit} נקודות`}
         </Typography>
-        <Button
-          disabled
-          sx={{ display: "flex", justifyContent: "center" }}
-          size="small"
-        >
-          <Typography fontSize="small" color="text.primary">
-            {catalogName}
-          </Typography>
+        <Button sx={{ display: "flex", justifyContent: "center" }} size="small">
+          {catalogName}
         </Button>
       </CardContent>
     </Card>
