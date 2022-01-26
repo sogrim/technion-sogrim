@@ -3,11 +3,12 @@ import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
 import { useStore } from "../../../../hooks/useStore";
 import { CourseBank } from "../../../../types/data-types";
+import { RuleAccCredit } from "./Step2Components/RuleAccCredit";
 import { RuleAll } from "./Step2Components/RuleAll";
 
 const StepperP2Comp: React.FC = () => {
   const {
-    dataStore: { currentCatalog, updateCatalogName, updateCatalogTotalCredit },
+    dataStore: { currentCatalog },
   } = useStore();
 
   const [courseBanks, setCourseBanks] = useState<CourseBank[]>([]);
@@ -29,6 +30,7 @@ const StepperP2Comp: React.FC = () => {
     if (!bank) {
       return;
     }
+
     switch (bank.rule) {
       case "All":
         return <RuleAll bankName={bank.name} />;
@@ -37,7 +39,7 @@ const StepperP2Comp: React.FC = () => {
       case "Sport":
         return <div> sport </div>;
       case "AccumulateCredit":
-        return <div> acc credit </div>;
+        return <RuleAccCredit bankName={bank.name} bankCredit={bank.credit} />;
       case "Elective":
         return <div> elective </div>;
     }
@@ -58,6 +60,8 @@ const StepperP2Comp: React.FC = () => {
     }
     setCurrentBank(courseBanks[bankIdx].name);
   };
+
+  // TODO: change name!
 
   return (
     <Box

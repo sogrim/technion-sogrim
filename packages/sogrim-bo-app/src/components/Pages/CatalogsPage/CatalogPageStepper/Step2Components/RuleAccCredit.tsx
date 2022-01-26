@@ -1,4 +1,4 @@
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, TextField, Typography } from "@mui/material";
 import {
   DataGrid,
   GridColDef,
@@ -12,10 +12,14 @@ import { Course } from "../../../../../types/data-types";
 import { SearchOption } from "../../../../../types/ui-types";
 import { SearchFiled } from "../../../../Search/SearchField";
 
-interface RuleAllProps {
+interface RuleAccCreditProps {
   bankName: string;
+  bankCredit: number;
 }
-const RuleAllComp: React.FC<RuleAllProps> = ({ bankName }) => {
+const RuleAccCreditComp: React.FC<RuleAccCreditProps> = ({
+  bankName,
+  bankCredit,
+}) => {
   const {
     dataStore: {
       getCoursesByBankRule,
@@ -23,6 +27,7 @@ const RuleAllComp: React.FC<RuleAllProps> = ({ bankName }) => {
       removeCourseFromBank,
       addCourseToBank,
       getCourseById,
+      editBankCredit,
     },
     uiStore: { currentSelectedCourse, setCurrentSelectedCourse },
   } = useStore();
@@ -81,6 +86,11 @@ const RuleAllComp: React.FC<RuleAllProps> = ({ bankName }) => {
     },
   ];
 
+  const handleCreditChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    editBankCredit(+event.target.value, bankName);
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", mt: 1, mb: 4 }}>
       <Typography variant="h5"> {bankName} </Typography>
@@ -95,10 +105,20 @@ const RuleAllComp: React.FC<RuleAllProps> = ({ bankName }) => {
         }}
       >
         <Typography>
-          בבנק זה הינו מסוג חובה - רשימה סגורה. כלומר, על הסטודנט להשלים את כל
-          הקורסים שברשימה זו כדי שהדרישה תושלם.
+          בבנק זה הינו בחירה - צבירת נק״ז. כלומר, על הסטודנט להשלים סך נקודות
+          זכות מתוך קבוצת הקורסים של בנק דרישה זה.
         </Typography>
       </Box>
+      <TextField
+        sx={{ m: 1, maxWidth: "70%", alignSelf: "center" }}
+        type="number"
+        name="credit"
+        required
+        id="outlined-name"
+        label="סך הנקודות הדרושות לבנק מסוג צבירת נק״ז"
+        value={bankCredit}
+        onChange={handleCreditChange}
+      />
       <div style={{ height: 400, width: "100%", marginBottom: 5 }}>
         <DataGrid
           pageSize={pageSize}
@@ -129,4 +149,4 @@ const RuleAllComp: React.FC<RuleAllProps> = ({ bankName }) => {
   );
 };
 
-export const RuleAll = observer(RuleAllComp);
+export const RuleAccCredit = observer(RuleAccCreditComp);

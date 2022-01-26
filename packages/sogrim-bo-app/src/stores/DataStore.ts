@@ -163,4 +163,24 @@ export class DataStore {
       }
     }
   };
+
+  editBankCredit = (newCredit: number, bankName: string) => {
+    const bankIdx = this.currentCatalog?.course_banks.findIndex(
+      (bank) => bank.name === bankName
+    );
+    if (
+      this.currentCatalog &&
+      bankIdx &&
+      bankIdx >= 0 &&
+      this.currentCatalog?.course_banks &&
+      this.currentCatalog?.course_banks[bankIdx].credit &&
+      validCourseCredit(newCredit)
+    ) {
+      this.currentCatalog.course_banks[bankIdx].credit = newCredit;
+    } else {
+      this.rootStore.uiStore.setErrorMsg(
+        "שגיאה בעדכון סך הנקודות לבנק דרישות זה."
+      );
+    }
+  };
 }
