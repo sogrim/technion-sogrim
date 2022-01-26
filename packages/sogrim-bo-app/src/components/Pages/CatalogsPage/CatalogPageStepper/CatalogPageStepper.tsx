@@ -60,7 +60,7 @@ const CatalogPageStepperComp: React.FC = () => {
   };
 
   return currentCatalog ? (
-    <Box sx={{ width: "100%", m: 1 }}>
+    <Box sx={{ width: "100%", marginBottom: 10, marginTop: 2 }}>
       <Stepper nonLinear activeStep={activeStep}>
         {steps.map((label, index) => (
           <Step key={label} completed={completed[index]}>

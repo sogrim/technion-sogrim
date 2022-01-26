@@ -11,7 +11,7 @@ export const AppTitle: React.FC = () => {
 const sxAppTitle = {
   color: (theme: Theme) => theme.palette.primary.main,
   cursor: "default",
-  mr: "80px",
+  ml: "50px",
   mb: "3px",
   alignContent: "center",
   fontWeight: "bold",

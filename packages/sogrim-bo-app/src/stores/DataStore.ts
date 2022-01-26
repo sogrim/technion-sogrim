@@ -130,4 +130,37 @@ export class DataStore {
       this.currentCatalog.total_credit = +totalCredit;
     }
   };
+
+  getCoursesByBankRule = (ruleName: string): Course[] => {
+    let coursesIdList: string[] = [];
+    const courseToBank = this.currentCatalog?.course_to_bank;
+    if (courseToBank) {
+      for (const [key, value] of Object.entries(courseToBank)) {
+        if (value === ruleName) {
+          coursesIdList.push(key);
+        }
+      }
+    }
+    const coursesByRule = this.courses.filter((cbr) =>
+      coursesIdList.includes(cbr._id)
+    );
+    return coursesByRule;
+  };
+
+  removeCourseFromBank = (courseToDelete: string) => {
+    delete this.currentCatalog?.course_to_bank[courseToDelete];
+  };
+
+  addCourseToBank = (courseToAdd: string, bankName: string) => {
+    if (this.currentCatalog?.course_to_bank) {
+      const bank = this.currentCatalog.course_to_bank[courseToAdd];
+      if (bank) {
+        this.rootStore.uiStore.setErrorMsg(
+          `הקורס כבר קיים בבנק אחר - ${bank}. כל קורס יכול להופיע בבנק דרישות אחד בלבד`
+        );
+      } else {
+        this.currentCatalog.course_to_bank[courseToAdd] = bankName;
+      }
+    }
+  };
 }

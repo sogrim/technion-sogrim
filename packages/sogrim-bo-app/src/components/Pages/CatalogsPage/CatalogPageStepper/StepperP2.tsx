@@ -1,8 +1,9 @@
-import { Typography, Box, TextField, Button } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
 import { useStore } from "../../../../hooks/useStore";
 import { CourseBank } from "../../../../types/data-types";
+import { RuleAll } from "./Step2Components/RuleAll";
 
 const StepperP2Comp: React.FC = () => {
   const {
@@ -30,7 +31,7 @@ const StepperP2Comp: React.FC = () => {
     }
     switch (bank.rule) {
       case "All":
-        return <div> all </div>;
+        return <RuleAll bankName={bank.name} />;
       case "Malag":
         return <div> malag </div>;
       case "Sport":
@@ -59,7 +60,13 @@ const StepperP2Comp: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", m: 2 }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        m: 2,
+      }}
+    >
       <Typography variant="h4"> דרישות </Typography>
       {courseBanks.length === 0 ? (
         <Typography> אין עוד בנק דרישות בקטלוג</Typography>
@@ -72,7 +79,9 @@ const StepperP2Comp: React.FC = () => {
           >
             הוסף בנק חדש
           </Button>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          <Box
+            sx={{ display: "flex", flexWrap: "wrap", gap: 1, maxWidth: 600 }}
+          >
             {courseBanks.map((bank) => (
               <Button
                 key={bank.name}
