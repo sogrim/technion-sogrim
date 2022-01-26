@@ -3,6 +3,7 @@ import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
 import { useStore } from "../../../../hooks/useStore";
 import { CourseBank } from "../../../../types/data-types";
+import { RuleAccCourse } from "./Step2Components/RuleAccCourse";
 import { RuleAccCredit } from "./Step2Components/RuleAccCredit";
 import { RuleAll } from "./Step2Components/RuleAll";
 
@@ -45,7 +46,9 @@ const StepperP2Comp: React.FC = () => {
     }
     //@ts-ignore
     if (bank.rule.hasOwnProperty("AccumulateCourses")) {
-      return <div> acc courses </div>;
+      //@ts-ignore // TODO
+      const bankCourses: number = bank.rule.AccumulateCourses;
+      return <RuleAccCourse bankName={bank.name} bankCourses={bankCourses} />;
     }
     //@ts-ignore
     if (bank.rule.hasOwnProperty("Chains")) {

@@ -183,4 +183,27 @@ export class DataStore {
       );
     }
   };
+
+  editBankAccCoursesRule = (newCourseAmount: string, bankName: string) => {
+    const bankIdx = this.currentCatalog?.course_banks.findIndex(
+      (bank) => bank.name === bankName
+    );
+    if (
+      this.currentCatalog &&
+      bankIdx &&
+      bankIdx >= 0 &&
+      this.currentCatalog?.course_banks &&
+      //@ts-ignore
+      this.currentCatalog.course_banks[bankIdx].rule.AccumulateCourses &&
+      /^\+?(0|[1-9]\d*)$/.test(newCourseAmount)
+    ) {
+      //@ts-ignore
+      this.currentCatalog.course_banks[bankIdx].rule.AccumulateCourses =
+        +newCourseAmount;
+    } else {
+      this.rootStore.uiStore.setErrorMsg(
+        "שגיאה בעדכון סך הקורסים לבנק דרישות זה."
+      );
+    }
+  };
 }
