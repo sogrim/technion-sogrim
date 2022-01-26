@@ -86,7 +86,7 @@ const RuleAccCourseComp: React.FC<RuleAccCourseProps> = ({
     },
   ];
 
-  const handleCreditChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoursesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.preventDefault();
     editBankAccCoursesRule(event.target.value, bankName);
   };
@@ -111,13 +111,13 @@ const RuleAccCourseComp: React.FC<RuleAccCourseProps> = ({
       </Box>
       <TextField
         sx={{ m: 1, maxWidth: "85%", alignSelf: "center" }}
-        type="number"
+        type="tel"
         name="courses"
         required
         id="outlined-name"
         label="סך הקורסים הדרושים לבנק"
         value={bankCourses}
-        onChange={handleCreditChange}
+        onChange={handleCoursesChange}
       />
       <div style={{ height: 400, width: "100%", marginBottom: 5 }}>
         <DataGrid

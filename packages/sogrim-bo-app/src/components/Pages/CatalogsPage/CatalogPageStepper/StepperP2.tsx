@@ -6,6 +6,7 @@ import { CourseBank } from "../../../../types/data-types";
 import { RuleAccCourse } from "./Step2Components/RuleAccCourse";
 import { RuleAccCredit } from "./Step2Components/RuleAccCredit";
 import { RuleAll } from "./Step2Components/RuleAll";
+import { RulesNonFaculty } from "./Step2Components/RulesNonFaculty";
 
 const StepperP2Comp: React.FC = () => {
   const {
@@ -36,13 +37,31 @@ const StepperP2Comp: React.FC = () => {
       case "All":
         return <RuleAll bankName={bank.name} />;
       case "Malag":
-        return <div> malag </div>;
+        return (
+          <RulesNonFaculty
+            bankName={bank.name}
+            bankCredit={bank.credit}
+            bankNonFacultyType={"malag"}
+          />
+        );
       case "Sport":
-        return <div> sport </div>;
+        return (
+          <RulesNonFaculty
+            bankName={bank.name}
+            bankCredit={bank.credit}
+            bankNonFacultyType={"sport"}
+          />
+        );
       case "AccumulateCredit":
         return <RuleAccCredit bankName={bank.name} bankCredit={bank.credit} />;
       case "Elective":
-        return <div> elective </div>;
+        return (
+          <RulesNonFaculty
+            bankName={bank.name}
+            bankCredit={bank.credit}
+            bankNonFacultyType={"elective"}
+          />
+        );
     }
     //@ts-ignore
     if (bank.rule.hasOwnProperty("AccumulateCourses")) {

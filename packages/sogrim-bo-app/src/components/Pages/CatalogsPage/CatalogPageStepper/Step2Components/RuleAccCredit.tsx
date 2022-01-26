@@ -110,12 +110,12 @@ const RuleAccCreditComp: React.FC<RuleAccCreditProps> = ({
         </Typography>
       </Box>
       <TextField
-        sx={{ m: 1, maxWidth: "70%", alignSelf: "center" }}
-        type="number"
+        sx={{ m: 1, maxWidth: "80%", alignSelf: "center" }}
+        type="tel"
         name="credit"
         required
         id="outlined-name"
-        label="סך הנקודות הדרושות לבנק מסוג צבירת נק״ז"
+        label="סך הנקודות הדרושות לבנק"
         value={bankCredit}
         onChange={handleCreditChange}
       />
