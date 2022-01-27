@@ -1,4 +1,5 @@
-import { Box, Button, Paper } from "@mui/material";
+import { Box, Button } from "@mui/material";
+import { DataGrid, GridCellEditCommitParams, heIL } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useState } from "react";
 import useUpdateUserState from "../../../../hooks/apiHooks/useUpdateUserState";
@@ -6,14 +7,8 @@ import { useAuth } from "../../../../hooks/useAuth";
 import { useStore } from "../../../../hooks/useStore";
 import { ErrorToast } from "../../../Toasts/ErrorToast";
 import { RowData, UpdateUserDetailsAction } from "../SemesterTabsConsts";
-import {
-  DataGrid,
-  GridCellEditCommitParams,
-  GridEditRowsModel,
-  heIL,
-} from "@mui/x-data-grid";
-import { columns } from "./semester-grid-interface";
 import { courseFromUserValidations } from "./course-validator";
+import { columns } from "./semester-grid-interface";
 
 const rowDataKeys = ["name", "grade", "credit", "type"];
 export interface SemesterGridProps {
@@ -81,7 +76,6 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
 
   const handleEditRowsModelChange = useCallback(
     ({ id, field, value }: GridCellEditCommitParams) => {
-      console.log(id, field, value);
       const courseInTableIndex = tableRows.findIndex(
         (row) => row.courseNumber === id
       );
@@ -97,13 +91,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
           setErrorMsg(validationsStatus.msg);
           return;
         }
-        // const idx = semesterRows.findIndex(
-        //   (row) => row.courseNumber === editRow.courseNumber
-        // );
-        // const newSemesterRows = [...semesterRows];
-        // newSemesterRows[idx] = validationsStatus.newRowData;
-        // setSemesterRows(newSemesterRows);
-        // setEditableRowCourseNumber(null);
+
         handleUpdateUserDetails(
           UpdateUserDetailsAction.AfterEdit,
           validationsStatus.newRowData,

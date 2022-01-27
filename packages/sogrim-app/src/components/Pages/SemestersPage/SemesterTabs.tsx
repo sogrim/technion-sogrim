@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
 import { Box, Tab } from "@mui/material";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
-import { TabPanel } from "../../AppPages/TabPanel";
 import { observer } from "mobx-react-lite";
-import { useStore } from "../../../hooks/useStore";
-import { SemesterTable } from "./SemesterTable/SemesterTable";
-import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
-import { SemesterOptionsButton } from "./SemesterOptionsButton";
-import { SemesterOptions } from "../../../types/ui-types";
-import { useAuth } from "../../../hooks/useAuth";
+import { useEffect, useState } from "react";
 import useUpdateUserState from "../../../hooks/apiHooks/useUpdateUserState";
+import { useAuth } from "../../../hooks/useAuth";
+import { useStore } from "../../../hooks/useStore";
+import { SemesterOptions } from "../../../types/ui-types";
+import { TabPanel } from "../../AppPages/TabPanel";
+import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
 import { SemesterGrid } from "./SemesterGrid/SemesterGrid";
+import { SemesterOptionsButton } from "./SemesterOptionsButton";
 
 const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);

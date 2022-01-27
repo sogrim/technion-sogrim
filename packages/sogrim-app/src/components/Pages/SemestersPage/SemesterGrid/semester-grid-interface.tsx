@@ -1,5 +1,5 @@
 import { GridColumns, GridRowsProp } from "@mui/x-data-grid";
-import { validCourseNumber } from "./course-validator";
+import { renderCategoryEditInputCell } from "./SelectCategoryCell";
 
 export const columns: GridColumns = [
   {
@@ -17,15 +17,6 @@ export const columns: GridColumns = [
     editable: false,
     headerAlign: "center",
     align: "center",
-    // // preProcessEditCellProps: (params) => {
-    // //   let isValid = false;
-    // //   const value = params.props.value;
-    // //   if (typeof value === "string" || value instanceof String) {
-    // //     console.log("dsadsasadas");
-    // //     isValid = validCourseNumber(String(value));
-    // //   }
-    // //   return { ...params.props, error: !isValid };
-    // },
   },
   {
     field: "credit",
@@ -35,68 +26,42 @@ export const columns: GridColumns = [
     editable: true,
     headerAlign: "center",
     align: "center",
-    preProcessEditCellProps: (params) => {
-      //   const isValid = validateEmail(params.props.value);
-      const isValid = true;
-      return { ...params.props, error: !isValid };
-    },
   },
   {
     field: "grade",
     headerName: "ציון",
-    //type: "dateTime",
+
     width: 125,
     editable: true,
     headerAlign: "center",
     align: "center",
-    preProcessEditCellProps: (params) => {
-      //   const isValid = validateEmail(params.props.value);
-      const isValid = true;
-      return { ...params.props, error: !isValid };
-    },
   },
   {
     field: "type",
     headerName: "קטגוריה",
-    width: 125,
+    width: 170,
     editable: true,
     headerAlign: "center",
     align: "center",
-    preProcessEditCellProps: (params) => {
-      //   const isValid = validateEmail(params.props.value);
-      const isValid = true;
-      return { ...params.props, error: !isValid };
-    },
+    renderEditCell: renderCategoryEditInputCell,
   },
   {
     field: "state",
     headerName: "סטאטוס",
-    //type: "dateTime",
+
     width: 125,
     editable: false,
     headerAlign: "center",
     align: "center",
-
-    preProcessEditCellProps: (params) => {
-      //   const isValid = validateEmail(params.props.value);
-      const isValid = true;
-      return { ...params.props, error: !isValid };
-    },
   },
   {
     field: "actions",
     headerName: "פעולות",
-    //type: "dateTime",
+
     width: 125,
     editable: true,
     headerAlign: "center",
     align: "center",
-
-    preProcessEditCellProps: (params) => {
-      //   const isValid = validateEmail(params.props.value);
-      const isValid = true;
-      return { ...params.props, error: !isValid };
-    },
   },
 ];
 
