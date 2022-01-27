@@ -78,7 +78,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
           <Typography variant="h5" sx={{ ml: 2.5 }}>
             באיזה סמסטר התחלתם את התואר? חורף או אביב?
           </Typography>
-          <Tooltip title={"סמסטר חורף"} arrow>
+          <Tooltip title={<Typography>סמסטר חורף</Typography>} arrow>
             <ToggleButton
               value={SemesterOptions.Winter}
               onClick={() => clickControl(SemesterOptions.Winter)}
@@ -86,7 +86,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
               <AcUnitIcon />
             </ToggleButton>
           </Tooltip>
-          <Tooltip title={"סמסטר אביב"} arrow>
+          <Tooltip title={<Typography>סמסטר אביב</Typography>} arrow>
             <ToggleButton
               value={SemesterOptions.Spring}
               onClick={() => clickControl(SemesterOptions.Spring)}
