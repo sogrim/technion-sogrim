@@ -9,7 +9,7 @@ import {
   emptyRow,
   RowData,
   UpdateUserDetailsAction,
-} from "./SemesterTabsConsts";
+} from "../SemesterTabsConsts";
 
 interface SemesterTableBodyProps {
   tableRows: RowData[];

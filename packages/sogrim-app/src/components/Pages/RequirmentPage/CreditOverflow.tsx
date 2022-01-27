@@ -34,7 +34,10 @@ const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
             <Typography fontWeight={"bold"}>הודעות חשובות</Typography>
             <Tooltip
               title={
-                "כאן מופיעות הודעות שכדאי לשים לב אליהן, כגון הודעות על מעברי נקודות בין דרישות, הודעה על כמות נקודות עודפות וכו'"
+                <Typography>
+                  כאן מופיעות הודעות שכדאי לשים לב אליהן, כגון הודעות על מעברי
+                  נקודות בין דרישות, הודעה על כמות נקודות עודפות וכו'
+                </Typography>
               }
               placement="bottom"
               arrow

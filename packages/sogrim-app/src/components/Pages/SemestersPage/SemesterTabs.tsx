@@ -10,6 +10,7 @@ import { SemesterOptionsButton } from "./SemesterOptionsButton";
 import { SemesterOptions } from "../../../types/ui-types";
 import { useAuth } from "../../../hooks/useAuth";
 import useUpdateUserState from "../../../hooks/apiHooks/useUpdateUserState";
+import { SemesterGrid } from "./SemesterGrid/SemesterGrid";
 
 const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
@@ -151,7 +152,9 @@ const SemesterTabsComp = () => {
             <Box sx={{ display: "flex", justifyContent: "center" }} key={index}>
               <TabPanel value={value} index={index}>
                 {userDetails?.degree_status?.course_statuses ? (
-                  <SemesterTable semester={semester} />
+                  // <SemesterTable semester={semester} />
+                  // eslint-disable-next-line react/jsx-no-undef
+                  <SemesterGrid semester={semester} />
                 ) : null}
               </TabPanel>
             </Box>

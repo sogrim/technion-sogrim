@@ -1,6 +1,6 @@
 import { TableCell } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { RowData } from "../SemesterTabsConsts";
+import { RowData } from "../../SemesterTabsConsts";
 import { ReadOnlyActionCell } from "./ReadOnlyActionCell";
 
 export interface ReadOnlyRowProps {

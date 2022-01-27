@@ -1,5 +1,5 @@
 import { TableCell, IconButton } from "@mui/material";
-import { RowData } from "../SemesterTabsConsts";
+import { RowData } from "../../SemesterTabsConsts";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 

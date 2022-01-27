@@ -1,4 +1,4 @@
-import { CourseGradeOptions, CourseState } from "../../../../types/data-types";
+import { CourseGradeOptions, CourseState } from "../../../types/data-types";
 
 export interface RowData {
   name: string;

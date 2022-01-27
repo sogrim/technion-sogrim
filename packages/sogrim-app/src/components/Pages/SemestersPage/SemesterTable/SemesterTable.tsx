@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Box, Table, TableContainer, Button } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { RowData, UpdateUserDetailsAction } from "./SemesterTabsConsts";
+import { RowData, UpdateUserDetailsAction } from "../SemesterTabsConsts";
 import { Paper } from "@mui/material";
 import { SemesterTableHeader } from "./SemesterTableHeader";
 import { useStore } from "../../../../hooks/useStore";
