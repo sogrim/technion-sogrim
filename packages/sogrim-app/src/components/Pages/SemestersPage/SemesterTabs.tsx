@@ -59,33 +59,34 @@ const SemesterTabsComp = () => {
   };
 
   const addNewSemester = (semesterType: SemesterOptions) => {
-    if (!allSemesters) {
+    if (!allSemesters || allSemesters.length === 0) {
+      const newSemesterList = [];
+      const newSemesterName =
+        semesterType === SemesterOptions.Winter ? "חורף_1" : "אביב_1";
+      newSemesterList.push(newSemesterName);
+      setAllSemesters(newSemesterList);
       return;
     }
+
     let lastNonSummerSemester = findLastNonSummerSemester();
     let lastSemester = allSemesters.slice(-1)[0];
-    if (!lastSemester) {
-      // TODO: add user funcunality for chosing אביב או חורף
-      lastSemester = "אביב_0";
-    }
-    const LastSemesterName = lastSemester.replace("_", " ");
-    const splitName = LastSemesterName.split(" ");
     const newSemesterList = [...allSemesters];
-    let newSemesterName;
+
     if (lastSemester && lastNonSummerSemester) {
-      if (
-        semesterType !== SemesterOptions.Summer &&
-        lastNonSummerSemester.includes("חורף")
-      ) {
-        newSemesterName = "אביב_" + (+splitName[1] + 1);
-      } else if (
-        semesterType !== SemesterOptions.Summer &&
-        lastNonSummerSemester.includes("אביב")
-      ) {
-        newSemesterName = "חורף_" + (+splitName[1] + 1);
-      } else {
-        newSemesterName = "קיץ_" + (+splitName[1] + 1);
+      const lastSemesterName = lastNonSummerSemester.replace("_", " ");
+      const splitName = lastSemesterName.split(" ");
+
+      let newSemesterName =
+        semesterType === SemesterOptions.Summer
+          ? "קיץ"
+          : lastNonSummerSemester.includes("חורף")
+          ? "אביב"
+          : "חורף";
+
+      if (semesterType !== SemesterOptions.Summer) {
+        newSemesterName += "_" + (+splitName[1] + 1);
       }
+
       newSemesterList.push(newSemesterName);
       setAllSemesters(newSemesterList);
     }
@@ -118,7 +119,10 @@ const SemesterTabsComp = () => {
         sx={{
           display: "flex",
           flexDirection: "row",
-          justifyContent: "space-between",
+          justifyContent:
+            !allSemesters || allSemesters.length === 0
+              ? "center"
+              : "space-between",
         }}
       >
         <Tabs
@@ -127,7 +131,7 @@ const SemesterTabsComp = () => {
           value={value}
           onChange={handleChange}
           variant="scrollable"
-          scrollButtons
+          scrollButtons={!!allSemesters && !!allSemesters.length}
           sx={{ maxWidth: "1050px" }}
         >
           {allSemesters?.map((semester, index) => (
@@ -139,6 +143,7 @@ const SemesterTabsComp = () => {
           ))}
         </Tabs>
         <SemesterOptionsButton
+          allSemesters={allSemesters}
           handleAddSemester={addNewSemester}
           handleDeleteSemester={deleteSemester}
         />
