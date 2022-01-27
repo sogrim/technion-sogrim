@@ -1,5 +1,6 @@
 import { GridColumns, GridRowsProp } from "@mui/x-data-grid";
-import { renderCategoryEditInputCell } from "./SelectCategoryCell";
+import { renderCategoryEditInputCell } from "./EditCategoryCell";
+import { renderGradeEditInputCell } from "./EditGradeCell";
 
 export const columns: GridColumns = [
   {
@@ -30,11 +31,11 @@ export const columns: GridColumns = [
   {
     field: "grade",
     headerName: "ציון",
-
-    width: 125,
+    width: 200,
     editable: true,
     headerAlign: "center",
     align: "center",
+    renderEditCell: renderGradeEditInputCell,
   },
   {
     field: "type",

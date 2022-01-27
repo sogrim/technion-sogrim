@@ -14,7 +14,7 @@ const validCourseCredit = (credit: string | number) => {
 
 const validGrade = (grade: any) => {
   const gradeNumber = Number(grade);
-  if (grade === "") {
+  if (grade === "" || grade === 0 || grade === "0") {
     return true;
   }
   if (isNaN(grade)) {

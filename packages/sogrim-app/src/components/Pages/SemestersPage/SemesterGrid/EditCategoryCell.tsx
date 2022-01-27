@@ -26,7 +26,7 @@ const SelectCategoryEditComp = (props: GridRenderCellParams) => {
   };
 
   return (
-    <Box sx={{ display: "flex", alignItems: "center", pr: 2 }}>
+    <Box sx={{ display: "flex", alignItems: "center", p: 1 }}>
       <Select
         value={displayValue}
         id="course-type"
@@ -35,6 +35,7 @@ const SelectCategoryEditComp = (props: GridRenderCellParams) => {
         variant="outlined"
         size="small"
         fullWidth
+        sx={{ width: "140px" }}
       >
         {banksNamesOptions.map((option) => (
           <MenuItem key={option} value={option}>

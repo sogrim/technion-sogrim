@@ -88,9 +88,16 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
         newRow[field] = value;
         let validationsStatus = courseFromUserValidations(newRow, tableRows);
         if (validationsStatus.error) {
+          const oldRows = [...tableRows];
+          oldRows[courseInTableIndex] = tableRows[courseInTableIndex];
+          setTableRows(oldRows);
           setErrorMsg(validationsStatus.msg);
           return;
         }
+
+        const newSemesterRows = [...tableRows];
+        newSemesterRows[courseInTableIndex] = validationsStatus.newRowData;
+        setTableRows(newSemesterRows);
 
         handleUpdateUserDetails(
           UpdateUserDetailsAction.AfterEdit,
@@ -111,7 +118,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
         flexDirection: "column",
       }}
     >
-      <div style={{ height: 400, width: 920 }}>
+      <div style={{ height: 400, width: 1100 }}>
         <DataGrid
           rows={tableRows}
           columns={columns}
