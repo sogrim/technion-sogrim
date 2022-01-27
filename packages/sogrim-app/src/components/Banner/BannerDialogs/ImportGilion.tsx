@@ -1,4 +1,4 @@
-import { Link, Theme, Typography } from "@mui/material";
+import { Link, Theme, Tooltip, Typography } from "@mui/material";
 import Button from "@mui/material/Button";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -13,11 +13,13 @@ import windows from "../../../assets/windows.png";
 import useUpdateUserUgData from "../../../hooks/apiHooks/useUpdateUgData";
 import { useAuth } from "../../../hooks/useAuth";
 export interface ImportGilionProps {
+  handleSkip: () => void;
   handleClose: () => void;
   handleError: (msg: string) => void;
 }
 
 export const ImportGilion: React.FC<ImportGilionProps> = ({
+  handleSkip,
   handleClose,
   handleError,
 }) => {
@@ -54,6 +56,8 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
             אושרה, יש לפתוח את גיליון הציונים{" "}
             <span style={{ color: "red" }}>(ולא תעודת ציונים!)</span> בדפדפן,
             ולהעתיק באמצעות Ctrl-A+Ctrl-C את כל התוכן לתיבה מתחת.
+            <br /> אם תרצו להזין את הקורסים שלכם ידנית, ניתן לדלג על שלב זה
+            בעזרת הכפתור למטה.
           </Typography>
           <Typography sx={{ marginTop: 1 }}>
             מסתבכים?
@@ -110,6 +114,15 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
         />
       </DialogContent>
       <DialogActions>
+        <Tooltip
+          title={
+            <Typography>
+              דלגו על ייבוא גליון הציונים והזינו את הקורסים שלכם ידנית
+            </Typography>
+          }
+        >
+          <Button onClick={handleSkip}>דלג</Button>
+        </Tooltip>
         <Button onClick={handleSend}>שלח</Button>
         <Button onClick={handleClose}>בטל</Button>
       </DialogActions>
