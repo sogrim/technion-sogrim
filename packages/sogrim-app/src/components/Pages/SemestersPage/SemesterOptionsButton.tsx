@@ -107,12 +107,19 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
               </ToggleButton>
             </Tooltip>
             <Tooltip title={"סמסטר קיץ"} arrow>
-              <ToggleButton
-                value={SemesterOptions.Summer}
-                onClick={() => clickControl(SemesterOptions.Summer)}
-              >
-                <BeachAccessIcon />
-              </ToggleButton>
+              <>
+                <ToggleButton
+                  disabled={
+                    !!allSemesters &&
+                    !!(allSemesters.length > 0) &&
+                    allSemesters[allSemesters.length - 1].includes("קיץ")
+                  }
+                  value={SemesterOptions.Summer}
+                  onClick={() => clickControl(SemesterOptions.Summer)}
+                >
+                  <BeachAccessIcon />
+                </ToggleButton>
+              </>
             </Tooltip>
             <Tooltip title={"בטל"} arrow>
               <ToggleButton

@@ -84,9 +84,7 @@ const SemesterTabsComp = () => {
           ? "אביב"
           : "חורף";
 
-      if (semesterType !== SemesterOptions.Summer) {
-        newSemesterName += "_" + (+splitName[1] + 1);
-      }
+      newSemesterName += "_" + (+splitName[1] + 1);
 
       newSemesterList.push(newSemesterName);
       setAllSemesters(newSemesterList);

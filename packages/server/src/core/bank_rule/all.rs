@@ -1,11 +1,37 @@
 use crate::{
     core::messages,
-    resources::course::{Course, CourseState, CourseStatus},
+    resources::course::{Course, CourseId, CourseState, CourseStatus},
 };
 
 use super::BankRuleHandler;
 
 impl<'a> BankRuleHandler<'a> {
+    fn remove_duplicate_unmodified_courses(&mut self) {
+        let duplicate_courses = self
+            .user
+            .degree_status
+            .course_statuses
+            .iter()
+            .filter(|course_status| {
+                let mut repetitions = 0;
+                for optional_duplicate in self.user.degree_status.course_statuses.iter() {
+                    if optional_duplicate.r#type == Some(self.bank_name.clone())
+                        && optional_duplicate.course.id == course_status.course.id
+                    {
+                        repetitions += 1;
+                    }
+                }
+                repetitions > 1
+            })
+            .map(|course_status| course_status.course.id.clone())
+            .collect::<Vec<CourseId>>();
+        self.user
+            .degree_status
+            .course_statuses
+            .retain(|course_status| {
+                !duplicate_courses.contains(&course_status.course.id) || course_status.modified
+            });
+    }
     pub fn all(mut self, missing_credit: &mut f32) -> f32 {
         let credit_info = self.iterate_course_list();
 
@@ -29,6 +55,9 @@ impl<'a> BankRuleHandler<'a> {
                 });
             }
         }
+
+        self.remove_duplicate_unmodified_courses();
+
         *missing_credit = credit_info.missing_credit;
         credit_info.sum_credit
     }
