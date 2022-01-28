@@ -11,6 +11,7 @@ import {
   RowData,
   UpdateUserDetailsAction,
 } from "../SemesterTabsConsts";
+import { AddNewRow } from "./AddNewRow";
 import { courseFromUserValidations } from "./course-validator";
 import { columns } from "./semester-grid-interface";
 
@@ -73,6 +74,30 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
     );
   };
 
+  const handleAddClicked = (newRowInput: RowData) => {
+    if (handleAdd(newRowInput)) {
+      setAddRowToggle(!addRowToggle);
+    }
+  };
+
+  const handleAdd = (newRowInput: RowData): boolean => {
+    let validationsStatus = courseFromUserValidations(newRowInput, tableRows);
+    if (validationsStatus.error) {
+      setErrorMsg(validationsStatus.msg);
+      return false;
+    }
+
+    const newSemesterRows = [...tableRows, validationsStatus.newRowData];
+
+    setTableRows(newSemesterRows);
+    handleUpdateUserDetails(
+      UpdateUserDetailsAction.AfterAdd,
+      validationsStatus.newRowData,
+      semester
+    );
+    return true;
+  };
+
   const handleUpdateUserDetails = useCallback(
     (action: UpdateUserDetailsAction, rowData: RowData, semester: string) => {
       let newUserDetails;
@@ -98,10 +123,6 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       updateCourseInUserDetails,
     ]
   );
-
-  const handleRowToggle = () => {
-    setAddRowToggle(!addRowToggle);
-  };
 
   const handleEditRowsModelChange = useCallback(
     ({ id, field, value }: GridCellEditCommitParams) => {
@@ -147,25 +168,30 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
         flexDirection: "column",
       }}
     >
-      <div style={{ height: 400, width: 1100 }}>
-        <DataGrid
-          rows={tableRows}
-          columns={columns}
-          localeText={heIL.components.MuiDataGrid.defaultProps.localeText}
-          getRowId={(row) => row.courseNumber}
-          autoHeight
-          onCellEditCommit={handleEditRowsModelChange}
-        />
-      </div>
-      {!addRowToggle && (
-        <Button
-          variant="outlined"
-          sx={{ marginBottom: 10 }}
-          onClick={handleRowToggle}
-        >
-          הוסף קורס חדש
-        </Button>
-      )}
+      <Box sx={{ mb: 4 }}>
+        <div style={{ width: 1100 }}>
+          <DataGrid
+            rows={tableRows}
+            columns={columns}
+            localeText={heIL.components.MuiDataGrid.defaultProps.localeText}
+            getRowId={(row) => row.courseNumber}
+            autoHeight
+            onCellEditCommit={handleEditRowsModelChange}
+          />
+        </div>
+      </Box>
+      <Box sx={{ marginBottom: 15 }}>
+        {!addRowToggle ? (
+          <Button
+            variant="outlined"
+            onClick={() => setAddRowToggle(!addRowToggle)}
+          >
+            הוסף קורס חדש
+          </Button>
+        ) : (
+          <AddNewRow handleAddClicked={handleAddClicked} />
+        )}
+      </Box>
       <ErrorToast msg={errorMsg} />
     </Box>
   );

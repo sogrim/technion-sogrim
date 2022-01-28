@@ -82,6 +82,16 @@ export const emptyRow = {
   semester: "",
 };
 
+export const newEmptyRow = {
+  courseNumber: "",
+  name: "",
+  grade: "",
+  state: "בהתאם לציון",
+  type: "",
+  credit: "",
+  semester: "",
+};
+
 export enum UpdateUserDetailsAction {
   AfterEdit = "AfterEdit",
   AfterAdd = "AfterAdd",

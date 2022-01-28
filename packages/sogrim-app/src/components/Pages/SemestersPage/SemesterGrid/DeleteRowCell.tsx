@@ -9,8 +9,7 @@ const DeleteRowCellComp = (props: GridRenderCellParams) => {
     uiStore: { setRowToDelete },
   } = useStore();
 
-  const { id, api } = props;
-  console.log(api);
+  const { id } = props;
 
   const handleClick = async (event: any) => {
     event.preventDefault();

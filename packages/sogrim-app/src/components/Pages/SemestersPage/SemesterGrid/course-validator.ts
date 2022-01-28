@@ -1,7 +1,19 @@
 import { courseGradeOptions, emptyRow, RowData } from "../SemesterTabsConsts";
 
-export const validCourseNumber = (courseNumber: string) => {
-  return /^\d+$/.test(courseNumber) && courseNumber.length === 6;
+export const validCourseNumber = (
+  courseNumber: string,
+  semesterRows: RowData[]
+) => {
+  const validNumber = /^\d+$/.test(courseNumber) && courseNumber.length === 6;
+  if (validNumber) {
+    const idx = semesterRows.findIndex(
+      (row) => row.courseNumber === courseNumber
+    );
+    if (idx === -1) {
+      return true;
+    }
+  }
+  return false;
 };
 
 const validCourseCredit = (credit: string | number) => {
@@ -43,11 +55,11 @@ export const courseFromUserValidations = (
   course: RowData,
   semesterRows: RowData[]
 ): courseFromUserValidationsValue => {
-  if (!validCourseNumber(course.courseNumber)) {
+  if (!validCourseNumber(course.courseNumber, semesterRows)) {
     return {
       error: true,
       newRowData: emptyRow,
-      msg: "מספר הקורס שהכנסת לא תקין. מספר קורס מכיל 6 ספרות בלבד.",
+      msg: " מספר הקורס שהוזן אינו תקין. מס׳ קורס חייב להכיל 6 ספרות בלבד, וכן אי אפשר לקחת פעמיים קורס באותו הסמסטר.",
     };
   }
   if (!validCourseCredit(course.credit)) {
