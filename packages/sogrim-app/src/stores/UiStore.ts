@@ -6,9 +6,9 @@ import { UserDetails } from "../types/data-types";
 export class UIStore {
   public currentPage: PageState = PageState.Main;
   public currentTab: TabState = TabState.DoneTab;
+  public currentSemesterIdx: number = 0;
   public userDisplay: any;
   public showMainStatus: boolean = false;
-  public semesterTab: number = 0;
   public endGameLoading: boolean = false;
   public userRegistrationState: UserRegistrationState =
     UserRegistrationState.Loading;
@@ -33,6 +33,10 @@ export class UIStore {
     this.userDisplay = userDisplay;
   };
 
+  setCurrentSemester = (id: number) => {
+    this.currentSemesterIdx = id;
+  };
+
   setRowToDelete = (id: string) => {
     this.rowToDeleteId = id;
   };
@@ -47,10 +51,6 @@ export class UIStore {
 
   setShowMainStatus = (status: boolean) => {
     this.showMainStatus = status;
-  };
-
-  setSemesterTab = (semesterTab: number) => {
-    this.semesterTab = semesterTab;
   };
 
   setErrorMsg = (newErrorMsg: string) => {

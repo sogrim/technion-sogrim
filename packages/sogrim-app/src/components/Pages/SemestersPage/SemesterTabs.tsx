@@ -1,5 +1,4 @@
-import { Box, Tab } from "@mui/material";
-import Tabs, { tabsClasses } from "@mui/material/Tabs";
+import { Box, Button } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import useUpdateUserState from "../../../hooks/apiHooks/useUpdateUserState";
@@ -18,8 +17,8 @@ const SemesterTabsComp = () => {
   const { mutate } = useUpdateUserState(userAuthToken);
   const {
     uiStore: {
-      semesterTab: value,
-      setSemesterTab,
+      currentSemesterIdx,
+      setCurrentSemester,
       endGameLoading,
       userRegistrationState,
     },
@@ -30,8 +29,8 @@ const SemesterTabsComp = () => {
     },
   } = useStore();
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setSemesterTab(newValue);
+  const handleChangeSemester = (newSemesterTab: number) => {
+    setCurrentSemester(newSemesterTab);
   };
 
   const semesterNaming = (semesterName: string): string => {
@@ -93,55 +92,52 @@ const SemesterTabsComp = () => {
 
   const deleteSemester = () => {
     if (allSemesters) {
-      const newUserDetails = deleteSemesterInUserDetails(allSemesters[value]);
+      const newUserDetails = deleteSemesterInUserDetails(
+        allSemesters[currentSemesterIdx]
+      );
       const idx = allSemesters.findIndex(
-        (semester) => semester === allSemesters[value]
+        (semester) => semester === allSemesters[currentSemesterIdx]
       );
       const newSemesterList = [...allSemesters];
       newSemesterList.splice(idx, 1);
       setAllSemesters(newSemesterList);
-      setSemesterTab(0);
+      setCurrentSemester(0);
       mutate(newUserDetails);
     }
   };
 
   return (
-    <Box
-      sx={{
-        minWidth: 1100,
-        [`& .${tabsClasses.scrollButtons}`]: {
-          "&.Mui-disabled": { opacity: 0.3 },
-        },
-      }}
-    >
+    <Box>
       <Box
         sx={{
           display: "flex",
           flexDirection: "row",
-          justifyContent: "space-between",
+          width: "1100px",
+          mb: 1,
         }}
       >
-        <Tabs
-          textColor="primary"
-          indicatorColor="primary"
-          value={value}
-          onChange={handleChange}
-          variant="scrollable"
-          scrollButtons
-          sx={{ maxWidth: "1050px" }}
-        >
-          {allSemesters?.map((semester, index) => (
-            <Tab
-              sx={{ fontSize: "30px" }}
-              label={semesterNaming(semester)}
-              key={index}
-            />
-          ))}
-        </Tabs>
-        <SemesterOptionsButton
-          handleAddSemester={addNewSemester}
-          handleDeleteSemester={deleteSemester}
-        />
+        <Box sx={{ flexGrow: 1, ml: 4 }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            {allSemesters?.map((semester, index) => (
+              <Button
+                variant={
+                  index === currentSemesterIdx ? "contained" : "outlined"
+                }
+                sx={{ fontSize: "15px" }}
+                key={index}
+                onClick={() => handleChangeSemester(index)}
+              >
+                {semesterNaming(semester)}
+              </Button>
+            ))}
+          </Box>
+        </Box>
+        <Box sx={{ alignSelf: "end" }}>
+          <SemesterOptionsButton
+            handleAddSemester={addNewSemester}
+            handleDeleteSemester={deleteSemester}
+          />
+        </Box>
       </Box>
       {endGameLoading ? (
         <LoadingEndGameSkeleton />
@@ -149,7 +145,7 @@ const SemesterTabsComp = () => {
         <>
           {allSemesters?.map((semester, index) => (
             <Box sx={{ display: "flex", justifyContent: "center" }} key={index}>
-              <TabPanel value={value} index={index}>
+              <TabPanel value={currentSemesterIdx} index={index}>
                 {userDetails?.degree_status?.course_statuses ? (
                   // <SemesterTable semester={semester} />
                   // eslint-disable-next-line react/jsx-no-undef
