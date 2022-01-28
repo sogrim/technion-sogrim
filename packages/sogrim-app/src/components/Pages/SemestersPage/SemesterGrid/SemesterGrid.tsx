@@ -25,7 +25,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       deleteCourseInUserDetails,
       insertCourseInUserDetails,
     },
-    uiStore: { errorMsg, setErrorMsg, rowToDeleteId },
+    uiStore: { errorMsg, setErrorMsg, rowToDeleteId, setRowToDelete },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -62,6 +62,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
     const rowToDelete = { ...tableRows[idx] };
     newSemesterRows.splice(idx, 1);
     setTableRows(newSemesterRows);
+    setRowToDelete("");
     handleUpdateUserDetails(
       UpdateUserDetailsAction.AfterDelete,
       rowToDelete,
@@ -189,7 +190,10 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
             הוסף קורס חדש
           </Button>
         ) : (
-          <AddNewRow handleAddClicked={handleAddClicked} />
+          <AddNewRow
+            handleAddClicked={handleAddClicked}
+            setAddRowToggle={setAddRowToggle}
+          />
         )}
       </Box>
       <ErrorToast msg={errorMsg} />

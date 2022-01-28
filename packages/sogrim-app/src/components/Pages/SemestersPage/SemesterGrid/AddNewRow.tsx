@@ -1,5 +1,6 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import {
   Box,
   Divider,
@@ -19,9 +20,13 @@ import {
 
 export interface NewRowProps {
   handleAddClicked: (newRowInput: RowData) => void;
+  setAddRowToggle: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const NewRowComp: React.FC<NewRowProps> = ({ handleAddClicked }) => {
+const NewRowComp: React.FC<NewRowProps> = ({
+  handleAddClicked,
+  setAddRowToggle,
+}) => {
   const {
     dataStore: { getUserBankNames },
   } = useStore();
@@ -63,7 +68,7 @@ const NewRowComp: React.FC<NewRowProps> = ({ handleAddClicked }) => {
     <Box
       sx={{
         display: "flex",
-        gap: 1,
+        gap: 0.5,
         height: 40,
         width: 1100,
         // justifyContent: "space-between",
@@ -180,6 +185,17 @@ const NewRowComp: React.FC<NewRowProps> = ({ handleAddClicked }) => {
         onClick={() => handleAddClicked(editRow)}
       >
         <AddOutlinedIcon />
+      </IconButton>
+      <Divider orientation="vertical" variant="middle" flexItem />
+
+      <IconButton
+        sx={{ alignSelf: "flex-end" }}
+        color="primary"
+        aria-label="cancel-new-row"
+        component="span"
+        onClick={() => setAddRowToggle(false)}
+      >
+        <CancelOutlinedIcon />
       </IconButton>
     </Box>
   );

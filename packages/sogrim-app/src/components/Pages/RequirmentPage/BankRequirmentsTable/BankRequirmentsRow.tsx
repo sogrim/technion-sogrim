@@ -52,7 +52,9 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
   } = bankRequirment;
 
   const progress =
-    bank_rule_name === ACCUMULATE_COURSES
+    course_requirement === null && credit_requirement === null
+      ? null
+      : bank_rule_name === ACCUMULATE_COURSES
       ? (course_completed / course_requirement) * 100
       : (credit_completed / credit_requirement) * 100;
 
@@ -104,10 +106,10 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
               )}
             </Box>
 
-            <Typography>{subtitle}</Typography>
+            {progress !== null && <Typography>{subtitle}</Typography>}
           </Box>
           <Box sx={{ minWidth: 200 }}>
-            <LinearProgressBar value={progress} />
+            {progress !== null && <LinearProgressBar value={progress} />}
           </Box>
         </Box>
       </AccordionSummary>

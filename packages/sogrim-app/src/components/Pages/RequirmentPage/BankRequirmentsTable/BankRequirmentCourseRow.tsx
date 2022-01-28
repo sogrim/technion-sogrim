@@ -77,12 +77,17 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
     >
       <Box sx={{ display: "flex", gap: 1 }}>
         <Typography fontWeight={500}>{course.name} </Typography>
-        <Chip
-          label={`${course.credit} נק"ז`}
-          sx={{ minWidth: "55px" }}
-          variant="outlined"
-          size="small"
-        />
+        <Tooltip
+          title={<Typography>מס׳ קורס {course.courseNumber}</Typography>}
+          arrow
+        >
+          <Chip
+            label={`${course.credit} נק"ז`}
+            sx={{ minWidth: "55px" }}
+            variant="outlined"
+            size="small"
+          />
+        </Tooltip>
         {course.state !== "הושלם" && (
           <Chip
             label="לא בוצע"
@@ -105,7 +110,10 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
           </Tooltip>
         )}
         {showIgnoreIcon === IgnoreIconState.ShowIgnoe ? (
-          <Tooltip title="התעלם מקורס זה בחישוב" arrow>
+          <Tooltip
+            title={<Typography> התעלם מקורס זה בחישוב </Typography>}
+            arrow
+          >
             <IconButton
               onClick={() => clickIgnoreThisCourse(course, "לא רלוונטי")}
             >
@@ -114,7 +122,10 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
           </Tooltip>
         ) : (
           showIgnoreIcon === IgnoreIconState.ShowV && (
-            <Tooltip title="בטל התעלמות מקורס זה" arrow>
+            <Tooltip
+              title={<Typography> בטל התעלמות מקורס זה</Typography>}
+              arrow
+            >
               <IconButton
                 onClick={() => clickIgnoreThisCourse(course, "לא הושלם")}
               >
