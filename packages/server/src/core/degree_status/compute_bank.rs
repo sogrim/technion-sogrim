@@ -43,7 +43,7 @@ impl<'a> DegreeStatusHandler<'a> {
 
         match &bank.rule {
             Rule::All => {
-                sum_credit = bank_rule_handler.all(&mut missing_credit);
+                sum_credit = bank_rule_handler.all(&mut missing_credit, &mut completed);
                 if missing_credit > 0.0 {
                     self.missing_credit_map
                         .insert(bank.name.clone(), missing_credit);
