@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
-import { Box, Tab } from "@mui/material";
-import Tabs, { tabsClasses } from "@mui/material/Tabs";
-import { TabPanel } from "../../AppPages/TabPanel";
+import { Box, Button } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { useStore } from "../../../hooks/useStore";
-import { SemesterTable } from "./SemesterTable/SemesterTable";
-import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
-import { SemesterOptionsButton } from "./SemesterOptionsButton";
-import { SemesterOptions } from "../../../types/ui-types";
-import { useAuth } from "../../../hooks/useAuth";
+import { useEffect, useState } from "react";
 import useUpdateUserState from "../../../hooks/apiHooks/useUpdateUserState";
+import { useAuth } from "../../../hooks/useAuth";
+import { useStore } from "../../../hooks/useStore";
+import { SemesterOptions } from "../../../types/ui-types";
+import { TabPanel } from "../../AppPages/TabPanel";
+import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
+import { SemesterGrid } from "./SemesterGrid/SemesterGrid";
+import { SemesterOptionsButton } from "./SemesterOptionsButton";
 
 const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
@@ -18,10 +17,11 @@ const SemesterTabsComp = () => {
   const { mutate } = useUpdateUserState(userAuthToken);
   const {
     uiStore: {
-      semesterTab: value,
-      setSemesterTab,
+      currentSemesterIdx,
+      setCurrentSemester,
       endGameLoading,
       userRegistrationState,
+      setErrorMsg,
     },
     dataStore: {
       userDetails,
@@ -30,8 +30,8 @@ const SemesterTabsComp = () => {
     },
   } = useStore();
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setSemesterTab(newValue);
+  const handleChangeSemester = (newSemesterTab: number) => {
+    setCurrentSemester(newSemesterTab);
   };
 
   const semesterNaming = (semesterName: string): string => {
@@ -49,6 +49,7 @@ const SemesterTabsComp = () => {
         getAllUserSemesters(userDetails.degree_status.course_statuses)
       );
     }
+    setErrorMsg("");
   }, [userDetails, getAllUserSemesters, userRegistrationState]);
 
   const findLastNonSummerSemester = (): string | undefined => {
@@ -59,33 +60,34 @@ const SemesterTabsComp = () => {
   };
 
   const addNewSemester = (semesterType: SemesterOptions) => {
-    if (!allSemesters) {
+    if (!allSemesters || allSemesters.length === 0) {
+      const newSemesterList = [];
+      const newSemesterName =
+        semesterType === SemesterOptions.Winter ? "חורף_1" : "אביב_1";
+      newSemesterList.push(newSemesterName);
+      setAllSemesters(newSemesterList);
       return;
     }
+
     let lastNonSummerSemester = findLastNonSummerSemester();
     let lastSemester = allSemesters.slice(-1)[0];
-    if (!lastSemester) {
-      // TODO: add user funcunality for chosing אביב או חורף
-      lastSemester = "אביב_0";
-    }
-    const LastSemesterName = lastSemester.replace("_", " ");
-    const splitName = LastSemesterName.split(" ");
     const newSemesterList = [...allSemesters];
-    let newSemesterName;
+
     if (lastSemester && lastNonSummerSemester) {
-      if (
-        semesterType !== SemesterOptions.Summer &&
-        lastNonSummerSemester.includes("חורף")
-      ) {
-        newSemesterName = "אביב_" + (+splitName[1] + 1);
-      } else if (
-        semesterType !== SemesterOptions.Summer &&
-        lastNonSummerSemester.includes("אביב")
-      ) {
-        newSemesterName = "חורף_" + (+splitName[1] + 1);
-      } else {
-        newSemesterName = "קיץ_" + (+splitName[1] + 1);
+      const lastSemesterName = lastNonSummerSemester.replace("_", " ");
+      const splitName = lastSemesterName.split(" ");
+
+      let newSemesterName =
+        semesterType === SemesterOptions.Summer
+          ? "קיץ"
+          : lastNonSummerSemester.includes("חורף")
+          ? "אביב"
+          : "חורף";
+
+      if (semesterType !== SemesterOptions.Summer) {
+        newSemesterName += "_" + (+splitName[1] + 1);
       }
+
       newSemesterList.push(newSemesterName);
       setAllSemesters(newSemesterList);
     }
@@ -93,55 +95,70 @@ const SemesterTabsComp = () => {
 
   const deleteSemester = () => {
     if (allSemesters) {
-      const newUserDetails = deleteSemesterInUserDetails(allSemesters[value]);
+      const newUserDetails = deleteSemesterInUserDetails(
+        allSemesters[currentSemesterIdx]
+      );
       const idx = allSemesters.findIndex(
-        (semester) => semester === allSemesters[value]
+        (semester) => semester === allSemesters[currentSemesterIdx]
       );
       const newSemesterList = [...allSemesters];
       newSemesterList.splice(idx, 1);
       setAllSemesters(newSemesterList);
-      setSemesterTab(0);
+      setCurrentSemester(0);
       mutate(newUserDetails);
     }
   };
 
   return (
-    <Box
-      sx={{
-        minWidth: 1100,
-        [`& .${tabsClasses.scrollButtons}`]: {
-          "&.Mui-disabled": { opacity: 0.3 },
-        },
-      }}
-    >
+    <Box>
       <Box
         sx={{
           display: "flex",
           flexDirection: "row",
-          justifyContent: "space-between",
+          width: "1100px",
+          mb: 1,
+          justifyContent:
+            !allSemesters || allSemesters.length === 0
+              ? "center"
+              : "space-between",
         }}
       >
-        <Tabs
-          textColor="primary"
-          indicatorColor="primary"
-          value={value}
-          onChange={handleChange}
-          variant="scrollable"
-          scrollButtons
-          sx={{ maxWidth: "1050px" }}
+        <Box
+          sx={{
+            flexGrow: !allSemesters || allSemesters.length === 0 ? "none" : 1,
+            ml: 2,
+          }}
         >
-          {allSemesters?.map((semester, index) => (
-            <Tab
-              sx={{ fontSize: "30px" }}
-              label={semesterNaming(semester)}
-              key={index}
-            />
-          ))}
-        </Tabs>
-        <SemesterOptionsButton
-          handleAddSemester={addNewSemester}
-          handleDeleteSemester={deleteSemester}
-        />
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            {allSemesters?.map((semester, index) => (
+              <Button
+                variant={
+                  index === currentSemesterIdx ? "contained" : "outlined"
+                }
+                sx={{ fontSize: "15px" }}
+                key={index}
+                onClick={() => handleChangeSemester(index)}
+              >
+                {semesterNaming(semester)}
+              </Button>
+            ))}
+          </Box>
+        </Box>
+        <Box
+          sx={{
+            ml: 10,
+            alignSelf:
+              !allSemesters || allSemesters.length === 0
+                ? "center"
+                : "flex-end",
+          }}
+        >
+          <SemesterOptionsButton
+            allSemesters={allSemesters}
+            handleAddSemester={addNewSemester}
+            handleDeleteSemester={deleteSemester}
+          />
+        </Box>
       </Box>
       {endGameLoading ? (
         <LoadingEndGameSkeleton />
@@ -149,9 +166,9 @@ const SemesterTabsComp = () => {
         <>
           {allSemesters?.map((semester, index) => (
             <Box sx={{ display: "flex", justifyContent: "center" }} key={index}>
-              <TabPanel value={value} index={index}>
+              <TabPanel value={currentSemesterIdx} index={index}>
                 {userDetails?.degree_status?.course_statuses ? (
-                  <SemesterTable semester={semester} />
+                  <SemesterGrid semester={semester} />
                 ) : null}
               </TabPanel>
             </Box>

@@ -24,17 +24,31 @@ const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
 
   return (
     <div>
-      <Accordion defaultExpanded sx={{ minWidth: 400 }}>
+      <Accordion
+        defaultExpanded
+        sx={{
+          minWidth: 400,
+          p: 1,
+          borderRadius: 2,
+          border: "2px solid #d1d1d1",
+          boxShadow: 0,
+        }}
+      >
         <AccordionSummary
           expandIcon={<ExpandMore />}
           aria-controls="overflow-collaps"
           id="overflow-collaps"
         >
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography fontWeight={"bold"}>הודעות חשובות</Typography>
+            <Typography variant="h6" fontWeight={"bold"}>
+              הודעות חשובות
+            </Typography>
             <Tooltip
               title={
-                "כאן מופיעות הודעות שכדאי לשים לב אליהן, כגון הודעות על מעברי נקודות בין דרישות, הודעה על כמות נקודות עודפות וכו'"
+                <Typography>
+                  כאן מופיעות הודעות שכדאי לשים לב אליהן, כגון הודעות על מעברי
+                  נקודות בין דרישות, הודעה על כמות נקודות עודפות וכו'
+                </Typography>
               }
               placement="bottom"
               arrow

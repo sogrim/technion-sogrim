@@ -12,7 +12,7 @@ const ErrorToastComp: React.FC<ErrorToastProps> = ({ msg }) => {
   return (
     <>
       <Snackbar
-        autoHideDuration={10000}
+        autoHideDuration={1000}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         open={msg !== ""}
       >

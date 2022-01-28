@@ -94,7 +94,7 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
                   arrow
                 >
                   <Chip
-                    sx={{ marginRight: "8px" }}
+                    sx={{ ml: "8px" }}
                     label="מידע נוסף"
                     variant="outlined"
                     size="small"

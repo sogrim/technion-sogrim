@@ -1,7 +1,22 @@
 import { courseGradeOptions, emptyRow, RowData } from "../SemesterTabsConsts";
 
-const validCourseNumber = (courseNumber: string) => {
-  return /^\d+$/.test(courseNumber) && courseNumber.length === 6;
+export const validCourseNumber = (
+  courseNumber: string,
+  semesterRows: RowData[],
+  newFlag: boolean
+) => {
+  let validNumber = /^\d+$/.test(courseNumber) && courseNumber.length === 6;
+  if (validNumber && newFlag) {
+    const idx = semesterRows.findIndex(
+      (row) => row.courseNumber === courseNumber
+    );
+    if (idx === -1) {
+      validNumber = true;
+    } else {
+      validNumber = false;
+    }
+  }
+  return validNumber;
 };
 
 const validCourseCredit = (credit: string | number) => {
@@ -14,7 +29,7 @@ const validCourseCredit = (credit: string | number) => {
 
 const validGrade = (grade: any) => {
   const gradeNumber = Number(grade);
-  if (grade === "") {
+  if (grade === "" || grade === 0 || grade === "0" || grade === "-") {
     return true;
   }
   if (isNaN(grade)) {
@@ -41,13 +56,14 @@ export interface courseFromUserValidationsValue {
 }
 export const courseFromUserValidations = (
   course: RowData,
-  semesterRows: RowData[]
+  semesterRows: RowData[],
+  newFlag: boolean = false
 ): courseFromUserValidationsValue => {
-  if (!validCourseNumber(course.courseNumber)) {
+  if (!validCourseNumber(course.courseNumber, semesterRows, newFlag)) {
     return {
       error: true,
       newRowData: emptyRow,
-      msg: "מספר הקורס שהכנסת לא תקין. מספר קורס מכיל 6 ספרות בלבד.",
+      msg: " מספר הקורס שהוזן אינו תקין. מס׳ קורס חייב להכיל 6 ספרות בלבד, וכן אי אפשר לקחת פעמיים קורס באותו הסמסטר.",
     };
   }
   if (!validCourseCredit(course.credit)) {
@@ -66,6 +82,7 @@ export const courseFromUserValidations = (
   }
 
   let newState = "לא הושלם";
+  let newType = course.type === "" ? undefined : course.type;
   let newGrade = course.grade === "" ? undefined : course.grade;
   if (
     course.grade &&
@@ -82,7 +99,7 @@ export const courseFromUserValidations = (
     semester: course.semester,
     credit: course.credit,
     state: newState,
-    type: course.type,
+    type: newType,
     grade: newGrade,
   };
 

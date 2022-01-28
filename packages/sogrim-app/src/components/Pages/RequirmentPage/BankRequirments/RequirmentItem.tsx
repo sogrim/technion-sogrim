@@ -41,7 +41,7 @@ export const RequirmentItem: React.FC<RequirmentItemProps> = ({
           sx={{
             position: "relative",
             display: "inline-flex",
-            marginLeft: "8px",
+            mr: "8px",
           }}
         >
           <CircularProgress

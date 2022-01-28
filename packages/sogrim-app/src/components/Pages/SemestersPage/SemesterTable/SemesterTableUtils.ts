@@ -1,4 +1,4 @@
-import { RowData } from "./SemesterTabsConsts";
+import { RowData } from "../SemesterTabsConsts";
 
 export type Order = "asc" | "desc";
 

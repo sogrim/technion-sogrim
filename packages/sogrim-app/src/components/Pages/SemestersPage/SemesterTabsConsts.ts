@@ -1,4 +1,4 @@
-import { CourseGradeOptions, CourseState } from "../../../../types/data-types";
+import { CourseGradeOptions, CourseState } from "../../../types/data-types";
 
 export interface RowData {
   name: string;
@@ -79,6 +79,16 @@ export const emptyRow = {
   state: "",
   type: "",
   credit: "0",
+  semester: "",
+};
+
+export const newEmptyRow = {
+  courseNumber: "",
+  name: "",
+  grade: "",
+  state: "בהתאם לציון",
+  type: "",
+  credit: "",
   semester: "",
 };
 

@@ -20,5 +20,8 @@ export enum SemesterOptions {
   Idle = "Idle",
   Regular = "Regular",
   Summer = "Summer",
+  Winter = "Winter",
+  Spring = "Spring",
   Delete = "Delete",
+  Empty = "Empty",
 }

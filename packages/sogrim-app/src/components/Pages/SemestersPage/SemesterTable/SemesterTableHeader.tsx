@@ -1,7 +1,7 @@
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import { headCells } from "./SemesterTabsConsts";
+import { headCells } from "../SemesterTabsConsts";
 
 export const SemesterTableHeader: React.FC = () => {
   return (

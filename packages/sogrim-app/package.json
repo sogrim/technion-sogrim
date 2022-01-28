@@ -9,6 +9,7 @@
     "@material-ui/icons": "^4.11.2",
     "@mui/icons-material": "^5.0.4",
     "@mui/material": "^5.0.3",
+    "@mui/x-data-grid": "^5.3.0",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
@@ -66,7 +67,8 @@
   "devDependencies": {
     "@types/js-cookie": "^3.0.0",
     "@types/react-router-dom": "^5.3.2",
-    "@types/react-table": "^7.7.9"
+    "@types/react-table": "^7.7.9",
+    "react-error-overlay": "^6.0.9"
   },
   "husky": {
     "hooks": {
