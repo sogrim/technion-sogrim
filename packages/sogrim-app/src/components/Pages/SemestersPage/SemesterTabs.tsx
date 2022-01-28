@@ -146,6 +146,7 @@ const SemesterTabsComp = () => {
         </Box>
         <Box
           sx={{
+            ml: 10,
             alignSelf:
               !allSemesters || allSemesters.length === 0
                 ? "center"

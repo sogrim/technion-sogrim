@@ -181,6 +181,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
             getRowId={(row) => row.courseNumber}
             autoHeight
             onCellEditCommit={handleEditRowsModelChange}
+            hideFooter
           />
         </div>
       </Box>

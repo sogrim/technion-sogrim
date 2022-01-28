@@ -19,6 +19,8 @@ export const columns: GridColumns = [
     editable: false,
     headerAlign: "center",
     align: "center",
+    description:
+      "לא ניתן לערוך מס׳ קורס. אם רוצים מס׳ קורס אחר, הוסיפו קורס חדש",
   },
   {
     field: "credit",
@@ -50,11 +52,11 @@ export const columns: GridColumns = [
   {
     field: "state",
     headerName: "סטאטוס",
-
     width: 125,
     editable: false,
     headerAlign: "center",
     align: "center",
+    description: "לא ניתן לערוך שדה זה. הוא מתעדכן בהתאם לציון",
   },
   {
     field: "actions",
