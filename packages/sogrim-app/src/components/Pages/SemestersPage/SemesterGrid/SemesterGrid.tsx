@@ -6,11 +6,7 @@ import useUpdateUserState from "../../../../hooks/apiHooks/useUpdateUserState";
 import { useAuth } from "../../../../hooks/useAuth";
 import { useStore } from "../../../../hooks/useStore";
 import { ErrorToast } from "../../../Toasts/ErrorToast";
-import {
-  emptyRow,
-  RowData,
-  UpdateUserDetailsAction,
-} from "../SemesterTabsConsts";
+import { RowData, UpdateUserDetailsAction } from "../SemesterTabsConsts";
 import { AddNewRow } from "./AddNewRow";
 import { courseFromUserValidations } from "./course-validator";
 import { columns } from "./semester-grid-interface";
@@ -63,8 +59,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       return;
     }
     const newSemesterRows = [...tableRows];
-    const rowToDelete = { ...emptyRow };
-    rowToDelete.courseNumber = rowToDeleteId;
+    const rowToDelete = { ...tableRows[idx] };
     newSemesterRows.splice(idx, 1);
     setTableRows(newSemesterRows);
     handleUpdateUserDetails(

@@ -48,6 +48,7 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
     course_completed,
     course_requirement,
     bank_rule_name,
+    completed,
   } = bankRequirment;
 
   const progress =
@@ -83,7 +84,7 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
               }}
             >
               <Typography fontWeight={"bold"}>{course_bank_name}</Typography>
-              <BankChip progress={progress} />
+              <BankChip completed={!!completed} />
               {bankRequirment.message && (
                 <Tooltip
                   title={

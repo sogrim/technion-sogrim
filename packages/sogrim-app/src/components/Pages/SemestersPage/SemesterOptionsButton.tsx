@@ -74,7 +74,7 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
           </IconButton>
         </Tooltip>
       ) : semesterFlow === SemesterOptions.Empty ? (
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography variant="h5" sx={{ ml: 2.5 }}>
             באיזה סמסטר התחלתם את התואר? חורף או אביב?
           </Typography>

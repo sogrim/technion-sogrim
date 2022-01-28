@@ -2,12 +2,12 @@ import { Chip } from "@mui/material";
 import React from "react";
 
 interface BankChipProps {
-  progress: number;
+  completed: boolean;
 }
-export const BankChip: React.FC<BankChipProps> = ({ progress }) => {
+export const BankChip: React.FC<BankChipProps> = ({ completed }) => {
   return (
     <>
-      {progress >= 100 ? (
+      {completed ? (
         <Chip
           sx={{ ml: "8px" }}
           label="בוצע"
