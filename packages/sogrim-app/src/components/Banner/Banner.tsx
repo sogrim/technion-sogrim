@@ -53,7 +53,4 @@ const StyledBox = styled(Box)(({ theme }) => ({
   marginTop: "100px",
   display: "flex",
   justifyContent: "space-around",
-  [theme.breakpoints.down("md")]: {
-    flexDirection: "column",
-  },
 }));
