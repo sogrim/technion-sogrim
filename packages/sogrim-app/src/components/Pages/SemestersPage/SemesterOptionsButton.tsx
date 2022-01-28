@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SemesterOptions } from "../../../types/ui-types";
 import AddIcon from "@mui/icons-material/Add";
 import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import LocalLibraryIcon from "@mui/icons-material/LocalLibrary";
 import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
+import LocalFloristIcon from "@mui/icons-material/LocalFlorist";
+import AcUnitIcon from "@mui/icons-material/AcUnit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { IconButton, Tooltip, Box, ToggleButton } from "@mui/material";
+import {
+  IconButton,
+  Tooltip,
+  Box,
+  ToggleButton,
+  Typography,
+} from "@mui/material";
 
 interface SemesterOptionsButtonProps {
+  allSemesters: string[] | null;
   handleAddSemester: (semesterType: SemesterOptions) => void;
   handleDeleteSemester: () => void;
 }
 export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
+  allSemesters,
   handleAddSemester,
   handleDeleteSemester,
 }) => {
@@ -40,7 +50,16 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
   const clickConfirmDeleteCurrentSemester = () => {
     setAddSemesterFlow(SemesterOptions.Idle);
     handleDeleteSemester();
+    if (allSemesters !== null && allSemesters.length === 0) {
+      setAddSemesterFlow(SemesterOptions.Empty);
+    }
   };
+
+  useEffect(() => {
+    if (allSemesters !== null && allSemesters.length === 0) {
+      setAddSemesterFlow(SemesterOptions.Empty);
+    }
+  }, [allSemesters]);
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -54,6 +73,28 @@ export const SemesterOptionsButton: React.FC<SemesterOptionsButtonProps> = ({
             <AddIcon />
           </IconButton>
         </Tooltip>
+      ) : semesterFlow === SemesterOptions.Empty ? (
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Typography variant="h5" sx={{ ml: 2.5 }}>
+            באיזה סמסטר התחלתם את התואר? חורף או אביב?
+          </Typography>
+          <Tooltip title={<Typography>סמסטר חורף</Typography>} arrow>
+            <ToggleButton
+              value={SemesterOptions.Winter}
+              onClick={() => clickControl(SemesterOptions.Winter)}
+            >
+              <AcUnitIcon />
+            </ToggleButton>
+          </Tooltip>
+          <Tooltip title={<Typography>סמסטר אביב</Typography>} arrow>
+            <ToggleButton
+              value={SemesterOptions.Spring}
+              onClick={() => clickControl(SemesterOptions.Spring)}
+            >
+              <LocalFloristIcon />
+            </ToggleButton>
+          </Tooltip>
+        </Box>
       ) : (
         semesterFlow !== SemesterOptions.Delete && (
           <Box sx={{ display: "flex" }}>
