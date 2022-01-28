@@ -21,12 +21,13 @@ const AppComp: React.FC = () => {
   );
 
   const {
-    uiStore: { setUserDisplay },
+    uiStore: { setUserDisplay, goToMainPage },
   } = useStore();
   const { isAuthenticated, googleSession, userAuthToken } = useAuth();
 
   useEffect(() => {
     if (googleSession === GoogleClientSession.DONE) {
+      goToMainPage();
       if (userAuthToken) {
         setUserDisplay(jwtDecode(userAuthToken));
       }
