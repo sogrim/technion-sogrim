@@ -50,7 +50,7 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
     <>
       <DialogTitle>יבא קורסים</DialogTitle>
       <DialogContent>
-        <DialogContentText>
+        <DialogContentText component={"span"}>
           <Typography>
             נכנסים למערכת student ומגישים בקשה לגיליון ציונים. לאחר שהבקשה
             אושרה, יש לפתוח את גיליון הציונים{" "}
@@ -59,38 +59,36 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
             <br /> אם תרצו להזין את הקורסים שלכם ידנית, ניתן לדלג על שלב זה
             בעזרת הכפתור למטה.
           </Typography>
-          <Typography sx={{ marginTop: 1 }}>
-            מסתבכים?
-            <ul>
-              <li>ודאו שגליון הציונים שהוצאתם הוא בעברית.</li>
-              <li>
-                ודאו שאכן העתקתם את <b>כל</b> התוכן של גליון הציונים.
-              </li>
-              <li>
-                אם אתם ב-
-                <TextWithIcon
-                  {...{ text: "Windows", src: windows, alt: "windows" }}
-                />
-                , בדפדפן{" "}
-                <TextWithIcon
-                  {...{ text: "Google Chrome", src: chrome, alt: "chrome" }}
-                />
-                , יתכן ש-Ctrl-A בPDF-ים לא יעבוד כמו שצריך. במקרה זה, נסו לפתוח
-                את ה-PDF בעזרת{" "}
-                <TextWithIcon
-                  {...{ text: "Microsoft Edge", src: edge, alt: "edge" }}
-                />
-                .
-              </li>
-              <li>
-                ודאו שאתם <b>לא</b> פותחים את ה-PDF של גליון הציונים בדפדפן{" "}
-                <TextWithIcon
-                  {...{ text: "Mozilla Firefox", src: firefox, alt: "firefox" }}
-                />{" "}
-                {"("}לצערנו הוא אינו נתמך כרגע{")"}.
-              </li>
-            </ul>
-          </Typography>
+          <Typography sx={{ marginTop: 1 }}>מסתבכים?</Typography>
+          <ul>
+            <li>ודאו שגליון הציונים שהוצאתם הוא בעברית.</li>
+            <li>
+              ודאו שאכן העתקתם את <b>כל</b> התוכן של גליון הציונים.
+            </li>
+            <li>
+              אם אתם ב-
+              <TextWithIcon
+                {...{ text: "Windows", src: windows, alt: "windows" }}
+              />
+              , בדפדפן{" "}
+              <TextWithIcon
+                {...{ text: "Google Chrome", src: chrome, alt: "chrome" }}
+              />
+              , יתכן ש-Ctrl-A בPDF-ים לא יעבוד כמו שצריך. במקרה זה, נסו לפתוח את
+              ה-PDF בעזרת{" "}
+              <TextWithIcon
+                {...{ text: "Microsoft Edge", src: edge, alt: "edge" }}
+              />
+              .
+            </li>
+            <li>
+              ודאו שאתם <b>לא</b> פותחים את ה-PDF של גליון הציונים בדפדפן{" "}
+              <TextWithIcon
+                {...{ text: "Mozilla Firefox", src: firefox, alt: "firefox" }}
+              />{" "}
+              {"("}לצערנו הוא אינו נתמך כרגע{")"}.
+            </li>
+          </ul>
         </DialogContentText>
         <Link
           color={(theme: Theme) => theme.palette.secondary.dark}
