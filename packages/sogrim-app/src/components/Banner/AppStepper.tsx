@@ -104,6 +104,12 @@ const AppStepperComp: React.FC = () => {
     coursesModalsetOpen(false);
   };
 
+  const coursesHandleSkip = () => {
+    coursesModalsetOpen(false);
+    setActiveStep(3);
+    setTriggerCompute(true);
+  };
+
   const catalogsHandleClickOpen = () => {
     catalogsModalsetOpen(true);
   };
@@ -183,6 +189,7 @@ const AppStepperComp: React.FC = () => {
         <FormModal
           dialogContent={
             <ImportGilion
+              handleSkip={coursesHandleSkip}
               handleClose={coursesHandleClose}
               handleError={handleError}
             />
