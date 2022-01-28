@@ -9,7 +9,7 @@ Currently supports the Technion, Faculty of Computer Science.
 
 ## Suggestions, fixes and issues
 Something isn't working?
-Have a cool idea?   
+Have an idea?   
 Cool!
 You can open an issue for us, or specify your suggestion in the following [form](https://docs.google.com/forms/d/e/1FAIpQLSe7GbkAkIdTgJ3QkGmJMHhkIpjWz_I0ZX608FlxVLeT0cyJJQ/viewform) 
 
