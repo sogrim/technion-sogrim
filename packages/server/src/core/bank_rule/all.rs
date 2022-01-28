@@ -6,6 +6,26 @@ use crate::{
 use super::BankRuleHandler;
 
 impl<'a> BankRuleHandler<'a> {
+    // returns true if c1 == c2 or c2 is a replacement for c1
+    fn is_duplicate(&self, c1: &CourseId, c2: &CourseId) -> bool {
+        if c1 == c2 {
+            true
+        } else if let Some(replacements) = self.catalog_replacements.get(c1) {
+            if replacements.contains(c2) {
+                true
+            } else {
+                false
+            }
+        } else if let Some(replacements) = self.common_replacements.get(c1) {
+            if replacements.contains(c2) {
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
     fn remove_duplicate_unmodified_courses(&mut self) {
         let duplicate_courses = self
             .user
@@ -20,7 +40,8 @@ impl<'a> BankRuleHandler<'a> {
                 let mut repetitions = 0;
                 for optional_duplicate in self.user.degree_status.course_statuses.iter() {
                     if optional_duplicate.r#type == Some(self.bank_name.clone())
-                        && optional_duplicate.course.id == course_status.course.id
+                        && self
+                            .is_duplicate(&course_status.course.id, &optional_duplicate.course.id)
                     {
                         repetitions += 1;
                     }
