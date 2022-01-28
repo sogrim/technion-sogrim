@@ -1,4 +1,5 @@
 import { GridColumns, GridRowsProp } from "@mui/x-data-grid";
+import { renderDeleteCell } from "./DeleteRowCell";
 import { renderCategoryEditInputCell } from "./EditCategoryCell";
 import { renderGradeEditInputCell } from "./EditGradeCell";
 
@@ -58,11 +59,11 @@ export const columns: GridColumns = [
   {
     field: "actions",
     headerName: "פעולות",
-
     width: 125,
     editable: true,
     headerAlign: "center",
     align: "center",
+    renderCell: renderDeleteCell,
   },
 ];
 

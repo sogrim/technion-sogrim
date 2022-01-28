@@ -6,7 +6,11 @@ import useUpdateUserState from "../../../../hooks/apiHooks/useUpdateUserState";
 import { useAuth } from "../../../../hooks/useAuth";
 import { useStore } from "../../../../hooks/useStore";
 import { ErrorToast } from "../../../Toasts/ErrorToast";
-import { RowData, UpdateUserDetailsAction } from "../SemesterTabsConsts";
+import {
+  emptyRow,
+  RowData,
+  UpdateUserDetailsAction,
+} from "../SemesterTabsConsts";
 import { courseFromUserValidations } from "./course-validator";
 import { columns } from "./semester-grid-interface";
 
@@ -24,7 +28,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       deleteCourseInUserDetails,
       insertCourseInUserDetails,
     },
-    uiStore: { errorMsg, setErrorMsg },
+    uiStore: { errorMsg, setErrorMsg, rowToDeleteId },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -43,6 +47,31 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       );
     }
   }, [userDetails, generateRowsForSemester, semester]);
+
+  useEffect(() => {
+    if (rowToDeleteId !== "") {
+      handleDelete(rowToDeleteId);
+    }
+  }, [rowToDeleteId]);
+
+  const handleDelete = (rowToDeleteId: string) => {
+    const idx = tableRows.findIndex(
+      (row) => row.courseNumber === rowToDeleteId
+    );
+    if (idx === -1) {
+      return;
+    }
+    const newSemesterRows = [...tableRows];
+    const rowToDelete = { ...emptyRow };
+    rowToDelete.courseNumber = rowToDeleteId;
+    newSemesterRows.splice(idx, 1);
+    setTableRows(newSemesterRows);
+    handleUpdateUserDetails(
+      UpdateUserDetailsAction.AfterDelete,
+      rowToDelete,
+      semester
+    );
+  };
 
   const handleUpdateUserDetails = useCallback(
     (action: UpdateUserDetailsAction, rowData: RowData, semester: string) => {

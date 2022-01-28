@@ -15,6 +15,8 @@ export class UIStore {
 
   public errorMsg: string = "";
 
+  public rowToDeleteId = "";
+
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
   }
@@ -29,6 +31,10 @@ export class UIStore {
 
   setUserDisplay = (userDisplay: any) => {
     this.userDisplay = userDisplay;
+  };
+
+  setRowToDelete = (id: string) => {
+    this.rowToDeleteId = id;
   };
 
   get userDisplyName(): string {
