@@ -13,6 +13,10 @@ impl<'a> BankRuleHandler<'a> {
             .course_statuses
             .iter()
             .filter(|course_status| {
+                if course_status.r#type != Some(self.bank_name.clone()) {
+                    // courses which are not in the bank "all" shouldn't be removed.
+                    return false;
+                }
                 let mut repetitions = 0;
                 for optional_duplicate in self.user.degree_status.course_statuses.iter() {
                     if optional_duplicate.r#type == Some(self.bank_name.clone())
