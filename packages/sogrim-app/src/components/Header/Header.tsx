@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import { AppBar, Box, Button, Theme, Toolbar } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { AppBar, Box, Theme, Toolbar, Button } from "@mui/material";
-
-import { AppTitle } from "./AppTitle/AppTitle";
-import { More, UserAccount } from "./Actions/Actions";
-import { DefaultMenu, MobileMenu } from "./Menu";
+import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
 import { PageState } from "../../types/ui-types";
+import { UserAccount } from "./Actions/Actions";
+import { AppTitle } from "./AppTitle/AppTitle";
+import { DefaultMenu } from "./Menu";
 
 interface HeaderProps {}
 
@@ -19,20 +18,13 @@ const HeaderComp: React.FC<HeaderProps> = () => {
   } = useStore();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [mobileMoreAnchorEl, setMobileMoreAnchorEl] =
-    useState<null | HTMLElement>(null);
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
-    setMobileMoreAnchorEl(event.currentTarget);
-
-  const handleMobileMenuClose = () => setMobileMoreAnchorEl(null);
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-    handleMobileMenuClose();
   };
 
   const navButtonText =
@@ -43,13 +35,12 @@ const HeaderComp: React.FC<HeaderProps> = () => {
   return (
     <>
       <AppBar position="fixed" sx={sxAppBar}>
-        <Toolbar disableGutters variant="dense">
+        <Toolbar variant="dense">
           <AppTitle />
           <Box sx={{ flexGrow: 1 }} />
           <Box
             sx={{
               display: {
-                xs: "none",
                 md: "flex",
                 alignItems: "center",
                 margin: "80px",
@@ -69,20 +60,8 @@ const HeaderComp: React.FC<HeaderProps> = () => {
               ) : null}
             </Box>
           </Box>
-
-          {isAuthenticated ? (
-            <Box sx={{ display: { xs: "flex", md: "none" } }}>
-              <More onClick={handleMobileMenuOpen} />
-            </Box>
-          ) : null}
         </Toolbar>
       </AppBar>
-      <MobileMenu
-        isMenuOpen={!!mobileMoreAnchorEl}
-        handleMenuOpen={handleMobileMenuOpen}
-        handleMenuClose={handleMobileMenuClose}
-        anchorEl={mobileMoreAnchorEl}
-      />
       <DefaultMenu
         isMenuOpen={Boolean(anchorEl)}
         handleMenuClose={handleMenuClose}

@@ -14,11 +14,17 @@ import { UserApp } from "./UserApp";
 import rtlPlugin from "stylis-plugin-rtl";
 import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
+import { isMobile } from "react-device-detect";
+import { MobilePage } from "./MobilePage";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 const AppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
     LIGHT_MODE_THEME
   );
+  const theme = useMemo(() => getAppTheme(mode), [mode]);
+
+  const matches = useMediaQuery(theme.breakpoints.up("sm"));
 
   const {
     uiStore: { setUserDisplay, goToMainPage },
@@ -26,15 +32,15 @@ const AppComp: React.FC = () => {
   const { isAuthenticated, googleSession, userAuthToken } = useAuth();
 
   useEffect(() => {
-    if (googleSession === GoogleClientSession.DONE) {
-      goToMainPage();
-      if (userAuthToken) {
-        setUserDisplay(jwtDecode(userAuthToken));
+    if (!isMobile || !matches) {
+      if (googleSession === GoogleClientSession.DONE) {
+        goToMainPage();
+        if (userAuthToken) {
+          setUserDisplay(jwtDecode(userAuthToken));
+        }
       }
     }
   }, [isAuthenticated, googleSession, userAuthToken, setUserDisplay]);
-
-  const theme = useMemo(() => getAppTheme(mode), [mode]);
 
   // Create rtl cache
   const cacheRtl = createCache({
@@ -44,11 +50,15 @@ const AppComp: React.FC = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <CacheProvider value={cacheRtl}>
-        <GoogleAuth />
-        {isAuthenticated ? <UserApp /> : <AnonymousApp />}
-        <Footer />
-      </CacheProvider>
+      {isMobile || !matches ? (
+        <MobilePage />
+      ) : (
+        <CacheProvider value={cacheRtl}>
+          <GoogleAuth />
+          {isAuthenticated ? <UserApp /> : <AnonymousApp />}
+          <Footer />
+        </CacheProvider>
+      )}
     </ThemeProvider>
   );
 };
