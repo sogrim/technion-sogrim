@@ -107,7 +107,7 @@ const SemesterTabsComp = () => {
     }
   };
 
-return (
+  return (
     <Box>
       <Box
         sx={{
@@ -115,9 +115,18 @@ return (
           flexDirection: "row",
           width: "1100px",
           mb: 1,
+          justifyContent:
+            !allSemesters || allSemesters.length === 0
+              ? "center"
+              : "space-between",
         }}
       >
-        <Box sx={{ flexGrow: 1, ml: 4 }}>
+        <Box
+          sx={{
+            flexGrow: !allSemesters || allSemesters.length === 0 ? "none" : 1,
+            ml: 2,
+          }}
+        >
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             {allSemesters?.map((semester, index) => (
               <Button
@@ -133,7 +142,14 @@ return (
             ))}
           </Box>
         </Box>
-        <Box sx={{ alignSelf: "end" }}>
+        <Box
+          sx={{
+            alignSelf:
+              !allSemesters || allSemesters.length === 0
+                ? "center"
+                : "flex-end",
+          }}
+        >
           <SemesterOptionsButton
             allSemesters={allSemesters}
             handleAddSemester={addNewSemester}
@@ -163,4 +179,3 @@ return (
 };
 
 export const SemesterTabs = observer(SemesterTabsComp);
-
