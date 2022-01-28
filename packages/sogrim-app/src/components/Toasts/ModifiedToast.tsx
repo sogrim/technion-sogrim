@@ -1,4 +1,4 @@
-import { Alert, Snackbar, Button } from "@mui/material";
+import { Alert, Snackbar, Button, Tooltip, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
 import { useAuth } from "../../hooks/useAuth";
@@ -22,7 +22,11 @@ const ModifiedToastComp = () => {
   return (
     <>
       {modifiedStatus ? (
-        <Snackbar open={true}>
+        <Snackbar
+          sx={{ mt: "-12px" }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+          open={true}
+        >
           <Alert
             icon={false}
             sx={{
@@ -33,20 +37,33 @@ const ModifiedToastComp = () => {
             סטאטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר.
             <Button
               onClick={triggerComputeEndGame}
-              sx={{ margin: "0px 5px 0px 5px" }}
+              sx={{ margin: "0px 5px 0px 5px", fontWeight: "bold" }}
               size="small"
               variant="outlined"
             >
               סגור את התואר!
             </Button>
-            <Button
-              disabled
-              sx={{ margin: "0px 5px 0px 5px" }}
-              size="small"
-              variant="outlined"
+            <Tooltip
+              arrow
+              title={
+                <Typography>
+                  לאחר עריכת קורסים, המידע שלכם נשמר - אך סטאטוס התואר אינו
+                  מתעדכן.
+                  <br />
+                  כאשר תסיימו לערוך ולעדכן את הקורסים שלכם, לחצו על{" "}
+                  <b>סגור את התואר</b> ואנו נפעיל את חישוב סגירת התואר בהתאם
+                  לקטלוג שבחרתם :)
+                </Typography>
+              }
             >
-              למידע נוסף
-            </Button>
+              <Button
+                sx={{ margin: "0px 5px 0px 5px" }}
+                size="small"
+                variant="outlined"
+              >
+                למידע נוסף
+              </Button>
+            </Tooltip>
           </Alert>
         </Snackbar>
       ) : null}

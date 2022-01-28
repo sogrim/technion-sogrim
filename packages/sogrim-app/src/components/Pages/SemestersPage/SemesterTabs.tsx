@@ -21,6 +21,7 @@ const SemesterTabsComp = () => {
       setCurrentSemester,
       endGameLoading,
       userRegistrationState,
+      setErrorMsg,
     },
     dataStore: {
       userDetails,
@@ -48,6 +49,7 @@ const SemesterTabsComp = () => {
         getAllUserSemesters(userDetails.degree_status.course_statuses)
       );
     }
+    setErrorMsg("");
   }, [userDetails, getAllUserSemesters, userRegistrationState]);
 
   const findLastNonSummerSemester = (): string | undefined => {
@@ -165,8 +167,6 @@ const SemesterTabsComp = () => {
             <Box sx={{ display: "flex", justifyContent: "center" }} key={index}>
               <TabPanel value={currentSemesterIdx} index={index}>
                 {userDetails?.degree_status?.course_statuses ? (
-                  // <SemesterTable semester={semester} />
-                  // eslint-disable-next-line react/jsx-no-undef
                   <SemesterGrid semester={semester} />
                 ) : null}
               </TabPanel>

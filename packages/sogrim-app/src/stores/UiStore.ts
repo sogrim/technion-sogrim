@@ -29,6 +29,10 @@ export class UIStore {
     }
   };
 
+  goToMainPage = () => {
+    this.currentPage = PageState.Main;
+  };
+
   setUserDisplay = (userDisplay: any) => {
     this.userDisplay = userDisplay;
   };

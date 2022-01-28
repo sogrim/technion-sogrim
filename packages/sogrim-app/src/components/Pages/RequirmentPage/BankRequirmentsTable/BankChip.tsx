@@ -9,7 +9,7 @@ export const BankChip: React.FC<BankChipProps> = ({ progress }) => {
     <>
       {progress >= 100 ? (
         <Chip
-          sx={{ marginRight: "8px" }}
+          sx={{ ml: "8px" }}
           label="בוצע"
           color="success"
           variant="outlined"
@@ -17,7 +17,7 @@ export const BankChip: React.FC<BankChipProps> = ({ progress }) => {
         />
       ) : (
         <Chip
-          sx={{ marginRight: "8px" }}
+          sx={{ ml: "8px" }}
           label="בתהליך"
           color="info"
           variant="outlined"
