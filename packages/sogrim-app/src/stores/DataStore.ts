@@ -189,7 +189,9 @@ export class DataStore {
   deleteCourseInUserDetails = (rowData: RowData, semester: string) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
     const idx = courseList.findIndex(
-      (course) => course.course._id === rowData.courseNumber
+      (course) =>
+        course.course._id === rowData.courseNumber &&
+        semester === rowData.semester
     );
     const newCourseList = [...courseList];
     newCourseList.splice(idx, 1);
