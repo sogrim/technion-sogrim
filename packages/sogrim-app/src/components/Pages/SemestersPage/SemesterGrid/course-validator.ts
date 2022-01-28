@@ -5,13 +5,15 @@ export const validCourseNumber = (
   semesterRows: RowData[],
   newFlag: boolean
 ) => {
-  const validNumber = /^\d+$/.test(courseNumber) && courseNumber.length === 6;
+  let validNumber = /^\d+$/.test(courseNumber) && courseNumber.length === 6;
   if (validNumber && newFlag) {
     const idx = semesterRows.findIndex(
       (row) => row.courseNumber === courseNumber
     );
     if (idx === -1) {
-      return true;
+      validNumber = true;
+    } else {
+      validNumber = false;
     }
   }
   return validNumber;
@@ -27,7 +29,7 @@ const validCourseCredit = (credit: string | number) => {
 
 const validGrade = (grade: any) => {
   const gradeNumber = Number(grade);
-  if (grade === "" || grade === 0 || grade === "0") {
+  if (grade === "" || grade === 0 || grade === "0" || grade === "-") {
     return true;
   }
   if (isNaN(grade)) {
@@ -80,6 +82,7 @@ export const courseFromUserValidations = (
   }
 
   let newState = "לא הושלם";
+  let newType = course.type === "" ? undefined : course.type;
   let newGrade = course.grade === "" ? undefined : course.grade;
   if (
     course.grade &&
@@ -96,7 +99,7 @@ export const courseFromUserValidations = (
     semester: course.semester,
     credit: course.credit,
     state: newState,
-    type: course.type,
+    type: newType,
     grade: newGrade,
   };
 
