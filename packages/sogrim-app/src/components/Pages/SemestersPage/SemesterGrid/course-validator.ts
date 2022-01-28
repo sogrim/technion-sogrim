@@ -2,10 +2,11 @@ import { courseGradeOptions, emptyRow, RowData } from "../SemesterTabsConsts";
 
 export const validCourseNumber = (
   courseNumber: string,
-  semesterRows: RowData[]
+  semesterRows: RowData[],
+  newFlag: boolean
 ) => {
   const validNumber = /^\d+$/.test(courseNumber) && courseNumber.length === 6;
-  if (validNumber) {
+  if (validNumber && newFlag) {
     const idx = semesterRows.findIndex(
       (row) => row.courseNumber === courseNumber
     );
@@ -13,7 +14,7 @@ export const validCourseNumber = (
       return true;
     }
   }
-  return false;
+  return validNumber;
 };
 
 const validCourseCredit = (credit: string | number) => {
@@ -53,9 +54,10 @@ export interface courseFromUserValidationsValue {
 }
 export const courseFromUserValidations = (
   course: RowData,
-  semesterRows: RowData[]
+  semesterRows: RowData[],
+  newFlag: boolean = false
 ): courseFromUserValidationsValue => {
-  if (!validCourseNumber(course.courseNumber, semesterRows)) {
+  if (!validCourseNumber(course.courseNumber, semesterRows, newFlag)) {
     return {
       error: true,
       newRowData: emptyRow,

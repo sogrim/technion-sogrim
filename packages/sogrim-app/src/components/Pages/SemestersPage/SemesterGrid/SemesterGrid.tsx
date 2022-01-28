@@ -81,7 +81,11 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
   };
 
   const handleAdd = (newRowInput: RowData): boolean => {
-    let validationsStatus = courseFromUserValidations(newRowInput, tableRows);
+    let validationsStatus = courseFromUserValidations(
+      newRowInput,
+      tableRows,
+      true
+    );
     if (validationsStatus.error) {
       setErrorMsg(validationsStatus.msg);
       return false;
