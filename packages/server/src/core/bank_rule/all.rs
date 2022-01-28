@@ -14,11 +14,11 @@ impl<'a> BankRuleHandler<'a> {
             .iter()
             .filter(|course_status| {
                 let mut repetitions = 0;
-                if course_status.r#type == Some(self.bank_name.clone()) {
-                    for optional_duplicate in self.user.degree_status.course_statuses.iter() {
-                        if optional_duplicate.course.id == course_status.course.id {
-                            repetitions += 1;
-                        }
+                for optional_duplicate in self.user.degree_status.course_statuses.iter() {
+                    if optional_duplicate.r#type == Some(self.bank_name.clone())
+                        && optional_duplicate.course.id == course_status.course.id
+                    {
+                        repetitions += 1;
                     }
                 }
                 repetitions > 1
