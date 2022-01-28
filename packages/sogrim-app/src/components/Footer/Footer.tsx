@@ -36,7 +36,7 @@ export const Footer: React.FC = () => {
             rel="noopener"
             color="white"
           >
-            Github
+            <Typography>Github </Typography>
           </Link>
           <GitHubIcon sx={{ height: "18px", width: "18px" }} />
         </Box>
@@ -54,7 +54,7 @@ export const Footer: React.FC = () => {
             rel="noopener"
             color="white"
           >
-            בעיות והצעות - פנו אלינו
+            <Typography> בעיות והצעות - פנו אלינו</Typography>
           </Link>
           <InfoIcon sx={{ height: "18px", width: "18px" }} />
         </Box>

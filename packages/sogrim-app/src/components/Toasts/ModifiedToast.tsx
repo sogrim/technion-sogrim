@@ -7,7 +7,7 @@ import { useStore } from "../../hooks/useStore";
 const ModifiedToastComp = () => {
   const {
     dataStore: { modifiedStatus },
-    uiStore: { endGameRefetch, setSemesterTab },
+    uiStore: { endGameRefetch },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -15,7 +15,6 @@ const ModifiedToastComp = () => {
   const { refetch } = useComputeEndGame(userAuthToken);
 
   const triggerComputeEndGame = () => {
-    setSemesterTab(0);
     endGameRefetch();
     refetch();
   };

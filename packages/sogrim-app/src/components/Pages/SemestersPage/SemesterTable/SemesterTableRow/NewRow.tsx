@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { useMemo, useState } from "react";
 import { useStore } from "../../../../../hooks/useStore";
-import { courseGradeOptions, RowData } from "../SemesterTabsConsts";
+import { courseGradeOptions, RowData } from "../../SemesterTabsConsts";
 import { NewRowActionCell } from "./NewRowActionCell";
 
 export interface NewRowProps {

@@ -10,9 +10,9 @@ import {
   Select,
 } from "@mui/material";
 import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
-import { RowData } from "../SemesterTabsConsts";
+import { RowData } from "../../SemesterTabsConsts";
 import { EditActionCell } from "./EditActionCell";
-import { courseGradeOptions } from "../SemesterTabsConsts";
+import { courseGradeOptions } from "../../SemesterTabsConsts";
 
 export interface EditableRowProps {
   editRow: RowData;

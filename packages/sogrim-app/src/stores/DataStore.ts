@@ -1,6 +1,6 @@
 import { makeAutoObservable } from "mobx";
 import { createData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTableUtils";
-import { RowData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTabsConsts";
+import { RowData } from "../components/Pages/SemestersPage/SemesterTabsConsts";
 import { CourseStatus, UserDetails, CourseState } from "../types/data-types";
 import { RootStore } from "./RootStore";
 

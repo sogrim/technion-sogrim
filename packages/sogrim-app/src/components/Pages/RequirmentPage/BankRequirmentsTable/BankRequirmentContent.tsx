@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React from "react";
-import { RowData } from "../../SemestersPage/SemesterTable/SemesterTabsConsts";
+import { RowData } from "../../SemestersPage/SemesterTabsConsts";
 
 import { BankRequirmentCourseRow } from "./BankRequirmentCourseRow";
 

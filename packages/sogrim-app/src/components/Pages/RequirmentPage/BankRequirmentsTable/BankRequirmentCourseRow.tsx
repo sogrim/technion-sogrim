@@ -7,7 +7,7 @@ import { observer } from "mobx-react-lite";
 import { useStore } from "../../../../hooks/useStore";
 import { useAuth } from "../../../../hooks/useAuth";
 import useUpdateUserState from "../../../../hooks/apiHooks/useUpdateUserState";
-import { RowData } from "../../SemestersPage/SemesterTable/SemesterTabsConsts";
+import { RowData } from "../../SemestersPage/SemesterTabsConsts";
 
 enum IgnoreIconState {
   DontShow = 0,
