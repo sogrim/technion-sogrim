@@ -1,4 +1,4 @@
-import { Alert, Snackbar, Button } from "@mui/material";
+import { Alert, Snackbar, Button, Tooltip, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
 import { useAuth } from "../../hooks/useAuth";
@@ -39,14 +39,25 @@ const ModifiedToastComp = () => {
             >
               סגור את התואר!
             </Button>
-            <Button
-              disabled
-              sx={{ margin: "0px 5px 0px 5px" }}
-              size="small"
-              variant="outlined"
+            <Tooltip
+              title={
+                <Typography>
+                  {" "}
+                  לאחר עריכת קורסים, המידע נשמר באופן אוטומטי - אך סטאטוס התואר
+                  .אינו מעודכן. כאשר תסיימו לערוך, לחצו על סגור את התואר פעולה
+                  זו מפעילה את החישוב אל מול הקטלוג שלכם, ומעדכנת את דף הדרישות
+                  וסטאטוס התואר. למידע נוסף, עברו לשאלות ותשובות :)
+                </Typography>
+              }
             >
-              למידע נוסף
-            </Button>
+              <Button
+                sx={{ margin: "0px 5px 0px 5px" }}
+                size="small"
+                variant="outlined"
+              >
+                למידע נוסף
+              </Button>
+            </Tooltip>
           </Alert>
         </Snackbar>
       ) : null}
