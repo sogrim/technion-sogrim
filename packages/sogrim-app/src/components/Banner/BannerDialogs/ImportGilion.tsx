@@ -1,6 +1,5 @@
-import { Link, Theme, Tooltip, Typography } from "@mui/material";
+import { Link, Theme, Tooltip, Typography, Box } from "@mui/material";
 import Button from "@mui/material/Button";
-import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -111,19 +110,29 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
           onChange={handleChangeTextField}
         />
       </DialogContent>
-      <DialogActions>
-        <Tooltip
-          title={
-            <Typography>
-              דלגו על ייבוא גליון הציונים והזינו את הקורסים שלכם ידנית
-            </Typography>
-          }
-        >
-          <Button onClick={handleSkip}>דלג</Button>
-        </Tooltip>
-        <Button onClick={handleSend}>שלח</Button>
-        <Button onClick={handleClose}>בטל</Button>
-      </DialogActions>
+
+      <Box sx={{ display: "flex", flexDirection: "right", m: 1, gap: 1 }}>
+        <Box sx={{ flexGrow: 1 }}>
+          <Tooltip
+            arrow
+            title={
+              <Typography>
+                דלגו על ייבוא גליון הציונים והזינו את הקורסים שלכם ידנית
+              </Typography>
+            }
+          >
+            <Button variant="outlined" color="info" onClick={handleSkip}>
+              דלג
+            </Button>
+          </Tooltip>
+        </Box>
+        <Button variant="outlined" onClick={handleSend}>
+          שלח
+        </Button>
+        <Button variant="outlined" onClick={handleClose}>
+          בטל
+        </Button>
+      </Box>
     </>
   );
 };
