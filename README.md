@@ -4,16 +4,18 @@ Sogrim - An open source system that checks the status of your academic degree: H
 
 Currently supports the Technion, Faculty of Computer Science.
 
-**Soon! 💃🏼💃🏼💃🏼**  - Support for building personal catalogs (So each institution and faculty could use) 🤓
+**Soon! 💃🏼💃🏼💃🏼**  - Support for building personal catalogs (So that any institution and faculty will be supported) 🤓
 
 
 ## Suggestions, fixes and issues
+Something isn't working?
+Have a cool idea?   
 Cool!
-You can open an issue for us, or specify in the following [form](https://docs.google.com/forms/d/e/1FAIpQLSe7GbkAkIdTgJ3QkGmJMHhkIpjWz_I0ZX608FlxVLeT0cyJJQ/viewform) 
+You can open an issue for us, or specify your suggestion in the following [form](https://docs.google.com/forms/d/e/1FAIpQLSe7GbkAkIdTgJ3QkGmJMHhkIpjWz_I0ZX608FlxVLeT0cyJJQ/viewform) 
 
 ## Contributing
 Pull requests are welcome. 
-1. First, please open an issue first to discuss what you would like to change.
+1. First, please open an issue to discuss what you would like to change.
 2. After approval from the admins, checkout from `development` with your new branch.
 3. When finished, make a PR (`your-branch` -> `development`).
 
@@ -21,10 +23,10 @@ Pull requests are welcome.
 ## Tech stack
 ![react&rust=love](/packages/docs/rrlove.png)
 * Backend - **Rust** (with [actix](https://actix.rs/))
-* Fronend - **React**
+* Frontend - **React**
 
 ## Sogrim-BO
-**Sogrim-BO** - back office app for administations. WIP
+**Sogrim-BO** - Back office app for administrations. WIP
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
