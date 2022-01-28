@@ -114,11 +114,11 @@ const NewRowComp: React.FC<NewRowProps> = ({ handleAddClicked }) => {
           <TextField
             id="course-grade"
             name="grade"
+            type="tel"
             onChange={handleEditChange}
             label={grade}
             variant="outlined"
             size="small"
-            type="number"
             helperText="ציון"
           />
         ) : (

@@ -3,6 +3,7 @@ import { observer } from "mobx-react-lite";
 import React from "react";
 import { BankRequirmentsTable } from "./BankRequirmentsTable/BankRequirmentsTable";
 import { CreditOverflow } from "./CreditOverflow";
+import { ExemptionsAndCredits } from "./ExemptionsAndCredits";
 
 interface RequirmentsTabProps {}
 
@@ -17,7 +18,10 @@ const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
         }}
       >
         <BankRequirmentsTable />
-        <CreditOverflow />
+        <Box sx={{ display: "flex", gap: 4, flexDirection: "column" }}>
+          <CreditOverflow />
+          <ExemptionsAndCredits />
+        </Box>
       </Box>
     </div>
   );

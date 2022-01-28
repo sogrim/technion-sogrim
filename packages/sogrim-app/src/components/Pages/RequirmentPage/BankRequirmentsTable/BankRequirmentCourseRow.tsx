@@ -100,7 +100,7 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
         {course.msg && (
           <Tooltip sx={{ fontSize: "14px" }} title={course.msg} arrow>
             <IconButton>
-              <HelpIcon fontSize={"small"} sx={{ marginLeft: "-10px" }} />
+              <HelpIcon fontSize={"small"} sx={{ mr: "-10px" }} />
             </IconButton>
           </Tooltip>
         )}

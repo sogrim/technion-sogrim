@@ -91,10 +91,25 @@ export class DataStore {
     this.userBankNames = userBanksNamesList;
   };
 
-  generateRowsForSemester = (semester: string, courseList: CourseStatus[]) => {
+  generateRowsForSemester = (
+    semester: string | null,
+    courseList: CourseStatus[],
+    semester0: boolean = false
+  ) => {
+    if (!courseList || courseList.length === 0) {
+      return [];
+    }
     const allSemesterCourses = new Set<CourseStatus>();
     courseList.forEach((course) => {
-      if (course.semester === semester) {
+      if (
+        // Normal Semester
+        (!semester0 && course.semester === semester) ||
+        // Semester 0
+        (semester0 &&
+          course.semester === semester &&
+          (course.grade === "פטור ללא ניקוד" ||
+            course.grade === "פטור עם ניקוד"))
+      ) {
         allSemesterCourses.add(course);
       }
     });

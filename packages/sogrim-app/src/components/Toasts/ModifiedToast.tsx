@@ -22,7 +22,11 @@ const ModifiedToastComp = () => {
   return (
     <>
       {modifiedStatus ? (
-        <Snackbar open={true}>
+        <Snackbar
+          sx={{ mt: "-12px" }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+          open={true}
+        >
           <Alert
             icon={false}
             sx={{
@@ -33,20 +37,22 @@ const ModifiedToastComp = () => {
             סטאטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר.
             <Button
               onClick={triggerComputeEndGame}
-              sx={{ margin: "0px 5px 0px 5px" }}
+              sx={{ margin: "0px 5px 0px 5px", fontWeight: "bold" }}
               size="small"
               variant="outlined"
             >
               סגור את התואר!
             </Button>
             <Tooltip
+              arrow
               title={
                 <Typography>
-                  {" "}
-                  לאחר עריכת קורסים, המידע נשמר באופן אוטומטי - אך סטאטוס התואר
-                  .אינו מעודכן. כאשר תסיימו לערוך, לחצו על סגור את התואר פעולה
-                  זו מפעילה את החישוב אל מול הקטלוג שלכם, ומעדכנת את דף הדרישות
-                  וסטאטוס התואר. למידע נוסף, עברו לשאלות ותשובות :)
+                  לאחר עריכת קורסים, המידע שלכם נשמר - אך סטאטוס התואר אינו
+                  מתעדכן.
+                  <br />
+                  כאשר תסיימו לערוך ולעדכן את הקורסים שלכם, לחצו על{" "}
+                  <b>סגור את התואר</b> ואנו נפעיל את חישוב סגירת התואר בהתאם
+                  לקטלוג שבחרתם :)
                 </Typography>
               }
             >

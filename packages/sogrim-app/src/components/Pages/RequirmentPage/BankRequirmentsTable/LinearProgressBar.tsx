@@ -8,7 +8,7 @@ export const LinearProgressBar: React.FC<{ value: number }> = ({ value }) => {
           display: "flex",
           flexDirection: "column",
           marginTop: "18px",
-          marginLeft: "10px",
+          mr: "10px",
         }}
       >
         <LinearProgress

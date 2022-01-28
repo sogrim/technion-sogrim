@@ -15,9 +15,7 @@ import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
 import { observer } from "mobx-react-lite";
 import useUserState from "../../hooks/apiHooks/useUserState";
 import { ErrorToast } from "../Toasts/ErrorToast";
-import rtlPlugin from "stylis-plugin-rtl";
-import { CacheProvider } from "@emotion/react";
-import createCache from "@emotion/cache";
+
 const steps = [
   {
     label: "בחר קטלוג",
@@ -139,72 +137,66 @@ const AppStepperComp: React.FC = () => {
   const handleError = (msg: string) => {
     setErrorMsg(msg);
   };
-  // Create rtl cache
-  const cacheRtl = createCache({
-    key: "muirtl",
-    stylisPlugins: [rtlPlugin],
-  });
+
   return (
-    <CacheProvider value={cacheRtl}>
-      <Box sx={{ minWidth: 400, marginTop: "20px" }}>
-        <Stepper activeStep={activeStep} orientation="vertical">
-          {steps.map((step, index) => (
-            <Step key={step.label}>
-              <StepLabel
-                color="white"
-                optional={
-                  index === 2 ? (
-                    <Typography color="white" variant="caption">
-                      Last step
-                    </Typography>
-                  ) : null
-                }
-              >
-                <Typography variant="h4">{step.label}</Typography>
-              </StepLabel>
-              <StepContent>
-                <Typography color="white">{step.description}</Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Box>
-                    <Button
-                      variant="contained"
-                      onClick={() => handleOnClick(index)}
-                      sx={{ mt: 1, mr: 1 }}
-                    >
-                      {step.label}
-                    </Button>
-                    <Button
-                      disabled={index === 0}
-                      onClick={handleBack}
-                      sx={{ mt: 1, mr: 1 }}
-                    >
-                      חזור
-                    </Button>
-                  </Box>
+    <Box sx={{ minWidth: 400, marginTop: "20px" }}>
+      <Stepper activeStep={activeStep} orientation="vertical">
+        {steps.map((step, index) => (
+          <Step key={step.label}>
+            <StepLabel
+              color="white"
+              optional={
+                index === 2 ? (
+                  <Typography color="white" variant="caption">
+                    Last step
+                  </Typography>
+                ) : null
+              }
+            >
+              <Typography variant="h4">{step.label}</Typography>
+            </StepLabel>
+            <StepContent>
+              <Typography color="white">{step.description}</Typography>
+              <Box sx={{ mb: 2 }}>
+                <Box>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleOnClick(index)}
+                    sx={{ mt: 1, msScrollLimitXMin: 1 }}
+                  >
+                    {step.label}
+                  </Button>
+                  <Button
+                    disabled={index === 0}
+                    onClick={handleBack}
+                    sx={{ mt: 1, ml: 1 }}
+                  >
+                    חזור
+                  </Button>
                 </Box>
-              </StepContent>
-            </Step>
-          ))}
-        </Stepper>
-        <FormModal
-          dialogContent={
-            <ImportGilion
-              handleSkip={coursesHandleSkip}
-              handleClose={coursesHandleClose}
-              handleError={handleError}
-            />
-          }
-          handleClose={coursesHandleClose}
-          open={coursesModalOpen}
-        />
-        <FormModal
-          dialogContent={<SelectCatalog handleClose={catalogsHandleClose} />}
-          handleClose={catalogsHandleClose}
-          open={catalogsModalOpen}
-        />
-        <ErrorToast msg={errorMsg} />
-      </Box>
-    </CacheProvider>
+              </Box>
+            </StepContent>
+          </Step>
+        ))}
+      </Stepper>
+      <FormModal
+        dialogContent={
+          <ImportGilion
+            handleSkip={coursesHandleSkip}
+            handleClose={coursesHandleClose}
+            handleError={handleError}
+          />
+        }
+        handleClose={coursesHandleClose}
+        open={coursesModalOpen}
+      />
+      <FormModal
+        dialogContent={<SelectCatalog handleClose={catalogsHandleClose} />}
+        handleClose={catalogsHandleClose}
+        open={catalogsModalOpen}
+      />
+      <ErrorToast msg={errorMsg} />
+    </Box>
   );
 };
 

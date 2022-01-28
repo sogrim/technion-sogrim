@@ -11,6 +11,9 @@ import { Footer } from "../Footer/Footer";
 import GoogleAuth from "../GoogleAuth/GoogleAuth";
 import { AnonymousApp } from "./AnonymousApp";
 import { UserApp } from "./UserApp";
+import rtlPlugin from "stylis-plugin-rtl";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
 
 const AppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
@@ -32,11 +35,19 @@ const AppComp: React.FC = () => {
 
   const theme = useMemo(() => getAppTheme(mode), [mode]);
 
+  // Create rtl cache
+  const cacheRtl = createCache({
+    key: "muirtl",
+    stylisPlugins: [rtlPlugin],
+  });
+
   return (
     <ThemeProvider theme={theme}>
-      <GoogleAuth />
-      {isAuthenticated ? <UserApp /> : <AnonymousApp />}
-      <Footer />
+      <CacheProvider value={cacheRtl}>
+        <GoogleAuth />
+        {isAuthenticated ? <UserApp /> : <AnonymousApp />}
+        <Footer />
+      </CacheProvider>
     </ThemeProvider>
   );
 };
