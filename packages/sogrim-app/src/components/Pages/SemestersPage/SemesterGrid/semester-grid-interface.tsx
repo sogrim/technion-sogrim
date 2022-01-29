@@ -1,4 +1,4 @@
-import { GridColumns, GridRowsProp } from "@mui/x-data-grid";
+import { GridColumns } from "@mui/x-data-grid";
 import { renderDeleteCell } from "./DeleteRowCell";
 import { renderCategoryEditInputCell } from "./EditCategoryCell";
 import { renderGradeEditInputCell } from "./EditGradeCell";
@@ -61,48 +61,10 @@ export const columns: GridColumns = [
   {
     field: "actions",
     headerName: "פעולות",
-    width: 125,
-    editable: true,
+    width: 100,
+    editable: false,
     headerAlign: "center",
     align: "center",
     renderCell: renderDeleteCell,
-  },
-];
-
-export const rows: GridRowsProp = [
-  {
-    courseNumber: 1,
-    name: "קורס טוב",
-    credit: 3.5,
-    grade: "12",
-    state: "הושלם",
-    type: "חובה",
-    actions: "",
-  },
-  {
-    courseNumber: 4,
-    name: "קורס טוב",
-    credit: 15,
-    grade: "12",
-    state: "הושלם",
-    type: "חובה",
-  },
-  {
-    courseNumber: 3,
-    name: "קורס טוב",
-    credit: 3.5,
-    grade: "12",
-    state: "הושלם",
-    type: "חובה",
-    actions: "",
-  },
-  {
-    courseNumber: 2,
-    name: "קורס טוב",
-    credit: 3.5,
-    grade: "12",
-    state: "הושלם",
-    type: "חובה",
-    actions: "",
   },
 ];

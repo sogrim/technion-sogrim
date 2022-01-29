@@ -103,7 +103,8 @@ async fn test_rule_all() {
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
-    let res = handle_bank_rule_processor.all(&mut missing_credit_dummy);
+    let mut completed_dummy = true;
+    let res = handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
     // check it adds the type
     assert_eq!(
         user.degree_status.course_statuses[0].r#type,

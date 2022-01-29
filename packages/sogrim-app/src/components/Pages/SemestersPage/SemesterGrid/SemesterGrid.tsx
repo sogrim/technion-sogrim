@@ -6,14 +6,11 @@ import useUpdateUserState from "../../../../hooks/apiHooks/useUpdateUserState";
 import { useAuth } from "../../../../hooks/useAuth";
 import { useStore } from "../../../../hooks/useStore";
 import { ErrorToast } from "../../../Toasts/ErrorToast";
-import {
-  emptyRow,
-  RowData,
-  UpdateUserDetailsAction,
-} from "../SemesterTabsConsts";
+import { RowData, UpdateUserDetailsAction } from "../SemesterTabsConsts";
 import { AddNewRow } from "./AddNewRow";
 import { courseFromUserValidations } from "./course-validator";
 import { columns } from "./semester-grid-interface";
+import { SemesterFooter } from "./SemesterFooter";
 
 const rowDataKeys = ["name", "grade", "credit", "type"];
 export interface SemesterGridProps {
@@ -29,7 +26,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       deleteCourseInUserDetails,
       insertCourseInUserDetails,
     },
-    uiStore: { errorMsg, setErrorMsg, rowToDeleteId },
+    uiStore: { errorMsg, setErrorMsg, rowToDeleteId, setRowToDelete },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -63,10 +60,10 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       return;
     }
     const newSemesterRows = [...tableRows];
-    const rowToDelete = { ...emptyRow };
-    rowToDelete.courseNumber = rowToDeleteId;
+    const rowToDelete = { ...tableRows[idx] };
     newSemesterRows.splice(idx, 1);
     setTableRows(newSemesterRows);
+    setRowToDelete("");
     handleUpdateUserDetails(
       UpdateUserDetailsAction.AfterDelete,
       rowToDelete,
@@ -162,7 +159,6 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
     },
     [handleUpdateUserDetails, semester, setErrorMsg, tableRows]
   );
-
   return (
     <Box
       sx={{
@@ -181,11 +177,11 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
             getRowId={(row) => row.courseNumber}
             autoHeight
             onCellEditCommit={handleEditRowsModelChange}
-            hideFooter
+            components={{ Footer: () => <SemesterFooter rows={tableRows} /> }}
           />
         </div>
       </Box>
-      <Box sx={{ marginBottom: 15 }}>
+      <Box sx={{ marginBottom: 10 }}>
         {!addRowToggle ? (
           <Button
             variant="outlined"
@@ -194,7 +190,10 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
             הוסף קורס חדש
           </Button>
         ) : (
-          <AddNewRow handleAddClicked={handleAddClicked} />
+          <AddNewRow
+            handleAddClicked={handleAddClicked}
+            setAddRowToggle={setAddRowToggle}
+          />
         )}
       </Box>
       <ErrorToast msg={errorMsg} />
