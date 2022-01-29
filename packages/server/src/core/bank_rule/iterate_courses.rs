@@ -34,7 +34,6 @@ impl<'a> BankRuleHandler<'a> {
         // return sum_credit, count_courses, missing_points
         let mut sum_credit = self.credit_overflow;
         let mut count_courses = self.courses_overflow;
-        let mut missing_credit = 0.0;
         let mut handled_courses = HashMap::new(); // mapping between the course in the catalog to the course which was taken by the student (relevant for replacements)
         for course_status in self.user.degree_status.course_statuses.iter_mut() {
             let mut course_chosen_for_bank = false;
@@ -70,11 +69,6 @@ impl<'a> BankRuleHandler<'a> {
                     if let Some(course_id) = course_id_in_list {
                         course_chosen_for_bank = true;
                         handled_courses.insert(course_id.clone(), course_status.course.id.clone());
-                        if let Some(course) = self.courses.get(course_id) {
-                            if course_status.course.credit < course.credit {
-                                missing_credit += course.credit - course_status.course.credit;
-                            }
-                        }
                     }
                 }
             }
@@ -93,7 +87,6 @@ impl<'a> BankRuleHandler<'a> {
         CreditInfo {
             sum_credit,
             count_courses,
-            missing_credit,
             handled_courses,
         }
     }

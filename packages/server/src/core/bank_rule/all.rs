@@ -11,17 +11,9 @@ impl<'a> BankRuleHandler<'a> {
         if c1 == c2 {
             true
         } else if let Some(replacements) = self.catalog_replacements.get(c1) {
-            if replacements.contains(c2) {
-                true
-            } else {
-                false
-            }
+            replacements.contains(c2)
         } else if let Some(replacements) = self.common_replacements.get(c1) {
-            if replacements.contains(c2) {
-                true
-            } else {
-                false
-            }
+            replacements.contains(c2)
         } else {
             false
         }
@@ -57,16 +49,13 @@ impl<'a> BankRuleHandler<'a> {
                 !duplicate_courses.contains(&course_status.course.id) || course_status.modified
             });
     }
-    pub fn all(mut self, missing_credit: &mut f32, completed: &mut bool) -> f32 {
+    pub fn all(mut self, sum_credit_requirement: &mut f32, completed: &mut bool) -> f32 {
         let credit_info = self.iterate_course_list();
-
-        self.remove_duplicate_unmodified_courses();
 
         // handle courses in course list which the user didn't complete or any replacement for them
         // If the user didn't complete one of the courses requirements the bank is not completed
-        for course_id in &self.course_list {
+        for course_id in self.course_list.iter() {
             if !credit_info.handled_courses.contains_key(course_id) {
-                *completed = false;
                 let course = if let Some(course) = self.courses.get(course_id) {
                     course.clone()
                 } else {
@@ -82,19 +71,20 @@ impl<'a> BankRuleHandler<'a> {
                     r#type: Some(self.bank_name.clone()),
                     ..Default::default()
                 });
-            } else {
-                if !self
-                    .user
-                    .get_course_status(&credit_info.handled_courses[course_id])
-                    .unwrap() // unwrap can't fail, if the course is in "handled_courses" it means the user had a course with this id in his list
-                    .passed()
-                {
+            }
+        }
+
+        self.remove_duplicate_unmodified_courses();
+
+        for course_status in self.user.degree_status.course_statuses.iter() {
+            if course_status.r#type == Some(self.bank_name.clone()) {
+                *sum_credit_requirement += course_status.course.credit;
+                if !course_status.passed() {
                     *completed = false;
                 }
             }
         }
 
-        *missing_credit = credit_info.missing_credit;
         credit_info.sum_credit
     }
 }
