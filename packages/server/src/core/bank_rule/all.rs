@@ -7,6 +7,7 @@ use super::BankRuleHandler;
 
 impl<'a> BankRuleHandler<'a> {
     // returns true if c1 == c2 or c2 is a replacement for c1
+    #[allow(clippy::ptr_arg)]
     fn is_duplicate(&self, c1: &CourseId, c2: &CourseId) -> bool {
         if c1 == c2 {
             true
