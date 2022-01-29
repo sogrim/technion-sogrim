@@ -10,6 +10,7 @@ import { RowData, UpdateUserDetailsAction } from "../SemesterTabsConsts";
 import { AddNewRow } from "./AddNewRow";
 import { courseFromUserValidations } from "./course-validator";
 import { columns } from "./semester-grid-interface";
+import { SemesterFooter } from "./SemesterFooter";
 
 const rowDataKeys = ["name", "grade", "credit", "type"];
 export interface SemesterGridProps {
@@ -158,7 +159,6 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
     },
     [handleUpdateUserDetails, semester, setErrorMsg, tableRows]
   );
-
   return (
     <Box
       sx={{
@@ -177,11 +177,11 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
             getRowId={(row) => row.courseNumber}
             autoHeight
             onCellEditCommit={handleEditRowsModelChange}
-            hideFooter
+            components={{ Footer: () => <SemesterFooter rows={tableRows} /> }}
           />
         </div>
       </Box>
-      <Box sx={{ marginBottom: 15 }}>
+      <Box sx={{ marginBottom: 10 }}>
         {!addRowToggle ? (
           <Button
             variant="outlined"

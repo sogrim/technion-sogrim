@@ -71,7 +71,6 @@ const NewRowComp: React.FC<NewRowProps> = ({
         gap: 0.5,
         height: 40,
         width: 1100,
-        // justifyContent: "space-between",
       }}
     >
       <TextField
