@@ -36,6 +36,8 @@ async fn main() -> std::io::Result<()> {
             .service(api::bo::get_course_by_id)
             .service(api::bo::create_or_update_course)
             .service(api::bo::delete_course)
+            .service(api::bo::get_catalog_by_id)
+            .service(api::bo::create_or_update_catalog)
     })
     .bind((CONFIG.ip, CONFIG.port))?
     .run()
