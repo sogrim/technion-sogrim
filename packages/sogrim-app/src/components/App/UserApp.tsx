@@ -22,7 +22,6 @@ const UserAppComp: React.FC = () => {
   } = useStore();
 
   useEffect(() => {
-    console.log("this guy");
     if (isError) {
       if ((error as any).response.status === 401) {
         window.location.reload();
