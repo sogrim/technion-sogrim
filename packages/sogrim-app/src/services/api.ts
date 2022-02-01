@@ -12,8 +12,9 @@ export const getCatalogs = async (authToken: any): Promise<Catalog[]> => {
           authorization: `${authToken}`,
         },
       })) || fallback;
-  } catch {
+  } catch (e) {
     res = fallback;
+    throw e;
   }
   return res.data;
 };
@@ -86,8 +87,9 @@ export const putUserState = async (
           authorization: `${authToken}`,
         },
       })) || fallback;
-  } catch {
+  } catch (e) {
     res = fallback;
+    throw e;
   }
   return res;
 };
@@ -102,8 +104,9 @@ export const getComputeEndGame = async (authToken: any): Promise<UserState> => {
           authorization: `${authToken}`,
         },
       })) || fallback;
-  } catch {
+  } catch (e) {
     res = fallback;
+    throw e;
   }
   return res;
 };
