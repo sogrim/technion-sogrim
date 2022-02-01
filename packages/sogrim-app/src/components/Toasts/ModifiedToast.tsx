@@ -1,5 +1,6 @@
 import { Alert, Snackbar, Button, Tooltip, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
+import { useEffect } from "react";
 import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
 import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
@@ -12,12 +13,20 @@ const ModifiedToastComp = () => {
 
   const { userAuthToken } = useAuth();
 
-  const { refetch } = useComputeEndGame(userAuthToken);
+  const { refetch, isError, error } = useComputeEndGame(userAuthToken);
 
   const triggerComputeEndGame = () => {
     endGameRefetch();
     refetch();
   };
+
+  useEffect(() => {
+    if (isError) {
+      if ((error as any).response.status === 401) {
+        window.location.reload();
+      }
+    }
+  }, [isError, error]);
 
   return (
     <>

@@ -1,11 +1,12 @@
 .env
 .DS_Store
+package-lock.json
 .vscode/
 .idea/
+node_modules/
 debug_text.txt
 packages/server/private/
 packages/server/target/
 packages/server/.vscode/settings.json
 packages/server/Cargo.lock
 packages/server/*.txt
-packages/sogrim-app/package-lock.json

@@ -2,15 +2,12 @@ extern crate jsonwebtoken_google;
 
 use crate::config::CONFIG;
 use actix_web::{
+    body::EitherBody,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
-    error::ErrorUnauthorized,
     http::header,
-    Error, HttpMessage,
+    Error, HttpMessage, HttpResponse,
 };
-use futures_util::{
-    future::{ready, LocalBoxFuture, Ready},
-    FutureExt,
-};
+use futures_util::future::{ready, LocalBoxFuture, Ready};
 use jsonwebtoken_google::{Parser, ParserError};
 use serde::Deserialize;
 use std::rc::Rc;
@@ -59,7 +56,7 @@ impl<S, B> Transform<S, ServiceRequest> for AuthenticateMiddleware
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = Error;
     type Transform = Authenticator<S>;
     type InitError = ();
@@ -72,6 +69,15 @@ where
     }
 }
 
+macro_rules! return_401_with_reason(
+    ($request:ident,$reason:expr) => {
+        return Ok(ServiceResponse::new(
+            $request,
+            HttpResponse::Unauthorized().body($reason).map_into_right_body(),
+        ))
+    };
+);
+
 pub struct Authenticator<S> {
     service: Rc<S>,
 }
@@ -79,8 +85,9 @@ pub struct Authenticator<S> {
 impl<S, B> Service<ServiceRequest> for Authenticator<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S::Future: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
@@ -88,24 +95,29 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let srv = Rc::clone(&self.service);
-        async move {
-            let jwt = req
-                .headers()
-                .get(header::AUTHORIZATION)
-                .ok_or_else(|| ErrorUnauthorized("Authorization Header Missing"))?
-                .to_str()
-                .map_err(|_| ErrorUnauthorized("Authorization Header Invalid"))?;
+        let (request, payload) = req.into_parts();
+        Box::pin(async move {
+            let auth_header = match request.headers().get(header::AUTHORIZATION) {
+                Some(header) => header,
+                None => return_401_with_reason!(request, "No authorization header found"),
+            };
 
-            let sub = get_decoded(jwt)
-                .await
-                .map_err(|err| ErrorUnauthorized(err.to_string()))?
-                .sub;
+            let jwt = match auth_header.to_str() {
+                Ok(jwt) => jwt,
+                Err(_) => return_401_with_reason!(request, "Invalid authorization header"),
+            };
 
-            req.extensions_mut().insert::<Sub>(sub);
-            let res = srv.call(req).await?;
+            let sub = match get_decoded(jwt).await {
+                Ok(id_info) => id_info.sub,
+                Err(err) => return_401_with_reason!(request, format!("Invalid JWT: {}", err)),
+            };
 
-            Ok(res)
-        }
-        .boxed_local()
+            request.extensions_mut().insert::<Sub>(sub);
+            let res = srv
+                .call(ServiceRequest::from_parts(request, payload))
+                .await?;
+
+            Ok(res.map_into_left_body())
+        })
     }
 }
