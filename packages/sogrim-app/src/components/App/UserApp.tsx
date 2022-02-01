@@ -15,13 +15,19 @@ const UserAppComp: React.FC = () => {
   const theme = useMemo(() => getAppTheme(mode), [mode]);
 
   const { userAuthToken } = useAuth();
-  const { data, isLoading } = useUserState(userAuthToken);
+  const { data, isLoading, isError, error } = useUserState(userAuthToken);
   const {
     dataStore: { updateStoreUserDetails },
     uiStore: { computeUserRegistrationState, userRegistrationState },
   } = useStore();
 
   useEffect(() => {
+    console.log("this guy");
+    if (isError) {
+      if ((error as any).response.status === 401) {
+        window.location.reload();
+      }
+    }
     if (!isLoading && data) {
       updateStoreUserDetails(data.details);
     }
@@ -31,6 +37,8 @@ const UserAppComp: React.FC = () => {
     isLoading,
     userRegistrationState,
     computeUserRegistrationState,
+    isError,
+    error,
   ]);
 
   return (

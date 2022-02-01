@@ -68,8 +68,9 @@ export const getUserState = async (authToken: any): Promise<UserState> => {
       },
     });
     data = res.data || fallback;
-  } catch {
+  } catch (e) {
     data = fallback;
+    throw e;
   }
   return data;
 };
