@@ -30,12 +30,17 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
   } = useStore();
 
   const { userAuthToken } = useAuth();
-  const { mutate } = useUpdateUserState(userAuthToken);
+  const { mutate, isError, error } = useUpdateUserState(userAuthToken);
 
   const [tableRows, setTableRows] = useState<RowData[]>([]);
   const [addRowToggle, setAddRowToggle] = useState<boolean>(false);
 
   useEffect(() => {
+    if (isError) {
+      if ((error as any).response.status === 401) {
+        window.location.reload();
+      }
+    }
     if (userDetails) {
       setTableRows(
         generateRowsForSemester(
@@ -44,7 +49,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
         )
       );
     }
-  }, [userDetails, generateRowsForSemester, semester]);
+  }, [userDetails, generateRowsForSemester, semester, isError, error]);
 
   useEffect(() => {
     if (rowToDeleteId !== "") {

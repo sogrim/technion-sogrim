@@ -14,7 +14,7 @@ const SemesterTabsComp = () => {
   const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
 
   const { userAuthToken } = useAuth();
-  const { mutate } = useUpdateUserState(userAuthToken);
+  const { mutate, isError, error } = useUpdateUserState(userAuthToken);
   const {
     uiStore: {
       currentSemesterIdx,
@@ -44,13 +44,18 @@ const SemesterTabsComp = () => {
   };
 
   useEffect(() => {
+    if (isError) {
+      if ((error as any).response.status === 401) {
+        window.location.reload();
+      }
+    }
     if (userDetails) {
       setAllSemesters(
         getAllUserSemesters(userDetails.degree_status.course_statuses)
       );
     }
     setErrorMsg("");
-  }, [userDetails, getAllUserSemesters, userRegistrationState]);
+  }, [userDetails, getAllUserSemesters, userRegistrationState, isError, error]);
 
   const findLastNonSummerSemester = (): string | undefined => {
     return allSemesters!!

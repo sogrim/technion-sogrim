@@ -25,19 +25,24 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
   const [showIgnoreIcon, setShowIgnoreIcon] = useState<IgnoreIconState>(
     IgnoreIconState.DontShow
   );
+  const { userAuthToken } = useAuth();
+  const { mutate, isError, error } = useUpdateUserState(userAuthToken);
 
   useEffect(() => {
+    if (isError) {
+      if ((error as any).response.status === 401) {
+        window.location.reload();
+      }
+    }
     if (course.type === "חובה" && course.state === "לא רלוונטי") {
       setShowIgnoreIcon(IgnoreIconState.ShowV);
     } else if (course.type === "חובה" && course.state !== "לא רלוונטי") {
       setShowIgnoreIcon(IgnoreIconState.ShowIgnoe);
     }
-  }, [course.state, course.type]);
+  }, [course.state, course.type, isError, error]);
   const {
     dataStore: { updateIrrelevantCourse },
   } = useStore();
-  const { userAuthToken } = useAuth();
-  const { mutate } = useUpdateUserState(userAuthToken);
 
   const decodeSemesterNumber = (semester: string) => {
     if (semester) {
