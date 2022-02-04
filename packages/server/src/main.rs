@@ -1,7 +1,7 @@
 extern crate my_internet_ip;
 use crate::config::CONFIG;
 use actix_cors::Cors;
-use actix_web::{middleware::Logger, web, App, HttpServer};
+use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use mongodb::Client;
 
@@ -9,23 +9,30 @@ mod api;
 mod config;
 mod core;
 mod db;
+mod logger;
 mod middleware;
 mod resources;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Load .env (in development environment)
     dotenv().ok();
+
+    // Initialize MongoDB client
     let client = Client::with_uri_str(&CONFIG.uri)
         .await
-        .expect("failed to connect");
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+        .expect("ERROR: Failed to connect with MongoDB");
 
+    // Initialize logger
+    logger::init_env_logger();
+
+    // Start the server
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(client.clone()))
             .wrap(middleware::auth::AuthenticateMiddleware)
             .wrap(Cors::permissive())
-            .wrap(Logger::default())
+            .wrap(logger::init_actix_logger())
             .service(api::students::get_all_catalogs)
             .service(api::students::login)
             .service(api::students::add_catalog)
