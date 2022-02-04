@@ -35,9 +35,10 @@ pub async fn get_all_catalogs(
 #[get("/students/login")]
 pub async fn login(client: web::Data<Client>, req: HttpRequest) -> Result<HttpResponse, Error> {
     let extensions = req.extensions();
-    let user_id = extensions
-        .get::<Sub>()
-        .ok_or_else(|| ErrorInternalServerError("Middleware Internal Error"))?;
+    let user_id = extensions.get::<Sub>().ok_or_else(|| {
+        log::error!("Middleware Internal Error");
+        ErrorInternalServerError("")
+    })?;
 
     let document = doc! {"$setOnInsert" : User::new_document(user_id)};
     let updated_user = db::services::find_and_update_user(user_id, document, &client).await?;
@@ -66,7 +67,10 @@ pub async fn add_catalog(
             .await?;
             Ok(HttpResponse::Ok().json(updated_user))
         }
-        None => Err(ErrorInternalServerError("No data exists for user")),
+        None => {
+            log::error!("No data exists for user");
+            Err(ErrorInternalServerError("No data exists for user"))
+        }
     }
 }
 
@@ -89,7 +93,10 @@ pub async fn add_courses(
             .await?;
             Ok(HttpResponse::Ok().json(updated_user))
         }
-        None => Err(ErrorInternalServerError("No data exists for user")),
+        None => {
+            log::error!("No data exists for user");
+            Err(ErrorInternalServerError("No data exists for user"))
+        }
     }
 }
 
@@ -99,15 +106,18 @@ pub async fn compute_degree_status(
     mut user: User,
     client: web::Data<Client>,
 ) -> Result<HttpResponse, Error> {
-    let mut user_details = user
-        .details
-        .as_mut()
-        .ok_or_else(|| ErrorInternalServerError("No data exists for user"))?;
+    let mut user_details = user.details.as_mut().ok_or_else(|| {
+        log::error!("No data exists for user");
+        ErrorInternalServerError("")
+    })?;
 
     let catalog_id = user_details
         .catalog
         .as_ref()
-        .ok_or_else(|| ErrorInternalServerError("No data exists for user"))?
+        .ok_or_else(|| {
+            log::error!("No data exists for user");
+            ErrorInternalServerError("")
+        })?
         .id;
 
     let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;

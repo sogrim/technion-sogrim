@@ -11,14 +11,18 @@ macro_rules! impl_from_request {
                     let client = match req.app_data::<web::Data<Client>>() {
                         Some(client) => client,
                         None => {
-                            return Err(ErrorInternalServerError("Db client was not initialized!"))
+                            log::error!("Db client was not initialized!");
+                            return Err(ErrorInternalServerError(""));
                         }
                     };
                     match req.extensions().get::<Sub>() {
                         Some(key) => db::services::$get_fn(key, client).await,
-                        None => Err(ErrorUnauthorized(
-                            "Authorization process did not complete successfully!",
-                        )),
+                        None => {
+                            log::error!("Authorization process did not complete successfully!");
+                            Err(ErrorUnauthorized(
+                                "Authorization process did not complete successfully!",
+                            ))
+                        }
                     }
                 })
             }
