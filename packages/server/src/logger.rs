@@ -9,9 +9,9 @@ pub fn init_env_logger() {
 pub fn init_actix_logger() -> Logger {
     Logger::new(
         format!(
-            "{} | {} | {} seconds.",
+            "{} | {} | {} seconds",
             "%r".yellow(),
-            "%s".bold().underline(),
+            "%s".bold().magenta(),
             "%T".cyan()
         )
         .as_str(),
