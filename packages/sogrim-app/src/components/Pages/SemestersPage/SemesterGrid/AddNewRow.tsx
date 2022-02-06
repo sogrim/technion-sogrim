@@ -2,6 +2,8 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import {
+  Autocomplete,
+  AutocompleteInputChangeReason,
   Box,
   Divider,
   IconButton,
@@ -10,8 +12,12 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
-import { useMemo, useState } from "react";
+import throttle from "lodash/throttle";
+import React, { useMemo, useState } from "react";
+import useCoursesByFilter from "../../../../hooks/apiHooks/useCoursesByFilter";
+import { useAuth } from "../../../../hooks/useAuth";
 import { useStore } from "../../../../hooks/useStore";
+import { Course } from "../../../../types/data-types";
 import {
   courseGradeOptions,
   newEmptyRow,
@@ -40,11 +46,35 @@ const NewRowComp: React.FC<NewRowProps> = ({
 
   const { name, courseNumber, credit, grade, type } = editRow;
 
-  const handleEditChange = (event: any, type?: string) => {
+  const { userAuthToken } = useAuth();
+
+  const { status, data, refetch } = useCoursesByFilter(
+    userAuthToken,
+    !!name,
+    "name",
+    name
+  );
+
+  const refetchCourses = React.useMemo(
+    () => throttle(() => refetch(), 200),
+    [refetch]
+  );
+
+  const handleEditChange = (
+    event: any,
+    type?: string,
+    reason?: AutocompleteInputChangeReason
+  ) => {
+    if (reason === "reset") {
+      return;
+    }
     let fieldName, fieldValue;
     if (type) {
       fieldName = type;
-      fieldValue = event.target.value;
+      fieldValue = event?.target?.value;
+      if (type === "name") {
+        refetchCourses();
+      }
     } else {
       event.preventDefault();
       fieldName = type ?? (event.target?.getAttribute("name") as keyof RowData);
@@ -56,6 +86,21 @@ const NewRowComp: React.FC<NewRowProps> = ({
     setEditRow(newRowData);
   };
 
+  const handleValueSelected = (event: any, newValue: string) => {
+    let selectedCourse = options.find((course) => {
+      let courseNumber = newValue.split("-")[0].trim();
+      console.log(courseNumber);
+      return courseNumber === course._id;
+    });
+    if (selectedCourse) {
+      let newRowData: RowData = { ...editRow };
+      newRowData["courseNumber"] = selectedCourse._id;
+      newRowData["name"] = selectedCourse.name;
+      newRowData["credit"] = selectedCourse.credit;
+      setEditRow(newRowData);
+    }
+  };
+
   const [gradeToggle, setGradeToggle] = useState<boolean>(true);
   const [nonNumericGrade, setNonNumericGrade] = useState<string>("");
 
@@ -63,6 +108,15 @@ const NewRowComp: React.FC<NewRowProps> = ({
     setNonNumericGrade("");
     setGradeToggle(!gradeToggle);
   };
+
+  const [options, setOptions] = React.useState<readonly Course[]>([]);
+
+  React.useEffect(() => {
+    if (status === "success" && data) {
+      console.log("ye?", data.length);
+      setOptions(data);
+    }
+  }, [data, status]);
 
   return (
     <Box
@@ -73,15 +127,26 @@ const NewRowComp: React.FC<NewRowProps> = ({
         width: 1100,
       }}
     >
-      <TextField
-        id="course-name"
-        name="name"
-        onChange={handleEditChange}
-        value={name}
-        variant="outlined"
-        size="small"
-        helperText="שם הקורס"
+      <Autocomplete
         sx={{ width: "250px" }}
+        freeSolo
+        disableClearable
+        autoComplete
+        includeInputInList
+        options={options.map((option) => `${option._id} - ${option.name}`)}
+        filterOptions={(x: any) => x}
+        value={name}
+        onChange={(e, value) => (value ? handleValueSelected(e, value) : null)}
+        onInputChange={(e, _, reason) => handleEditChange(e, "name", reason)}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            name="name"
+            variant="outlined"
+            size="small"
+            helperText="שם הקורס"
+          />
+        )}
       />
       <Divider orientation="vertical" variant="middle" flexItem />
 
