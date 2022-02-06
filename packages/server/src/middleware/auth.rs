@@ -70,12 +70,17 @@ where
 }
 
 macro_rules! return_401_with_reason(
-    ($request:ident,$reason:expr) => {
+    ($request:ident,$reason:expr) => {{
+        if $reason.contains("Expired") {
+            log::warn!("{}", $reason);
+        } else {
+            log::error!("{}", $reason);
+        }
         return Ok(ServiceResponse::new(
             $request,
             HttpResponse::Unauthorized().body($reason).map_into_right_body(),
         ))
-    };
+    }};
 );
 
 pub struct Authenticator<S> {

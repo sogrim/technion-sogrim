@@ -27,9 +27,12 @@ macro_rules! impl_get {
                 .await
             {
                 Ok(Some(id)) => Ok(id),
-                Ok(None) => Err(error::ErrorNotFound(id.to_string())),
+                Ok(None) => {
+                    log::error!("{:#?} not found", stringify!($db_item));
+                    Err(error::ErrorNotFound(id.to_string()))
+                }
                 Err(err) => {
-                    eprintln!("{:#?}", err);
+                    log::error!("{:#?}", err);
                     Err(error::ErrorInternalServerError(err.to_string()))
                 }
             }
@@ -51,11 +54,14 @@ macro_rules! impl_get_all {
                 .find(None, None)
                 .await
             {
-                Ok(docs) => Ok(docs
-                    .try_collect::<Vec<$db_item>>()
-                    .await
-                    .map_err(|e| ErrorInternalServerError(e.to_string()))?),
-                Err(err) => Err(ErrorInternalServerError(err.to_string())),
+                Ok(docs) => Ok(docs.try_collect::<Vec<$db_item>>().await.map_err(|e| {
+                    log::error!("{}", e.to_string());
+                    ErrorInternalServerError("")
+                })?),
+                Err(err) => {
+                    log::error!("{}", err.to_string());
+                    Err(ErrorInternalServerError(""))
+                }
             }
         }
     };
@@ -93,8 +99,8 @@ macro_rules! impl_update {
                 // We can safely unwrap here thanks to upsert=true and ReturnDocument::After
                 Ok(item) => Ok(item.unwrap()),
                 Err(err) => {
-                    let err = format!("monogdb driver error: {}", err);
-                    eprintln!("{}", err);
+                    let err = format!("MongoDB driver error: {}", err);
+                    log::error!("{}", err);
                     Err(ErrorInternalServerError(err))
                 }
             }
@@ -120,8 +126,8 @@ macro_rules! impl_delete {
             {
                 Ok(_) => Ok(()),
                 Err(err) => {
-                    let err = format!("monogdb driver error: {}", err);
-                    eprintln!("{}", err);
+                    let err = format!("MongoDB driver error: {}", err);
+                    log::error!("{}", err);
                     Err(ErrorInternalServerError(err))
                 }
             }
