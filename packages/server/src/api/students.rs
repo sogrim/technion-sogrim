@@ -1,8 +1,10 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use actix_web::{
-    error::ErrorInternalServerError, get, post, put, web, Error, HttpMessage, HttpRequest,
-    HttpResponse,
+    error::{ErrorBadRequest, ErrorInternalServerError},
+    get, post, put,
+    web::{self, Query},
+    Error, HttpMessage, HttpRequest, HttpResponse,
 };
 use bson::doc;
 use mongodb::Client;
@@ -71,6 +73,26 @@ pub async fn add_catalog(
             log::error!("No data exists for user");
             Err(ErrorInternalServerError("No data exists for user"))
         }
+    }
+}
+
+#[get("/students/courses")]
+pub async fn get_courses_by_filter(
+    _: User,
+    req: HttpRequest,
+    client: web::Data<Client>,
+) -> Result<HttpResponse, Error> {
+    let params = Query::<HashMap<String, String>>::from_query(req.query_string())
+        .map_err(|e| ErrorBadRequest(e.to_string()))?;
+    if let Some(name) = params.get("name") {
+        println!("QUERY: {}", name);
+        db::services::get_all_courses_with_name(name, &client)
+            .await
+            .map(|courses| HttpResponse::Ok().json(courses))
+    } else {
+        let err_msg = "Missing 'name' query parameter";
+        log::error!("{}", err_msg);
+        Err(ErrorBadRequest(err_msg))
     }
 }
 
