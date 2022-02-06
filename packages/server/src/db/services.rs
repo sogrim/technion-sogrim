@@ -199,10 +199,17 @@ impl_get_all!(
 );
 
 impl_get_all_filtered!(
-    fn_name = get_all_courses_with_name,
+    fn_name = get_all_courses_by_name,
     db_item = Course,
     db_coll_name = "Courses",
     filter_name = "name"
+);
+
+impl_get_all_filtered!(
+    fn_name = get_all_courses_by_number,
+    db_item = Course,
+    db_coll_name = "Courses",
+    filter_name = "_id"
 );
 
 impl_update!(

@@ -84,15 +84,23 @@ pub async fn get_courses_by_filter(
 ) -> Result<HttpResponse, Error> {
     let params = Query::<HashMap<String, String>>::from_query(req.query_string())
         .map_err(|e| ErrorBadRequest(e.to_string()))?;
-    if let Some(name) = params.get("name") {
-        println!("QUERY: {}", name);
-        db::services::get_all_courses_with_name(name, &client)
-            .await
-            .map(|courses| HttpResponse::Ok().json(courses))
-    } else {
-        let err_msg = "Missing 'name' query parameter";
-        log::error!("{}", err_msg);
-        Err(ErrorBadRequest(err_msg))
+    match (params.get("name"), params.get("number")) {
+        (Some(name), None) => {
+            let courses = db::services::get_all_courses_by_name(name, &client).await?;
+            Ok(HttpResponse::Ok().json(courses))
+        }
+        (None, Some(number)) => {
+            let courses = db::services::get_all_courses_by_number(number, &client).await?;
+            Ok(HttpResponse::Ok().json(courses))
+        }
+        (Some(_), Some(_)) => {
+            log::error!("Invalid query params");
+            Err(ErrorBadRequest("Invalid query params"))
+        }
+        (None, None) => {
+            log::error!("Missing query params");
+            Err(ErrorBadRequest("Missing query params"))
+        }
     }
 }
 

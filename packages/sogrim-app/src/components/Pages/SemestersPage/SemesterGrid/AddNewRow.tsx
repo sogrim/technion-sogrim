@@ -48,16 +48,30 @@ const NewRowComp: React.FC<NewRowProps> = ({
 
   const { userAuthToken } = useAuth();
 
-  const { status, data, refetch } = useCoursesByFilter(
-    userAuthToken,
-    !!name,
-    "name",
-    name
+  const {
+    status: statusByName,
+    data: dataByName,
+    refetch: refetchByName,
+    isError: isErrorByName,
+    error: errorByName,
+  } = useCoursesByFilter(userAuthToken, !!name, "name", name);
+
+  const {
+    status: statusByNumber,
+    data: dataByNumber,
+    refetch: refetchByNumber,
+    isError: isErrorByNumber,
+    error: errorByNumber,
+  } = useCoursesByFilter(userAuthToken, !!courseNumber, "number", courseNumber);
+
+  const refetchCoursesByName = React.useMemo(
+    () => throttle(() => refetchByName(), 350),
+    [refetchByName]
   );
 
-  const refetchCourses = React.useMemo(
-    () => throttle(() => refetch(), 200),
-    [refetch]
+  const refetchCoursesByNumber = React.useMemo(
+    () => throttle(() => refetchByNumber(), 350),
+    [refetchByNumber]
   );
 
   const handleEditChange = (
@@ -73,7 +87,10 @@ const NewRowComp: React.FC<NewRowProps> = ({
       fieldName = type;
       fieldValue = event?.target?.value;
       if (type === "name") {
-        refetchCourses();
+        refetchCoursesByName();
+      }
+      if (type === "courseNumber") {
+        refetchCoursesByNumber();
       }
     } else {
       event.preventDefault();
@@ -86,10 +103,10 @@ const NewRowComp: React.FC<NewRowProps> = ({
     setEditRow(newRowData);
   };
 
-  const handleValueSelected = (event: any, newValue: string) => {
+  const handleValueSelected = (value: string, type?: string) => {
+    let options = type === "name" ? courseNameOptions : courseNumberOptions;
     let selectedCourse = options.find((course) => {
-      let courseNumber = newValue.split("-")[0].trim();
-      console.log(courseNumber);
+      let courseNumber = value.split("-")[0].trim();
       return courseNumber === course._id;
     });
     if (selectedCourse) {
@@ -109,14 +126,40 @@ const NewRowComp: React.FC<NewRowProps> = ({
     setGradeToggle(!gradeToggle);
   };
 
-  const [options, setOptions] = React.useState<readonly Course[]>([]);
+  const [courseNameOptions, setCourseNameOptions] = React.useState<
+    readonly Course[]
+  >([]);
+  const [courseNumberOptions, setCourseNumberOptions] = React.useState<
+    readonly Course[]
+  >([]);
 
   React.useEffect(() => {
-    if (status === "success" && data) {
-      console.log("ye?", data.length);
-      setOptions(data);
+    if (isErrorByName) {
+      if ((errorByName as any).response.status === 401) {
+        window.location.reload();
+      }
     }
-  }, [data, status]);
+    if (isErrorByNumber) {
+      if ((errorByNumber as any).response.status === 401) {
+        window.location.reload();
+      }
+    }
+    if (statusByName === "success" && dataByName) {
+      setCourseNameOptions(dataByName);
+    }
+    if (statusByNumber === "success" && dataByNumber) {
+      setCourseNumberOptions(dataByNumber);
+    }
+  }, [
+    dataByName,
+    dataByNumber,
+    errorByName,
+    errorByNumber,
+    isErrorByName,
+    isErrorByNumber,
+    statusByName,
+    statusByNumber,
+  ]);
 
   return (
     <Box
@@ -133,10 +176,19 @@ const NewRowComp: React.FC<NewRowProps> = ({
         disableClearable
         autoComplete
         includeInputInList
-        options={options.map((option) => `${option._id} - ${option.name}`)}
-        filterOptions={(x: any) => x}
+        options={courseNameOptions.map(
+          (option) => `${option._id} - ${option.name}`
+        )}
+        filterOptions={(options, state) =>
+          options.filter((option: string) =>
+            option.split("-")[1].includes(state.inputValue)
+          )
+        }
         value={name}
-        onChange={(e, value) => (value ? handleValueSelected(e, value) : null)}
+        inputValue={name}
+        onChange={(_, value, type) =>
+          value ? handleValueSelected(value, type) : null
+        }
         onInputChange={(e, _, reason) => handleEditChange(e, "name", reason)}
         renderInput={(params) => (
           <TextField
@@ -150,14 +202,36 @@ const NewRowComp: React.FC<NewRowProps> = ({
       />
       <Divider orientation="vertical" variant="middle" flexItem />
 
-      <TextField
-        id="course-number"
-        name="courseNumber"
-        onChange={handleEditChange}
+      <Autocomplete
+        sx={{ width: "250px" }}
+        freeSolo
+        disableClearable
+        autoComplete
+        includeInputInList
+        options={courseNumberOptions.map(
+          (option) => `${option._id} - ${option.name}`
+        )}
+        filterOptions={(options, state) =>
+          options.filter((option: string) =>
+            option.split("-")[0].includes(state.inputValue)
+          )
+        }
         value={courseNumber}
-        variant="outlined"
-        size="small"
-        helperText="מס׳ הקורס"
+        onChange={(_, value, type) =>
+          value ? handleValueSelected(value, type) : null
+        }
+        onInputChange={(e, _, reason) =>
+          handleEditChange(e, "courseNumber", reason)
+        }
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            name="courseNumber"
+            variant="outlined"
+            size="small"
+            helperText="מס׳ הקורס"
+          />
+        )}
       />
       <Divider orientation="vertical" variant="middle" flexItem />
 
