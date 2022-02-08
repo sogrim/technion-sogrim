@@ -1,6 +1,21 @@
-# Sogrim
+<div align="center">
+  <h1>Sogrim</h1>
+  <p>
+    <strong>Are you ready to complete your degree?</strong>
+  </p>
+  <h2>
+    
+[![CI](https://github.com/sogrim/technion-sogrim/actions/workflows/on_pr_server_ci.yml/badge.svg)](https://github.com/sogrim/technion-sogrim/actions/workflows/on_pr_server_ci.yml) 
+![LICENSE](https://img.shields.io/github/license/sogrim/technion-sogrim)
+![PR](https://img.shields.io/github/issues-pr-closed/sogrim/technion-sogrim?color=%23a94ee6)
+![COMMIT](https://img.shields.io/github/commit-activity/m/sogrim/technion-sogrim)
+  </h2>
 
-Sogrim - An open source system that checks the status of your academic degree: Have you met all the requirements, and are you ready to complete your degree?
+</p>
+</div>
+
+Sogrim is an open source system that checks the status of your academic degree: Have you met all the requirements, and are you ready to complete your degree?
+
 
 Currently supports the Technion, Faculty of Computer Science.
 
