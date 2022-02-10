@@ -1,10 +1,12 @@
 use crate::{
-    api::students::get_all_catalogs, config::CONFIG, middleware, resources::catalog::DisplayCatalog,
+    api::students::get_all_catalogs, config::CONFIG, init_mongodb_client, middleware,
+    resources::catalog::DisplayCatalog,
 };
 use actix_rt::test;
 use actix_web::{
     test::{self},
-    web, App,
+    web::Data,
+    App,
 };
 use dotenv::dotenv;
 use mongodb::Client;
@@ -12,14 +14,12 @@ use mongodb::Client;
 #[test]
 pub async fn test_get_all_catalogs() {
     dotenv().ok();
-    let client = Client::with_uri_str(CONFIG.uri)
-        .await
-        .expect("failed to connect");
+    let client = init_mongodb_client!();
 
     let app = test::init_service(
         App::new()
             .wrap(middleware::auth::AuthenticateMiddleware)
-            .app_data(web::Data::new(client.clone()))
+            .app_data(Data::new(client.clone()))
             .service(get_all_catalogs),
     )
     .await;

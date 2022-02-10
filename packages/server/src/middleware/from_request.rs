@@ -8,7 +8,7 @@ macro_rules! impl_from_request {
             fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
                 let req = req.clone();
                 Box::pin(async move {
-                    let client = match req.app_data::<web::Data<Client>>() {
+                    let client = match req.app_data::<Data<mongodb::Client>>() {
                         Some(client) => client,
                         None => {
                             log::error!("Db client was not initialized!");

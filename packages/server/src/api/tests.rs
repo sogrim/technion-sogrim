@@ -1,8 +1,11 @@
-use crate::{api::students::login, config::CONFIG, middleware, resources::user::User};
+use crate::{
+    api::students::login, config::CONFIG, init_mongodb_client, middleware, resources::user::User,
+};
 use actix_rt::test;
 use actix_web::{
     test::{self},
-    web, App,
+    web::Data,
+    App,
 };
 use dotenv::dotenv;
 use mongodb::Client;
@@ -11,14 +14,12 @@ use mongodb::Client;
 #[test]
 async fn test_student_login() {
     dotenv().ok();
-    let client = Client::with_uri_str(CONFIG.uri)
-        .await
-        .expect("failed to connect");
+    let client = init_mongodb_client!();
 
     let app = test::init_service(
         App::new()
             .wrap(middleware::auth::AuthenticateMiddleware)
-            .app_data(web::Data::new(client.clone()))
+            .app_data(Data::new(client.clone()))
             .service(login),
     )
     .await;

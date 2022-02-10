@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
 use actix_web::{
-    error::ErrorInternalServerError, get, post, put, web, Error, HttpMessage, HttpRequest,
-    HttpResponse,
+    error::ErrorInternalServerError,
+    get, post, put,
+    web::{Data, Json},
+    Error, HttpMessage, HttpRequest, HttpResponse,
 };
 use bson::doc;
-use mongodb::Client;
 
 use crate::{
     core::{
@@ -24,7 +25,7 @@ use crate::{
 #[get("/catalogs")]
 pub async fn get_all_catalogs(
     _: User, //TODO think about whether this is necessary
-    client: web::Data<Client>,
+    client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, Error> {
     db::services::get_all_catalogs(&client)
         .await
@@ -33,7 +34,7 @@ pub async fn get_all_catalogs(
 
 //TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
 #[get("/students/login")]
-pub async fn login(client: web::Data<Client>, req: HttpRequest) -> Result<HttpResponse, Error> {
+pub async fn login(client: Data<mongodb::Client>, req: HttpRequest) -> Result<HttpResponse, Error> {
     let extensions = req.extensions();
     let user_id = extensions.get::<Sub>().ok_or_else(|| {
         log::error!("Middleware Internal Error");
@@ -49,7 +50,7 @@ pub async fn login(client: web::Data<Client>, req: HttpRequest) -> Result<HttpRe
 pub async fn add_catalog(
     mut user: User,
     catalog_id: String,
-    client: web::Data<Client>,
+    client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, Error> {
     match &mut user.details {
         Some(details) => {
@@ -78,7 +79,7 @@ pub async fn add_catalog(
 pub async fn add_courses(
     mut user: User,
     data: String,
-    client: web::Data<Client>,
+    client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, Error> {
     match &mut user.details {
         Some(details) => {
@@ -104,7 +105,7 @@ pub async fn add_courses(
 #[get("/students/degree-status")]
 pub async fn compute_degree_status(
     mut user: User,
-    client: web::Data<Client>,
+    client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, Error> {
     let mut user_details = user.details.as_mut().ok_or_else(|| {
         log::error!("No data exists for user");
@@ -149,8 +150,8 @@ pub async fn compute_degree_status(
 #[put("/students/details")]
 pub async fn update_details(
     mut user: User,
-    details: web::Json<UserDetails>,
-    client: web::Data<Client>,
+    details: Json<UserDetails>,
+    client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, Error> {
     let user_id = user.sub.clone();
     user.details = Some(details.into_inner());

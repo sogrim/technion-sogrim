@@ -2,13 +2,14 @@ use crate::config::CONFIG;
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::degree_status::{DegreeStatus, DegreeStatusHandler};
 use crate::core::parser;
-use crate::db;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade};
 use crate::resources::user::UserDetails;
+use crate::{db, init_mongodb_client};
 use actix_rt::test;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
+use mongodb::Client;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -343,18 +344,7 @@ async fn test_modified() {
 
 async fn run_calculate_degree_status(file_name: &str, catalog: &str) -> UserDetails {
     dotenv().ok();
-    let options = mongodb::options::ClientOptions::parse(CONFIG.uri)
-        .await
-        .expect("failed to parse URI");
-
-    let client = mongodb::Client::with_options(options).unwrap();
-    // Ping the server to see if you can connect to the cluster
-    client
-        .database("admin")
-        .run_command(bson::doc! {"ping": 1}, None)
-        .await
-        .expect("failed to connect to db");
-    println!("Connected successfully.");
+    let client = init_mongodb_client!();
     let contents = std::fs::read_to_string(format!("../docs/{}", file_name))
         .expect("Something went wrong reading the file");
 

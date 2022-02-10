@@ -6,10 +6,9 @@ use crate::impl_from_request;
 use crate::middleware::auth::Sub;
 use actix_web::dev::Payload;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
-use actix_web::{web, Error, FromRequest, HttpMessage, HttpRequest};
+use actix_web::{web::Data, Error, FromRequest, HttpMessage, HttpRequest};
 use bson::doc;
 use futures_util::Future;
-use mongodb::Client;
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 
