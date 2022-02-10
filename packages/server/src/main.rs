@@ -1,4 +1,3 @@
-extern crate my_internet_ip;
 use crate::config::CONFIG;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
@@ -13,23 +12,11 @@ mod logger;
 mod middleware;
 mod resources;
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    // Load .env (in development environment)
-    dotenv().ok();
-
-    // Initialize MongoDB client
-    let client = Client::with_uri_str(&CONFIG.uri)
-        .await
-        .expect("ERROR: Failed to connect with MongoDB");
-
-    // Initialize logger
-    logger::init_env_logger();
-
-    // Start the server
-    HttpServer::new(move || {
+#[macro_export]
+macro_rules! sogrim_server {
+    ($mongo_client:ident) => {
         App::new()
-            .app_data(web::Data::new(client.clone()))
+            .app_data(web::Data::new($mongo_client.clone()))
             .wrap(middleware::auth::AuthenticateMiddleware)
             .wrap(Cors::permissive())
             .wrap(logger::init_actix_logger())
@@ -43,8 +30,23 @@ async fn main() -> std::io::Result<()> {
             .service(api::bo::get_course_by_id)
             .service(api::bo::create_or_update_course)
             .service(api::bo::delete_course)
-    })
-    .bind((CONFIG.ip, CONFIG.port))?
-    .run()
-    .await
+    };
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    // Load .env (in development environment)
+    dotenv().ok();
+
+    // Initialize logger
+    logger::init_env_logger();
+
+    // Initialize MongoDB client
+    let client = init_mongodb_client!();
+
+    // Start the server
+    HttpServer::new(move || sogrim_server!(client))
+        .bind((CONFIG.ip, CONFIG.port))?
+        .run()
+        .await
 }
