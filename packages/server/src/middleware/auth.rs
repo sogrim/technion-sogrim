@@ -18,20 +18,26 @@ pub struct IdInfo {
     pub sub: Sub,
 }
 
-macro_rules! debug_auth {
-    ($token:ident) => {
-        if $token == "bugo-the-debugo" {
-            return Ok(IdInfo {
-                sub: "bugo-the-debugo".into(),
-            });
-        }
-    };
+pub struct JwtDecoder {
+    parser: Parser,
 }
 
-pub async fn get_decoded(token: &str) -> Result<IdInfo, ParserError> {
-    debug_auth!(token); // will return immediately in test environment.
-    let parser = Parser::new(CONFIG.client_id);
-    Ok(parser.parse::<IdInfo>(token).await?)
+impl JwtDecoder {
+    // Set up a jwt parser with actual google client id
+    pub fn new() -> Self {
+        JwtDecoder {
+            parser: Parser::new(CONFIG.client_id),
+        }
+    }
+    // Decode the jwt and return id info (sub wrapper)
+    pub async fn decode(&self, token: &str) -> Result<IdInfo, ParserError> {
+        Ok(self.parser.parse::<IdInfo>(token).await?)
+    }
+    // Set up a debug jwt parser for testing
+    #[cfg(test)]
+    pub fn new_with_parser(parser: Parser) -> Self {
+        JwtDecoder { parser }
+    }
 }
 
 macro_rules! return_401_with_reason(
@@ -63,7 +69,17 @@ pub async fn authenticate(
         Err(_) => return_401_with_reason!(request, "Invalid authorization header"),
     };
 
-    let sub = match get_decoded(jwt).await {
+    let decoder = match request.app_data::<JwtDecoder>() {
+        Some(decoder) => decoder,
+        None => {
+            return Ok(ServiceResponse::new(
+                request,
+                HttpResponse::InternalServerError().body("JwtDecoder not initialized"),
+            ));
+        }
+    };
+
+    let sub = match decoder.decode(jwt).await {
         Ok(id_info) => id_info.sub,
         Err(err) => return_401_with_reason!(request, format!("Invalid JWT: {}", err)),
     };

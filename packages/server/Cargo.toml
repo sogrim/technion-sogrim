@@ -19,7 +19,7 @@ actix-cors = "0.6.0-beta.9"
 actix-service = "2.0.1"
 futures-util = "0.3.17"
 jsonwebtoken = "7.2.0"
-jsonwebtoken-google = "0.1.2"
+jsonwebtoken-google = {version = "0.1.3", default-features = false, features = ["test-helper", "rustls-tls"]}
 env_logger = "0.9.0"
 toml = "0.5.8"
 dotenv = "0.15.0"
