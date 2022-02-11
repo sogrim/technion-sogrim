@@ -1,5 +1,8 @@
 use crate::{
-    api::students::get_all_catalogs, config::CONFIG, init_mongodb_client, middleware,
+    api::students::get_all_catalogs,
+    config::CONFIG,
+    init_mongodb_client,
+    middleware::{self, auth},
     resources::catalog::DisplayCatalog,
 };
 use actix_rt::test;
@@ -14,13 +17,16 @@ use mongodb::Client;
 
 #[test]
 pub async fn test_get_all_catalogs() {
+    // Create authorization header
+    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
+    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
     dotenv().ok();
     let client = init_mongodb_client!();
-
     let app = test::init_service(
         App::new()
-            .wrap(from_fn(middleware::auth::authenticate))
             .app_data(Data::new(client.clone()))
+            .app_data(auth::JwtDecoder::new_with_parser(parser))
+            .wrap(from_fn(middleware::auth::authenticate))
             .service(get_all_catalogs),
     )
     .await;
@@ -28,7 +34,7 @@ pub async fn test_get_all_catalogs() {
     // Create and send request
     let resp = test::TestRequest::get()
         .uri("/catalogs")
-        .insert_header(("authorization", "bugo-the-debugo"))
+        .insert_header(("authorization", jwt))
         .send_request(&app)
         .await;
 
