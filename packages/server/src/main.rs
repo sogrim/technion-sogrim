@@ -1,6 +1,7 @@
 use crate::config::CONFIG;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
+use actix_web_lab::middleware::from_fn;
 use dotenv::dotenv;
 use mongodb::Client;
 
@@ -16,8 +17,8 @@ mod resources;
 macro_rules! sogrim_server {
     ($mongo_client:ident) => {
         App::new()
-            .app_data(web::Data::new($mongo_client.clone()))
-            .wrap(middleware::auth::AuthenticateMiddleware)
+            .app_data(web::Data::new(client.clone()))
+            .wrap(from_fn(middleware::auth::authenticate))
             .wrap(Cors::permissive())
             .wrap(logger::init_actix_logger())
             .service(api::students::get_all_catalogs)

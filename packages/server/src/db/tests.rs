@@ -8,6 +8,7 @@ use actix_web::{
     web::Data,
     App,
 };
+use actix_web_lab::middleware::from_fn;
 use dotenv::dotenv;
 use mongodb::Client;
 
@@ -18,7 +19,7 @@ pub async fn test_get_all_catalogs() {
 
     let app = test::init_service(
         App::new()
-            .wrap(middleware::auth::AuthenticateMiddleware)
+            .wrap(from_fn(middleware::auth::authenticate))
             .app_data(Data::new(client.clone()))
             .service(get_all_catalogs),
     )
