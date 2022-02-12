@@ -42,7 +42,7 @@ impl<'de> Visitor<'de> for StateStrVisitor {
     type Value = CourseState;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a valid string representation of a grade")
+        formatter.write_str("a valid string representation of a course state")
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>

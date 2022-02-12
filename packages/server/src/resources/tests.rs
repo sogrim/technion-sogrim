@@ -17,8 +17,11 @@ async fn test_course_state_serde() {
     let vec: Vec<CourseState> = serde_json::from_value(json).expect("Fail to deserialize");
     assert_eq!(vec, course_states);
 
-    let err: Result<CourseState, _> = serde_json::from_str("השלים");
-    assert!(err.is_err());
+    let res: Result<CourseState, _> = serde_json::from_value(json!("השלים"));
+    assert!(res.is_err());
+    assert!(
+        format!("{:#?}", res).contains("expected a valid string representation of a course state")
+    );
 }
 
 #[test]
@@ -26,6 +29,7 @@ async fn test_course_grade_serde() {
     let course_grades = vec![
         Grade::Numeric(95),
         Grade::Binary(true),
+        Grade::Binary(false),
         Grade::ExemptionWithoutCredit,
         Grade::ExemptionWithCredit,
         Grade::NotComplete,
@@ -33,12 +37,20 @@ async fn test_course_grade_serde() {
     let json = json!(course_grades);
     assert_eq!(
         json,
-        json!(["95", "עבר", "פטור ללא ניקוד", "פטור עם ניקוד", "לא השלים"])
+        json!([
+            "95",
+            "עבר",
+            "נכשל",
+            "פטור ללא ניקוד",
+            "פטור עם ניקוד",
+            "לא השלים"
+        ])
     );
 
     let vec: Vec<Grade> = serde_json::from_value(json).expect("Fail to deserialize");
     assert_eq!(vec, course_grades);
 
-    let err: Result<Grade, _> = serde_json::from_str("-");
-    assert!(err.is_err());
+    let res: Result<Grade, _> = serde_json::from_value(json!("-"));
+    assert!(res.is_err());
+    assert!(format!("{:#?}", res).contains("expected a valid string representation of a grade"));
 }
