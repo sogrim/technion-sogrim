@@ -40,6 +40,8 @@ const AppComp: React.FC = () => {
         }
       }
     }
+    // TODO check
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, googleSession, userAuthToken, setUserDisplay]);
 
   // Create rtl cache

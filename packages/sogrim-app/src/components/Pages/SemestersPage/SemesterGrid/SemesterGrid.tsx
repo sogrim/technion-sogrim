@@ -55,6 +55,8 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
     if (rowToDeleteId !== "") {
       handleDelete(rowToDeleteId);
     }
+    // TODO check
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowToDeleteId]);
 
   const handleDelete = (rowToDeleteId: string) => {

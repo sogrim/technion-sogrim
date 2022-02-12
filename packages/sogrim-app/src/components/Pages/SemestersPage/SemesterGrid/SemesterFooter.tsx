@@ -12,6 +12,8 @@ export const SemesterFooter: React.FC<SemesterFooterProps> = ({ rows }) => {
 
   useEffect(() => {
     compute();
+    // TODO check
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
 
   const compute = () => {
