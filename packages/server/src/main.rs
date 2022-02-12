@@ -2,6 +2,7 @@ extern crate my_internet_ip;
 use crate::config::CONFIG;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
+use actix_web_lab::middleware::from_fn;
 use dotenv::dotenv;
 use mongodb::Client;
 
@@ -30,7 +31,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(client.clone()))
-            .wrap(middleware::auth::AuthenticateMiddleware)
+            .wrap(from_fn(middleware::auth::authenticate))
             .wrap(Cors::permissive())
             .wrap(logger::init_actix_logger())
             .service(api::students::get_all_catalogs)
