@@ -1,4 +1,4 @@
-import { Box, Typography, Divider } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { RowData } from "../SemesterTabsConsts";
 
@@ -16,23 +16,27 @@ export const SemesterFooter: React.FC<SemesterFooterProps> = ({ rows }) => {
 
   const compute = () => {
     let sum = 0,
-      credit = 0,
-      t_credit = 0;
+      doneCredit = 0,
+      doneCreditNoExemption = 0,
+      totalCredit = 0;
     rows.forEach((row) => {
-      t_credit += +row.credit;
+      totalCredit += +row.credit;
       const courserGrade = row.grade ? Number(row.grade) : null;
       if (courserGrade === 0 || !!courserGrade) {
         sum += courserGrade * +row.credit;
-        credit += +row.credit;
+        doneCredit += +row.credit;
+        doneCreditNoExemption += +row.credit;
       }
-      if (row.grade === "עבר") {
-        credit += +row.credit;
+      if (row.grade === "עבר" || row.grade === "פטור עם ניקוד") {
+        doneCredit += +row.credit;
       }
     });
-    setTotalCredit(t_credit);
-    if (credit !== 0) {
-      setAvg(Math.round((sum / credit + Number.EPSILON) * 10) / 10);
-      setDoneCredit(credit);
+    setTotalCredit(totalCredit);
+    if (doneCreditNoExemption !== 0) {
+      setAvg(
+        Math.round((sum / doneCreditNoExemption + Number.EPSILON) * 10) / 10
+      );
+      setDoneCredit(doneCredit);
     }
   };
 
