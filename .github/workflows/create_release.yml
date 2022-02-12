@@ -12,3 +12,4 @@ jobs:
       - uses: rymndhng/release-on-push-action@master
         with:
           bump_version_scheme: norelease # Never generate a release unless explicitly specified with PR labels.
+          release_name: "Sogrim: <RELEASE_TAG>"
