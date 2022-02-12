@@ -45,7 +45,6 @@ pub async fn create_or_update_course(
     course: Json<Course>,
     client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, Error> {
-    println!("{:#?}", course);
     let course_doc = bson::to_document(&course).map_err(ErrorBadRequest)?;
     let document = doc! {"$setOnInsert" : course_doc};
     db::services::find_and_update_course(&id, document, &client)
