@@ -88,17 +88,24 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       tableRows,
       true
     );
+
     if (validationsStatus.error) {
       setErrorMsg(validationsStatus.msg);
       return false;
     }
 
-    const newSemesterRows = [...tableRows, validationsStatus.newRowData];
+    let newRowData = validationsStatus.newRowData;
+    let newDisplayRowData = {
+      ...newRowData,
+      type: newRowData.type ? newRowData.type : "-",
+      grade: newRowData.grade ? newRowData.grade : "-",
+    } as RowData;
 
+    const newSemesterRows = [...tableRows, newDisplayRowData];
     setTableRows(newSemesterRows);
     handleUpdateUserDetails(
       UpdateUserDetailsAction.AfterAdd,
-      validationsStatus.newRowData,
+      newRowData,
       semester
     );
     return true;
@@ -132,6 +139,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
 
   const handleEditRowsModelChange = useCallback(
     ({ id, field, value }: GridCellEditCommitParams) => {
+      value = value === "-" ? undefined : value;
       const courseInTableIndex = tableRows.findIndex(
         (row) => row.courseNumber === id
       );
@@ -151,13 +159,20 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
           return;
         }
 
+        let newRowData = validationsStatus.newRowData;
+        let newDisplayRowData = {
+          ...newRowData,
+          type: newRowData.type ? newRowData.type : "-",
+          grade: newRowData.grade ? newRowData.grade : "-",
+        } as RowData;
+
         const newSemesterRows = [...tableRows];
-        newSemesterRows[courseInTableIndex] = validationsStatus.newRowData;
+        newSemesterRows[courseInTableIndex] = newDisplayRowData;
         setTableRows(newSemesterRows);
 
         handleUpdateUserDetails(
           UpdateUserDetailsAction.AfterEdit,
-          validationsStatus.newRowData,
+          newRowData,
           semester
         );
       }
