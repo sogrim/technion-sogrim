@@ -18,7 +18,7 @@ jobs:
 
       - name: Generate code coverage
         run: |
-          cargo +nightly tarpaulin --manifest-path packages/server/Cargo.toml --verbose --all-features --workspace --timeout 120 --out Xml
+          cargo +nightly tarpaulin --manifest-path packages/server/Cargo.toml --verbose --all-features --workspace --timeout 120 --ignore-tests --out Xml
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
