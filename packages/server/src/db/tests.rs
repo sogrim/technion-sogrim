@@ -1,46 +1,54 @@
-use crate::{
-    api::students::get_all_catalogs,
-    config::CONFIG,
-    init_mongodb_client,
-    middleware::{self, auth},
-    resources::catalog::DisplayCatalog,
-};
+use crate::config::CONFIG;
 use actix_rt::test;
-use actix_web::{
-    test::{self},
-    web::Data,
-    App,
-};
-use actix_web_lab::middleware::from_fn;
+use actix_web::{body::MessageBody, http::StatusCode, web::Bytes};
+
 use dotenv::dotenv;
-use mongodb::Client;
+use mongodb::{
+    options::{ClientOptions, Credential},
+    Client,
+};
+
+use super::services;
 
 #[test]
-pub async fn test_get_all_catalogs() {
-    // Create authorization header
-    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
-    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
+pub async fn test_db_internal_error() {
     dotenv().ok();
-    let client = init_mongodb_client!();
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(client.clone()))
-            .app_data(auth::JwtDecoder::new_with_parser(parser))
-            .wrap(from_fn(middleware::auth::authenticate))
-            .service(get_all_catalogs),
-    )
-    .await;
+    // Create explicit client options and update it manually
+    let mut client_options = ClientOptions::parse(CONFIG.uri)
+        .await
+        .expect("Failed to parse client options");
 
-    // Create and send request
-    let resp = test::TestRequest::get()
-        .uri("/catalogs")
-        .insert_header(("authorization", jwt))
-        .send_request(&app)
-        .await;
+    // Create a fake credential to make queries fail to authenticate
+    let credential = Credential::builder()
+        .username(Some("unknown-username".into()))
+        .password(Some("unknown-password".into()))
+        .build();
+    client_options.credential = Some(credential);
 
-    assert!(resp.status().is_success());
+    // Create mongodb client
+    let client = Client::with_options(client_options).expect("Failed to create client");
 
-    // Check for valid json response
-    let vec_catalogs: Vec<DisplayCatalog> = test::read_body_json(resp).await;
-    assert_eq!(vec_catalogs[0].name, "מדמח תלת שנתי 2019-2020");
+    // Assert that all db requests cause an internal server error
+    let errors = vec![
+        services::get_course_by_id("124400", &client)
+            .await
+            .expect_err("Expected error"),
+        services::get_all_courses(&client)
+            .await
+            .expect_err("Expected error"),
+        services::find_and_update_course("124400", bson::doc! {"$setOnInsert": {}}, &client)
+            .await
+            .expect_err("Expected error"),
+        services::delete_course("124400", &client)
+            .await
+            .expect_err("Expected error"),
+    ];
+    for err in errors {
+        let err_resp = err.error_response();
+        assert_eq!(err_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(
+            err_resp.into_body().try_into_bytes().unwrap(),
+            Bytes::from("MongoDB driver error: SCRAM failure: bad auth : Authentication failed.")
+        );
+    }
 }
