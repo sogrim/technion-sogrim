@@ -37,8 +37,8 @@ pub async fn get_all_catalogs(
 pub async fn login(client: Data<mongodb::Client>, req: HttpRequest) -> Result<HttpResponse, Error> {
     let extensions = req.extensions();
     let user_id = extensions.get::<Sub>().ok_or_else(|| {
-        log::error!("Middleware Internal Error");
-        ErrorInternalServerError("")
+        log::error!("Middleware Internal Error: No sub found in request extensions");
+        ErrorInternalServerError("Middleware Internal Error: No sub found in request extensions")
     })?;
 
     let document = doc! {"$setOnInsert" : User::new_document(user_id)};
@@ -109,15 +109,15 @@ pub async fn compute_degree_status(
 ) -> Result<HttpResponse, Error> {
     let mut user_details = user.details.as_mut().ok_or_else(|| {
         log::error!("No data exists for user");
-        ErrorInternalServerError("")
+        ErrorInternalServerError("No data exists for user")
     })?;
 
     let catalog_id = user_details
         .catalog
         .as_ref()
         .ok_or_else(|| {
-            log::error!("No data exists for user");
-            ErrorInternalServerError("")
+            log::error!("No catalog chosen for user");
+            ErrorInternalServerError("No catalog chosen for user")
         })?
         .id;
 
