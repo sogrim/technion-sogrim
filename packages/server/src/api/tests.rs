@@ -52,7 +52,7 @@ pub async fn test_get_all_catalogs() {
 
     // Check for valid json response
     let vec_catalogs: Vec<DisplayCatalog> = test::read_body_json(resp).await;
-    assert_eq!(vec_catalogs[0].name, "מדמח תלת שנתי 2019-2020");
+    assert!(vec_catalogs.len() >= 8);
 }
 
 #[test]
