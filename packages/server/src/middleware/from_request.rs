@@ -8,19 +8,21 @@ macro_rules! impl_from_request {
             fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
                 let req = req.clone();
                 Box::pin(async move {
-                    let client = match req.app_data::<web::Data<Client>>() {
+                    let client = match req.app_data::<Data<mongodb::Client>>() {
                         Some(client) => client,
                         None => {
-                            log::error!("Db client was not initialized!");
-                            return Err(ErrorInternalServerError(""));
+                            log::error!("Mongodb client not found in application data");
+                            return Err(ErrorInternalServerError(
+                                "Mongodb client not found in application data",
+                            ));
                         }
                     };
                     match req.extensions().get::<Sub>() {
                         Some(key) => db::services::$get_fn(key, client).await,
                         None => {
-                            log::error!("Authorization process did not complete successfully!");
-                            Err(ErrorUnauthorized(
-                                "Authorization process did not complete successfully!",
+                            log::error!("Middleware Error: Sub not found in request extensions");
+                            Err(ErrorInternalServerError(
+                                "Middleware Error: Sub not found in request extensions",
                             ))
                         }
                     }
