@@ -2,70 +2,41 @@ extern crate jsonwebtoken_google;
 
 use crate::config::CONFIG;
 use actix_web::{
-    body::EitherBody,
-    dev::{Service, ServiceRequest, ServiceResponse, Transform},
+    body::MessageBody,
+    dev::{ServiceRequest, ServiceResponse},
     http::header,
     Error, HttpMessage, HttpResponse,
 };
-use futures_util::future::{ready, LocalBoxFuture, Ready};
+use actix_web_lab::middleware::Next;
 use jsonwebtoken_google::{Parser, ParserError};
 use serde::Deserialize;
-use std::rc::Rc;
-
-#[derive(Default, Debug, Deserialize)]
-pub struct IdInfo {
-    /// These six fields are included in all Google ID Tokens.
-    pub iss: String,
-    pub sub: String,
-    pub azp: String,
-    pub aud: String,
-    pub iat: u64,
-    pub exp: u64,
-
-    /// These seven fields are only included when the user has granted the "profile" and
-    /// "email" OAuth scopes to the application.
-    pub email: Option<String>,
-    pub email_verified: Option<bool>,
-    pub name: Option<String>,
-    pub picture: Option<String>,
-    pub given_name: Option<String>,
-    pub family_name: Option<String>,
-    pub locale: Option<String>,
-}
 
 pub type Sub = String;
+#[derive(Default, Debug, Deserialize)]
+pub struct IdInfo {
+    // Identifier of the user, guaranteed to be unique by Google.
+    pub sub: Sub,
+}
 
-macro_rules! debug_auth {
-    ($token:ident) => {
-        if $token == "bugo-the-debugo" {
-            return Ok(IdInfo {
-                sub: "bugo-the-debugo".into(),
-                ..Default::default()
-            });
+pub struct JwtDecoder {
+    parser: Parser,
+}
+
+impl JwtDecoder {
+    // Set up a jwt parser with actual google client id
+    pub fn new() -> Self {
+        JwtDecoder {
+            parser: Parser::new(CONFIG.client_id),
         }
-    };
-}
-
-pub async fn get_decoded(token: &str) -> Result<IdInfo, ParserError> {
-    debug_auth!(token); // will return immediately in test environment.
-    let parser = Parser::new(CONFIG.client_id);
-    Ok(parser.parse::<IdInfo>(token).await?)
-}
-pub struct AuthenticateMiddleware;
-impl<S, B> Transform<S, ServiceRequest> for AuthenticateMiddleware
-where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
-{
-    type Response = ServiceResponse<EitherBody<B>>;
-    type Error = Error;
-    type Transform = Authenticator<S>;
-    type InitError = ();
-    type Future = Ready<Result<Self::Transform, Self::InitError>>;
-
-    fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(Authenticator {
-            service: Rc::new(service),
-        }))
+    }
+    // Decode the jwt and return id info (sub wrapper)
+    pub async fn decode(&self, token: &str) -> Result<IdInfo, ParserError> {
+        Ok(self.parser.parse::<IdInfo>(token).await?)
+    }
+    // Set up a debug jwt parser for testing
+    #[cfg(test)]
+    pub fn new_with_parser(parser: Parser) -> Self {
+        JwtDecoder { parser }
     }
 }
 
@@ -78,51 +49,44 @@ macro_rules! return_401_with_reason(
         }
         return Ok(ServiceResponse::new(
             $request,
-            HttpResponse::Unauthorized().body($reason).map_into_right_body(),
+            HttpResponse::Unauthorized().body($reason),
         ))
     }};
 );
 
-pub struct Authenticator<S> {
-    service: Rc<S>,
-}
+pub async fn authenticate(
+    req: ServiceRequest,
+    next: Next<impl MessageBody + 'static>,
+) -> Result<ServiceResponse<impl MessageBody>, Error> {
+    let (request, payload) = req.into_parts();
+    let auth_header = match request.headers().get(header::AUTHORIZATION) {
+        Some(header) => header,
+        None => return_401_with_reason!(request, "No authorization header found"),
+    };
 
-impl<S, B> Service<ServiceRequest> for Authenticator<S>
-where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
-    S::Future: 'static,
-{
-    type Response = ServiceResponse<EitherBody<B>>;
-    type Error = Error;
-    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+    let jwt = match auth_header.to_str() {
+        Ok(jwt) => jwt,
+        Err(_) => return_401_with_reason!(request, "Invalid authorization header"),
+    };
 
-    actix_service::forward_ready!(service);
+    let decoder = match request.app_data::<JwtDecoder>() {
+        Some(decoder) => decoder,
+        None => {
+            return Ok(ServiceResponse::new(
+                request,
+                HttpResponse::InternalServerError().body("JwtDecoder not initialized"),
+            ));
+        }
+    };
 
-    fn call(&self, req: ServiceRequest) -> Self::Future {
-        let srv = Rc::clone(&self.service);
-        let (request, payload) = req.into_parts();
-        Box::pin(async move {
-            let auth_header = match request.headers().get(header::AUTHORIZATION) {
-                Some(header) => header,
-                None => return_401_with_reason!(request, "No authorization header found"),
-            };
+    let sub = match decoder.decode(jwt).await {
+        Ok(id_info) => id_info.sub,
+        Err(err) => return_401_with_reason!(request, format!("Invalid JWT: {}", err)),
+    };
 
-            let jwt = match auth_header.to_str() {
-                Ok(jwt) => jwt,
-                Err(_) => return_401_with_reason!(request, "Invalid authorization header"),
-            };
-
-            let sub = match get_decoded(jwt).await {
-                Ok(id_info) => id_info.sub,
-                Err(err) => return_401_with_reason!(request, format!("Invalid JWT: {}", err)),
-            };
-
-            request.extensions_mut().insert::<Sub>(sub);
-            let res = srv
-                .call(ServiceRequest::from_parts(request, payload))
-                .await?;
-
-            Ok(res.map_into_left_body())
-        })
-    }
+    request.extensions_mut().insert::<Sub>(sub);
+    let res = next
+        .call(ServiceRequest::from_parts(request, payload))
+        .await?;
+    Ok(res.map_into_boxed_body())
 }

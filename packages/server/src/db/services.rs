@@ -28,12 +28,13 @@ macro_rules! impl_get {
             {
                 Ok(Some(id)) => Ok(id),
                 Ok(None) => {
-                    log::error!("{:#?} not found", stringify!($db_item));
+                    log::error!("{}: {} not found", stringify!($db_item), id.to_string());
                     Err(error::ErrorNotFound(id.to_string()))
                 }
-                Err(err) => {
-                    log::error!("{:#?}", err);
-                    Err(error::ErrorInternalServerError(err.to_string()))
+                Err(e) => {
+                    let err = format!("MongoDB driver error: {}", e);
+                    log::error!("{}", err);
+                    Err(error::ErrorInternalServerError(err))
                 }
             }
         }
@@ -55,12 +56,14 @@ macro_rules! impl_get_all {
                 .await
             {
                 Ok(docs) => Ok(docs.try_collect::<Vec<$db_item>>().await.map_err(|e| {
-                    log::error!("{}", e.to_string());
-                    ErrorInternalServerError("")
+                    let err = format!("MongoDB driver error: {}", e);
+                    log::error!("{}", err);
+                    ErrorInternalServerError(err)
                 })?),
-                Err(err) => {
-                    log::error!("{}", err.to_string());
-                    Err(ErrorInternalServerError(""))
+                Err(e) => {
+                    let err = format!("MongoDB driver error: {}", e);
+                    log::error!("{}", err);
+                    Err(ErrorInternalServerError(err))
                 }
             }
         }
