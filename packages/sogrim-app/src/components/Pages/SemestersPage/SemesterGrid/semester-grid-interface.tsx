@@ -1,7 +1,20 @@
-import { GridColumns } from "@mui/x-data-grid";
+import { GridCellValue, GridColumns, GridComparatorFn } from "@mui/x-data-grid";
 import { renderDeleteCell } from "./DeleteRowCell";
 import { renderCategoryEditInputCell } from "./EditCategoryCell";
 import { renderGradeEditInputCell } from "./EditGradeCell";
+
+const gradeComparator: GridComparatorFn = (
+  v1: GridCellValue,
+  v2: GridCellValue
+) => {
+  if (isNaN(+v1!!) && !isNaN(+v2!!)) {
+    return 1;
+  } else if (!isNaN(+v1!!) && isNaN(+v2!!)) {
+    return -1;
+  } else {
+    return (v2 as any) - (v1 as any);
+  }
+};
 
 export const columns: GridColumns = [
   {
@@ -38,6 +51,7 @@ export const columns: GridColumns = [
     editable: true,
     headerAlign: "center",
     align: "center",
+    sortComparator: gradeComparator,
     renderEditCell: renderGradeEditInputCell,
   },
   {
