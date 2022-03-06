@@ -5,6 +5,14 @@ on:
     paths:
       - "packages/server/**" # Trigger this CI flow if changes were made to server subtree ONLY (code coverage is only supported for server for now)
 
+name: Code Coverage
+
+env:
+  IP: "0.0.0.0"
+  PORT: ${{secrets.PORT}}
+  URI: ${{secrets.MONGO_URI_DEV}}
+  CLIENT_ID: ${{secrets.CLIENT_ID}}
+
 jobs:
   test:
     name: coverage
