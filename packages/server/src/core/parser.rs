@@ -134,7 +134,7 @@ fn set_grades_for_uncompleted_courses(
 }
 
 fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>), Error> {
-    let clean_line = line.replace("*", "");
+    let clean_line = line.replace('*', "");
     let id = {
         let number = clean_line.split(' ').next().ok_or_else(|| {
             log::error!("Bad Format");
