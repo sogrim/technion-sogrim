@@ -22,9 +22,7 @@ export const Footer: React.FC = () => {
           gap: 3,
         }}
       >
-        <Typography sx={{ display: "flex", marginLeft: "auto" }}>
-          מוגש בחום ואהבה מצוות סוגרים 🤓
-        </Typography>
+        <Typography>מוגש בחום ואהבה מצוות סוגרים 🤓</Typography>
         <Box
           sx={{
             display: "flex",
@@ -61,19 +59,20 @@ export const Footer: React.FC = () => {
           </Link>
           <InfoIcon sx={{ height: "18px", width: "18px" }} />
         </Box>
-        <Box
+        <Typography
           sx={{
             display: "flex",
             justifySelf: "flex-end",
             justifyContent: "flex-end",
             alignSelf: "flex-end",
+            position: "absolute",
+            right: 0,
+            left: 0,
+            marginRight: "3px",
+            marginBottom: "-6px",
           }}
-        >
-          <Typography
-            sx={{ marginRight: "3px", marginBottom: "-6px" }}
-            fontSize="small"
-          >{`v${version}`}</Typography>
-        </Box>
+          fontSize="small"
+        >{`v${version}`}</Typography>
       </Box>
     </AppBar>
   );
