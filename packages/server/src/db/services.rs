@@ -71,6 +71,34 @@ macro_rules! impl_get_all {
 }
 
 #[macro_export]
+macro_rules! impl_get_all_filtered {
+    (
+        fn_name=$fn_name:ident,
+        db_item=$db_item:ty,
+        db_coll_name=$db_coll_name:literal,
+        filter_name=$filter_name:literal
+    ) => {
+        pub async fn $fn_name(filter: &str, client: &Client) -> Result<Vec<$db_item>, Error> {
+            match client
+                .database(CONFIG.profile)
+                .collection::<$db_item>($db_coll_name)
+                .find(doc! {$filter_name: { "$regex": filter}}, None)
+                .await
+            {
+                Ok(docs) => Ok(docs.try_collect::<Vec<$db_item>>().await.map_err(|e| {
+                    log::error!("{}", e.to_string());
+                    ErrorInternalServerError("")
+                })?),
+                Err(err) => {
+                    log::error!("{}", err.to_string());
+                    Err(ErrorInternalServerError(""))
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! impl_update {
     (
         fn_name=$fn_name:ident,
@@ -171,6 +199,20 @@ impl_get_all!(
     fn_name = get_all_courses,
     db_item = Course,
     db_coll_name = "Courses"
+);
+
+impl_get_all_filtered!(
+    fn_name = get_all_courses_by_name,
+    db_item = Course,
+    db_coll_name = "Courses",
+    filter_name = "name"
+);
+
+impl_get_all_filtered!(
+    fn_name = get_all_courses_by_number,
+    db_item = Course,
+    db_coll_name = "Courses",
+    filter_name = "_id"
 );
 
 impl_update!(

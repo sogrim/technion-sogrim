@@ -1,9 +1,9 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use actix_web::{
-    error::ErrorInternalServerError,
+    error::{ErrorBadRequest, ErrorInternalServerError},
     get, post, put,
-    web::{Data, Json},
+    web::{Data, Json, Query},
     Error, HttpMessage, HttpRequest, HttpResponse,
 };
 use bson::doc;
@@ -71,6 +71,34 @@ pub async fn add_catalog(
         None => {
             log::error!("No data exists for user");
             Err(ErrorInternalServerError("No data exists for user"))
+        }
+    }
+}
+
+#[get("/students/courses")]
+pub async fn get_courses_by_filter(
+    _: User,
+    req: HttpRequest,
+    client: Data<mongodb::Client>,
+) -> Result<HttpResponse, Error> {
+    let params = Query::<HashMap<String, String>>::from_query(req.query_string())
+        .map_err(|e| ErrorBadRequest(e.to_string()))?;
+    match (params.get("name"), params.get("number")) {
+        (Some(name), None) => {
+            let courses = db::services::get_all_courses_by_name(name, &client).await?;
+            Ok(HttpResponse::Ok().json(courses))
+        }
+        (None, Some(number)) => {
+            let courses = db::services::get_all_courses_by_number(number, &client).await?;
+            Ok(HttpResponse::Ok().json(courses))
+        }
+        (Some(_), Some(_)) => {
+            log::error!("Invalid query params");
+            Err(ErrorBadRequest("Invalid query params"))
+        }
+        (None, None) => {
+            log::error!("Missing query params");
+            Err(ErrorBadRequest("Missing query params"))
         }
     }
 }
