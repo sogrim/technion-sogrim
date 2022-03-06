@@ -8,8 +8,8 @@ edition = "2018"
 [dependencies]
 log = "0.4"
 colored = "2"
-mongodb = { version = "2.0.0"}
-bson = "2.0.0"
+mongodb = "2.1"
+bson = "2.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 actix-rt = "2.2.0"
@@ -18,10 +18,13 @@ actix-web-lab = "0.9.0"
 actix-cors = "0.6.0-beta.9"
 actix-service = "2.0.1"
 futures-util = "0.3.17"
-jsonwebtoken = "7.2.0"
-jsonwebtoken-google = {version = "0.1.3", default-features = false, features = ["test-helper", "rustls-tls"]}
+jsonwebtoken = "8.0"
+jsonwebtoken-google = {version = "0.1", features = ["test-helper"]}
 env_logger = "0.9.0"
 toml = "0.5.8"
 dotenv = "0.15.0"
 lazy_static = "1.4.0"
 petgraph = "0.6.0"
+
+[patch.crates-io]
+jsonwebtoken-google = { git = 'https://github.com/cheetah-games/jsonwebtoken-google' }
