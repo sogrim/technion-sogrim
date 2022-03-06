@@ -1,6 +1,7 @@
 import GitHubIcon from "@mui/icons-material/GitHub";
 import InfoIcon from "@mui/icons-material/Info";
 import { AppBar, Box, Link, Typography } from "@mui/material";
+import { version } from "../../../package.json";
 
 export const Footer: React.FC = () => {
   return (
@@ -21,7 +22,7 @@ export const Footer: React.FC = () => {
           gap: 3,
         }}
       >
-        <Typography> מוגש בחום ואהבה מצוות סוגרים 🤓</Typography>
+        <Typography>מוגש בחום ואהבה מצוות סוגרים 🤓</Typography>
         <Box
           sx={{
             display: "flex",
@@ -58,6 +59,20 @@ export const Footer: React.FC = () => {
           </Link>
           <InfoIcon sx={{ height: "18px", width: "18px" }} />
         </Box>
+        <Typography
+          sx={{
+            display: "flex",
+            justifySelf: "flex-end",
+            justifyContent: "flex-end",
+            alignSelf: "flex-end",
+            position: "absolute",
+            right: 0,
+            left: 0,
+            marginRight: "3px",
+            marginBottom: "-6px",
+          }}
+          fontSize="small"
+        >{`v${version}`}</Typography>
       </Box>
     </AppBar>
   );
