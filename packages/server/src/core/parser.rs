@@ -23,7 +23,8 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     // Sanity validation
     if !(data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
     {
-        return Err(ErrorBadRequest("Bad Format"));
+        log::error!("Invalid copy paste data");
+        return Err(ErrorBadRequest("Invalid copy paste data"));
     }
 
     let mut courses = HashMap::<String, CourseStatus>::new();
@@ -51,9 +52,8 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
                 (_, true, _) => "קיץ",
                 (_, _, true) => "חורף",
                 _ => {
-                    return Err(ErrorInternalServerError(
-                        "Something really unexpected happened",
-                    ))
+                    log::error!("Something really unexpected happened");
+                    return Err(ErrorInternalServerError(""));
                 }
             };
 
@@ -101,7 +101,8 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     vec_courses.append(&mut sport_courses);
 
     if vec_courses.is_empty() {
-        return Err(ErrorBadRequest("Bad Format"));
+        log::error!("Invalid copy paste data");
+        return Err(ErrorBadRequest("Invalid copy paste data"));
     }
     Ok(vec_courses)
 }
@@ -133,15 +134,16 @@ fn set_grades_for_uncompleted_courses(
 }
 
 fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>), Error> {
-    let clean_line = line.replace("*", "");
+    let clean_line = line.replace('*', "");
     let id = {
-        let number = clean_line
-            .split(' ')
-            .next()
-            .ok_or_else(|| ErrorBadRequest("Bad Format"))?;
+        let number = clean_line.split(' ').next().ok_or_else(|| {
+            log::error!("Bad Format");
+            ErrorBadRequest("Bad Format")
+        })?;
         if number.parse::<f32>().is_ok() {
             Ok(String::from(number))
         } else {
+            log::error!("Bad Format");
             Err(ErrorBadRequest("Bad Format"))
         }?
     };
@@ -174,7 +176,10 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
     let grade_str = clean_line
         .split(' ')
         .last()
-        .ok_or_else(|| ErrorBadRequest("Bad Format"))?
+        .ok_or_else(|| {
+            log::error!("Bad Format");
+            ErrorBadRequest("Bad Format")
+        })?
         .trim();
 
     let grade = match grade_str as &str {

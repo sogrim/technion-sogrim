@@ -42,7 +42,7 @@ impl<'de> Visitor<'de> for StateStrVisitor {
     type Value = CourseState;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a valid string representation of a grade")
+        formatter.write_str("a valid string representation of a course state")
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -54,7 +54,11 @@ impl<'de> Visitor<'de> for StateStrVisitor {
             "לא הושלם" => Ok(CourseState::NotComplete),
             "בתהליך" => Ok(CourseState::InProgress),
             "לא רלוונטי" => Ok(CourseState::Irrelevant),
-            _ => Err(Err::invalid_type(Unexpected::Str(v), &self)),
+            _ => {
+                let err: E = Err::invalid_type(Unexpected::Str(v), &self);
+                log::error!("Json deserialize error: {}", err.to_string());
+                Err(err)
+            }
         }
     }
 }
@@ -195,7 +199,11 @@ impl<'de> Visitor<'de> for GradeStrVisitor {
             "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
             "לא השלים" => Ok(Grade::NotComplete),
             _ if v.parse::<u8>().is_ok() => Ok(Grade::Numeric(v.parse::<u8>().unwrap())),
-            _ => Err(Err::invalid_type(Unexpected::Str(v), &self)),
+            _ => {
+                let err: E = Err::invalid_type(Unexpected::Str(v), &self);
+                log::error!("Json deserialize error: {}", err.to_string());
+                Err(err)
+            }
         }
     }
 }

@@ -27,10 +27,14 @@ macro_rules! impl_get {
                 .await
             {
                 Ok(Some(id)) => Ok(id),
-                Ok(None) => Err(error::ErrorNotFound(id.to_string())),
-                Err(err) => {
-                    eprintln!("{:#?}", err);
-                    Err(error::ErrorInternalServerError(err.to_string()))
+                Ok(None) => {
+                    log::error!("{}: {} not found", stringify!($db_item), id.to_string());
+                    Err(error::ErrorNotFound(id.to_string()))
+                }
+                Err(e) => {
+                    let err = format!("MongoDB driver error: {}", e);
+                    log::error!("{}", err);
+                    Err(error::ErrorInternalServerError(err))
                 }
             }
         }
@@ -51,11 +55,44 @@ macro_rules! impl_get_all {
                 .find(None, None)
                 .await
             {
-                Ok(docs) => Ok(docs
-                    .try_collect::<Vec<$db_item>>()
-                    .await
-                    .map_err(|e| ErrorInternalServerError(e.to_string()))?),
-                Err(err) => Err(ErrorInternalServerError(err.to_string())),
+                Ok(docs) => Ok(docs.try_collect::<Vec<$db_item>>().await.map_err(|e| {
+                    let err = format!("MongoDB driver error: {}", e);
+                    log::error!("{}", err);
+                    ErrorInternalServerError(err)
+                })?),
+                Err(e) => {
+                    let err = format!("MongoDB driver error: {}", e);
+                    log::error!("{}", err);
+                    Err(ErrorInternalServerError(err))
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_get_all_filtered {
+    (
+        fn_name=$fn_name:ident,
+        db_item=$db_item:ty,
+        db_coll_name=$db_coll_name:literal,
+        filter_name=$filter_name:literal
+    ) => {
+        pub async fn $fn_name(filter: &str, client: &Client) -> Result<Vec<$db_item>, Error> {
+            match client
+                .database(CONFIG.profile)
+                .collection::<$db_item>($db_coll_name)
+                .find(doc! {$filter_name: { "$regex": filter}}, None)
+                .await
+            {
+                Ok(docs) => Ok(docs.try_collect::<Vec<$db_item>>().await.map_err(|e| {
+                    log::error!("{}", e.to_string());
+                    ErrorInternalServerError("")
+                })?),
+                Err(err) => {
+                    log::error!("{}", err.to_string());
+                    Err(ErrorInternalServerError(""))
+                }
             }
         }
     };
@@ -93,8 +130,8 @@ macro_rules! impl_update {
                 // We can safely unwrap here thanks to upsert=true and ReturnDocument::After
                 Ok(item) => Ok(item.unwrap()),
                 Err(err) => {
-                    let err = format!("monogdb driver error: {}", err);
-                    eprintln!("{}", err);
+                    let err = format!("MongoDB driver error: {}", err);
+                    log::error!("{}", err);
                     Err(ErrorInternalServerError(err))
                 }
             }
@@ -120,8 +157,8 @@ macro_rules! impl_delete {
             {
                 Ok(_) => Ok(()),
                 Err(err) => {
-                    let err = format!("monogdb driver error: {}", err);
-                    eprintln!("{}", err);
+                    let err = format!("MongoDB driver error: {}", err);
+                    log::error!("{}", err);
                     Err(ErrorInternalServerError(err))
                 }
             }
@@ -162,6 +199,20 @@ impl_get_all!(
     fn_name = get_all_courses,
     db_item = Course,
     db_coll_name = "Courses"
+);
+
+impl_get_all_filtered!(
+    fn_name = get_all_courses_by_name,
+    db_item = Course,
+    db_coll_name = "Courses",
+    filter_name = "name"
+);
+
+impl_get_all_filtered!(
+    fn_name = get_all_courses_by_number,
+    db_item = Course,
+    db_coll_name = "Courses",
+    filter_name = "_id"
 );
 
 impl_update!(

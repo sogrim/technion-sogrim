@@ -1,34 +1,42 @@
-extern crate my_internet_ip;
 use crate::config::CONFIG;
 use actix_cors::Cors;
-use actix_web::{middleware::Logger, web, App, HttpServer};
+use actix_web::{web, App, HttpServer};
+use actix_web_lab::middleware::from_fn;
 use dotenv::dotenv;
+use middleware::auth;
 use mongodb::Client;
 
 mod api;
 mod config;
 mod core;
 mod db;
+mod logger;
 mod middleware;
 mod resources;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Load .env (in development environment)
     dotenv().ok();
-    let client = Client::with_uri_str(&CONFIG.uri)
-        .await
-        .expect("failed to connect");
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
+    // Initialize logger
+    logger::init_env_logger();
+
+    // Initialize MongoDB client
+    let client = init_mongodb_client!();
+
+    // Start the server
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(client.clone()))
-            .wrap(middleware::auth::AuthenticateMiddleware)
+            .app_data(auth::JwtDecoder::new())
+            .wrap(from_fn(auth::authenticate))
             .wrap(Cors::permissive())
-            .wrap(Logger::default())
+            .wrap(logger::init_actix_logger())
             .service(api::students::get_all_catalogs)
             .service(api::students::login)
             .service(api::students::add_catalog)
+            .service(api::students::get_courses_by_filter)
             .service(api::students::add_courses)
             .service(api::students::compute_degree_status)
             .service(api::students::update_details)

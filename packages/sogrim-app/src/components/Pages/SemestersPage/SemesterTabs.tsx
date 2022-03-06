@@ -55,6 +55,8 @@ const SemesterTabsComp = () => {
       );
     }
     setErrorMsg("");
+    // TODO check
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userDetails, getAllUserSemesters, userRegistrationState, isError, error]);
 
   const findLastNonSummerSemester = (): string | undefined => {

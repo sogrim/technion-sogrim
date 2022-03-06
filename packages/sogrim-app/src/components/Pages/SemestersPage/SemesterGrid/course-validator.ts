@@ -82,8 +82,10 @@ export const courseFromUserValidations = (
   }
 
   let newState = "לא הושלם";
-  let newType = course.type === "" ? undefined : course.type;
-  let newGrade = course.grade === "" ? undefined : course.grade;
+  let newType =
+    course.type === "" || course.type === "-" ? undefined : course.type;
+  let newGrade =
+    course.grade === "" || course.grade === "-" ? undefined : course.grade;
   if (
     course.grade &&
     (course.grade === "עבר" ||

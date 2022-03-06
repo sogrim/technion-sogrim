@@ -1,5 +1,5 @@
 import axios from "axios";
-import { UserDetails, UserState, Catalog } from "../types/data-types";
+import { UserDetails, UserState, Catalog, Course } from "../types/data-types";
 import { API_URL } from "./api-url";
 
 export const getCatalogs = async (authToken: any): Promise<Catalog[]> => {
@@ -8,6 +8,30 @@ export const getCatalogs = async (authToken: any): Promise<Catalog[]> => {
   try {
     res =
       (await axios.get(`${API_URL}/catalogs`, {
+        headers: {
+          authorization: `${authToken}`,
+        },
+      })) || fallback;
+  } catch (e) {
+    res = fallback;
+    throw e;
+  }
+  return res.data;
+};
+
+export const getCourseByFilter = async (
+  authToken: any,
+  filterName: string,
+  filter: string
+): Promise<Course[]> => {
+  let fallback: any;
+  let res: any;
+  if (!filter) {
+    return [];
+  }
+  try {
+    res =
+      (await axios.get(`${API_URL}/students/courses?${filterName}=${filter}`, {
         headers: {
           authorization: `${authToken}`,
         },

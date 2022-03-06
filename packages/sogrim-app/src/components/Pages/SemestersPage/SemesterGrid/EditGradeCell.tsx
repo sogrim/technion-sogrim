@@ -52,6 +52,7 @@ const EditGradeCellComp = (props: GridRenderCellParams) => {
       {gradeToggle ? (
         <TextField
           id="course-grade"
+          value={displayValue}
           name="grade"
           onChange={handleChangeNumber}
           label={displayValue}
