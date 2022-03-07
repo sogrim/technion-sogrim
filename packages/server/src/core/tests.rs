@@ -1,8 +1,7 @@
 use crate::config::CONFIG;
 use crate::core::bank_rule::BankRuleHandler;
-use crate::core::degree_status::{DegreeStatus, DegreeStatusHandler};
+use crate::core::degree_status::DegreeStatus;
 use crate::core::parser;
-use crate::resources::catalog::Catalog;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade};
 use crate::resources::user::UserDetails;
 use crate::{db, init_mongodb_client};

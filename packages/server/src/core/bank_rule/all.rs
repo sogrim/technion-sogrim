@@ -1,6 +1,6 @@
 use crate::{
     core::messages,
-    resources::course::{Course, CourseId, CourseState, CourseStatus},
+    resources::course::{Course, CourseState, CourseStatus},
 };
 
 use super::BankRuleHandler;
