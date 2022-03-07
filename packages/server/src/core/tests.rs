@@ -301,23 +301,7 @@ async fn test_modified() {
     user.degree_status.course_statuses[3].r#type = Some("reshima alef".to_string()); // the user modified the type of 114054 to be reshima alef
     user.degree_status.course_statuses[3].modified = true;
     let bank_name = "hova".to_string();
-    let mut course_list = vec!["104031".to_string(), "104166".to_string()];
-    // create DegreeStatusHandler so we can run the function get_modified_courses
-    let catalog = Catalog {
-        ..Default::default()
-    };
-    let degree_status_handler = DegreeStatusHandler {
-        user: &mut user,
-        course_banks: Vec::new(),
-        catalog,
-        courses: HashMap::new(),
-        malag_courses: Vec::new(),
-        credit_overflow_map: HashMap::new(),
-        missing_credit_map: HashMap::new(),
-        courses_overflow_map: HashMap::new(),
-    };
-
-    course_list.extend(degree_status_handler.get_modified_courses(&bank_name)); // should take only 114052
+    let course_list = vec!["104031".to_string(), "104166".to_string()];
 
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);

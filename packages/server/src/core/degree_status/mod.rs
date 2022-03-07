@@ -55,16 +55,6 @@ impl<'a> DegreeStatusHandler<'a> {
         None
     }
 
-    pub fn get_modified_courses(&self, bank_name: &str) -> Vec<CourseId> {
-        let mut modified_courses = Vec::new();
-        for course_status in &self.user.degree_status.course_statuses {
-            if course_status.modified && course_status.r#type == Some(bank_name.to_string()) {
-                modified_courses.push(course_status.course.id.clone());
-            }
-        }
-        modified_courses
-    }
-
     fn calculate_credit_leftovers(&self) -> f32 {
         let mut sum_credit = 0.0;
         for credit_overflow in self.credit_overflow_map.values() {

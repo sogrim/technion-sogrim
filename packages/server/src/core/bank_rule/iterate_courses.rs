@@ -69,6 +69,15 @@ impl<'a> BankRuleHandler<'a> {
                     if let Some(course_id) = course_id_in_list {
                         course_chosen_for_bank = true;
                         handled_courses.insert(course_id.clone(), course_status.course.id.clone());
+                    } else if course_status.r#type == Some(self.bank_name.clone()) {
+                        // The course is not in the list and not a replacement for any other course on the list
+                        // but its type is modified and its the current bank name.
+                        // Therefore the course should be added anyway.
+                        course_chosen_for_bank = true;
+                        handled_courses.insert(
+                            course_status.course.id.clone(),
+                            course_status.course.id.clone(),
+                        );
                     }
                 }
             }
