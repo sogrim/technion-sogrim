@@ -15,7 +15,7 @@ fn reset_type_for_unmodified_and_irrelevant_courses(user_details: &mut UserDetai
     }
 }
 
-fn remove_unmodifed_incomplete_courses(user_details: &mut UserDetails, catalog: &Catalog) {
+fn remove_courses_from_previous_runs(user_details: &mut UserDetails, catalog: &Catalog) {
     // before running the algorithm we remove all the courses added by the algorithm in the previous run to prevent duplication.
     // the algorithm adds courses only without semeser, unmodified, incomplete and to a bank from type "all"
 
@@ -46,7 +46,7 @@ fn remove_irrelevant_courses_from_catalog(user_details: &UserDetails, catalog: &
 }
 
 pub fn preprocess(user: &mut UserDetails, catalog: &mut Catalog) {
-    remove_unmodifed_incomplete_courses(user, catalog);
+    remove_courses_from_previous_runs(user, catalog);
     reset_type_for_unmodified_and_irrelevant_courses(user);
     remove_irrelevant_courses_from_catalog(user, catalog);
     user.degree_status.course_statuses.sort_by(|c1, c2| {

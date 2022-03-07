@@ -2,6 +2,9 @@ use crate::config::CONFIG;
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::degree_status::DegreeStatus;
 use crate::core::parser;
+use crate::resources::catalog::Catalog;
+use crate::resources::course::CourseState::NotComplete;
+use crate::resources::course::Grade::Numeric;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade};
 use crate::resources::user::UserDetails;
 use crate::{db, init_mongodb_client};
@@ -300,10 +303,10 @@ async fn test_modified() {
     user.degree_status.course_statuses[3].r#type = Some("reshima alef".to_string()); // the user modified the type of 114054 to be reshima alef
     user.degree_status.course_statuses[3].modified = true;
     let bank_name = "hova".to_string();
-    let course_list = vec!["104031".to_string(), "104166".to_string()];
+    let course_list = vec!["104031".to_string(), "104166".to_string()]; // although 114052 is not in the list, it should be taken because the user modified its type
 
     let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        create_bank_rule_handler!(&mut user, bank_name.clone(), course_list.clone(), 0.0, 0);
     let res = handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
 
     // check it adds the type
@@ -319,33 +322,70 @@ async fn test_modified() {
 
     // check sum credit
     assert_eq!(res, 9.0);
+
+    // ------------------------------------------------
+    // check that in a second run nothing changed
+    user.degree_status.course_statuses[0].r#type = None;
+    user.degree_status.course_statuses[1].r#type = None;
+    let handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+    let res = handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    assert_eq!(user.degree_status.course_statuses.len(), 8);
+
+    // check sum credit
+    assert_eq!(res, 9.0);
+}
+
+#[test]
+async fn test_duplicated_courses() {
+    let mut user =
+        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_4.txt", "61a102bb04c5400b98e6f401").await;
+
+    // The user didn't take פיסיקה 1מ, therefore the algorithm adds it automatically to the course list
+    // This code Simulates addition of פיסיקה 1 manuually by the user.
+    user.degree_status.course_statuses.push(CourseStatus {
+        course: Course {
+            id: "114051".to_string(),
+            credit: 2.5,
+            name: "פיסיקה 1".to_string(),
+        },
+        state: Some(NotComplete),
+        semester: Some("חורף_1".to_string()),
+        grade: Some(Numeric(51)),
+        r#type: None,
+        specialization_group_name: None,
+        additional_msg: None,
+        modified: true,
+    });
+
+    user = run_degree_status(user, get_catalog("61a102bb04c5400b98e6f401").await).await;
+
+    assert_eq!(
+        user.degree_status.course_bank_requirements[6].credit_requirement,
+        Some(72.5)
+    );
+    // The course פיסיקה 1מ should be removed
+    for course_status in user.degree_status.course_statuses.iter() {
+        assert_ne!(course_status.course.name, "פיסיקה 1מ");
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------
 // Test core function in a full flow
 // ------------------------------------------------------------------------------------------------------
 
-async fn run_calculate_degree_status(file_name: &str, catalog: &str) -> UserDetails {
+async fn get_catalog(catalog: &str) -> Catalog {
     dotenv().ok();
     let client = init_mongodb_client!();
-    let contents = std::fs::read_to_string(format!("../docs/{}", file_name))
-        .expect("Something went wrong reading the file");
-
-    let course_statuses =
-        parser::parse_copy_paste_data(&contents).expect("failed to parse courses data");
-
     let obj_id = bson::oid::ObjectId::from_str(catalog).expect("failed to create oid");
-    let catalog = db::services::get_catalog_by_id(&obj_id, &client)
+    db::services::get_catalog_by_id(&obj_id, &client)
         .await
-        .expect("failed to get catalog");
-    let mut user = UserDetails {
-        catalog: None,
-        degree_status: DegreeStatus {
-            course_statuses,
-            ..Default::default()
-        },
-        modified: false,
-    };
+        .expect("failed to get catalog")
+}
+
+async fn run_degree_status(mut user: UserDetails, catalog: Catalog) -> UserDetails {
+    dotenv().ok();
+    let client = init_mongodb_client!();
     let vec_courses = db::services::get_all_courses(&client)
         .await
         .expect("failed to get all courses");
@@ -363,10 +403,29 @@ async fn run_calculate_degree_status(file_name: &str, catalog: &str) -> UserDeta
     user
 }
 
+async fn run_degree_status_full_flow(file_name: &str, catalog: &str) -> UserDetails {
+    let catalog = get_catalog(catalog).await;
+
+    let contents = std::fs::read_to_string(format!("../docs/{}", file_name))
+        .expect("Something went wrong reading the file");
+    let course_statuses =
+        parser::parse_copy_paste_data(&contents).expect("failed to parse courses data");
+
+    let user = UserDetails {
+        catalog: None,
+        degree_status: DegreeStatus {
+            course_statuses,
+            ..Default::default()
+        },
+        modified: false,
+    };
+    run_degree_status(user, catalog).await
+}
+
 #[test]
 async fn test_missing_credit() {
     let user =
-        run_calculate_degree_status("pdf_ctrl_c_ctrl_v.txt", "61a102bb04c5400b98e6f401").await;
+        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v.txt", "61a102bb04c5400b98e6f401").await;
     //FOR VIEWING IN JSON FORMAT
     // std::fs::write(
     //     "degree_status.json",
@@ -485,7 +544,7 @@ async fn test_missing_credit() {
 #[test]
 async fn test_overflow_credit() {
     let user =
-        run_calculate_degree_status("pdf_ctrl_c_ctrl_v_2.txt", "61a102bb04c5400b98e6f401").await;
+        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_2.txt", "61a102bb04c5400b98e6f401").await;
     //FOR VIEWING IN JSON FORMAT
     // std::fs::write(
     //     "degree_status.json",
@@ -580,7 +639,7 @@ async fn test_overflow_credit() {
 #[test]
 async fn test_software_engineer_itinerary() {
     let user =
-        run_calculate_degree_status("pdf_ctrl_c_ctrl_v_3.txt", "61d84fce5c5e7813e895a27d").await;
+        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_3.txt", "61d84fce5c5e7813e895a27d").await;
     // //FOR VIEWING IN JSON FORMAT
     // std::fs::write(
     //     "degree_status.json",
