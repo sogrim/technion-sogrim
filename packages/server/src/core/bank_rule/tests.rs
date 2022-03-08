@@ -5,11 +5,10 @@ use lazy_static::lazy_static;
 
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::degree_status::DegreeStatus;
-use crate::core::tests::create_user;
+use crate::core::tests::create_degree_status;
 use crate::core::types::{Requirement, SpecializationGroup, SpecializationGroups};
 use crate::create_bank_rule_handler;
 use crate::resources::course::{Course, CourseState, CourseStatus, Grade};
-use crate::resources::user::UserDetails;
 
 lazy_static! {
     static ref COURSES: HashMap<String, Course> = HashMap::from([
@@ -91,7 +90,7 @@ lazy_static! {
 #[test]
 async fn test_rule_all() {
     // for debugging
-    let mut user = create_user();
+    let mut degree_status = create_degree_status();
     let bank_name = "hova".to_string();
     let course_list = vec![
         "104031".to_string(),
@@ -101,45 +100,36 @@ async fn test_rule_all() {
         "3".to_string(),
     ];
     let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
     let mut completed_dummy = true;
     let res = handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
     // check it adds the type
     assert_eq!(
-        user.degree_status.course_statuses[0].r#type,
+        degree_status.course_statuses[0].r#type,
         Some("hova".to_string())
     );
     assert_eq!(
-        user.degree_status.course_statuses[1].r#type,
+        degree_status.course_statuses[1].r#type,
         Some("hova".to_string())
     );
 
     // check it adds the not completed courses in the hove bank
-    assert_eq!(
-        user.degree_status.course_statuses[8].course.id,
-        "1".to_string()
-    );
+    assert_eq!(degree_status.course_statuses[8].course.id, "1".to_string());
     assert!(matches!(
-        user.degree_status.course_statuses[8].state,
+        degree_status.course_statuses[8].state,
         Some(CourseState::NotComplete)
     ));
 
-    assert_eq!(
-        user.degree_status.course_statuses[9].course.id,
-        "2".to_string()
-    );
+    assert_eq!(degree_status.course_statuses[9].course.id, "2".to_string());
     assert!(matches!(
-        user.degree_status.course_statuses[9].state,
+        degree_status.course_statuses[9].state,
         Some(CourseState::NotComplete)
     ));
 
-    assert_eq!(
-        user.degree_status.course_statuses[10].course.id,
-        "3".to_string()
-    );
+    assert_eq!(degree_status.course_statuses[10].course.id, "3".to_string());
     assert!(matches!(
-        user.degree_status.course_statuses[10].state,
+        degree_status.course_statuses[10].state,
         Some(CourseState::NotComplete)
     ));
 
@@ -149,7 +139,7 @@ async fn test_rule_all() {
 #[test]
 async fn test_rule_accumulate_credit() {
     // for debugging
-    let mut user = create_user();
+    let mut degree_status = create_degree_status();
     let bank_name = "reshima a".to_string();
     let course_list = vec![
         "236303".to_string(),
@@ -158,24 +148,24 @@ async fn test_rule_accumulate_credit() {
         "2".to_string(),
     ];
     let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name, course_list, 5.5, 0);
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 5.5, 0);
     let res = handle_bank_rule_processor.accumulate_credit();
     // check it adds the type
-    assert_eq!(user.degree_status.course_statuses[0].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[1].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[2].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[3].r#type, None);
+    assert_eq!(degree_status.course_statuses[0].r#type, None);
+    assert_eq!(degree_status.course_statuses[1].r#type, None);
+    assert_eq!(degree_status.course_statuses[2].r#type, None);
+    assert_eq!(degree_status.course_statuses[3].r#type, None);
     assert_eq!(
-        user.degree_status.course_statuses[4].r#type,
+        degree_status.course_statuses[4].r#type,
         Some("reshima a".to_string())
     );
     assert_eq!(
-        user.degree_status.course_statuses[5].r#type,
+        degree_status.course_statuses[5].r#type,
         Some("reshima a".to_string())
     );
-    assert_eq!(user.degree_status.course_statuses[6].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[7].r#type, None);
-    assert_eq!(user.degree_status.course_statuses.len(), 8);
+    assert_eq!(degree_status.course_statuses[6].r#type, None);
+    assert_eq!(degree_status.course_statuses[7].r#type, None);
+    assert_eq!(degree_status.course_statuses.len(), 8);
 
     // check sum credit
     assert_eq!(res, 11.5);
@@ -184,7 +174,7 @@ async fn test_rule_accumulate_credit() {
 #[test]
 async fn test_rule_accumulate_courses() {
     // for debugging
-    let mut user = create_user();
+    let mut degree_status = create_degree_status();
     let bank_name = "Project".to_string();
     let course_list = vec![
         "236303".to_string(),
@@ -193,25 +183,25 @@ async fn test_rule_accumulate_courses() {
         "2".to_string(),
     ];
     let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 1);
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 1);
     let mut count_courses = 0;
     let res = handle_bank_rule_processor.accumulate_courses(&mut count_courses);
     // check it adds the type
-    assert_eq!(user.degree_status.course_statuses[0].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[1].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[2].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[3].r#type, None);
+    assert_eq!(degree_status.course_statuses[0].r#type, None);
+    assert_eq!(degree_status.course_statuses[1].r#type, None);
+    assert_eq!(degree_status.course_statuses[2].r#type, None);
+    assert_eq!(degree_status.course_statuses[3].r#type, None);
     assert_eq!(
-        user.degree_status.course_statuses[4].r#type,
+        degree_status.course_statuses[4].r#type,
         Some("Project".to_string())
     );
     assert_eq!(
-        user.degree_status.course_statuses[5].r#type,
+        degree_status.course_statuses[5].r#type,
         Some("Project".to_string())
     );
-    assert_eq!(user.degree_status.course_statuses[6].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[7].r#type, None);
-    assert_eq!(user.degree_status.course_statuses.len(), 8);
+    assert_eq!(degree_status.course_statuses[6].r#type, None);
+    assert_eq!(degree_status.course_statuses[7].r#type, None);
+    assert_eq!(degree_status.course_statuses.len(), 8);
 
     //check num courses
     assert_eq!(count_courses, 3);
@@ -222,7 +212,7 @@ async fn test_rule_accumulate_courses() {
 
 #[test]
 async fn test_rule_chain() {
-    let mut user = create_user();
+    let mut degree_status = create_degree_status();
     let bank_name = "science chain".to_string();
     let course_list = vec![
         "1".to_string(),
@@ -240,8 +230,13 @@ async fn test_rule_chain() {
     ];
 
     let mut chain_done = Vec::new();
-    let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name.clone(), course_list.clone(), 0.0, 0);
+    let handle_bank_rule_processor = create_bank_rule_handler!(
+        &mut degree_status,
+        bank_name.clone(),
+        course_list.clone(),
+        0.0,
+        0
+    );
     // user didn't finish a chain
     let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
 
@@ -249,26 +244,31 @@ async fn test_rule_chain() {
     assert_eq!(res, 7.0);
 
     // ---------------------------------------------------------------------------
-    user = create_user();
+    degree_status = create_degree_status();
     chains.push(vec!["114052".to_string(), "114054".to_string()]); // user finished the chain [114052, 114054]
-    let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name.clone(), course_list.clone(), 0.0, 0);
+    let handle_bank_rule_processor = create_bank_rule_handler!(
+        &mut degree_status,
+        bank_name.clone(),
+        course_list.clone(),
+        0.0,
+        0
+    );
     let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
-    assert_eq!(user.degree_status.course_statuses[0].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[1].r#type, None);
+    assert_eq!(degree_status.course_statuses[0].r#type, None);
+    assert_eq!(degree_status.course_statuses[1].r#type, None);
     assert_eq!(
-        user.degree_status.course_statuses[2].r#type,
+        degree_status.course_statuses[2].r#type,
         Some("science chain".to_string())
     );
     assert_eq!(
-        user.degree_status.course_statuses[3].r#type,
+        degree_status.course_statuses[3].r#type,
         Some("science chain".to_string())
     );
-    assert_eq!(user.degree_status.course_statuses[4].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[5].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[6].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[7].r#type, None);
-    assert_eq!(user.degree_status.course_statuses.len(), 8);
+    assert_eq!(degree_status.course_statuses[4].r#type, None);
+    assert_eq!(degree_status.course_statuses[5].r#type, None);
+    assert_eq!(degree_status.course_statuses[6].r#type, None);
+    assert_eq!(degree_status.course_statuses[7].r#type, None);
+    assert_eq!(degree_status.course_statuses.len(), 8);
 
     // check sum credit
     assert_eq!(
@@ -281,26 +281,26 @@ async fn test_rule_chain() {
 #[test]
 async fn test_rule_malag() {
     // for debugging
-    let mut user = create_user();
+    let mut degree_status = create_degree_status();
     let bank_name = "MALAG".to_string();
     let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
     let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let res = handle_bank_rule_processor.malag(&["324057".to_string()]);
 
     // check it adds the type
-    assert_eq!(user.degree_status.course_statuses[0].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[1].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[2].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[3].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[4].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[5].r#type, None);
+    assert_eq!(degree_status.course_statuses[0].r#type, None);
+    assert_eq!(degree_status.course_statuses[1].r#type, None);
+    assert_eq!(degree_status.course_statuses[2].r#type, None);
+    assert_eq!(degree_status.course_statuses[3].r#type, None);
+    assert_eq!(degree_status.course_statuses[4].r#type, None);
+    assert_eq!(degree_status.course_statuses[5].r#type, None);
     assert_eq!(
-        user.degree_status.course_statuses[6].r#type,
+        degree_status.course_statuses[6].r#type,
         Some("MALAG".to_string())
     );
-    assert_eq!(user.degree_status.course_statuses[7].r#type, None);
-    assert_eq!(user.degree_status.course_statuses.len(), 8);
+    assert_eq!(degree_status.course_statuses[7].r#type, None);
+    assert_eq!(degree_status.course_statuses.len(), 8);
 
     // check sum credit
     assert_eq!(res, 2.0);
@@ -309,26 +309,31 @@ async fn test_rule_malag() {
 #[test]
 async fn test_rule_sport() {
     // for debugging
-    let mut user = create_user();
+    let mut degree_status = create_degree_status();
     let bank_name = "SPORT".to_string();
     let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
-    let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name.clone(), course_list.clone(), 0.0, 0);
+    let handle_bank_rule_processor = create_bank_rule_handler!(
+        &mut degree_status,
+        bank_name.clone(),
+        course_list.clone(),
+        0.0,
+        0
+    );
     let res = handle_bank_rule_processor.sport();
 
     // check it adds the type
-    assert_eq!(user.degree_status.course_statuses[0].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[1].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[2].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[3].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[4].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[5].r#type, None);
-    assert_eq!(user.degree_status.course_statuses[6].r#type, None);
+    assert_eq!(degree_status.course_statuses[0].r#type, None);
+    assert_eq!(degree_status.course_statuses[1].r#type, None);
+    assert_eq!(degree_status.course_statuses[2].r#type, None);
+    assert_eq!(degree_status.course_statuses[3].r#type, None);
+    assert_eq!(degree_status.course_statuses[4].r#type, None);
+    assert_eq!(degree_status.course_statuses[5].r#type, None);
+    assert_eq!(degree_status.course_statuses[6].r#type, None);
     assert_eq!(
-        user.degree_status.course_statuses[7].r#type,
+        degree_status.course_statuses[7].r#type,
         Some("SPORT".to_string())
     );
-    assert_eq!(user.degree_status.course_statuses.len(), 8);
+    assert_eq!(degree_status.course_statuses.len(), 8);
 
     // check sum credit
     assert_eq!(res, 1.0);
@@ -337,106 +342,102 @@ async fn test_rule_sport() {
 async fn test_specialization_group() {
     // Simulate specialization groups behavior from catalog 2018 computer enginnering
     let bank_name = "specialization group".to_string();
-    let mut user = UserDetails {
-        catalog: None,
-        degree_status: DegreeStatus {
-            course_statuses: vec![
-                CourseStatus {
-                    course: Course {
-                        id: "236334".to_string(),
-                        credit: 5.5,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Numeric(85)),
-                    ..Default::default()
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![
+            CourseStatus {
+                course: Course {
+                    id: "236334".to_string(),
+                    credit: 5.5,
+                    name: "".to_string(),
                 },
-                CourseStatus {
-                    course: Course {
-                        id: "044202".to_string(),
-                        credit: 5.5,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Binary(true)),
-                    ..Default::default()
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "044202".to_string(),
+                    credit: 5.5,
+                    name: "".to_string(),
                 },
-                CourseStatus {
-                    course: Course {
-                        id: "236374".to_string(),
-                        credit: 3.5,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Numeric(85)),
-                    ..Default::default()
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Binary(true)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "236374".to_string(),
+                    credit: 3.5,
+                    name: "".to_string(),
                 },
-                CourseStatus {
-                    course: Course {
-                        id: "044198".to_string(),
-                        credit: 3.0,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Numeric(85)),
-                    ..Default::default()
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "044198".to_string(),
+                    credit: 3.0,
+                    name: "".to_string(),
                 },
-                CourseStatus {
-                    course: Course {
-                        id: "236501".to_string(),
-                        credit: 3.0,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Numeric(85)),
-                    ..Default::default()
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "236501".to_string(),
+                    credit: 3.0,
+                    name: "".to_string(),
                 },
-                CourseStatus {
-                    course: Course {
-                        id: "236329".to_string(),
-                        credit: 2.0,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Numeric(99)),
-                    ..Default::default()
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "236329".to_string(),
+                    credit: 2.0,
+                    name: "".to_string(),
                 },
-                CourseStatus {
-                    course: Course {
-                        id: "234325".to_string(),
-                        credit: 1.0,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Numeric(100)),
-                    ..Default::default()
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(99)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "234325".to_string(),
+                    credit: 1.0,
+                    name: "".to_string(),
                 },
-                CourseStatus {
-                    course: Course {
-                        id: "044191".to_string(),
-                        credit: 1.0,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Numeric(100)),
-                    ..Default::default()
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(100)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "044191".to_string(),
+                    credit: 1.0,
+                    name: "".to_string(),
                 },
-                CourseStatus {
-                    course: Course {
-                        id: "046206".to_string(),
-                        credit: 3.5,
-                        name: "".to_string(),
-                    },
-                    state: Some(CourseState::Complete),
-                    grade: Some(Grade::Numeric(85)),
-                    ..Default::default()
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(100)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "046206".to_string(),
+                    credit: 3.5,
+                    name: "".to_string(),
                 },
-            ],
-            course_bank_requirements: Vec::<Requirement>::new(),
-            overflow_msgs: Vec::<String>::new(),
-            total_credit: 0.0,
-        },
-        modified: false,
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+        ],
+        course_bank_requirements: Vec::<Requirement>::new(),
+        overflow_msgs: Vec::<String>::new(),
+        total_credit: 0.0,
     };
     let course_list = vec![
         "236334".to_string(),
@@ -577,8 +578,13 @@ async fn test_specialization_group() {
         groups_number: 2,
     };
 
-    let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name.clone(), course_list.clone(), 0.0, 0);
+    let handle_bank_rule_processor = create_bank_rule_handler!(
+        &mut degree_status,
+        bank_name.clone(),
+        course_list.clone(),
+        0.0,
+        0
+    );
     let mut completed_groups = Vec::<String>::new();
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
 
@@ -589,15 +595,15 @@ async fn test_specialization_group() {
     // ---------------------------------------------------------------------------
     // change the state of 044202, which is a mandatory course in "תורת התקשורת", to notComplete,
     // thus the user doen't complete the specialization groups requirement
-    user.degree_status.course_statuses[1].state = Some(CourseState::NotComplete);
-    user.degree_status.course_statuses[1].grade = Some(Grade::Numeric(50));
+    degree_status.course_statuses[1].state = Some(CourseState::NotComplete);
+    degree_status.course_statuses[1].grade = Some(Grade::Numeric(50));
 
-    for course_status in &mut user.degree_status.course_statuses {
+    for course_status in &mut degree_status.course_statuses {
         course_status.specialization_group_name = None;
         course_status.r#type = None;
     }
     let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut user, bank_name, course_list, 0.0, 0);
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut completed_groups = Vec::<String>::new();
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
     assert!(completed_groups.is_empty());

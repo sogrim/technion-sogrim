@@ -169,7 +169,10 @@ impl<'a> BankRuleHandler<'a> {
         let credit_info = self.iterate_course_list();
         let mut completed_courses = Vec::new();
         for (course_id_in_list, course_id_done_by_user) in credit_info.handled_courses {
-            if let Some(course_status) = self.user.get_course_status(&course_id_done_by_user) {
+            if let Some(course_status) = self
+                .degree_status
+                .get_course_status(&course_id_done_by_user)
+            {
                 if course_status.passed() {
                     completed_courses.push(course_id_in_list);
                 }
@@ -182,7 +185,7 @@ impl<'a> BankRuleHandler<'a> {
         let mut sgs_names = HashSet::new();
         if let Some(valid_assignment) = valid_assignment_for_courses {
             for (course_id, sg_index) in valid_assignment {
-                if let Some(course_status) = self.user.get_mut_course_status(&course_id) {
+                if let Some(course_status) = self.degree_status.get_mut_course_status(&course_id) {
                     course_status.set_specialization_group_name(&sgs.groups_list[sg_index].name);
                     sgs_names.insert(&sgs.groups_list[sg_index].name);
                 }

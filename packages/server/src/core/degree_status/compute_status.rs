@@ -17,9 +17,12 @@ impl<'a> DegreeStatusHandler<'a> {
                 // Add a message where this bank's credit are counted.
                 if let Some(to_bank_name) = self.find_next_bank_with_credit_requirement(&bank.name)
                 {
-                    self.user.degree_status.overflow_msgs.push(
-                        messages::credit_overflow_detailed_msg(&bank.name, &to_bank_name),
-                    );
+                    self.degree_status
+                        .overflow_msgs
+                        .push(messages::credit_overflow_detailed_msg(
+                            &bank.name,
+                            &to_bank_name,
+                        ));
                 }
             }
 
@@ -33,9 +36,8 @@ impl<'a> DegreeStatusHandler<'a> {
         }
 
         let credit_leftovers = self.calculate_credit_leftovers(); // if different from 0 then the user has extra credit he doesn't use
-        self.user.degree_status.total_credit += credit_leftovers;
-        self.user
-            .degree_status
+        self.degree_status.total_credit += credit_leftovers;
+        self.degree_status
             .overflow_msgs
             .push(messages::credit_leftovers_msg(credit_leftovers));
     }

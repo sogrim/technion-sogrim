@@ -16,7 +16,7 @@ impl<'a> DegreeStatusHandler<'a> {
         sum_credit: f32,
     ) -> f32 {
         if sum_credit <= bank_credit {
-            self.user.degree_status.total_credit += sum_credit;
+            self.degree_status.total_credit += sum_credit;
             sum_credit
         } else {
             match self.credit_overflow_map.get_mut(&bank.name) {
@@ -27,7 +27,7 @@ impl<'a> DegreeStatusHandler<'a> {
                         .insert(bank.name.clone(), sum_credit - bank_credit);
                 }
             };
-            self.user.degree_status.total_credit += bank_credit;
+            self.degree_status.total_credit += bank_credit;
             bank_credit
         }
     }
@@ -80,7 +80,7 @@ impl<'a> DegreeStatusHandler<'a> {
                             }
                         };
                         if let Some(msg) = msg {
-                            self.user.degree_status.overflow_msgs.push(msg);
+                            self.degree_status.overflow_msgs.push(msg);
                         }
                         sum += *overflow;
                         *overflow = 0.0;

@@ -15,11 +15,12 @@ use std::collections::HashMap;
 use crate::resources::{
     catalog::OptionalReplacements,
     course::{Course, CourseId, CourseStatus},
-    user::UserDetails,
 };
 
+use super::degree_status::DegreeStatus;
+
 pub struct BankRuleHandler<'a> {
-    pub user: &'a mut UserDetails,
+    pub degree_status: &'a mut DegreeStatus,
     pub bank_name: String,
     pub course_list: Vec<CourseId>,
     pub courses: &'a HashMap<CourseId, Course>,

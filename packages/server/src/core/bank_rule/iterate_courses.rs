@@ -35,7 +35,7 @@ impl<'a> BankRuleHandler<'a> {
         let mut sum_credit = self.credit_overflow;
         let mut count_courses = self.courses_overflow;
         let mut handled_courses = HashMap::new(); // mapping between the course in the catalog to the course which was taken by the student (relevant for replacements)
-        for course_status in self.user.degree_status.course_statuses.iter_mut() {
+        for course_status in self.degree_status.course_statuses.iter_mut() {
             let mut course_chosen_for_bank = false;
             if course_status.valid_for_bank(&self.bank_name) {
                 if self.course_list.contains(&course_status.course.id) {

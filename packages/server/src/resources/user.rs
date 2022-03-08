@@ -1,5 +1,4 @@
 use super::catalog::DisplayCatalog;
-use super::course::CourseStatus;
 use crate::core::degree_status::DegreeStatus;
 use crate::db;
 use crate::impl_from_request;
@@ -17,28 +16,6 @@ pub struct UserDetails {
     pub catalog: Option<DisplayCatalog>,
     pub degree_status: DegreeStatus,
     pub modified: bool,
-}
-
-impl UserDetails {
-    pub fn get_course_status(&self, id: &str) -> Option<&CourseStatus> {
-        // returns the first course_status with the given id
-        for course_status in self.degree_status.course_statuses.iter() {
-            if course_status.course.id == id {
-                return Some(course_status);
-            }
-        }
-        None
-    }
-
-    pub fn get_mut_course_status(&mut self, id: &str) -> Option<&mut CourseStatus> {
-        // returns the first course_status with the given id
-        for course_status in &mut self.degree_status.course_statuses.iter_mut() {
-            if course_status.course.id == id {
-                return Some(course_status);
-            }
-        }
-        None
-    }
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]

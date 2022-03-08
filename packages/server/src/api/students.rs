@@ -162,7 +162,7 @@ pub async fn compute_degree_status(
         catalog,
         course::vec_to_map(vec_courses),
         malag_courses,
-        user_details,
+        &mut user_details.degree_status,
     );
 
     let user_id = user.sub.clone();

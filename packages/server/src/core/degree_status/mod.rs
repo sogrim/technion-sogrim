@@ -9,7 +9,6 @@ use crate::core::types::Requirement;
 use crate::resources::{
     catalog::Catalog,
     course::{Course, CourseBank, CourseId, CourseStatus},
-    user::UserDetails,
 };
 use serde::{Deserialize, Serialize};
 
@@ -23,8 +22,30 @@ pub struct DegreeStatus {
     pub total_credit: f32,
 }
 
+impl DegreeStatus {
+    pub fn get_course_status(&self, id: &str) -> Option<&CourseStatus> {
+        // returns the first course_status with the given id
+        for course_status in self.course_statuses.iter() {
+            if course_status.course.id == id {
+                return Some(course_status);
+            }
+        }
+        None
+    }
+
+    pub fn get_mut_course_status(&mut self, id: &str) -> Option<&mut CourseStatus> {
+        // returns the first course_status with the given id
+        for course_status in &mut self.course_statuses.iter_mut() {
+            if course_status.course.id == id {
+                return Some(course_status);
+            }
+        }
+        None
+    }
+}
+
 pub struct DegreeStatusHandler<'a> {
-    pub user: &'a mut UserDetails,
+    pub degree_status: &'a mut DegreeStatus,
     pub course_banks: Vec<CourseBank>,
     pub catalog: Catalog,
     pub courses: HashMap<CourseId, Course>,
@@ -68,15 +89,15 @@ pub fn compute(
     mut catalog: Catalog,
     courses: HashMap<CourseId, Course>,
     malag_courses: Vec<CourseId>,
-    user: &mut UserDetails,
+    degree_status: &mut DegreeStatus,
 ) {
     let course_banks = toposort::set_order(&catalog.course_banks, &catalog.credit_overflows);
 
     // prepare the data for user status computation
-    preprocessing::preprocess(user, &mut catalog);
+    preprocessing::preprocess(degree_status, &mut catalog);
 
     DegreeStatusHandler {
-        user,
+        degree_status,
         course_banks,
         catalog,
         courses,

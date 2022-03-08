@@ -7,7 +7,7 @@ impl<'a> BankRuleHandler<'a> {
     #[allow(clippy::float_cmp)]
     pub fn malag(self, malag_courses: &[CourseId]) -> f32 {
         let mut sum_credit = self.credit_overflow;
-        for course_status in &mut self.user.degree_status.course_statuses {
+        for course_status in &mut self.degree_status.course_statuses {
             if course_status.valid_for_bank(&self.bank_name)
                 && (malag_courses.contains(&course_status.course.id)
             // TODO: remove this line after we get the answer from the coordinates

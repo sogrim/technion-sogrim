@@ -19,7 +19,7 @@ impl<'a> DegreeStatusHandler<'a> {
         courses_overflow: u32,
     ) {
         let bank_rule_handler = BankRuleHandler {
-            user: self.user,
+            degree_status: self.degree_status,
             bank_name: bank.name.clone(),
             course_list: course_list_for_bank,
             courses: &self.courses,
@@ -91,8 +91,7 @@ impl<'a> DegreeStatusHandler<'a> {
             sum_credit = self.handle_credit_overflow(bank, 0.0, sum_credit);
         };
 
-        self.user
-            .degree_status
+        self.degree_status
             .course_bank_requirements
             .push(Requirement {
                 course_bank_name: bank.name.clone(),
