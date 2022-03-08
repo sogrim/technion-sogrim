@@ -246,13 +246,8 @@ async fn test_rule_chain() {
     // ---------------------------------------------------------------------------
     degree_status = create_degree_status();
     chains.push(vec!["114052".to_string(), "114054".to_string()]); // user finished the chain [114052, 114054]
-    let handle_bank_rule_processor = create_bank_rule_handler!(
-        &mut degree_status,
-        bank_name.clone(),
-        course_list.clone(),
-        0.0,
-        0
-    );
+    let handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
     assert_eq!(degree_status.course_statuses[0].r#type, None);
     assert_eq!(degree_status.course_statuses[1].r#type, None);
@@ -312,13 +307,8 @@ async fn test_rule_sport() {
     let mut degree_status = create_degree_status();
     let bank_name = "SPORT".to_string();
     let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
-    let handle_bank_rule_processor = create_bank_rule_handler!(
-        &mut degree_status,
-        bank_name.clone(),
-        course_list.clone(),
-        0.0,
-        0
-    );
+    let handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let res = handle_bank_rule_processor.sport();
 
     // check it adds the type
