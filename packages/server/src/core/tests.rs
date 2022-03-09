@@ -255,6 +255,44 @@ async fn test_irrelevant_course() {
 }
 
 #[test]
+async fn test_restore_irrelevant_course() {
+    let mut degree_status =
+        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_4.txt", "61a102bb04c5400b98e6f401").await;
+
+    for course_status in degree_status.course_statuses.iter_mut() {
+        if course_status.course.id == "114071" {
+            // tag פיסיקה1מ as irrelevant
+            course_status.state = Some(CourseState::Irrelevant);
+        }
+    }
+
+    degree_status =
+        run_degree_status(degree_status, get_catalog("61a102bb04c5400b98e6f401").await).await;
+    degree_status.course_statuses.push(CourseStatus {
+        course: Course {
+            id: "114071".to_string(),
+            credit: 2.5,
+            name: "פיסיקה 1מ".to_string(),
+        },
+        state: Some(NotComplete),
+        semester: Some("חורף_1".to_string()),
+        grade: Some(Numeric(51)),
+        r#type: None,
+        specialization_group_name: None,
+        additional_msg: None,
+        modified: true,
+    });
+
+    degree_status =
+        run_degree_status(degree_status, get_catalog("61a102bb04c5400b98e6f401").await).await;
+
+    // the first פיסיקה 1מ which was irrelevant should be removed from the list
+    for course_status in degree_status.course_statuses.iter() {
+        assert_ne!(course_status.state, Some(CourseState::Irrelevant));
+    }
+}
+
+#[test]
 async fn test_modified() {
     // for debugging
     let mut degree_status = create_degree_status();
