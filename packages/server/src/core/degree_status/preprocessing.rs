@@ -1,6 +1,9 @@
 use crate::{
     core::types::Rule,
-    resources::{catalog::Catalog, course::CourseState},
+    resources::{
+        catalog::Catalog,
+        course::{CourseId, CourseState},
+    },
 };
 
 use super::DegreeStatus;
@@ -23,6 +26,31 @@ impl DegreeStatus {
             } else {
                 true
             }
+        });
+
+        // remove course which were added by the user, and were tagged as irrelevant in a previous run
+        let dispensable_irrelevant_courses = self
+            .course_statuses
+            .iter()
+            .filter(|course_status| {
+                if course_status.state != Some(CourseState::Irrelevant) {
+                    return false;
+                }
+                for optional_relevant_duplicate in self.course_statuses.iter() {
+                    if optional_relevant_duplicate.modified
+                        && optional_relevant_duplicate.state != Some(CourseState::Irrelevant)
+                        && optional_relevant_duplicate.course.id == course_status.course.id
+                    {
+                        return true;
+                    }
+                }
+                false
+            })
+            .map(|course_status| course_status.course.id.clone())
+            .collect::<Vec<CourseId>>();
+        self.course_statuses.retain(|course_status| {
+            course_status.state != Some(CourseState::Irrelevant)
+                || !dispensable_irrelevant_courses.contains(&course_status.course.id)
         });
 
         // clear the type for unmodified and irrelevant courses
