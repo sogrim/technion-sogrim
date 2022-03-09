@@ -1,9 +1,17 @@
 import GitHubIcon from "@mui/icons-material/GitHub";
 import InfoIcon from "@mui/icons-material/Info";
-import { AppBar, Box, Link, Typography } from "@mui/material";
+import { AppBar, Box, ButtonBase, Link, Typography } from "@mui/material";
+import { useState } from "react";
 import { version } from "../../../package.json";
+import { ChangesDialog } from "./ChangesDialog";
 
 export const Footer: React.FC = () => {
+  const [open, setOpen] = useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -59,7 +67,7 @@ export const Footer: React.FC = () => {
           </Link>
           <InfoIcon sx={{ height: "18px", width: "18px" }} />
         </Box>
-        <Typography
+        <ButtonBase
           sx={{
             display: "flex",
             justifySelf: "flex-end",
@@ -67,12 +75,14 @@ export const Footer: React.FC = () => {
             alignSelf: "flex-end",
             position: "absolute",
             right: 0,
-            left: 0,
             marginRight: "3px",
             marginBottom: "-6px",
           }}
-          fontSize="small"
-        >{`v${version}`}</Typography>
+          onClick={handleClickOpen}
+        >
+          <Typography fontSize="small">{`v${version}`}</Typography>
+        </ButtonBase>
+        {open && <ChangesDialog {...{ open, setOpen }} />}
       </Box>
     </AppBar>
   );
