@@ -94,7 +94,7 @@ impl DegreeStatus {
     ) {
         let course_banks = toposort::set_order(&catalog.course_banks, &catalog.credit_overflows);
 
-        // prepare the data for user status computation
+        // prepare the data for degree status computation
         self.preprocess(&mut catalog);
 
         DegreeStatusHandler {

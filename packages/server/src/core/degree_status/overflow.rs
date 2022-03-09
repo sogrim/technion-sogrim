@@ -1,7 +1,7 @@
 use crate::{
     core::{
         messages::{courses_overflow_msg, credit_overflow_msg, missing_credit_msg},
-        types::CreditTransfer,
+        types::Transfer,
     },
     resources::course::CourseBank,
 };
@@ -47,19 +47,19 @@ impl<'a> DegreeStatusHandler<'a> {
         }
     }
 
-    pub fn calculate_overflows(&mut self, bank_name: &str, transfer: CreditTransfer) -> f32 {
+    pub fn calculate_overflows(&mut self, bank_name: &str, transfer: Transfer) -> f32 {
         let mut sum = 0.0;
         let map = match transfer {
-            CreditTransfer::OverflowCredit => &mut self.credit_overflow_map,
-            CreditTransfer::MissingCredit => &mut self.missing_credit_map,
-            CreditTransfer::OverflowCourses => &mut self.courses_overflow_map,
+            Transfer::CreditOverflow => &mut self.credit_overflow_map,
+            Transfer::MissingCredit => &mut self.missing_credit_map,
+            Transfer::CoursesOverflow => &mut self.courses_overflow_map,
         };
         for rule in &self.catalog.credit_overflows {
             if rule.to == bank_name {
                 if let Some(overflow) = map.get_mut(&rule.from) {
                     if *overflow > 0.0 {
                         let msg = match transfer {
-                            CreditTransfer::OverflowCredit => {
+                            Transfer::CreditOverflow => {
                                 if let Some(course_bank) =
                                     self.catalog.get_course_bank_by_name(&rule.from)
                                 {
@@ -72,10 +72,10 @@ impl<'a> DegreeStatusHandler<'a> {
                                     None
                                 }
                             }
-                            CreditTransfer::OverflowCourses => {
+                            Transfer::CoursesOverflow => {
                                 Some(courses_overflow_msg(*overflow, &rule.from, &rule.to))
                             }
-                            CreditTransfer::MissingCredit => {
+                            Transfer::MissingCredit => {
                                 Some(missing_credit_msg(*overflow, &rule.from, &rule.to))
                             }
                         };

@@ -63,10 +63,10 @@ pub struct CreditOverflow {
     pub to: String,
 }
 
-pub enum CreditTransfer {
-    OverflowCredit,
+pub enum Transfer {
+    CreditOverflow,
     MissingCredit,
-    OverflowCourses,
+    CoursesOverflow,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]

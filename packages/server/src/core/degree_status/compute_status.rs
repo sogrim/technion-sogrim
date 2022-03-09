@@ -1,4 +1,4 @@
-use crate::core::{messages, types::CreditTransfer};
+use crate::core::{messages, types::Transfer};
 
 use super::DegreeStatusHandler;
 
@@ -6,12 +6,10 @@ impl<'a> DegreeStatusHandler<'a> {
     pub fn compute_status(mut self) {
         for bank in self.course_banks.clone() {
             let course_list_for_bank = self.catalog.get_course_list(&bank.name);
-            let credit_overflow =
-                self.calculate_overflows(&bank.name, CreditTransfer::OverflowCredit);
-            let missing_credit =
-                self.calculate_overflows(&bank.name, CreditTransfer::MissingCredit);
+            let credit_overflow = self.calculate_overflows(&bank.name, Transfer::CreditOverflow);
+            let missing_credit = self.calculate_overflows(&bank.name, Transfer::MissingCredit);
             let courses_overflow =
-                self.calculate_overflows(&bank.name, CreditTransfer::OverflowCourses) as u32;
+                self.calculate_overflows(&bank.name, Transfer::CoursesOverflow) as u32;
 
             if bank.credit.is_none() {
                 // Add a message where this bank's credit are counted.
