@@ -52,15 +52,17 @@ const AppComp: React.FC = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      {isMobile || !matches ? (
-        <MobilePage />
-      ) : (
-        <CacheProvider value={cacheRtl}>
-          <GoogleAuth />
-          {isAuthenticated ? <UserApp /> : <AnonymousApp />}
-          <Footer />
-        </CacheProvider>
-      )}
+      <CacheProvider value={cacheRtl}>
+        {isMobile || !matches ? (
+          <MobilePage />
+        ) : (
+          <>
+            <GoogleAuth />
+            {isAuthenticated ? <UserApp /> : <AnonymousApp />}
+            <Footer />
+          </>
+        )}
+      </CacheProvider>
     </ThemeProvider>
   );
 };
