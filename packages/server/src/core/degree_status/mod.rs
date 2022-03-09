@@ -94,7 +94,7 @@ pub fn compute(
     let course_banks = toposort::set_order(&catalog.course_banks, &catalog.credit_overflows);
 
     // prepare the data for user status computation
-    preprocessing::preprocess(degree_status, &mut catalog);
+    degree_status.preprocess(&mut catalog);
 
     DegreeStatusHandler {
         degree_status,
