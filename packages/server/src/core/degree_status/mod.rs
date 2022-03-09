@@ -85,26 +85,28 @@ impl<'a> DegreeStatusHandler<'a> {
     }
 }
 
-pub fn compute(
-    mut catalog: Catalog,
-    courses: HashMap<CourseId, Course>,
-    malag_courses: Vec<CourseId>,
-    degree_status: &mut DegreeStatus,
-) {
-    let course_banks = toposort::set_order(&catalog.course_banks, &catalog.credit_overflows);
+impl DegreeStatus {
+    pub fn compute(
+        &mut self,
+        mut catalog: Catalog,
+        courses: HashMap<CourseId, Course>,
+        malag_courses: Vec<CourseId>,
+    ) {
+        let course_banks = toposort::set_order(&catalog.course_banks, &catalog.credit_overflows);
 
-    // prepare the data for user status computation
-    degree_status.preprocess(&mut catalog);
+        // prepare the data for user status computation
+        self.preprocess(&mut catalog);
 
-    DegreeStatusHandler {
-        degree_status,
-        course_banks,
-        catalog,
-        courses,
-        malag_courses,
-        credit_overflow_map: HashMap::new(),
-        missing_credit_map: HashMap::new(),
-        courses_overflow_map: HashMap::new(),
+        DegreeStatusHandler {
+            degree_status: self,
+            course_banks,
+            catalog,
+            courses,
+            malag_courses,
+            credit_overflow_map: HashMap::new(),
+            missing_credit_map: HashMap::new(),
+            courses_overflow_map: HashMap::new(),
+        }
+        .compute_status();
     }
-    .compute_status();
 }

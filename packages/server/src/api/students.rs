@@ -9,10 +9,7 @@ use actix_web::{
 use bson::doc;
 
 use crate::{
-    core::{
-        degree_status::{self, DegreeStatus},
-        parser,
-    },
+    core::{degree_status::DegreeStatus, parser},
     db,
     middleware::auth::Sub,
     resources::{
@@ -158,12 +155,9 @@ pub async fn compute_degree_status(
         .malag_list
         .clone(); // The collection malags contain one item with the list of all malags
 
-    degree_status::compute(
-        catalog,
-        course::vec_to_map(vec_courses),
-        malag_courses,
-        &mut user_details.degree_status,
-    );
+    user_details
+        .degree_status
+        .compute(catalog, course::vec_to_map(vec_courses), malag_courses);
 
     let user_id = user.sub.clone();
     let document = doc! {"$set" : user.clone().into_document()};

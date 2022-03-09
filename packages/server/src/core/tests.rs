@@ -395,12 +395,7 @@ async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) ->
         .expect("failed to get all malags")[0]
         .malag_list
         .clone();
-    degree_status::compute(
-        catalog,
-        course::vec_to_map(vec_courses),
-        malag_courses,
-        &mut degree_status,
-    );
+    degree_status.compute(catalog, course::vec_to_map(vec_courses), malag_courses);
     degree_status
 }
 
