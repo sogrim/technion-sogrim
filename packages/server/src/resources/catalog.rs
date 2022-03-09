@@ -1,4 +1,7 @@
-use crate::{core::types::CreditOverflow, resources::course::CourseBank};
+use crate::{
+    core::types::{CreditOverflow, Rule},
+    resources::course::CourseBank,
+};
 use serde::{self, Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -33,6 +36,16 @@ impl Catalog {
 
     pub fn get_course_bank_by_name(&self, name: &str) -> Option<&CourseBank> {
         self.course_banks.iter().find(|bank| bank.name == name)
+    }
+
+    pub fn get_bank_names_by_rule(&self, rule: Rule) -> Vec<String> {
+        let mut names = Vec::new();
+        for bank in self.course_banks.iter() {
+            if bank.rule == rule {
+                names.push(bank.name.clone());
+            }
+        }
+        names
     }
 }
 

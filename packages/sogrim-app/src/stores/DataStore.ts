@@ -255,6 +255,7 @@ export class DataStore {
         courseListItem.semester === course.semester
       ) {
         courseListItem.state = action;
+        courseListItem.modified = true;
       }
     });
 

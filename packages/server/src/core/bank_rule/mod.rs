@@ -15,11 +15,12 @@ use std::collections::HashMap;
 use crate::resources::{
     catalog::OptionalReplacements,
     course::{Course, CourseId, CourseStatus},
-    user::UserDetails,
 };
 
+use super::degree_status::DegreeStatus;
+
 pub struct BankRuleHandler<'a> {
-    pub user: &'a mut UserDetails,
+    pub degree_status: &'a mut DegreeStatus,
     pub bank_name: String,
     pub course_list: Vec<CourseId>,
     pub courses: &'a HashMap<CourseId, Course>,
@@ -30,7 +31,7 @@ pub struct BankRuleHandler<'a> {
 }
 
 impl<'a> BankRuleHandler<'a> {
-    // This function sets the type of the course and adds its credit to sum_credit.
+    // This function sets the type of the course, and adds its credit to sum_credit if the user passed the course.
     // Returns true if the credit have been added, false otherwise.
     pub fn set_type_and_add_credit(
         course_status: &mut CourseStatus,

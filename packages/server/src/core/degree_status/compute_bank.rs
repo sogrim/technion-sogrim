@@ -18,13 +18,10 @@ impl<'a> DegreeStatusHandler<'a> {
         missing_credit_from_prev_banks: f32,
         courses_overflow: u32,
     ) {
-        let mut course_list = self.get_modified_courses(&bank.name);
-        course_list.extend(course_list_for_bank);
-        //course list includes all courses for this bank from the catalog and courses that the user marked manually that their type is this bank
         let bank_rule_handler = BankRuleHandler {
-            user: self.user,
+            degree_status: self.degree_status,
             bank_name: bank.name.clone(),
-            course_list,
+            course_list: course_list_for_bank,
             courses: &self.courses,
             credit_overflow,
             courses_overflow,
@@ -94,8 +91,7 @@ impl<'a> DegreeStatusHandler<'a> {
             sum_credit = self.handle_credit_overflow(bank, 0.0, sum_credit);
         };
 
-        self.user
-            .degree_status
+        self.degree_status
             .course_bank_requirements
             .push(Requirement {
                 course_bank_name: bank.name.clone(),
