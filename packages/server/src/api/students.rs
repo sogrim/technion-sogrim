@@ -9,10 +9,7 @@ use actix_web::{
 use bson::doc;
 
 use crate::{
-    core::{
-        degree_status::{self, DegreeStatus},
-        parser,
-    },
+    core::{degree_status::DegreeStatus, parser},
     db,
     middleware::auth::Sub,
     resources::{
@@ -151,9 +148,6 @@ pub async fn compute_degree_status(
 
     let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;
 
-    user_details.degree_status.course_bank_requirements.clear();
-    user_details.degree_status.overflow_msgs.clear();
-    user_details.degree_status.total_credit = 0.0;
     user_details.modified = false;
 
     let vec_courses = db::services::get_all_courses(&client).await?;
@@ -161,12 +155,9 @@ pub async fn compute_degree_status(
         .malag_list
         .clone(); // The collection malags contain one item with the list of all malags
 
-    degree_status::compute(
-        catalog,
-        course::vec_to_map(vec_courses),
-        malag_courses,
-        user_details,
-    );
+    user_details
+        .degree_status
+        .compute(catalog, course::vec_to_map(vec_courses), malag_courses);
 
     let user_id = user.sub.clone();
     let document = doc! {"$set" : user.clone().into_document()};

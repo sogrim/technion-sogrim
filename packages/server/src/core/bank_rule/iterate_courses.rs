@@ -35,7 +35,7 @@ impl<'a> BankRuleHandler<'a> {
         let mut sum_credit = self.credit_overflow;
         let mut count_courses = self.courses_overflow;
         let mut handled_courses = HashMap::new(); // mapping between the course in the catalog to the course which was taken by the student (relevant for replacements)
-        for course_status in self.user.degree_status.course_statuses.iter_mut() {
+        for course_status in self.degree_status.course_statuses.iter_mut() {
             let mut course_chosen_for_bank = false;
             if course_status.valid_for_bank(&self.bank_name) {
                 if self.course_list.contains(&course_status.course.id) {
@@ -69,6 +69,15 @@ impl<'a> BankRuleHandler<'a> {
                     if let Some(course_id) = course_id_in_list {
                         course_chosen_for_bank = true;
                         handled_courses.insert(course_id.clone(), course_status.course.id.clone());
+                    } else if course_status.r#type == Some(self.bank_name.clone()) {
+                        // The course is not in the list and not a replacement for any other course on the list
+                        // but its type is modified and its the current bank name.
+                        // Therefore the course should be added anyway.
+                        course_chosen_for_bank = true;
+                        handled_courses.insert(
+                            course_status.course.id.clone(),
+                            course_status.course.id.clone(),
+                        );
                     }
                 }
             }
