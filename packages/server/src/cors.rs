@@ -5,7 +5,7 @@ use actix_web::http::header;
 pub fn cors() -> actix_cors::Cors {
     let cors = Cors::default()
         .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
-        .allowed_headers(&[header::AUTHORIZATION]);
+        .allowed_headers(vec![header::AUTHORIZATION, header::CONTENT_TYPE]);
     if CONFIG.profile == "debug" {
         cors.allowed_origin_fn(|origin, _req_head| {
             origin.as_bytes().starts_with(b"http://localhost")
