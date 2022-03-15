@@ -2,8 +2,8 @@ import GitHubIcon from "@mui/icons-material/GitHub";
 import InfoIcon from "@mui/icons-material/Info";
 import { AppBar, Box, ButtonBase, Link, Typography } from "@mui/material";
 import { useState } from "react";
-import { version } from "../../../package.json";
 import { ChangesDialog } from "./ChangesDialog";
+import packageInfo from "../../../package.json";
 
 export const Footer: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -80,7 +80,7 @@ export const Footer: React.FC = () => {
           }}
           onClick={handleClickOpen}
         >
-          <Typography fontSize="small">{`v${version}`}</Typography>
+          <Typography fontSize="small">{`v${packageInfo.version}`}</Typography>
         </ButtonBase>
         {open && <ChangesDialog {...{ open, setOpen }} />}
       </Box>
