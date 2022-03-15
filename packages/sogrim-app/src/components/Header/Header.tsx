@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
 import { PageState } from "../../types/ui-types";
+import { ExportToCsv } from "../Commom/ExportToCsv";
 import { UserAccount } from "./Actions/Actions";
 import { AppTitle } from "./AppTitle/AppTitle";
 import { DefaultMenu } from "./Menu";
@@ -48,6 +49,7 @@ const HeaderComp: React.FC<HeaderProps> = () => {
             }}
           >
             <Box>
+              <ExportToCsv />
               <Button
                 sx={{ margin: 2 }}
                 variant="outlined"
