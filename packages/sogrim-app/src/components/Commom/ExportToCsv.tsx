@@ -1,10 +1,11 @@
-import { Button, IconButton, Tooltip, Typography } from "@mui/material";
+import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
+import DownloadIcon from "@mui/icons-material/Download";
+import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useRef, useState } from "react";
 import { CSVLink } from "react-csv";
 import { useStore } from "../../hooks/useStore";
 import { UserDetails } from "../../types/data-types";
-import DownloadIcon from "@mui/icons-material/Download";
 
 const exportDegreeStatusToCsv = (
   userDetails?: UserDetails
@@ -75,10 +76,18 @@ const ExportToCsvComp: React.FC = () => {
         !!userDetails.degree_status &&
         userDetails.degree_status.course_statuses.length > 0 &&
         (readyToDownload ? (
-          <IconButton sx={{ gap: 0.5 }} onClick={() => handleClickDownload()}>
-            <Typography fontWeight="bold"> הורדה </Typography>
-            <DownloadIcon />
-          </IconButton>
+          <Box sx={{ display: "flex", align: "center" }}>
+            <Tooltip title={"הורד"} arrow>
+              <IconButton onClick={() => handleClickDownload()}>
+                <DownloadIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={"בטל"} arrow>
+              <IconButton onClick={() => setReadyToDownload(false)}>
+                <CancelPresentationIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
         ) : (
           <Tooltip
             arrow
@@ -89,7 +98,7 @@ const ExportToCsvComp: React.FC = () => {
             }
           >
             <Button variant="outlined" onClick={() => handleClickExport()}>
-              <Typography fontWeight="bold">ייצא נתונים </Typography>
+              <b>יצוא נתונים </b>
             </Button>
           </Tooltip>
         ))}

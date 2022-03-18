@@ -48,10 +48,10 @@ const HeaderComp: React.FC<HeaderProps> = () => {
               },
             }}
           >
-            <Box>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
               <ExportToCsv />
               <Button
-                sx={{ margin: 2 }}
+                sx={{ margin: 1 }}
                 variant="outlined"
                 onClick={() => setPage(isAuthenticated)}
               >
