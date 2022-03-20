@@ -1,5 +1,4 @@
 use crate::config::CONFIG;
-use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use actix_web_lab::middleware::from_fn;
 use dotenv::dotenv;
@@ -9,6 +8,7 @@ use mongodb::Client;
 mod api;
 mod config;
 mod core;
+mod cors;
 mod db;
 mod logger;
 mod middleware;
@@ -31,7 +31,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(client.clone()))
             .app_data(auth::JwtDecoder::new())
             .wrap(from_fn(auth::authenticate))
-            .wrap(Cors::permissive())
+            .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
             .service(api::students::get_all_catalogs)
             .service(api::students::login)

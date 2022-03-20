@@ -5,6 +5,10 @@ export type VersionChanges = {
 
 export const versionChanges: VersionChanges[] = [
   {
+    version: "v1.0.3",
+    changes: ["ניתן כעת לייצא את נתוני התואר לקובץ להורדה."],
+  },
+  {
     version: "v1.0.2",
     changes: ["תוקן באג שהתרחש בעת הוספת קורס חובה וסימונו כלא רלוונטי."],
   },
