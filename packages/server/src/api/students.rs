@@ -15,7 +15,7 @@ use crate::{
     resources::{
         catalog::DisplayCatalog,
         course,
-        user::{User, UserDetails},
+        user::{Settings, User, UserDetails},
     },
 };
 
@@ -182,6 +182,19 @@ pub async fn update_details(
 ) -> Result<HttpResponse, Error> {
     let user_id = user.sub.clone();
     user.details = Some(details.into_inner());
+    let document = doc! {"$set" : user.into_document()};
+    db::services::find_and_update_user(&user_id, document, &client).await?;
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[put("/students/settings")]
+pub async fn update_settings(
+    mut user: User,
+    settings: Json<Settings>,
+    client: Data<mongodb::Client>,
+) -> Result<HttpResponse, Error> {
+    let user_id = user.sub.clone();
+    user.settings = settings.into_inner();
     let document = doc! {"$set" : user.into_document()};
     db::services::find_and_update_user(&user_id, document, &client).await?;
     Ok(HttpResponse::Ok().finish())
