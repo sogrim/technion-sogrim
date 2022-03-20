@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use crate::core::types::Requirement;
 use crate::resources::{
     catalog::Catalog,
-    course::{Course, CourseBank, CourseId, CourseStatus},
+    course::{Course, CourseBank, CourseId, CourseState, CourseStatus},
 };
 use serde::{Deserialize, Serialize};
 

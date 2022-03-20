@@ -19,10 +19,17 @@ pub struct UserDetails {
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct Settings {
+    pub modified: bool,
+    pub compute_in_progress: bool,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct User {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub sub: String,
     pub details: Option<UserDetails>,
+    pub settings: Settings,
 }
 
 impl User {
@@ -30,6 +37,7 @@ impl User {
         let user = User {
             sub: sub.into(),
             details: Some(UserDetails::default()),
+            ..Default::default()
         };
         // Should always unwrap successfully here..
         bson::to_document(&user).unwrap_or(doc! {"sub" : sub, "details": null})
