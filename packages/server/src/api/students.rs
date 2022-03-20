@@ -155,10 +155,18 @@ pub async fn compute_degree_status(
         .malag_list
         .clone(); // The collection malags contain one item with the list of all malags
 
+    let mut course_list = Vec::new();
+    if user.settings.compute_in_progress {
+        course_list = user_details.degree_status.set_in_progress_to_complete();
+    }
+
     user_details
         .degree_status
         .compute(catalog, course::vec_to_map(vec_courses), malag_courses);
 
+    if user.settings.compute_in_progress {
+        user_details.degree_status.set_to_in_progress(course_list);
+    }
     let user_id = user.sub.clone();
     let document = doc! {"$set" : user.clone().into_document()};
     db::services::find_and_update_user(&user_id, document, &client).await?;

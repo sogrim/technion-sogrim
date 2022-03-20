@@ -42,6 +42,34 @@ impl DegreeStatus {
         }
         None
     }
+
+    // This function sets the state for all courses where their state is "in progress" to "complete"
+    // and returns a list of all courses which were changed, (CourseId, Semester) is a key for each courseStatus.
+    pub fn set_in_progress_to_complete(&mut self) -> Vec<(CourseId, Option<String>)> {
+        let mut changed_course_statuses = Vec::new();
+        for course_status in self.course_statuses.iter_mut() {
+            if course_status.state == Some(CourseState::InProgress) {
+                changed_course_statuses.push((
+                    course_status.course.id.clone(),
+                    course_status.semester.clone(),
+                ));
+                course_status.state = Some(CourseState::InProgress);
+            }
+        }
+        changed_course_statuses
+    }
+
+    // This function gets a list of courses and sets their state to "in progress"
+    pub fn set_to_in_progress(&mut self, course_list: Vec<(CourseId, Option<String>)>) {
+        for course_status in self.course_statuses.iter_mut() {
+            if course_list.contains(&(
+                course_status.course.id.clone(),
+                course_status.semester.clone(),
+            )) {
+                course_status.state = Some(CourseState::Complete);
+            }
+        }
+    }
 }
 
 pub struct DegreeStatusHandler<'a> {
