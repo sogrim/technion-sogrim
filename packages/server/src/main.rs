@@ -10,6 +10,7 @@ mod config;
 mod core;
 mod cors;
 mod db;
+mod error;
 mod logger;
 mod middleware;
 mod resources;

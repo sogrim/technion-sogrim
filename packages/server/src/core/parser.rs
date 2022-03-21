@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-
-use actix_web::{
-    error::{ErrorBadRequest, ErrorInternalServerError},
-    Error,
+use crate::{
+    error::AppError,
+    resources::course::{Course, CourseStatus, Grade},
 };
-
-use crate::resources::course::{Course, CourseStatus, Grade};
+use std::collections::HashMap;
 
 fn contains_course_number(str: &str) -> bool {
     for word in str.split_whitespace() {
@@ -19,12 +16,11 @@ fn contains_course_number(str: &str) -> bool {
     false
 }
 
-pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
+pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> {
     // Sanity validation
     if !(data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
     {
-        log::error!("Invalid copy paste data");
-        return Err(ErrorBadRequest("Invalid copy paste data"));
+        return Err(AppError::Parser("Invalid copy paste data".into()));
     }
 
     let mut courses = HashMap::<String, CourseStatus>::new();
@@ -47,14 +43,12 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
                 1.0
             };
 
-            let semester_term = match (is_spring, is_summer, is_winter) {
-                (true, _, _) => "אביב",
-                (_, true, _) => "קיץ",
-                (_, _, true) => "חורף",
-                _ => {
-                    log::error!("Something really unexpected happened");
-                    return Err(ErrorInternalServerError(""));
-                }
+            let semester_term = if is_spring {
+                "אביב"
+            } else if is_summer {
+                "קיץ"
+            } else {
+                "חורף"
             };
 
             format!("{}_{}", semester_term, semester_counter)
@@ -101,8 +95,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, Error> {
     vec_courses.append(&mut sport_courses);
 
     if vec_courses.is_empty() {
-        log::error!("Invalid copy paste data");
-        return Err(ErrorBadRequest("Invalid copy paste data"));
+        return Err(AppError::Parser("Invalid copy paste data".into()));
     }
     Ok(vec_courses)
 }
@@ -133,18 +126,17 @@ fn set_grades_for_uncompleted_courses(
     }
 }
 
-fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>), Error> {
+fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>), AppError> {
     let clean_line = line.replace('*', "");
     let id = {
-        let number = clean_line.split(' ').next().ok_or_else(|| {
-            log::error!("Bad Format");
-            ErrorBadRequest("Bad Format")
-        })?;
+        let number = clean_line
+            .split(' ')
+            .next()
+            .ok_or_else(|| AppError::Parser("Bad Format".into()))?;
         if number.parse::<f32>().is_ok() {
             Ok(String::from(number))
         } else {
-            log::error!("Bad Format");
-            Err(ErrorBadRequest("Bad Format"))
+            Err(AppError::Parser("Bad Format".into()))
         }?
     };
 
@@ -176,10 +168,7 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
     let grade_str = clean_line
         .split(' ')
         .last()
-        .ok_or_else(|| {
-            log::error!("Bad Format");
-            ErrorBadRequest("Bad Format")
-        })?
+        .ok_or_else(|| AppError::Parser("Bad Format".into()))?
         .trim();
 
     let grade = match grade_str as &str {
