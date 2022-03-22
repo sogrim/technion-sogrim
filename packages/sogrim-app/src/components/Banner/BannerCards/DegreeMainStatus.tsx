@@ -3,14 +3,17 @@ import { DegreeStatusBar } from "./DegreeStatusBar";
 import { useState, useEffect } from "react";
 import { useStore } from "../../../hooks/useStore";
 import { observer } from "mobx-react-lite";
+import Confetti from "react-confetti";
 
 const DegreeMainStatusComp: React.FC = () => {
   const {
-    dataStore: { userDetails },
+    dataStore: { userDetails, isDegreeComplete },
   } = useStore();
   const [totalCredit, setTotalCredit] = useState<number>(0);
   const [pointsDone, setPointsDone] = useState<number>(0);
   const [catalogName, setCatalogName] = useState<string>("");
+  const [confetti, setConfetti] = useState(false);
+  const [confettiRecycle, setConfettiRecycle] = useState(false);
 
   const [showMainStatus, setShowMainStatus] = useState<boolean>(false);
 
@@ -27,8 +30,20 @@ const DegreeMainStatusComp: React.FC = () => {
       setTotalCredit(totalCredit);
       setCatalogName(catalogName);
       setShowMainStatus(totalCredit * pointsDone > 0 && catalogName !== "");
+      if (isDegreeComplete()) {
+        setConfetti(true);
+        setConfettiRecycle(true);
+        setTimeout(() => {
+          setConfettiRecycle(false);
+        }, 3000);
+      }
     }
-  }, [pointsDone, userDetails, userDetails?.degree_status?.course_statuses]);
+  }, [
+    isDegreeComplete,
+    pointsDone,
+    userDetails,
+    userDetails?.degree_status?.course_statuses,
+  ]);
 
   const progress =
     pointsDone / totalCredit >= 1 ? 100 : (pointsDone / totalCredit) * 100;
@@ -46,6 +61,14 @@ const DegreeMainStatusComp: React.FC = () => {
         <Button sx={{ display: "flex", justifyContent: "center" }} size="small">
           {catalogName}
         </Button>
+        {confetti && (
+          <Confetti
+            width={2000}
+            numberOfPieces={500}
+            recycle={confettiRecycle}
+            onConfettiComplete={() => setConfetti(false)}
+          />
+        )}
       </CardContent>
     </Card>
   ) : null;
