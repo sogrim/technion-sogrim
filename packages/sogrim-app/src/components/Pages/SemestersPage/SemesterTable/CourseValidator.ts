@@ -65,8 +65,8 @@ export const courseFromUserValidations = (
     };
   }
 
-  let newState = "לא הושלם";
   let newGrade = course.grade === "" ? undefined : course.grade;
+  let newState = newGrade ? "לא הושלם" : "בתהליך"; // The hebrew flips the conditions
   if (
     course.grade &&
     (course.grade === "עבר" ||

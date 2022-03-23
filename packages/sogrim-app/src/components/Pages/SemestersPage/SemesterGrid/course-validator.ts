@@ -81,11 +81,11 @@ export const courseFromUserValidations = (
     };
   }
 
-  let newState = "לא הושלם";
   let newType =
     course.type === "" || course.type === "-" ? undefined : course.type;
   let newGrade =
     course.grade === "" || course.grade === "-" ? undefined : course.grade;
+  let newState = newGrade ? "לא הושלם" : "בתהליך"; // The hebrew flips the conditions
   if (
     course.grade &&
     (course.grade === "עבר" ||
