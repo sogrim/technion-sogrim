@@ -1,9 +1,9 @@
 use crate::db;
+use crate::error::AppError;
 use crate::impl_from_request;
 use crate::middleware::auth::Sub;
 use actix_web::dev::Payload;
-use actix_web::error::ErrorInternalServerError;
-use actix_web::{web::Data, Error, FromRequest, HttpMessage, HttpRequest};
+use actix_web::{web::Data, FromRequest, HttpMessage, HttpRequest};
 use bson::doc;
 use futures_util::Future;
 use serde::{Deserialize, Serialize};

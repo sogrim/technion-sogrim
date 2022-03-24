@@ -62,7 +62,7 @@ async fn test_from_request_no_auth_mw() {
     // Check for correct response (internal server error in this case)
     assert!(resp.status().is_server_error());
     assert_eq!(
-        Bytes::from("Middleware Error: Sub not found in request extensions"),
+        Bytes::from("Middleware error: Sub not found in request extensions"),
         test::read_body(resp).await
     );
 }
