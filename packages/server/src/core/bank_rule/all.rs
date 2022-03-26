@@ -34,7 +34,7 @@ impl<'a> BankRuleHandler<'a> {
         for course_status in self.degree_status.course_statuses.iter() {
             if course_status.r#type == Some(self.bank_name.clone()) {
                 *sum_credit_requirement += course_status.course.credit;
-                if !course_status.passed() {
+                if !course_status.completed() {
                     *completed = false;
                 }
             }

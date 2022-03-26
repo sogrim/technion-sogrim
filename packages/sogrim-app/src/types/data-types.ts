@@ -53,7 +53,7 @@ export type DegreeStatus = {
   total_credit: number;
 };
 
-export type Settings = {
+export type UserSettings = {
   modified: boolean;
   compute_in_progress: boolean;
 };
@@ -67,5 +67,5 @@ export type UserDetails = {
 export type UserState = {
   _id: string;
   details: UserDetails;
-  settings: Settings;
+  settings: UserSettings;
 };

@@ -15,7 +15,7 @@ use crate::{
     resources::{
         catalog::DisplayCatalog,
         course,
-        user::{Settings, User, UserDetails},
+        user::{User, UserDetails, UserSettings},
     },
 };
 
@@ -160,6 +160,8 @@ pub async fn compute_degree_status(
         course_list = user_details.degree_status.set_in_progress_to_complete();
     }
 
+    println!("{:#?}", course_list);
+
     user_details
         .degree_status
         .compute(catalog, course::vec_to_map(vec_courses), malag_courses);
@@ -173,7 +175,7 @@ pub async fn compute_degree_status(
     Ok(HttpResponse::Ok().json(user))
 }
 
-// here "modified" becomes true
+// here "modified" is true
 #[put("/students/details")]
 pub async fn update_details(
     mut user: User,
@@ -190,7 +192,7 @@ pub async fn update_details(
 #[put("/students/settings")]
 pub async fn update_settings(
     mut user: User,
-    settings: Json<Settings>,
+    settings: Json<UserSettings>,
     client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, Error> {
     let user_id = user.sub.clone();

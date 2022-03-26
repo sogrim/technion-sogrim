@@ -53,7 +53,7 @@ impl DegreeStatus {
                     course_status.course.id.clone(),
                     course_status.semester.clone(),
                 ));
-                course_status.state = Some(CourseState::InProgress);
+                course_status.state = Some(CourseState::Complete);
             }
         }
         changed_course_statuses
@@ -65,8 +65,9 @@ impl DegreeStatus {
             if course_list.contains(&(
                 course_status.course.id.clone(),
                 course_status.semester.clone(),
-            )) {
-                course_status.state = Some(CourseState::Complete);
+            )) && course_status.state == Some(CourseState::Complete)
+            {
+                course_status.state = Some(CourseState::InProgress);
             }
         }
     }

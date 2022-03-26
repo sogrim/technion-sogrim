@@ -1,11 +1,17 @@
 import { makeAutoObservable } from "mobx";
 import { createData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTableUtils";
 import { RowData } from "../components/Pages/SemestersPage/SemesterTabsConsts";
-import { CourseStatus, UserDetails, CourseState } from "../types/data-types";
+import {
+  CourseStatus,
+  UserDetails,
+  CourseState,
+  UserSettings,
+} from "../types/data-types";
 import { RootStore } from "./RootStore";
 
 export class DataStore {
   public userDetails: UserDetails = {} as UserDetails;
+  public userSettings: UserSettings = {} as UserSettings;
   public userBankNames: string[] = [];
 
   constructor(public readonly rootStore: RootStore) {
@@ -14,6 +20,10 @@ export class DataStore {
 
   updateStoreUserDetails = (newUserDitails: UserDetails) => {
     this.userDetails = newUserDitails;
+  };
+
+  updateStoreUserSettings = (newUserSettings: UserSettings) => {
+    this.userSettings = newUserSettings;
   };
 
   get modifiedStatus() {

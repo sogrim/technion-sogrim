@@ -19,7 +19,7 @@ pub struct UserDetails {
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
-pub struct Settings {
+pub struct UserSettings {
     pub modified: bool,
     pub compute_in_progress: bool,
 }
@@ -29,7 +29,7 @@ pub struct User {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub sub: String,
     pub details: Option<UserDetails>,
-    pub settings: Settings,
+    pub settings: UserSettings,
 }
 
 impl User {

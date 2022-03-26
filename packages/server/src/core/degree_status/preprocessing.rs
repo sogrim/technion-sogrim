@@ -21,7 +21,7 @@ impl DegreeStatus {
             if let Some(r#type) = &course_status.r#type {
                 course_status.semester.is_some()
                     || course_status.modified
-                    || course_status.passed()
+                    || course_status.completed()
                     || !bank_names.contains(r#type)
             } else {
                 true
