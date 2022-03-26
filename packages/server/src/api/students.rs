@@ -160,8 +160,6 @@ pub async fn compute_degree_status(
         course_list = user_details.degree_status.set_in_progress_to_complete();
     }
 
-    println!("{:#?}", course_list);
-
     user_details
         .degree_status
         .compute(catalog, course::vec_to_map(vec_courses), malag_courses);
@@ -197,6 +195,7 @@ pub async fn update_settings(
 ) -> Result<HttpResponse, Error> {
     let user_id = user.sub.clone();
     user.settings = settings.into_inner();
+    user.settings.modified = false;
     let document = doc! {"$set" : user.into_document()};
     db::services::find_and_update_user(&user_id, document, &client).await?;
     Ok(HttpResponse::Ok().finish())

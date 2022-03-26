@@ -7,7 +7,7 @@ import { useStore } from "../../hooks/useStore";
 
 const ModifiedToastComp = () => {
   const {
-    dataStore: { modifiedStatus },
+    dataStore: { modifiedStatus, modifiedSettings },
     uiStore: { endGameRefetch },
   } = useStore();
 
@@ -30,7 +30,7 @@ const ModifiedToastComp = () => {
 
   return (
     <>
-      {modifiedStatus ? (
+      {modifiedStatus || modifiedSettings ? (
         <Snackbar
           sx={{ mt: "-12px" }}
           anchorOrigin={{ vertical: "top", horizontal: "center" }}
@@ -43,7 +43,11 @@ const ModifiedToastComp = () => {
             }}
             severity="info"
           >
-            סטאטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר.
+            {modifiedStatus
+              ? "סטאטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר."
+              : modifiedSettings
+              ? "עדכנת את ההגדרות - עלייך להריך שוב את חישוב סגירת התואר"
+              : ""}
             <Button
               onClick={triggerComputeEndGame}
               sx={{ margin: "0px 5px 0px 5px", fontWeight: "bold" }}
@@ -55,14 +59,26 @@ const ModifiedToastComp = () => {
             <Tooltip
               arrow
               title={
-                <Typography>
-                  לאחר עריכת קורסים, המידע שלכם נשמר - אך סטאטוס התואר אינו
-                  מתעדכן.
-                  <br />
-                  כאשר תסיימו לערוך ולעדכן את הקורסים שלכם, לחצו על{" "}
-                  <b>סגור את התואר</b> ואנו נפעיל את חישוב סגירת התואר בהתאם
-                  לקטלוג שבחרתם :)
-                </Typography>
+                modifiedStatus ? (
+                  <Typography>
+                    לאחר עריכת קורסים, המידע שלכם נשמר - אך סטאטוס התואר אינו
+                    מתעדכן.
+                    <br />
+                    כאשר תסיימו לערוך ולעדכן את הקורסים שלכם, לחצו על{" "}
+                    <b>סגור את התואר</b> ואנו נפעיל את חישוב סגירת התואר בהתאם
+                    לקטלוג שבחרתם :)
+                  </Typography>
+                ) : modifiedSettings ? (
+                  <Typography>
+                    ישנן הגדרות שמשפיעות על דרך החישוב, למשל "חישוב עם קורסים
+                    בתהליך".
+                    <br />
+                    לכן כאשר מעדכנים את אחת ההגדרות, יש להריץ שוב את חישוב
+                    סגירות התואר על ידי לחיצה על <b>סגור את התואר</b>{" "}
+                  </Typography>
+                ) : (
+                  <Typography></Typography>
+                )
               }
             >
               <Button
