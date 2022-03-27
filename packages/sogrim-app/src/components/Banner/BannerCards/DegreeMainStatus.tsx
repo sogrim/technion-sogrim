@@ -32,7 +32,7 @@ const DegreeMainStatusComp: React.FC = () => {
 
   const [showMainStatus, setShowMainStatus] = useState<boolean>(false);
   const [computeInProgress, setComputeInProgress] = useState<boolean>(
-    userSettings.compute_in_progress
+    userSettings ? userSettings.compute_in_progress : false
   );
 
   // TODO: loading? or loading to all the banner!
