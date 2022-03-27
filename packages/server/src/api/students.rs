@@ -195,7 +195,6 @@ pub async fn update_settings(
 ) -> Result<HttpResponse, Error> {
     let user_id = user.sub.clone();
     user.settings = settings.into_inner();
-    user.settings.modified = false;
     let document = doc! {"$set" : user.into_document()};
     db::services::find_and_update_user(&user_id, document, &client).await?;
     Ok(HttpResponse::Ok().finish())

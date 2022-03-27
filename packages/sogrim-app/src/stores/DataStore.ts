@@ -33,10 +33,6 @@ export class DataStore {
     );
   }
 
-  get modifiedSettings() {
-    return this.userSettings?.modified;
-  }
-
   getAllUserSemesters = (courseList: CourseStatus[]): string[] => {
     const allSemestersSet = new Set<string>();
     courseList.forEach((course) =>
@@ -283,7 +279,7 @@ export class DataStore {
     computeInProgress: boolean
   ): UserSettings => {
     this.userSettings.compute_in_progress = computeInProgress;
-    this.userSettings.modified = true;
+    this.userDetails.modified = true;
     return this.userSettings;
   };
 }

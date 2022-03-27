@@ -54,7 +54,6 @@ export type DegreeStatus = {
 };
 
 export type UserSettings = {
-  modified: boolean;
   compute_in_progress: boolean;
 };
 

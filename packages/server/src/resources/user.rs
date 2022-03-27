@@ -20,7 +20,6 @@ pub struct UserDetails {
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserSettings {
-    pub modified: bool,
     pub compute_in_progress: bool,
 }
 
