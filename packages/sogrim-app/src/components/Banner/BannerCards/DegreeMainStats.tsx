@@ -28,7 +28,7 @@ const DegreeMainStatsComp: React.FC = () => {
   const totalBanks =
     userDetails?.degree_status?.course_bank_requirements?.length;
 
-  return gpa && gpa > 0 ? (
+  return (
     <Card sx={{ minWidth: 275, maxHeight: 150 }}>
       <CardContent>
         <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
@@ -51,7 +51,7 @@ const DegreeMainStatsComp: React.FC = () => {
         </Button>
       </CardContent>
     </Card>
-  ) : null;
+  );
 };
 
 export const DegreeMainStats = observer(DegreeMainStatsComp);

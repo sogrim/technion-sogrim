@@ -37,17 +37,14 @@ const DegreeMainStatusComp: React.FC = () => {
 
   // TODO: loading? or loading to all the banner!
   useEffect(() => {
-    if (
-      userDetails &&
-      userDetails?.degree_status?.course_statuses?.length > 0
-    ) {
+    if (userDetails) {
       const studentTotal = userDetails?.degree_status?.total_credit || 0;
       const totalCredit = userDetails?.catalog?.total_credit || 0;
       const catalogName = userDetails?.catalog?.name || "";
       setPointsDone(studentTotal);
       setTotalCredit(totalCredit);
       setCatalogName(catalogName);
-      setShowMainStatus(totalCredit * pointsDone > 0 && catalogName !== "");
+      setShowMainStatus(catalogName !== "");
     }
     if (isError) {
       if ((error as any).response.status === 401) {
