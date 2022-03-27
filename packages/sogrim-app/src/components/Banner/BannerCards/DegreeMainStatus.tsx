@@ -5,6 +5,8 @@ import {
   Typography,
   Switch,
   Grid,
+  Box,
+  Tooltip,
 } from "@mui/material";
 import { DegreeStatusBar } from "./DegreeStatusBar";
 import { useState, useEffect, useCallback } from "react";
@@ -74,17 +76,34 @@ const DegreeMainStatusComp: React.FC = () => {
   return showMainStatus ? (
     <Card sx={{ minWidth: 275, maxHeight: 150 }}>
       <CardContent>
-        <Typography
-          sx={{ fontSize: 18 }}
-          color="text.secondary"
-          gutterBottom
-          display="inline"
-        >
-          סטאטוס תואר
-        </Typography>
-        <Typography display="inline">
-          <Switch onChange={handleChange} checked={computeInProgress} />
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
+            סטאטוס תואר
+          </Typography>
+          <Tooltip
+            arrow
+            title={
+              "כפתור זה מאפשר לכם לחשב את סטטוס התואר שלכם עם התחשבות בקורסים שאין להם ציון (בתהליך)"
+            }
+          >
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                marginTop: "-10px",
+              }}
+            >
+              <Typography fontSize={10}>התחשב בקורסים בתהליך</Typography>
+              <Switch
+                onChange={handleChange}
+                checked={computeInProgress}
+                color="secondary"
+                size="small"
+              />
+            </Box>
+          </Tooltip>
+        </Box>
         {/* TODO: work on design */}
         <DegreeStatusBar progress={progress} />
         <Typography sx={{ fontSize: 22 }} color="text.primary">

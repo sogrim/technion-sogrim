@@ -46,7 +46,7 @@ const ModifiedToastComp = () => {
             {modifiedStatus
               ? "סטאטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר."
               : modifiedSettings
-              ? "עדכנת את ההגדרות - עלייך להריך שוב את חישוב סגירת התואר"
+              ? "עדכנת את ההגדרות - עלייך להריך שוב את חישוב סגירת התואר."
               : ""}
             <Button
               onClick={triggerComputeEndGame}
