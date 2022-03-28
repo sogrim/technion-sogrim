@@ -99,7 +99,7 @@ impl CourseStatus {
     }
 
     pub fn completed(&self) -> bool {
-        return self.state == Some(CourseState::Complete);
+        self.state == Some(CourseState::Complete)
     }
 
     pub fn extract_semester(&self) -> f32 {

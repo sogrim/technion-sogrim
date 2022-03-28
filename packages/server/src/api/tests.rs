@@ -142,6 +142,66 @@ async fn test_students_api_full_flow() {
         .await;
     assert!(res.status().is_success());
 }
+#[test]
+async fn test_compute_in_progress() {
+    dotenv().ok();
+
+    // Init env and app
+    let client = init_mongodb_client!();
+    let app = test::init_service(
+        App::new()
+            .app_data(Data::new(client.clone()))
+            .service(students::compute_degree_status)
+            .service(students::update_settings),
+    )
+    .await;
+
+    let get_degree_status_before = test::TestRequest::get()
+        .uri("/students/degree-status")
+        .to_request();
+    get_degree_status_before
+        .extensions_mut()
+        .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
+
+    let res = test::call_service(&app, get_degree_status_before).await;
+    let mut user: User = test::read_body_json(res).await;
+    assert_eq!(user.details.unwrap().degree_status.total_credit, 0.0);
+
+    user.settings.compute_in_progress = true;
+    let put_user_settings = test::TestRequest::put()
+        .uri("/students/settings")
+        .insert_header(("content-type", "application/json"))
+        .set_payload(serde_json::to_string(&user.settings).expect("Fail to deserialize user"))
+        .to_request();
+    put_user_settings
+        .extensions_mut()
+        .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
+    let res = test::call_service(&app, put_user_settings).await;
+    assert_eq!(res.status(), StatusCode::OK);
+
+    let get_degree_status_after = test::TestRequest::get()
+        .uri("/students/degree-status")
+        .to_request();
+    get_degree_status_after
+        .extensions_mut()
+        .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
+
+    let res = test::call_service(&app, get_degree_status_after).await;
+    let mut user: User = test::read_body_json(res).await;
+    assert_eq!(user.details.unwrap().degree_status.total_credit, 2.5);
+
+    user.settings.compute_in_progress = false;
+    let put_user_settings = test::TestRequest::put()
+        .uri("/students/settings")
+        .insert_header(("content-type", "application/json"))
+        .set_payload(serde_json::to_string(&user.settings).expect("Fail to deserialize user"))
+        .to_request();
+    put_user_settings
+        .extensions_mut()
+        .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
+    let res = test::call_service(&app, put_user_settings).await;
+    assert_eq!(res.status(), StatusCode::OK);
+}
 
 #[test]
 async fn test_bo_api_courses() {
