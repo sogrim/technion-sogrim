@@ -323,7 +323,7 @@ async fn test_student_login_no_sub() {
 
     assert!(resp.status().is_server_error());
     assert_eq!(
-        Bytes::from("Middleware Internal Error: No sub found in request extensions"),
+        Bytes::from("Middleware error: No sub found in request extensions"),
         test::read_body(resp).await
     );
 }

@@ -1,10 +1,9 @@
 use crate::config::CONFIG;
+use crate::error::AppError;
 use crate::resources::admin::Admin;
 use crate::resources::catalog::{Catalog, DisplayCatalog};
 use crate::resources::course::{Course, Malags};
 use crate::resources::user::User;
-use actix_web::error::ErrorInternalServerError;
-use actix_web::error::{self, Error};
 use bson::oid::ObjectId;
 pub use bson::{doc, Document};
 use futures_util::TryStreamExt;
@@ -19,7 +18,7 @@ macro_rules! impl_get {
         db_key_type=$db_key_type:ty
     ) => {
         #[allow(dead_code)] // TODO: remove this
-        pub async fn $fn_name(id: $db_key_type, client: &Client) -> Result<$db_item, Error> {
+        pub async fn $fn_name(id: $db_key_type, client: &Client) -> Result<$db_item, AppError> {
             match client
                 .database(CONFIG.profile)
                 .collection::<$db_item>(format!("{}s", stringify!($db_item)).as_str())
@@ -27,15 +26,12 @@ macro_rules! impl_get {
                 .await
             {
                 Ok(Some(id)) => Ok(id),
-                Ok(None) => {
-                    log::error!("{}: {} not found", stringify!($db_item), id.to_string());
-                    Err(error::ErrorNotFound(id.to_string()))
-                }
-                Err(e) => {
-                    let err = format!("MongoDB driver error: {}", e);
-                    log::error!("{}", err);
-                    Err(error::ErrorInternalServerError(err))
-                }
+                Ok(None) => Err(AppError::NotFound(format!(
+                    "{}: {} ",
+                    stringify!($db_item),
+                    id.to_string()
+                ))),
+                Err(err) => Err(AppError::MongoDriver(err.to_string())),
             }
         }
     };
@@ -48,23 +44,18 @@ macro_rules! impl_get_all {
         db_item=$db_item:ty,
         db_coll_name=$db_coll_name:literal
     ) => {
-        pub async fn $fn_name(client: &Client) -> Result<Vec<$db_item>, Error> {
+        pub async fn $fn_name(client: &Client) -> Result<Vec<$db_item>, AppError> {
             match client
                 .database(CONFIG.profile)
                 .collection::<$db_item>($db_coll_name)
                 .find(None, None)
                 .await
             {
-                Ok(docs) => Ok(docs.try_collect::<Vec<$db_item>>().await.map_err(|e| {
-                    let err = format!("MongoDB driver error: {}", e);
-                    log::error!("{}", err);
-                    ErrorInternalServerError(err)
-                })?),
-                Err(e) => {
-                    let err = format!("MongoDB driver error: {}", e);
-                    log::error!("{}", err);
-                    Err(ErrorInternalServerError(err))
-                }
+                Ok(docs) => Ok(docs
+                    .try_collect::<Vec<$db_item>>()
+                    .await
+                    .map_err(|e| AppError::MongoDriver(e.to_string()))?),
+                Err(err) => Err(AppError::MongoDriver(err.to_string())),
             }
         }
     };
@@ -78,21 +69,18 @@ macro_rules! impl_get_all_filtered {
         db_coll_name=$db_coll_name:literal,
         filter_name=$filter_name:literal
     ) => {
-        pub async fn $fn_name(filter: &str, client: &Client) -> Result<Vec<$db_item>, Error> {
+        pub async fn $fn_name(filter: &str, client: &Client) -> Result<Vec<$db_item>, AppError> {
             match client
                 .database(CONFIG.profile)
                 .collection::<$db_item>($db_coll_name)
                 .find(doc! {$filter_name: { "$regex": filter}}, None)
                 .await
             {
-                Ok(docs) => Ok(docs.try_collect::<Vec<$db_item>>().await.map_err(|e| {
-                    log::error!("{}", e.to_string());
-                    ErrorInternalServerError("")
-                })?),
-                Err(err) => {
-                    log::error!("{}", err.to_string());
-                    Err(ErrorInternalServerError(""))
-                }
+                Ok(docs) => Ok(docs
+                    .try_collect::<Vec<$db_item>>()
+                    .await
+                    .map_err(|e| AppError::MongoDriver(e.to_string()))?),
+                Err(err) => Err(AppError::MongoDriver(err.to_string())),
             }
         }
     };
@@ -111,7 +99,7 @@ macro_rules! impl_update {
             id: $db_key_type,
             document: Document,
             client: &Client,
-        ) -> Result<$db_item, Error> {
+        ) -> Result<$db_item, AppError> {
             match client
                 .database(CONFIG.profile)
                 .collection::<$db_item>($db_coll_name)
@@ -129,11 +117,7 @@ macro_rules! impl_update {
             {
                 // We can safely unwrap here thanks to upsert=true and ReturnDocument::After
                 Ok(item) => Ok(item.unwrap()),
-                Err(err) => {
-                    let err = format!("MongoDB driver error: {}", err);
-                    log::error!("{}", err);
-                    Err(ErrorInternalServerError(err))
-                }
+                Err(err) => Err(AppError::MongoDriver(err.to_string())),
             }
         }
     };
@@ -148,7 +132,7 @@ macro_rules! impl_delete {
         db_coll_name=$db_coll_name:literal
     ) => {
         #[allow(dead_code)] // TODO: remove this
-        pub async fn $fn_name(id: $db_key_type, client: &Client) -> Result<(), Error> {
+        pub async fn $fn_name(id: $db_key_type, client: &Client) -> Result<(), AppError> {
             match client
                 .database(CONFIG.profile)
                 .collection::<$db_item>($db_coll_name)
@@ -156,11 +140,7 @@ macro_rules! impl_delete {
                 .await
             {
                 Ok(_) => Ok(()),
-                Err(err) => {
-                    let err = format!("MongoDB driver error: {}", err);
-                    log::error!("{}", err);
-                    Err(ErrorInternalServerError(err))
-                }
+                Err(err) => Err(AppError::MongoDriver(err.to_string())),
             }
         }
     };
