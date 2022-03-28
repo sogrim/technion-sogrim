@@ -55,9 +55,6 @@ const DegreeMainStatusComp: React.FC = () => {
         window.location.reload();
       }
     }
-    if (userSettings) {
-      setComputeInProgress(userSettings.compute_in_progress);
-    }
 
     if (isDegreeComplete()) {
       setConfetti(true);
@@ -83,6 +80,7 @@ const DegreeMainStatusComp: React.FC = () => {
     _: React.SyntheticEvent,
     computeInProgress: boolean
   ) => {
+    setComputeInProgress(computeInProgress);
     let newUserSettings =
       updateComputeInProgressInUserSettings(computeInProgress);
     mutate(newUserSettings);
