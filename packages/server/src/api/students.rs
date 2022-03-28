@@ -179,7 +179,7 @@ pub async fn update_settings(
     mut user: User,
     settings: Json<UserSettings>,
     client: Data<mongodb::Client>,
-) -> Result<HttpResponse, Error> {
+) -> Result<HttpResponse, AppError> {
     let user_id = user.sub.clone();
     user.settings = settings.into_inner();
     let document = doc! {"$set" : user.into_document()};
