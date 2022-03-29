@@ -63,7 +63,8 @@ const DegreeMainStatusComp: React.FC = () => {
         </Button>
         {confetti && (
           <Confetti
-            width={2000}
+            width={window.innerWidth - 100}
+            height={window.outerHeight}
             numberOfPieces={500}
             recycle={confettiRecycle}
             onConfettiComplete={() => setConfetti(false)}
