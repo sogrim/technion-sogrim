@@ -29,6 +29,7 @@ const DegreeMainStatusComp: React.FC = () => {
   const { mutate, isError, error } = useUpdateUserSettings(userAuthToken);
 
   const [totalCredit, setTotalCredit] = useState<number>(0);
+  const [onlyCompleteCredit, setOnlyCompleteCredit] = useState<number>(0);
   const [pointsDone, setPointsDone] = useState<number>(0);
   const [catalogName, setCatalogName] = useState<string>("");
   const [confetti, setConfetti] = useState(false);
@@ -44,9 +45,20 @@ const DegreeMainStatusComp: React.FC = () => {
     if (userDetails) {
       const studentTotal = userDetails?.degree_status?.total_credit || 0;
       const totalCredit = userDetails?.catalog?.total_credit || 0;
+      const onlyCompleteCredit =
+        userDetails?.degree_status?.course_statuses.reduce(
+          (partialSum, courseStatus) => {
+            let credit =
+              courseStatus.state === "הושלם" ? courseStatus.course.credit : 0;
+            return partialSum + credit;
+          },
+          0
+        ) || 0;
       const catalogName = userDetails?.catalog?.name || "";
+
       setPointsDone(studentTotal);
       setTotalCredit(totalCredit);
+      setOnlyCompleteCredit(onlyCompleteCredit);
       setCatalogName(catalogName);
       setShowMainStatus(catalogName !== "");
     }
@@ -73,8 +85,13 @@ const DegreeMainStatusComp: React.FC = () => {
     userSettings,
   ]);
 
-  const progress =
+  const coursesTotalProgress =
     pointsDone / totalCredit >= 1 ? 100 : (pointsDone / totalCredit) * 100;
+
+  const coursesCompleteProgress =
+    onlyCompleteCredit / totalCredit >= 1
+      ? 100
+      : (onlyCompleteCredit / totalCredit) * 100;
 
   const handleChange = (
     _: React.SyntheticEvent,
@@ -117,8 +134,13 @@ const DegreeMainStatusComp: React.FC = () => {
             </Box>
           </Tooltip>
         </Box>
-        {/* TODO: work on design */}
-        <DegreeStatusBar progress={progress} />
+        <DegreeStatusBar
+          {...{
+            coursesCompleteProgress,
+            coursesTotalProgress,
+            computeInProgress,
+          }}
+        />
         <Typography sx={{ fontSize: 22 }} color="text.primary">
           {`השלמת ${pointsDone} מתוך ${totalCredit} נקודות`}
         </Typography>

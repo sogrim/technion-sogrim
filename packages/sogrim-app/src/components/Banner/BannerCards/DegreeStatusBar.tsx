@@ -1,9 +1,12 @@
 import * as React from "react";
 import LinearProgress, {
+  linearProgressClasses,
   LinearProgressProps,
 } from "@mui/material/LinearProgress";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
+import { styled, useTheme } from "@mui/material/styles";
+import { Tooltip } from "@mui/material";
 
 const LinearProgressWithLabel = (
   props: LinearProgressProps & { value: number }
@@ -14,18 +17,87 @@ const LinearProgressWithLabel = (
         <LinearProgress variant="determinate" {...props} color="secondary" />
       </Box>
       <Box sx={{ minWidth: 35, mr: -1 }}>
-        <Typography variant="body2" color="text.secondary">{`${Math.round(
-          props.value
-        )}%`}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {`${Math.round(props.value)}%`}
+        </Typography>
       </Box>
     </Box>
   );
 };
 
-export const DegreeStatusBar = ({ progress = 0 }: { progress: number }) => {
+const MultiColorLinearProgress = styled(LinearProgress)(({ theme }) => ({
+  [`& .${linearProgressClasses.dashed}`]: {
+    backgroundImage: "none",
+    backgroundColor: "rgba(0, 0, 0, 0.178)",
+    animation: "none",
+  },
+
+  [`& .${linearProgressClasses.bar1Buffer}`]: {
+    backgroundColor: theme.palette.secondary.main,
+  },
+  [`& .${linearProgressClasses.bar2Buffer}`]: {
+    backgroundColor: theme.palette.secondary.light,
+  },
+}));
+
+const LinearProgressMultiColorWithLabel = (
+  props: LinearProgressProps & {
+    onlyCompleteProgress: number;
+    totalProgress: number;
+  }
+) => {
+  const theme = useTheme();
   return (
+    <Tooltip
+      title={`קורסים שהושלמו - ${Math.round(
+        props.onlyCompleteProgress
+      )}%, קורסים בתהליך - ${Math.round(
+        props.totalProgress - props.onlyCompleteProgress
+      )}%`}
+      arrow
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ width: "100%" }}>
+          <MultiColorLinearProgress
+            {...props}
+            variant="buffer"
+            valueBuffer={props.totalProgress}
+            value={props.onlyCompleteProgress}
+            theme={{ ...theme }}
+          />
+        </Box>
+        <Box
+          sx={{ display: "flex", flexDiretion: "row", minWidth: 35, mr: -1 }}
+        >
+          <Typography variant="body2">
+            {`${Math.round(props.totalProgress)}%`}
+            <span style={{ color: "red", fontWeight: "bold" }}>*</span>
+          </Typography>
+        </Box>
+      </Box>
+    </Tooltip>
+  );
+};
+
+export const DegreeStatusBar = ({
+  coursesCompleteProgress = 0,
+  coursesTotalProgress = 0,
+  computeInProgress = false,
+}: {
+  coursesCompleteProgress: number;
+  coursesTotalProgress: number;
+  computeInProgress: boolean;
+}) => {
+  return computeInProgress ? (
     <Box sx={{ width: "100%" }}>
-      <LinearProgressWithLabel value={progress} />
+      <LinearProgressMultiColorWithLabel
+        onlyCompleteProgress={coursesCompleteProgress}
+        totalProgress={coursesTotalProgress}
+      />
+    </Box>
+  ) : (
+    <Box sx={{ width: "100%" }}>
+      <LinearProgressWithLabel value={coursesCompleteProgress} />
     </Box>
   );
 };
