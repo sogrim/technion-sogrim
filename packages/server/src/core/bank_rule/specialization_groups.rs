@@ -47,18 +47,40 @@ fn is_valid_assignment(
     true
 }
 
+fn get_best_match(
+    course_id_to_sg_index: &HashMap<CourseId, usize>,
+    number_of_required_groups: usize,
+) -> HashMap<CourseId, usize> {
+    let mut maybe_best_match = course_id_to_sg_index.to_owned();
+    maybe_best_match.retain(|_, sg_index| {
+        // Retain only the sgs indices which appear at least X times (most of the times, X == 3)
+        course_id_to_sg_index
+            .values()
+            .filter(|group| *group == sg_index)
+            .count()
+            >= number_of_required_groups
+    });
+    maybe_best_match
+}
+
 // This function is looking for a valid assignment for the courses which fulfill the sgs requirements
 // If an assignment is found it returns it, None otherwise.
 fn find_valid_assignment_for_courses(
     sgs: &[SpecializationGroup],
     groups_indices: &[usize],
     optional_sgs_for_course: &HashMap<CourseId, Vec<usize>>, // list of all optional sgs for each course
+    current_best_match: &mut HashMap<CourseId, usize>,       // the best match of sgs
     course_id_to_sg_index: &mut HashMap<CourseId, usize>,
     course_index: usize, // course_index-th element in optional_sgs_for_course
 ) -> Option<HashMap<CourseId, usize>> {
     if course_index >= optional_sgs_for_course.len() {
         if is_valid_assignment(sgs, groups_indices, course_id_to_sg_index) {
             return Some(course_id_to_sg_index.clone());
+        }
+        let maybe_best_match = get_best_match(course_id_to_sg_index, groups_indices.len());
+        if maybe_best_match.len() > current_best_match.len() {
+            current_best_match.clear();
+            current_best_match.extend(maybe_best_match);
         }
         return None;
     }
@@ -69,9 +91,14 @@ fn find_valid_assignment_for_courses(
                 sgs,
                 groups_indices,
                 optional_sgs_for_course,
+                current_best_match,
                 course_id_to_sg_index,
                 course_index + 1,
             ) {
+                if valid_assignment.len() > current_best_match.len() {
+                    //current_best_match.clear();
+                    current_best_match.extend(valid_assignment.clone());
+                }
                 return Some(valid_assignment);
             }
         }
@@ -83,6 +110,7 @@ fn get_sgs_courses_assignment(
     sgs: &[SpecializationGroup],
     groups_indices: &[usize],
     courses: &[CourseId],
+    best_match: &mut HashMap<CourseId, usize>,
 ) -> Option<HashMap<CourseId, usize>> {
     let mut optional_sgs_for_course = HashMap::<CourseId, Vec<usize>>::new();
     for course_id in courses {
@@ -103,6 +131,7 @@ fn get_sgs_courses_assignment(
         sgs,
         groups_indices,
         &optional_sgs_for_course,
+        best_match,
         &mut courses_assignment,
         0,
     )
@@ -115,9 +144,10 @@ fn generate_sgs_subsets(
     sg_index: usize,
     groups_indices: &mut Vec<usize>,
     courses: &[CourseId],
+    best_match: &mut HashMap<CourseId, usize>,
 ) -> Option<HashMap<CourseId, usize>> {
     if groups_indices.len() == required_number_of_groups {
-        return get_sgs_courses_assignment(sgs, groups_indices, courses);
+        return get_sgs_courses_assignment(sgs, groups_indices, courses, best_match);
     }
 
     if sg_index >= sgs.len() {
@@ -132,6 +162,7 @@ fn generate_sgs_subsets(
         sg_index + 1,
         groups_indices,
         courses,
+        best_match,
     ) {
         return Some(valid_assignment);
     }
@@ -144,6 +175,7 @@ fn generate_sgs_subsets(
         sg_index + 1,
         groups_indices,
         courses,
+        best_match,
     )
 }
 
@@ -151,13 +183,16 @@ fn run_exhaustive_search(
     sgs: &SpecializationGroups,
     courses: Vec<CourseId>, // list of all courses the user completed in specialization groups bank
 ) -> Option<HashMap<CourseId, usize>> {
+    let mut best_match = HashMap::new();
     generate_sgs_subsets(
         &sgs.groups_list,
         sgs.groups_number,
         0,
         &mut Vec::new(),
         &courses,
+        &mut best_match,
     )
+    .or(Some(best_match))
 }
 
 impl<'a> BankRuleHandler<'a> {
@@ -166,6 +201,19 @@ impl<'a> BankRuleHandler<'a> {
         sgs: &SpecializationGroups,
         completed_groups: &mut Vec<String>,
     ) -> f32 {
+        // All courses which might be in SOME specialization group should get its name assigned to them
+        // later on, if we find a valid assignment for said courses with a DIFFERENT specialization group,
+        // we will simply re-assign the specialization group name.
+        for sg in sgs.groups_list.iter() {
+            for course_id in sg.course_list.iter() {
+                if let Some(course_status) =
+                    self.degree_status.get_mut_course_status(course_id.as_str())
+                {
+                    course_status.set_specialization_group_name(&sg.name);
+                }
+            }
+        }
+
         let credit_info = self.iterate_course_list();
         let mut completed_courses = Vec::new();
         for (course_id_in_list, course_id_done_by_user) in credit_info.handled_courses {
