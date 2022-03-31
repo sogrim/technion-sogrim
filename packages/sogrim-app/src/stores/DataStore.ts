@@ -158,6 +158,7 @@ export class DataStore {
           course.state,
           this.displayContent(course.grade),
           this.displayContent(course.type),
+          course.specialization_group_name,
           course.additional_msg
         )
       )

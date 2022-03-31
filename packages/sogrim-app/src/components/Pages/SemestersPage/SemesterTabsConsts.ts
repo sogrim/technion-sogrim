@@ -8,6 +8,7 @@ export interface RowData {
   type?: string;
   grade?: string;
   semester: string;
+  sg_name?: string;
   msg?: string;
 }
 

@@ -74,6 +74,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 completed = groups_done_list.len() >= specialization_groups.groups_number;
                 msg = Some(messages::completed_specialization_groups_msg(
                     &groups_done_list,
+                    specialization_groups.groups_number,
                 ));
             }
             Rule::Wildcard(_) => {
