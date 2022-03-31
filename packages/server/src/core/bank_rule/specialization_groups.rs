@@ -95,10 +95,6 @@ fn find_valid_assignment_for_courses(
                 course_id_to_sg_index,
                 course_index + 1,
             ) {
-                if valid_assignment.len() > current_best_match.len() {
-                    //current_best_match.clear();
-                    current_best_match.extend(valid_assignment.clone());
-                }
                 return Some(valid_assignment);
             }
         }
