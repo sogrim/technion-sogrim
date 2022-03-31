@@ -93,6 +93,15 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
             size="small"
           />
         </Tooltip>
+        {course.sg_name && (
+          <Chip
+            label={course.sg_name}
+            sx={{ minWidth: "55px" }}
+            color="info"
+            variant="outlined"
+            size="small"
+          />
+        )}
         {course.state !== "הושלם" && (
           <Chip
             label="לא בוצע"
