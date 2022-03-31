@@ -11,56 +11,55 @@ use super::BankRuleHandler;
 // sg = specialization_group
 // sgs = specialization_groups
 
-fn is_valid_assignment(
+fn get_groups_indices(course_id_to_sg_index: &HashMap<CourseId, usize>) -> Vec<usize> {
+    let mut uniques = HashSet::new();
+    let mut indices = course_id_to_sg_index
+        .clone()
+        .into_values()
+        .collect::<Vec<_>>();
+    indices.retain(|e| uniques.insert(*e));
+    indices
+}
+
+fn get_complete_sgs_indices(
     sgs: &[SpecializationGroup],
-    groups_indices: &[usize],
     course_id_to_sg_index: &HashMap<CourseId, usize>,
-) -> bool {
+) -> Vec<usize> {
+    let groups_indices = get_groups_indices(course_id_to_sg_index);
+    let mut complete_sgs_indices = Vec::new();
     for sg_index in groups_indices {
         // check there are enough courses in this specialization group
         if (course_id_to_sg_index
             .values()
-            .filter(|group| *group == sg_index)
+            .filter(|&&group| group == sg_index)
             .count())
-            < sgs[*sg_index].courses_sum
+            < sgs[sg_index].courses_sum
         {
-            // There are not enough courses in this assignment to complete sg requirement
-            return false;
+            // There are not enough courses in this sg to complete the requirement
+            continue;
         }
         // check if the user completed the mandatory courses in sg
-        if let Some(mandatory) = &sgs[*sg_index].mandatory {
+        if let Some(mandatory) = &sgs[sg_index].mandatory {
+            let mut complete_mandatory = true;
             for courses in mandatory {
                 let mut completed_current_demand = false;
                 for (course_id, group) in course_id_to_sg_index {
                     // check if the user completed one of courses
-                    if group == sg_index && courses.contains(course_id) {
+                    if *group == sg_index && courses.contains(course_id) {
                         completed_current_demand = true;
                         break;
                     }
                 }
                 if !completed_current_demand {
-                    return false;
+                    complete_mandatory = false;
                 }
+            }
+            if complete_mandatory {
+                complete_sgs_indices.push(sg_index);
             }
         }
     }
-    true
-}
-
-fn get_best_match(
-    course_id_to_sg_index: &HashMap<CourseId, usize>,
-    number_of_required_groups: usize,
-) -> HashMap<CourseId, usize> {
-    let mut maybe_best_match = course_id_to_sg_index.to_owned();
-    maybe_best_match.retain(|_, sg_index| {
-        // Retain only the sgs indices which appear at least X times (most of the times, X == 3)
-        course_id_to_sg_index
-            .values()
-            .filter(|group| *group == sg_index)
-            .count()
-            >= number_of_required_groups
-    });
-    maybe_best_match
+    complete_sgs_indices
 }
 
 // This function is looking for a valid assignment for the courses which fulfill the sgs requirements
@@ -74,13 +73,14 @@ fn find_valid_assignment_for_courses(
     course_index: usize, // course_index-th element in optional_sgs_for_course
 ) -> Option<HashMap<CourseId, usize>> {
     if course_index >= optional_sgs_for_course.len() {
-        if is_valid_assignment(sgs, groups_indices, course_id_to_sg_index) {
+        let complete_sgs_indices = get_complete_sgs_indices(sgs, course_id_to_sg_index);
+        if complete_sgs_indices.len() >= groups_indices.len() {
             return Some(course_id_to_sg_index.clone());
         }
-        let maybe_best_match = get_best_match(course_id_to_sg_index, groups_indices.len());
-        if maybe_best_match.len() > current_best_match.len() {
+        let complete_sgs_for_current_best_match = get_complete_sgs_indices(sgs, current_best_match);
+        if complete_sgs_indices.len() > complete_sgs_for_current_best_match.len() {
             current_best_match.clear();
-            current_best_match.extend(maybe_best_match);
+            current_best_match.extend(course_id_to_sg_index.to_owned());
         }
         return None;
     }
@@ -178,7 +178,7 @@ fn generate_sgs_subsets(
 fn run_exhaustive_search(
     sgs: &SpecializationGroups,
     courses: Vec<CourseId>, // list of all courses the user completed in specialization groups bank
-) -> Option<HashMap<CourseId, usize>> {
+) -> HashMap<CourseId, usize> {
     let mut best_match = HashMap::new();
     generate_sgs_subsets(
         &sgs.groups_list,
@@ -189,6 +189,7 @@ fn run_exhaustive_search(
         &mut best_match,
     )
     .or(Some(best_match))
+    .unwrap() // unwraping is safe since the line above always returns Some(_)
 }
 
 impl<'a> BankRuleHandler<'a> {
@@ -224,12 +225,13 @@ impl<'a> BankRuleHandler<'a> {
         }
 
         let valid_assignment_for_courses = run_exhaustive_search(sgs, completed_courses);
-
+        let complete_sgs_indices =
+            get_complete_sgs_indices(&sgs.groups_list, &valid_assignment_for_courses);
         // The set is to prevent duplications
         let mut sgs_names = HashSet::new();
-        if let Some(valid_assignment) = valid_assignment_for_courses {
-            for (course_id, sg_index) in valid_assignment {
-                if let Some(course_status) = self.degree_status.get_mut_course_status(&course_id) {
+        for (course_id, sg_index) in valid_assignment_for_courses {
+            if let Some(course_status) = self.degree_status.get_mut_course_status(&course_id) {
+                if complete_sgs_indices.contains(&sg_index) {
                     course_status.set_specialization_group_name(&sgs.groups_list[sg_index].name);
                     sgs_names.insert(&sgs.groups_list[sg_index].name);
                 }

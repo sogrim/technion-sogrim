@@ -68,13 +68,12 @@ pub fn completed_chain_msg(chain: &[String]) -> String {
 }
 
 pub fn completed_specialization_groups_msg(groups: &[String], needed: usize) -> String {
-    let mut msg = String::new();
-    if groups.len() == ZERO as usize {
-        return "לא השלמת אף קבוצת התמחות".to_string();
+    let mut msg = if groups.len() == ZERO as usize {
+        "לא השלמת אף קבוצת התמחות".to_string()
     } else if groups.len() == SINGLE as usize {
-        msg += &format!("השלמת קבוצת התמחות אחת (מתוך {}): ", needed);
+        format!("השלמת קבוצת התמחות אחת (מתוך {}): ", needed)
     } else {
-        msg += &format!("השלמת {} (מתוך {}) קבוצות התמחות: ", groups.len(), needed)
+        format!("השלמת {} (מתוך {}) קבוצות התמחות: ", groups.len(), needed)
     };
     for group in groups {
         if group == groups.last().unwrap() {
