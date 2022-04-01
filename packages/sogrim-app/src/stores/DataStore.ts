@@ -33,15 +33,6 @@ export class DataStore {
     );
   }
 
-  isDegreeComplete = (): boolean => {
-    return (
-      !this.userDetails?.modified &&
-      this.userDetails?.degree_status?.course_bank_requirements.every(
-        (req) => req.completed
-      )
-    );
-  };
-
   getAllUserSemesters = (courseList: CourseStatus[]): string[] => {
     const allSemestersSet = new Set<string>();
     courseList.forEach((course) =>
