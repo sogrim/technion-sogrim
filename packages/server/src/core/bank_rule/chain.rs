@@ -11,7 +11,7 @@ impl<'a> BankRuleHandler<'a> {
             for course_id in chain {
                 if let Some(course_id) = credit_info.handled_courses.get(course_id) {
                     if let Some(course_status) = self.degree_status.get_course_status(course_id) {
-                        if course_status.passed() {
+                        if course_status.completed() {
                             chain_done.push(course_status.course.name.clone());
                         } else {
                             completed_chain = false;

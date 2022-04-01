@@ -218,7 +218,7 @@ impl<'a> BankRuleHandler<'a> {
                 .degree_status
                 .get_course_status(&course_id_done_by_user)
             {
-                if course_status.passed() {
+                if course_status.completed() {
                     completed_courses.push(course_id_in_list);
                 }
             }

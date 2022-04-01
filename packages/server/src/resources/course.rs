@@ -98,6 +98,10 @@ impl CourseStatus {
         }
     }
 
+    pub fn completed(&self) -> bool {
+        self.state == Some(CourseState::Complete)
+    }
+
     pub fn extract_semester(&self) -> f32 {
         match self.semester.clone() {
             Some(semester) => {
@@ -122,7 +126,11 @@ impl CourseStatus {
         self.state = self
             .passed()
             .then(|| CourseState::Complete)
-            .or(Some(CourseState::NotComplete));
+            .or(if self.grade.is_none() {
+                Some(CourseState::InProgress)
+            } else {
+                Some(CourseState::NotComplete)
+            });
     }
     pub fn set_type(&mut self, r#type: String) -> &mut Self {
         self.r#type = Some(r#type);

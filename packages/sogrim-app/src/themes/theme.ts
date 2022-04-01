@@ -10,12 +10,12 @@ export const getAppTheme = (
       mode,
       primary: {
         main: "#24333c",
-        light: "##24333c",
+        light: "#24333c",
       },
       secondary: {
         main: "#d66563",
-        light: "##efc1c1",
-        dark: "#ab514f",
+        light: "#f0aeae",
+        dark: "#853f3e",
       },
       info: {
         main: "#743ca5",

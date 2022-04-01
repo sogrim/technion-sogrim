@@ -1,11 +1,17 @@
 import { makeAutoObservable } from "mobx";
 import { createData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTableUtils";
 import { RowData } from "../components/Pages/SemestersPage/SemesterTabsConsts";
-import { CourseStatus, UserDetails, CourseState } from "../types/data-types";
+import {
+  CourseStatus,
+  UserDetails,
+  CourseState,
+  UserSettings,
+} from "../types/data-types";
 import { RootStore } from "./RootStore";
 
 export class DataStore {
   public userDetails: UserDetails = {} as UserDetails;
+  public userSettings: UserSettings = {} as UserSettings;
   public userBankNames: string[] = [];
 
   constructor(public readonly rootStore: RootStore) {
@@ -16,21 +22,16 @@ export class DataStore {
     this.userDetails = newUserDitails;
   };
 
+  updateStoreUserSettings = (newUserSettings: UserSettings) => {
+    this.userSettings = newUserSettings;
+  };
+
   get modifiedStatus() {
     return (
       this.userDetails?.degree_status?.course_statuses?.length > 0 &&
       this.userDetails?.modified
     );
   }
-
-  isDegreeComplete = (): boolean => {
-    return (
-      !this.userDetails?.modified &&
-      this.userDetails?.degree_status?.course_bank_requirements.every(
-        (req) => req.completed
-      )
-    );
-  };
 
   getAllUserSemesters = (courseList: CourseStatus[]): string[] => {
     const allSemestersSet = new Set<string>();
@@ -273,5 +274,13 @@ export class DataStore {
     this.userDetails.modified = true;
 
     return this.userDetails;
+  };
+
+  updateComputeInProgressInUserSettings = (
+    computeInProgress: boolean
+  ): UserSettings => {
+    this.userSettings.compute_in_progress = computeInProgress;
+    this.userDetails.modified = true;
+    return this.userSettings;
   };
 }

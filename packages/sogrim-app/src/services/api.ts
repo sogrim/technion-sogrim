@@ -1,5 +1,11 @@
 import axios from "axios";
-import { UserDetails, UserState, Catalog, Course } from "../types/data-types";
+import {
+  UserDetails,
+  UserState,
+  Catalog,
+  Course,
+  UserSettings,
+} from "../types/data-types";
 import { API_URL } from "./api-url";
 
 export const getCatalogs = async (authToken: any): Promise<Catalog[]> => {
@@ -125,6 +131,26 @@ export const getComputeEndGame = async (authToken: any): Promise<UserState> => {
   try {
     res =
       (await axios.get(`${API_URL}/students/degree-status`, {
+        headers: {
+          authorization: `${authToken}`,
+        },
+      })) || fallback;
+  } catch (e) {
+    res = fallback;
+    throw e;
+  }
+  return res;
+};
+
+export const putUserSettings = async (
+  authToken: any,
+  updatedUserSettings: UserSettings
+): Promise<UserSettings> => {
+  const fallback: UserSettings = {} as UserSettings;
+  let res: UserSettings;
+  try {
+    res =
+      (await axios.put(`${API_URL}/students/settings`, updatedUserSettings, {
         headers: {
           authorization: `${authToken}`,
         },

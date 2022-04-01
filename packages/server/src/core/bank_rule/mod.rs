@@ -39,7 +39,7 @@ impl<'a> BankRuleHandler<'a> {
         sum_credit: &mut f32,
     ) -> bool {
         course_status.set_type(bank_name);
-        if course_status.passed() {
+        if course_status.completed() {
             *sum_credit += course_status.course.credit;
             true
         } else {

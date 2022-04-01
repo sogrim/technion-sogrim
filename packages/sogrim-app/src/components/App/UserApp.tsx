@@ -17,7 +17,7 @@ const UserAppComp: React.FC = () => {
   const { userAuthToken } = useAuth();
   const { data, isLoading, isError, error } = useUserState(userAuthToken);
   const {
-    dataStore: { updateStoreUserDetails },
+    dataStore: { updateStoreUserDetails, updateStoreUserSettings },
     uiStore: { computeUserRegistrationState, userRegistrationState },
   } = useStore();
 
@@ -29,10 +29,12 @@ const UserAppComp: React.FC = () => {
     }
     if (!isLoading && data) {
       updateStoreUserDetails(data.details);
+      updateStoreUserSettings(data.settings);
     }
   }, [
     data,
     updateStoreUserDetails,
+    updateStoreUserSettings,
     isLoading,
     userRegistrationState,
     computeUserRegistrationState,
