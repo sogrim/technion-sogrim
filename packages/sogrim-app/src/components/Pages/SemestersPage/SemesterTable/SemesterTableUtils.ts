@@ -47,6 +47,7 @@ export const createData = (
   state: string,
   grade?: string,
   type?: string,
+  sg_name?: string,
   msg?: string
 ): RowData => {
   return {
@@ -57,6 +58,7 @@ export const createData = (
     type,
     state,
     semester,
+    sg_name,
     msg,
   };
 };
