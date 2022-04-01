@@ -9,21 +9,21 @@ interface RequirmentsTabProps {}
 
 const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
   return (
-    <div style={{ width: "80%" }}>
-      <Box
-        sx={{
-          display: "flex",
-          p: 1,
-          gap: 3,
-        }}
-      >
-        <BankRequirmentsTable />
-        <Box sx={{ display: "flex", gap: 4, flexDirection: "column" }}>
-          <CreditOverflow />
-          <ExemptionsAndCredits />
-        </Box>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { lg: "row", md: "column" },
+        maxWidth: "1200px",
+        p: 1,
+        gap: 3,
+      }}
+    >
+      <BankRequirmentsTable />
+      <Box sx={{ display: "flex", gap: 4, flexDirection: "column" }}>
+        <CreditOverflow />
+        <ExemptionsAndCredits />
       </Box>
-    </div>
+    </Box>
   );
 };
 

@@ -1,6 +1,6 @@
 [package]
 name = "sogrim-server"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -25,6 +25,7 @@ toml = "0.5"
 dotenv = "0.15"
 lazy_static = "1.4"
 petgraph = "0.6"
+derive_more = "0.99"
 
 [patch.crates-io]
 jsonwebtoken-google = { git = 'https://github.com/cheetah-games/jsonwebtoken-google' }

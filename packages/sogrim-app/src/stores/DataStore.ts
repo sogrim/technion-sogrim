@@ -23,6 +23,15 @@ export class DataStore {
     );
   }
 
+  isDegreeComplete = (): boolean => {
+    return (
+      !this.userDetails?.modified &&
+      this.userDetails?.degree_status?.course_bank_requirements.every(
+        (req) => req.completed
+      )
+    );
+  };
+
   getAllUserSemesters = (courseList: CourseStatus[]): string[] => {
     const allSemestersSet = new Set<string>();
     courseList.forEach((course) =>
@@ -149,6 +158,7 @@ export class DataStore {
           course.state,
           this.displayContent(course.grade),
           this.displayContent(course.type),
+          course.specialization_group_name,
           course.additional_msg
         )
       )
@@ -189,9 +199,9 @@ export class DataStore {
   deleteCourseInUserDetails = (rowData: RowData, semester: string) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
     const idx = courseList.findIndex(
-      (course) =>
-        course.course._id === rowData.courseNumber &&
-        semester === rowData.semester
+      (courseStatus) =>
+        courseStatus.course._id === rowData.courseNumber &&
+        courseStatus.semester === rowData.semester
     );
     const newCourseList = [...courseList];
     newCourseList.splice(idx, 1);
