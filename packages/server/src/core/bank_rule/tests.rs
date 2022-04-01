@@ -596,5 +596,6 @@ async fn test_specialization_group() {
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut completed_groups = Vec::<String>::new();
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
-    assert!(completed_groups.is_empty());
+    assert_eq!(completed_groups.len(), 1);
+    assert!(completed_groups.contains(&"מערכות נבונות".to_string()));
 }
