@@ -104,9 +104,9 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
         )}
         {course.state !== "הושלם" && (
           <Chip
-            label="לא בוצע"
+            label={course.state}
             sx={{ minWidth: "55px" }}
-            color="secondary"
+            color={course.state === "בתהליך" ? "info" : "error"}
             variant="outlined"
             size="small"
           />

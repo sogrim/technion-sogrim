@@ -34,14 +34,18 @@ export const ChangesDialog: React.FC<ChangesDialogProps> = ({
         <DialogContentText id="scroll-dialog-description" tabIndex={-1}>
           {versionChanges.map((item, idx) => (
             <div key={idx}>
-              <Typography fontSize="medium" fontWeight="bold">
+              <Typography fontSize="large" fontWeight="bold">
                 {item.version}
               </Typography>
-              {item.changes.map((change, idx) => (
-                <Typography key={idx} fontSize="small">
-                  • {change}
-                </Typography>
-              ))}
+              <ul>
+                {item.changes.map((change, idx) => (
+                  <li>
+                    <Typography key={idx} fontSize="medium">
+                      {change}
+                    </Typography>
+                  </li>
+                ))}
+              </ul>
               <br />
             </div>
           ))}

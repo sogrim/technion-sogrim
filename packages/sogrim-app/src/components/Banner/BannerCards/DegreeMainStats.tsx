@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useStore } from "../../../hooks/useStore";
 import { observer } from "mobx-react-lite";
 import { Typography, Card, CardContent, Button } from "@mui/material";
+import Confetti from "react-confetti";
 
 const DegreeMainStatsComp: React.FC = () => {
   const {
@@ -9,6 +10,10 @@ const DegreeMainStatsComp: React.FC = () => {
   } = useStore();
   const [gpa, setGpa] = useState<number | null>(null);
   const [banksDone, setBanksDone] = useState<number | null>(0);
+  const [confetti, setConfetti] = useState(false);
+  const [confettiRecycle, setConfettiRecycle] = useState(false);
+  const totalBanks =
+    userDetails?.degree_status?.course_bank_requirements?.length;
 
   useEffect(() => {
     if (
@@ -17,18 +22,23 @@ const DegreeMainStatsComp: React.FC = () => {
     ) {
       setGpa(getUserGPA());
       setBanksDone(getNumberOfBankComplete());
+      if (!userDetails.modified && getNumberOfBankComplete() >= totalBanks) {
+        setConfetti(true);
+        setConfettiRecycle(true);
+        setTimeout(() => {
+          setConfettiRecycle(false);
+        }, 3000);
+      }
     }
   }, [
     getNumberOfBankComplete,
     getUserGPA,
     userDetails,
     userDetails?.degree_status?.course_statuses,
+    totalBanks,
   ]);
 
-  const totalBanks =
-    userDetails?.degree_status?.course_bank_requirements?.length;
-
-  return gpa && gpa > 0 ? (
+  return (
     <Card sx={{ minWidth: 275, maxHeight: 150 }}>
       <CardContent>
         <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
@@ -49,9 +59,17 @@ const DegreeMainStatsComp: React.FC = () => {
         >
           {"לעמוד הסטטיסטיקות (בקרוב)"}
         </Button>
+        {confetti && (
+          <Confetti
+            width={2000}
+            numberOfPieces={500}
+            recycle={confettiRecycle}
+            onConfettiComplete={() => setConfetti(false)}
+          />
+        )}
       </CardContent>
     </Card>
-  ) : null;
+  );
 };
 
 export const DegreeMainStats = observer(DegreeMainStatsComp);
