@@ -5,6 +5,12 @@ export type VersionChanges = {
 
 export const versionChanges: VersionChanges[] = [
   {
+    version: "v1.0.5",
+    changes: [
+      'התחשב בקורסים בתהליך: נוסף כפתור המאפשר לכם לחשב את סטטוס התואר שלכם עם התחשבות בקורסים שעוד אין להם ציון (קורסים עם סטטוס "בתהליך")',
+    ],
+  },
+  {
     version: "v1.0.4",
     changes: [
       "לרשימת המסלולים נוסף המסלול הארבע שנתי!",
