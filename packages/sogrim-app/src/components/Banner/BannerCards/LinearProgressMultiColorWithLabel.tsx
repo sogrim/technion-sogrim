@@ -1,18 +1,15 @@
+import { Tooltip } from "@mui/material";
+import Box from "@mui/material/Box";
 import LinearProgress, {
   linearProgressClasses,
-  LinearProgressProps,
 } from "@mui/material/LinearProgress";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
 import { styled, useTheme } from "@mui/material/styles";
-import { Tooltip } from "@mui/material";
+import Typography from "@mui/material/Typography";
 
-export const LinearProgressMultiColorWithLabel = (
-  props: LinearProgressProps & {
-    onlyCompleteProgress: number;
-    totalProgress: number;
-  }
-) => {
+export const LinearProgressMultiColorWithLabel = (props: {
+  onlyCompleteProgress: number;
+  totalProgress: number;
+}) => {
   const theme = useTheme();
   const MultiColorLinearProgress = styled(LinearProgress)(({ theme }) => ({
     [`& .${linearProgressClasses.dashed}`]: {
@@ -41,7 +38,6 @@ export const LinearProgressMultiColorWithLabel = (
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <Box sx={{ width: "100%" }}>
           <MultiColorLinearProgress
-            {...props}
             variant="buffer"
             valueBuffer={props.totalProgress}
             value={props.onlyCompleteProgress}
