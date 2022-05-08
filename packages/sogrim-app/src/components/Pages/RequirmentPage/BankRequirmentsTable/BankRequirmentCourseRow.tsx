@@ -28,7 +28,7 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
   const { userAuthToken } = useAuth();
   const { mutate, isError, error } = useUpdateUserState(userAuthToken);
   const {
-    dataStore: { courseTypeIsAll },
+    dataStore: { IsBankTypeOfCourseAll },
   } = useStore();
 
   useEffect(() => {
@@ -37,14 +37,14 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
         window.location.reload();
       }
     }
-    if (courseTypeIsAll(course.type)) {
+    if (IsBankTypeOfCourseAll(course.type)) {
       if (course.state === "לא רלוונטי") {
         setShowIgnoreIcon(IgnoreIconState.ShowV);
       } else if (course.state !== "לא רלוונטי") {
         setShowIgnoreIcon(IgnoreIconState.ShowIgnore);
       }
     }
-  }, [course.state, course.type, isError, error, courseTypeIsAll]);
+  }, [course.state, course.type, isError, error, IsBankTypeOfCourseAll]);
   const {
     dataStore: { updateIrrelevantCourse },
   } = useStore();

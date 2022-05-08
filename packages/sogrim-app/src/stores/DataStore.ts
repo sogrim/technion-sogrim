@@ -285,7 +285,7 @@ export class DataStore {
     return this.userSettings;
   };
 
-  courseTypeIsAll = (type: string | undefined): boolean => {
+  IsBankTypeOfCourseAll = (type: string | undefined): boolean => {
     return this.userDetails?.degree_status?.course_bank_requirements?.some(
       (bankReq) => {
         if (bankReq.course_bank_name === type) {
