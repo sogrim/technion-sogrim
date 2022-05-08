@@ -33,6 +33,7 @@ export type CourseStatus = {
 };
 
 export const ACCUMULATE_COURSES = "accumulate courses";
+export const ALL = "all";
 
 export type CourseBankReq = {
   bank_rule_name: string;
