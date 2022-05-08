@@ -286,13 +286,12 @@ export class DataStore {
   };
 
   courseTypeIsAll = (type: string | undefined): boolean => {
-    this.userDetails?.degree_status?.course_bank_requirements?.forEach(
+    return this.userDetails?.degree_status?.course_bank_requirements?.some(
       (bankReq) => {
         if (bankReq.course_bank_name === type) {
           return bankReq.bank_rule_name === ALL;
         }
       }
     );
-    return false; // Shouldn't get here
   };
 }

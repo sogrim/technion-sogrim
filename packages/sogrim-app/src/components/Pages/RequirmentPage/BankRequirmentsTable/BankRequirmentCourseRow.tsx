@@ -44,7 +44,7 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
         setShowIgnoreIcon(IgnoreIconState.ShowIgnore);
       }
     }
-  }, [course.state, course.type, isError, error]);
+  }, [course.state, course.type, isError, error, courseTypeIsAll]);
   const {
     dataStore: { updateIrrelevantCourse },
   } = useStore();
