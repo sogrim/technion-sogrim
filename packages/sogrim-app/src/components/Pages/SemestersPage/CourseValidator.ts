@@ -4,7 +4,7 @@ export const validCourseNumber = (courseNumber: string) => {
   return /^\d+$/.test(courseNumber) && courseNumber.length === 6;
 };
 
-export const UniqueCourseNumber = (
+export const uniqueCourseNumber = (
   courseNumber: string,
   semesterRows: RowData[],
   newFlag: boolean
@@ -68,7 +68,7 @@ export const courseFromUserValidations = (
       msg: "מספר הקורס שהוזן אינו תקין. מס׳ קורס חייב להכיל 6 ספרות בלבד.",
     };
   }
-  if (!UniqueCourseNumber(course.courseNumber, semesterRows, newFlag)) {
+  if (!uniqueCourseNumber(course.courseNumber, semesterRows, newFlag)) {
     return {
       error: true,
       newRowData: emptyRow,
