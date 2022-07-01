@@ -11,7 +11,7 @@ import { RowData } from "../../SemestersPage/SemesterTabsConsts";
 
 enum IgnoreIconState {
   DontShow = 0,
-  ShowIgnoe = 1,
+  ShowIgnore = 1,
   ShowV = 2,
 }
 
@@ -27,6 +27,9 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
   );
   const { userAuthToken } = useAuth();
   const { mutate, isError, error } = useUpdateUserState(userAuthToken);
+  const {
+    dataStore: { isBankTypeOfCourseAll },
+  } = useStore();
 
   useEffect(() => {
     if (isError) {
@@ -34,12 +37,14 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
         window.location.reload();
       }
     }
-    if (course.type === "חובה" && course.state === "לא רלוונטי") {
-      setShowIgnoreIcon(IgnoreIconState.ShowV);
-    } else if (course.type === "חובה" && course.state !== "לא רלוונטי") {
-      setShowIgnoreIcon(IgnoreIconState.ShowIgnoe);
+    if (isBankTypeOfCourseAll(course.type)) {
+      if (course.state === "לא רלוונטי") {
+        setShowIgnoreIcon(IgnoreIconState.ShowV);
+      } else if (course.state !== "לא רלוונטי") {
+        setShowIgnoreIcon(IgnoreIconState.ShowIgnore);
+      }
     }
-  }, [course.state, course.type, isError, error]);
+  }, [course.state, course.type, isError, error, isBankTypeOfCourseAll]);
   const {
     dataStore: { updateIrrelevantCourse },
   } = useStore();
@@ -65,7 +70,7 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
     if (action === "לא רלוונטי") {
       setShowIgnoreIcon(IgnoreIconState.ShowV);
     } else if (action === "לא הושלם") {
-      setShowIgnoreIcon(IgnoreIconState.ShowIgnoe);
+      setShowIgnoreIcon(IgnoreIconState.ShowIgnore);
     }
   };
   return (
@@ -123,7 +128,7 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
             </IconButton>
           </Tooltip>
         )}
-        {showIgnoreIcon === IgnoreIconState.ShowIgnoe ? (
+        {showIgnoreIcon === IgnoreIconState.ShowIgnore ? (
           <Tooltip
             title={<Typography> התעלם מקורס זה בחישוב </Typography>}
             arrow

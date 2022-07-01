@@ -1,4 +1,4 @@
-import { courseGradeOptions, emptyRow, RowData } from "../SemesterTabsConsts";
+import { courseGradeOptions, emptyRow, RowData } from "./SemesterTabsConsts";
 
 export const validCourseNumber = (
   courseNumber: string,
