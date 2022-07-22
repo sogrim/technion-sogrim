@@ -1,22 +1,18 @@
 import { courseGradeOptions, emptyRow, RowData } from "./SemesterTabsConsts";
 
-export const validCourseNumber = (
+export const validCourseNumber = (courseNumber: string) => {
+  return /^\d+$/.test(courseNumber) && courseNumber.length === 6;
+};
+
+export const uniqueCourseNumber = (
   courseNumber: string,
   semesterRows: RowData[],
   newFlag: boolean
 ) => {
-  let validNumber = /^\d+$/.test(courseNumber) && courseNumber.length === 6;
-  if (validNumber && newFlag) {
-    const idx = semesterRows.findIndex(
-      (row) => row.courseNumber === courseNumber
-    );
-    if (idx === -1) {
-      validNumber = true;
-    } else {
-      validNumber = false;
-    }
-  }
-  return validNumber;
+  const idx = semesterRows.findIndex(
+    (row) => row.courseNumber === courseNumber
+  );
+  return !newFlag || idx === -1;
 };
 
 const validCourseCredit = (credit: string | number) => {
@@ -29,7 +25,13 @@ const validCourseCredit = (credit: string | number) => {
 
 const validGrade = (grade: any) => {
   const gradeNumber = Number(grade);
-  if (grade === "" || grade === 0 || grade === "0" || grade === "-") {
+  if (
+    grade === undefined ||
+    grade === "" ||
+    grade === 0 ||
+    grade === "0" ||
+    grade === "-"
+  ) {
     return true;
   }
   if (isNaN(grade)) {
@@ -59,11 +61,18 @@ export const courseFromUserValidations = (
   semesterRows: RowData[],
   newFlag: boolean = false
 ): courseFromUserValidationsValue => {
-  if (!validCourseNumber(course.courseNumber, semesterRows, newFlag)) {
+  if (!validCourseNumber(course.courseNumber)) {
     return {
       error: true,
       newRowData: emptyRow,
-      msg: " מספר הקורס שהוזן אינו תקין. מס׳ קורס חייב להכיל 6 ספרות בלבד, וכן אי אפשר לקחת פעמיים קורס באותו הסמסטר.",
+      msg: "מספר הקורס שהוזן אינו תקין. מס׳ קורס חייב להכיל 6 ספרות בלבד.",
+    };
+  }
+  if (!uniqueCourseNumber(course.courseNumber, semesterRows, newFlag)) {
+    return {
+      error: true,
+      newRowData: emptyRow,
+      msg: "אי אפשר לקחת פעמיים קורס באותו סמסטר.",
     };
   }
   if (!validCourseCredit(course.credit)) {
