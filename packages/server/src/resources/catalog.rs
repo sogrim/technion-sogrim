@@ -1,5 +1,8 @@
 use crate::{
-    core::types::{CreditOverflow, Rule},
+    core::{
+        toposort::find_traversal_order,
+        types::{CreditOverflow, Rule},
+    },
     resources::course::CourseBank,
 };
 use serde::{self, Deserialize, Serialize};
@@ -46,6 +49,10 @@ impl Catalog {
             }
         }
         names
+    }
+
+    pub fn get_bank_traversal_order(&self) -> Vec<CourseBank> {
+        find_traversal_order(&self)
     }
 }
 

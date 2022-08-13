@@ -32,7 +32,7 @@ pub struct BankRuleHandler<'a> {
 
 impl<'a> BankRuleHandler<'a> {
     // This function sets the type of the course, and adds its credit to sum_credit if the user passed the course.
-    // Returns true if the credit have been added, false otherwise.
+    // Returns true if the credits have been added, false otherwise.
     pub fn set_type_and_add_credit(
         course_status: &mut CourseStatus,
         bank_name: String,

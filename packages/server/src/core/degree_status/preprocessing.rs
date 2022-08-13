@@ -81,7 +81,7 @@ impl DegreeStatus {
         self.course_statuses.sort_by(|c1, c2| {
             c1.extract_semester()
                 .partial_cmp(&c2.extract_semester())
-                .unwrap() // unwrap can't fail because we compare only integers or "half integers" (0.5,1,1.5,2,2.5...)
+                .unwrap() // unwrap cannot fail because we compare only integers or "half integers" (0.5,1,1.5,2,2.5...)
         });
     }
 }
