@@ -100,3 +100,14 @@ pub fn credit_leftovers_msg(credit: f32) -> String {
 pub fn cannot_find_course() -> String {
     "שגיאה - קורס לא נמצא".to_string()
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+/// Error messages
+/////////////////////////////////////////////////////////////////////////////////
+
+pub fn cyclic_credit_transfer_graph(bank_in_cycle: &str) -> String {
+    format!(
+        "קיימת תלות מעגלית במעברי הנקודות שמכילה את הבנק {}",
+        bank_in_cycle
+    )
+}

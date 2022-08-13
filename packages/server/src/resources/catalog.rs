@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        toposort::find_traversal_order,
+        credit_transfer_graph::find_traversal_order,
         types::{CreditOverflow, Rule},
     },
     resources::course::CourseBank,

@@ -1,10 +1,8 @@
-pub mod points_transition_graph_validations;
+use crate::{error::AppError, resources::catalog::Catalog};
 
-use crate::resources::catalog::Catalog;
+use super::credit_transfer_graph::validate_acyclic_credit_transfer_graph;
 
-use self::points_transition_graph_validations::validate_acyclic_credit_transfer_graph;
-
-pub fn validate_catalog(catalog: Catalog) -> Catalog {
-    validate_acyclic_credit_transfer_graph(&catalog);
-    catalog
+pub fn validate_catalog(catalog: Catalog) -> Result<Catalog, AppError> {
+    validate_acyclic_credit_transfer_graph(&catalog)?;
+    Ok(catalog)
 }

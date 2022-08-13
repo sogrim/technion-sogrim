@@ -1,9 +1,12 @@
+use actix_web::App;
 use petgraph::algo::toposort;
 use petgraph::Graph;
 
-use crate::resources::catalog::{self, Catalog};
+use crate::error::AppError;
+use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseBank;
 
+use super::messages;
 use super::types::CreditOverflow;
 
 pub fn build_credit_transfer_graph(
@@ -36,4 +39,14 @@ pub fn find_traversal_order(catalog: &Catalog) -> Vec<CourseBank> {
         ordered_course_banks.push(catalog.get_course_bank_by_name(&g[node]).unwrap().clone());
     }
     ordered_course_banks
+}
+
+pub fn validate_acyclic_credit_transfer_graph(catalog: &Catalog) -> Result<(), AppError> {
+    let g = build_credit_transfer_graph(&catalog.course_banks, &catalog.credit_overflows);
+    match toposort(&g, None) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(AppError::BadRequest(
+            messages::cyclic_credit_transfer_graph(&g[e.node_id()]),
+        )),
+    }
 }
