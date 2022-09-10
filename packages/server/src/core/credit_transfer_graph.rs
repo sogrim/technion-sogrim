@@ -1,4 +1,3 @@
-use actix_web::App;
 use petgraph::algo::toposort;
 use petgraph::Graph;
 
@@ -9,7 +8,7 @@ use crate::resources::course::CourseBank;
 use super::messages;
 use super::types::CreditOverflow;
 
-pub fn build_credit_transfer_graph(
+fn build_credit_transfer_graph(
     course_banks: &[CourseBank],
     credit_overflow_rules: &[CreditOverflow],
 ) -> Graph<String, ()> {
