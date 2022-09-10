@@ -1,4 +1,4 @@
-use crate::config::CONFIG;
+use crate::{config::CONFIG, db, init_mongodb_client};
 use actix_rt::test;
 use actix_web::{body::MessageBody, http::StatusCode, web::Bytes, ResponseError};
 
@@ -51,4 +51,35 @@ pub async fn test_db_internal_error() {
             Bytes::from("MongoDB driver error: SCRAM failure: bad auth : Authentication failed.")
         );
     }
+}
+
+#[test]
+pub async fn test_get_courses_by_filters() {
+    dotenv().ok();
+
+    let client = init_mongodb_client!();
+
+    let courses = db::services::get_courses_by_name("חשבון אינפיניטסימלי 1מ'", &client)
+        .await
+        .expect("Failed to get courses by name");
+
+    assert_eq!(courses.len(), 1);
+    assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
+    assert_eq!(courses[0].id, "104031");
+
+    let courses = db::services::get_courses_by_number("104031", &client)
+        .await
+        .expect("Failed to get courses by number");
+
+    assert_eq!(courses.len(), 1);
+    assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
+    assert_eq!(courses[0].id, "104031");
+
+    let courses = db::services::get_courses_by_ids(vec!["104031"], &client)
+        .await
+        .expect("Failed to get courses by number");
+
+    assert_eq!(courses.len(), 1);
+    assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
+    assert_eq!(courses[0].id, "104031");
 }

@@ -5,7 +5,7 @@ use crate::resources::catalog::{Catalog, DisplayCatalog};
 use crate::resources::course::{Course, Malags};
 use crate::resources::user::User;
 use bson::oid::ObjectId;
-pub use bson::{doc, Document};
+pub use bson::{doc, Bson, Document};
 use futures_util::TryStreamExt;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications};
 use mongodb::Client;
@@ -17,7 +17,6 @@ macro_rules! impl_get {
         db_item=$db_item:ty,
         db_key_type=$db_key_type:ty
     ) => {
-        #[allow(dead_code)] // TODO: remove this
         pub async fn $fn_name(id: $db_key_type, client: &Client) -> Result<$db_item, AppError> {
             match client
                 .database(CONFIG.profile)
@@ -67,13 +66,17 @@ macro_rules! impl_get_all_filtered {
         fn_name=$fn_name:ident,
         db_item=$db_item:ty,
         db_coll_name=$db_coll_name:literal,
-        filter_name=$filter_name:literal
+        filter_by=$filter_by:literal,
+        filter_type=$filter_type:literal
     ) => {
-        pub async fn $fn_name(filter: &str, client: &Client) -> Result<Vec<$db_item>, AppError> {
+        pub async fn $fn_name(
+            filter: impl Into<Bson>,
+            client: &Client,
+        ) -> Result<Vec<$db_item>, AppError> {
             match client
                 .database(CONFIG.profile)
                 .collection::<$db_item>($db_coll_name)
-                .find(doc! {$filter_name: { "$regex": filter}}, None)
+                .find(doc! {$filter_by: { $filter_type: filter.into()}}, None)
                 .await
             {
                 Ok(docs) => Ok(docs
@@ -94,7 +97,6 @@ macro_rules! impl_update {
         db_key_type=$db_key_type:ty,
         db_coll_name=$db_coll_name:literal
     ) => {
-        #[allow(dead_code)] // TODO: remove this
         pub async fn $fn_name(
             id: $db_key_type,
             document: Document,
@@ -131,7 +133,6 @@ macro_rules! impl_delete {
         db_key_type=$db_key_type:ty,
         db_coll_name=$db_coll_name:literal
     ) => {
-        #[allow(dead_code)] // TODO: remove this
         pub async fn $fn_name(id: $db_key_type, client: &Client) -> Result<(), AppError> {
             match client
                 .database(CONFIG.profile)
@@ -182,17 +183,27 @@ impl_get_all!(
 );
 
 impl_get_all_filtered!(
-    fn_name = get_all_courses_by_name,
+    fn_name = get_courses_by_ids,
     db_item = Course,
     db_coll_name = "Courses",
-    filter_name = "name"
+    filter_by = "_id",
+    filter_type = "$in"
 );
 
 impl_get_all_filtered!(
-    fn_name = get_all_courses_by_number,
+    fn_name = get_courses_by_name,
     db_item = Course,
     db_coll_name = "Courses",
-    filter_name = "_id"
+    filter_by = "name",
+    filter_type = "$regex"
+);
+
+impl_get_all_filtered!(
+    fn_name = get_courses_by_number,
+    db_item = Course,
+    db_coll_name = "Courses",
+    filter_by = "_id",
+    filter_type = "$regex"
 );
 
 impl_update!(

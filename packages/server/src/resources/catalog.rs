@@ -47,6 +47,10 @@ impl Catalog {
         }
         names
     }
+
+    pub fn get_all_course_ids(&self) -> Vec<CourseId> {
+        self.course_to_bank.clone().into_keys().collect()
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
