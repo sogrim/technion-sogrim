@@ -81,11 +81,11 @@ pub async fn get_courses_by_filter(
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
     match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
-            let courses = db::services::get_courses_by_name(name, &client).await?;
+            let courses = db::services::get_courses_filtered_by_name(name, &client).await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (None, Some(number)) => {
-            let courses = db::services::get_courses_by_number(number, &client).await?;
+            let courses = db::services::get_courses_filtered_by_number(number, &client).await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (Some(_), Some(_)) => Err(AppError::BadRequest("Invalid query params".into())),

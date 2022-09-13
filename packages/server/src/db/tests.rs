@@ -59,7 +59,7 @@ pub async fn test_get_courses_by_filters() {
 
     let client = init_mongodb_client!();
 
-    let courses = db::services::get_courses_by_name("חשבון אינפיניטסימלי 1מ'", &client)
+    let courses = db::services::get_courses_filtered_by_name("חשבון אינפיניטסימלי 1מ'", &client)
         .await
         .expect("Failed to get courses by name");
 
@@ -67,7 +67,7 @@ pub async fn test_get_courses_by_filters() {
     assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
     assert_eq!(courses[0].id, "104031");
 
-    let courses = db::services::get_courses_by_number("104031", &client)
+    let courses = db::services::get_courses_filtered_by_number("104031", &client)
         .await
         .expect("Failed to get courses by number");
 
@@ -75,11 +75,13 @@ pub async fn test_get_courses_by_filters() {
     assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
     assert_eq!(courses[0].id, "104031");
 
-    let courses = db::services::get_courses_by_ids(vec!["104031"], &client)
+    let courses = db::services::get_courses_by_ids(vec!["104031", "104166"], &client)
         .await
         .expect("Failed to get courses by number");
 
-    assert_eq!(courses.len(), 1);
+    assert_eq!(courses.len(), 2);
     assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
     assert_eq!(courses[0].id, "104031");
+    assert_eq!(courses[1].name, "אלגברה אמ'");
+    assert_eq!(courses[1].id, "104166");
 }

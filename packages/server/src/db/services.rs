@@ -61,7 +61,7 @@ macro_rules! impl_get_all {
 }
 
 #[macro_export]
-macro_rules! impl_get_all_filtered {
+macro_rules! impl_get_filtered {
     (
         fn_name=$fn_name:ident,
         db_item=$db_item:ty,
@@ -182,7 +182,7 @@ impl_get_all!(
     db_coll_name = "Courses"
 );
 
-impl_get_all_filtered!(
+impl_get_filtered!(
     fn_name = get_courses_by_ids,
     db_item = Course,
     db_coll_name = "Courses",
@@ -190,16 +190,16 @@ impl_get_all_filtered!(
     filter_type = "$in"
 );
 
-impl_get_all_filtered!(
-    fn_name = get_courses_by_name,
+impl_get_filtered!(
+    fn_name = get_courses_filtered_by_name,
     db_item = Course,
     db_coll_name = "Courses",
     filter_by = "name",
     filter_type = "$regex"
 );
 
-impl_get_all_filtered!(
-    fn_name = get_courses_by_number,
+impl_get_filtered!(
+    fn_name = get_courses_filtered_by_number,
     db_item = Course,
     db_coll_name = "Courses",
     filter_by = "_id",
