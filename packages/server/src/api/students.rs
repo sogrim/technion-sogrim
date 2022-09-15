@@ -81,11 +81,11 @@ pub async fn get_courses_by_filter(
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
     match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
-            let courses = db::services::get_all_courses_by_name(name, &client).await?;
+            let courses = db::services::get_courses_filtered_by_name(name, &client).await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (None, Some(number)) => {
-            let courses = db::services::get_all_courses_by_number(number, &client).await?;
+            let courses = db::services::get_courses_filtered_by_number(number, &client).await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (Some(_), Some(_)) => Err(AppError::BadRequest("Invalid query params".into())),
@@ -137,7 +137,8 @@ pub async fn compute_degree_status(
 
     user_details.modified = false;
 
-    let vec_courses = db::services::get_all_courses(&client).await?;
+    let vec_courses =
+        db::services::get_courses_by_ids(catalog.get_all_course_ids(), &client).await?;
     let malag_courses = db::services::get_all_malags(&client).await?[0]
         .malag_list
         .clone(); // The collection malags contain one item with the list of all malags
