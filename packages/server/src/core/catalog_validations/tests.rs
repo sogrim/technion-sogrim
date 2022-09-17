@@ -20,11 +20,10 @@ async fn test_catalog_validations() {
 
     let result = validate_catalog(&catalog);
     assert!(result.is_err());
-    match result {
-        Ok(_) => {}
-        Err(e) => assert_eq!(
+    if let Err(e) = result {
+        assert_eq!(
             e.to_string(),
             messages::cyclic_credit_transfer_graph("רשימה א")
-        ),
+        )
     }
 }
