@@ -55,11 +55,11 @@ pub fn missing_credit_msg(overflow: f32, from: &str, to: &str) -> String {
     }
 }
 
-pub fn completed_chain_msg(chain: &[String]) -> String {
+pub fn completed_chain_msg(mut chain: Vec<String>) -> String {
     let mut msg = "השלמת את השרשרת: ".to_string();
-    for course in chain {
-        if course == chain.last().unwrap() {
-            msg += course;
+    while let Some(course) = chain.pop() {
+        if chain.is_empty() {
+            msg += &course;
         } else {
             msg += &format!("{}, ", course);
         }
@@ -67,7 +67,7 @@ pub fn completed_chain_msg(chain: &[String]) -> String {
     msg
 }
 
-pub fn completed_specialization_groups_msg(groups: &[String], needed: usize) -> String {
+pub fn completed_specialization_groups_msg(mut groups: Vec<String>, needed: usize) -> String {
     let mut msg = if groups.len() == ZERO as usize {
         "לא השלמת אף קבוצת התמחות".to_string()
     } else if groups.len() == SINGLE as usize {
@@ -75,9 +75,9 @@ pub fn completed_specialization_groups_msg(groups: &[String], needed: usize) -> 
     } else {
         format!("השלמת {} (מתוך {}) קבוצות התמחות: ", groups.len(), needed)
     };
-    for group in groups {
-        if group == groups.last().unwrap() {
-            msg += group;
+    while let Some(group) = groups.pop() {
+        if groups.is_empty() {
+            msg += &group;
         } else {
             msg += &format!("{}, ", group);
         }

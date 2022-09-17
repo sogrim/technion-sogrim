@@ -115,8 +115,10 @@ macro_rules! impl_update {
                 )
                 .await
             {
-                // We can safely unwrap here thanks to upsert=true and ReturnDocument::After
-                Ok(item) => Ok(item.unwrap()),
+                Ok(item) => item.ok_or_else(|| {
+                    // This should never happen, but to avoid unwrapping we return an explicit error
+                    AppError::NotFound(format!("{}: {}", stringify!($db_item), id.to_string()))
+                }),
                 Err(err) => Err(AppError::MongoDriver(err.to_string())),
             }
         }

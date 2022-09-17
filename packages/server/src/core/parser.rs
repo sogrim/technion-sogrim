@@ -157,7 +157,7 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
                 .rev()
                 .collect::<String>()
                 .parse::<f32>()
-                .unwrap();
+                .map_err(|e| AppError::Parser(format!("Bad Format: {}", e)))?;
             break;
         }
         index += 1;

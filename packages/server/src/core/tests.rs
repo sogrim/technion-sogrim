@@ -615,7 +615,9 @@ async fn test_overflow_credit() {
     );
     assert_eq!(
         degree_status.course_bank_requirements[5].message,
-        Some(messages::completed_chain_msg(&["פיסיקה 2פ'".to_string()]))
+        Some(messages::completed_chain_msg(
+            vec!["פיסיקה 2פ'".to_string()]
+        ))
     );
 
     assert_eq!(
@@ -709,7 +711,7 @@ async fn test_software_engineer_itinerary() {
     );
     assert_eq!(
         degree_status.course_bank_requirements[5].message,
-        Some(messages::completed_chain_msg(&[
+        Some(messages::completed_chain_msg(vec![
             "פיסיקה 2".to_string(),
             "פיסיקה 3".to_string()
         ]))
