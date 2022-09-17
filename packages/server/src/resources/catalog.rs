@@ -54,6 +54,10 @@ impl Catalog {
     pub fn get_bank_traversal_order(&self) -> Vec<CourseBank> {
         find_traversal_order(&self)
     }
+
+    pub fn get_all_course_ids(&self) -> Vec<CourseId> {
+        self.course_to_bank.clone().into_keys().collect()
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
