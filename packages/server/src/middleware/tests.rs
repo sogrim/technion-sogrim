@@ -1,4 +1,4 @@
-use crate::{config::CONFIG, init_mongodb_client, middleware, resources::user::User};
+use crate::{db::Db, middleware, resources::user::User};
 use actix_rt::test;
 use actix_web::{
     http::StatusCode,
@@ -8,7 +8,6 @@ use actix_web::{
 };
 use actix_web_lab::middleware::from_fn;
 use dotenv::dotenv;
-use mongodb::Client;
 
 #[test]
 async fn test_from_request_no_db_client() {
@@ -46,8 +45,8 @@ async fn test_from_request_no_db_client() {
 async fn test_from_request_no_auth_mw() {
     //Init env and app
     dotenv().ok();
-    let client = init_mongodb_client!();
-    let app = test::init_service(App::new().app_data(web::Data::new(client.clone())).service(
+    let db = Db::new().await;
+    let app = test::init_service(App::new().app_data(web::Data::new(db.clone())).service(
         web::resource("/").route(web::get().to(|_: User| async { "Shouldn't get here" })),
     ))
     .await;
@@ -71,10 +70,10 @@ async fn test_from_request_no_auth_mw() {
 async fn test_auth_mw_no_jwt_decoder() {
     //Init env and app
     dotenv().ok();
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
     let app = test::init_service(
         App::new()
-            .app_data(web::Data::new(client.clone()))
+            .app_data(web::Data::new(db.clone()))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(web::resource("/").route(web::get().to(|| async { "Shouldn't get here" }))),
     )

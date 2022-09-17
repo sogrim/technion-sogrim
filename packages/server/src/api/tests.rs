@@ -1,11 +1,10 @@
 use crate::{
-    api::{bo, students::login},
-    config::CONFIG,
-    init_mongodb_client,
-    middleware::{
-        self,
-        auth::{self},
+    api::{
+        bo,
+        students::{self, login},
     },
+    db::Db,
+    middleware::{self, auth},
     resources::{
         catalog::DisplayCatalog,
         course::{Course, CourseStatus},
@@ -21,9 +20,6 @@ use actix_web::{
 };
 use actix_web_lab::middleware::from_fn;
 use dotenv::dotenv;
-use mongodb::Client;
-
-use super::students::{self};
 
 #[test]
 pub async fn test_get_all_catalogs() {
@@ -31,10 +27,10 @@ pub async fn test_get_all_catalogs() {
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
     dotenv().ok();
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
     let app = test::init_service(
         App::new()
-            .app_data(Data::new(client.clone()))
+            .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(students::get_all_catalogs),
@@ -63,10 +59,10 @@ async fn test_students_api_full_flow() {
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
     // Init env and app
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
     let app = test::init_service(
         App::new()
-            .app_data(Data::new(client.clone()))
+            .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(students::get_all_catalogs)
@@ -147,10 +143,10 @@ async fn test_compute_in_progress() {
     dotenv().ok();
 
     // Init env and app
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
     let app = test::init_service(
         App::new()
-            .app_data(Data::new(client.clone()))
+            .app_data(Data::new(db.clone()))
             .service(students::compute_degree_status)
             .service(students::update_settings),
     )
@@ -210,10 +206,10 @@ async fn test_bo_api_courses() {
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
     // Init env and app
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
     let app = test::init_service(
         App::new()
-            .app_data(Data::new(client.clone()))
+            .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(bo::get_all_courses)
@@ -280,10 +276,10 @@ async fn test_bo_api_catalogs() {
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
     // Init env and app
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
     let app = test::init_service(
         App::new()
-            .app_data(Data::new(client.clone()))
+            .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(bo::get_catalog_by_id),
@@ -307,13 +303,8 @@ async fn test_bo_api_catalogs() {
 async fn test_student_login_no_sub() {
     dotenv().ok();
     // Init env and app
-    let client = init_mongodb_client!();
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(client.clone()))
-            .service(login),
-    )
-    .await;
+    let db = Db::new().await;
+    let app = test::init_service(App::new().app_data(Data::new(db.clone())).service(login)).await;
 
     // Create and send request
     let resp = test::TestRequest::get()
@@ -333,10 +324,10 @@ async fn test_students_api_no_catalog() {
     // *** IMPORTANT: This should NEVER happen, but the tests are added anyway for coverage
     dotenv().ok();
     // Init env and app
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
     let app = test::init_service(
         App::new()
-            .app_data(Data::new(client.clone()))
+            .app_data(Data::new(db.clone()))
             .service(students::compute_degree_status),
     )
     .await;
