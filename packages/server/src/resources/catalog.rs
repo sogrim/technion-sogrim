@@ -1,8 +1,5 @@
 use crate::{
-    core::{
-        credit_transfer_graph::find_traversal_order,
-        types::{CreditOverflow, Rule},
-    },
+    core::{credit_transfer_graph::find_traversal_order, types::CreditOverflow},
     resources::course::CourseBank,
 };
 use serde::{self, Deserialize, Serialize};
