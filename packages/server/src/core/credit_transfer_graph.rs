@@ -31,7 +31,7 @@ fn build_credit_transfer_graph(
 
 pub fn find_traversal_order(catalog: &Catalog) -> Vec<CourseBank> {
     let g = build_credit_transfer_graph(&catalog.course_banks, &catalog.credit_overflows);
-    let order = toposort(&g, None).unwrap();
+    let order = toposort(&g, None).unwrap(); // unwrap can't fail because if the catalog exists in the database it means it is valid, i.e no cycles.
     let mut ordered_course_banks = Vec::<CourseBank>::new();
     for node in order {
         // unwrap cannot fail because the graph was built from bank names
