@@ -87,5 +87,5 @@ pub struct Requirement {
 pub struct CreditInfo {
     pub sum_credit: f32,
     pub count_courses: u32,
-    pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user
+    pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user (equal unless there was a replacement)
 }

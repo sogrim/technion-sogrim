@@ -41,16 +41,6 @@ impl Catalog {
         self.course_banks.iter().find(|bank| bank.name == name)
     }
 
-    pub fn get_bank_names_by_rule(&self, rule: Rule) -> Vec<String> {
-        let mut names = Vec::new();
-        for bank in self.course_banks.iter() {
-            if bank.rule == rule {
-                names.push(bank.name.clone());
-            }
-        }
-        names
-    }
-
     pub fn get_bank_traversal_order(&self) -> Vec<CourseBank> {
         find_traversal_order(&self)
     }
