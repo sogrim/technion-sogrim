@@ -5,7 +5,7 @@ use actix_web::{
     web::{Data, Json, Query},
     HttpMessage, HttpRequest, HttpResponse,
 };
-use bson::doc;
+use bson::{doc, to_bson};
 
 use crate::{
     core::{degree_status::DegreeStatus, parser},
@@ -40,8 +40,15 @@ pub async fn login(
         .get::<Sub>()
         .ok_or_else(|| AppError::Middleware("No sub found in request extensions".into()))?;
 
-    let document = doc! {"$setOnInsert" : User::new_document(user_id)};
+    let user = User {
+        sub: user_id.to_string(),
+        ..Default::default()
+    };
+    let document =
+        doc! {"$setOnInsert" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
+
     let updated_user = db::services::find_and_update_user(user_id, document, &client).await?;
+
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
@@ -51,24 +58,19 @@ pub async fn add_catalog(
     catalog_id: String,
     client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, AppError> {
-    match &mut user.details {
-        Some(details) => {
-            let obj_id = bson::oid::ObjectId::from_str(&catalog_id)
-                .map_err(|e| AppError::Bson(e.to_string()))?;
-            let catalog = db::services::get_catalog_by_id(&obj_id, &client).await?;
-            details.catalog = Some(DisplayCatalog::from(catalog));
-            details.degree_status = DegreeStatus::default();
-            details.modified = true;
-            let updated_user = db::services::find_and_update_user(
-                &user.sub.clone(),
-                doc! {"$set" : user.into_document()},
-                &client,
-            )
-            .await?;
-            Ok(HttpResponse::Ok().json(updated_user))
-        }
-        None => Err(AppError::InternalServer("No data exists for user".into())),
-    }
+    let obj_id =
+        bson::oid::ObjectId::from_str(&catalog_id).map_err(|e| AppError::Bson(e.to_string()))?;
+    let catalog = db::services::get_catalog_by_id(&obj_id, &client).await?;
+    user.details.catalog = Some(DisplayCatalog::from(catalog));
+    user.details.degree_status = DegreeStatus::default();
+    user.details.modified = true;
+    let updated_user = db::services::find_and_update_user(
+        &user.sub.clone(),
+        doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?},
+        &client,
+    )
+    .await?;
+    Ok(HttpResponse::Ok().json(updated_user))
 }
 
 #[get("/students/courses")]
@@ -99,21 +101,16 @@ pub async fn add_courses(
     data: String,
     client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, AppError> {
-    match &mut user.details {
-        Some(details) => {
-            details.degree_status = DegreeStatus::default();
-            details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
-            details.modified = true;
-            let updated_user = db::services::find_and_update_user(
-                &user.sub.clone(),
-                doc! {"$set" : user.into_document()},
-                &client,
-            )
-            .await?;
-            Ok(HttpResponse::Ok().json(updated_user))
-        }
-        None => Err(AppError::InternalServer("No data exists for user".into())),
-    }
+    user.details.degree_status = DegreeStatus::default();
+    user.details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
+    user.details.modified = true;
+    let updated_user = db::services::find_and_update_user(
+        &user.sub.clone(),
+        doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?},
+        &client,
+    )
+    .await?;
+    Ok(HttpResponse::Ok().json(updated_user))
 }
 
 // here "modified" becomes false
@@ -122,12 +119,8 @@ pub async fn compute_degree_status(
     mut user: User,
     client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, AppError> {
-    let mut user_details = user
+    let catalog_id = user
         .details
-        .as_mut()
-        .ok_or_else(|| AppError::InternalServer("No data exists for user".into()))?;
-
-    let catalog_id = user_details
         .catalog
         .as_ref()
         .ok_or_else(|| AppError::InternalServer("No catalog chosen for user".into()))?
@@ -135,7 +128,7 @@ pub async fn compute_degree_status(
 
     let catalog = db::services::get_catalog_by_id(&catalog_id, &client).await?;
 
-    user_details.modified = false;
+    user.details.modified = false;
 
     let vec_courses =
         db::services::get_courses_by_ids(catalog.get_all_course_ids(), &client).await?;
@@ -145,18 +138,18 @@ pub async fn compute_degree_status(
 
     let mut course_list = Vec::new();
     if user.settings.compute_in_progress {
-        course_list = user_details.degree_status.set_in_progress_to_complete();
+        course_list = user.details.degree_status.set_in_progress_to_complete();
     }
 
-    user_details
+    user.details
         .degree_status
         .compute(catalog, course::vec_to_map(vec_courses), malag_courses);
 
     if user.settings.compute_in_progress {
-        user_details.degree_status.set_to_in_progress(course_list);
+        user.details.degree_status.set_to_in_progress(course_list);
     }
     let user_id = user.sub.clone();
-    let document = doc! {"$set" : user.clone().into_document()};
+    let document = doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
     db::services::find_and_update_user(&user_id, document, &client).await?;
     Ok(HttpResponse::Ok().json(user))
 }
@@ -169,8 +162,8 @@ pub async fn update_details(
     client: Data<mongodb::Client>,
 ) -> Result<HttpResponse, AppError> {
     let user_id = user.sub.clone();
-    user.details = Some(details.into_inner());
-    let document = doc! {"$set" : user.into_document()};
+    user.details = details.into_inner();
+    let document = doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
     db::services::find_and_update_user(&user_id, document, &client).await?;
     Ok(HttpResponse::Ok().finish())
 }
@@ -183,7 +176,7 @@ pub async fn update_settings(
 ) -> Result<HttpResponse, AppError> {
     let user_id = user.sub.clone();
     user.settings = settings.into_inner();
-    let document = doc! {"$set" : user.into_document()};
+    let document = doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
     db::services::find_and_update_user(&user_id, document, &client).await?;
     Ok(HttpResponse::Ok().finish())
 }

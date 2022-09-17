@@ -27,24 +27,8 @@ pub struct UserSettings {
 pub struct User {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub sub: String,
-    pub details: Option<UserDetails>,
+    pub details: UserDetails,
     pub settings: UserSettings,
-}
-
-impl User {
-    pub fn new_document(sub: &str) -> bson::Document {
-        let user = User {
-            sub: sub.into(),
-            details: Some(UserDetails::default()),
-            ..Default::default()
-        };
-        // Should always unwrap successfully here..
-        bson::to_document(&user).unwrap_or(doc! {"sub" : sub, "details": null})
-    }
-    pub fn into_document(self) -> bson::Document {
-        // Should always unwrap successfully here..
-        bson::to_document(&self).unwrap_or(doc! {"sub" : self.sub, "details": null})
-    }
 }
 
 impl_from_request!(resource = User, getter = get_user_by_id);
