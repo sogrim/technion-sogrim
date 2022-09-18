@@ -287,11 +287,8 @@ export class DataStore {
 
   isBankTypeOfCourseAll = (type: string | undefined): boolean => {
     return this.userDetails?.degree_status?.course_bank_requirements?.some(
-      (bankReq) => {
-        if (bankReq.course_bank_name === type) {
-          return bankReq.bank_rule_name === ALL;
-        }
-      }
+      (bankReq) =>
+        bankReq.course_bank_name === type && bankReq.bank_rule_name === ALL
     );
   };
 }
