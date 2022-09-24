@@ -1,18 +1,16 @@
-use crate::config::CONFIG;
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::catalog_validations::validate_catalog;
 use crate::core::degree_status::DegreeStatus;
 use crate::core::parser;
 use crate::core::types::CreditOverflow;
+use crate::db::Db;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade};
-use crate::{db, init_mongodb_client};
 use actix_rt::test;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
-use mongodb::Client;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -434,22 +432,21 @@ async fn test_duplicated_courses() {
 
 async fn get_catalog(catalog: &str) -> Catalog {
     dotenv().ok();
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
     let obj_id = bson::oid::ObjectId::from_str(catalog).expect("failed to create oid");
-    db::services::get_catalog_by_id(&obj_id, &client)
+    db.get_catalog_by_id(&obj_id)
         .await
         .expect("failed to get catalog")
 }
 
 async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) -> DegreeStatus {
     dotenv().ok();
-    let client = init_mongodb_client!();
-    let vec_courses = db::services::get_all_courses(&client)
+    let db = Db::new().await;
+    let vec_courses = db
+        .get_all_courses()
         .await
         .expect("failed to get all courses");
-    let malag_courses = db::services::get_all_malags(&client)
-        .await
-        .expect("failed to get all malags")[0]
+    let malag_courses = db.get_all_malags().await.expect("failed to get all malags")[0]
         .malag_list
         .clone();
     degree_status.compute(catalog, course::vec_to_map(vec_courses), malag_courses);
@@ -643,7 +640,9 @@ async fn test_overflow_credit() {
     );
     assert_eq!(
         degree_status.course_bank_requirements[5].message,
-        Some(messages::completed_chain_msg(&["פיסיקה 2פ'".to_string()]))
+        Some(messages::completed_chain_msg(
+            vec!["פיסיקה 2פ'".to_string()]
+        ))
     );
 
     assert_eq!(
@@ -737,7 +736,7 @@ async fn test_software_engineer_itinerary() {
     );
     assert_eq!(
         degree_status.course_bank_requirements[5].message,
-        Some(messages::completed_chain_msg(&[
+        Some(messages::completed_chain_msg(vec![
             "פיסיקה 2".to_string(),
             "פיסיקה 3".to_string()
         ]))

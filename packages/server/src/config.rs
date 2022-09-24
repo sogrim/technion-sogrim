@@ -22,7 +22,7 @@ impl Config<'_> {
     pub fn from_env() -> Self {
         Config {
             ip: &IP,
-            port: PORT.parse::<u16>().unwrap(),
+            port: PORT.parse::<u16>().expect("Failed to parse port"),
             uri: &URI,
             client_id: &CLIENT_ID,
             profile: &PROFILE,

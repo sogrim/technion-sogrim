@@ -1,4 +1,4 @@
-use crate::{config::CONFIG, db, init_mongodb_client};
+use crate::{config::CONFIG, db::Db};
 use actix_rt::test;
 use actix_web::{body::MessageBody, http::StatusCode, web::Bytes, ResponseError};
 
@@ -7,8 +7,6 @@ use mongodb::{
     options::{ClientOptions, Credential},
     Client,
 };
-
-use super::services;
 
 #[test]
 pub async fn test_db_internal_error() {
@@ -28,18 +26,19 @@ pub async fn test_db_internal_error() {
     // Create mongodb client
     let client = Client::with_options(client_options).expect("Failed to create client");
 
+    // Initialize db
+    let db = Db::from(client);
+
     // Assert that all db requests cause an internal server error
     let errors = vec![
-        services::get_course_by_id("124400", &client)
+        db.get_course_by_id("124400")
             .await
             .expect_err("Expected error"),
-        services::get_all_courses(&client)
+        db.get_all_courses().await.expect_err("Expected error"),
+        db.find_and_update_course("124400", bson::doc! {"$setOnInsert": {}})
             .await
             .expect_err("Expected error"),
-        services::find_and_update_course("124400", bson::doc! {"$setOnInsert": {}}, &client)
-            .await
-            .expect_err("Expected error"),
-        services::delete_course("124400", &client)
+        db.delete_course("124400")
             .await
             .expect_err("Expected error"),
     ];
@@ -57,9 +56,10 @@ pub async fn test_db_internal_error() {
 pub async fn test_get_courses_by_filters() {
     dotenv().ok();
 
-    let client = init_mongodb_client!();
+    let db = Db::new().await;
 
-    let courses = db::services::get_courses_filtered_by_name("חשבון אינפיניטסימלי 1מ'", &client)
+    let courses = db
+        .get_courses_filtered_by_name("חשבון אינפיניטסימלי 1מ'")
         .await
         .expect("Failed to get courses by name");
 
@@ -67,7 +67,8 @@ pub async fn test_get_courses_by_filters() {
     assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
     assert_eq!(courses[0].id, "104031");
 
-    let courses = db::services::get_courses_filtered_by_number("104031", &client)
+    let courses = db
+        .get_courses_filtered_by_number("104031")
         .await
         .expect("Failed to get courses by number");
 
@@ -75,7 +76,8 @@ pub async fn test_get_courses_by_filters() {
     assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
     assert_eq!(courses[0].id, "104031");
 
-    let courses = db::services::get_courses_by_ids(vec!["104031", "104166"], &client)
+    let courses = db
+        .get_courses_by_ids(vec!["104031", "104166"])
         .await
         .expect("Failed to get courses by number");
 

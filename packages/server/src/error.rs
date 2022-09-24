@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, ResponseError};
+use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 use colored::Colorize;
 use derive_more::Display;
 
@@ -15,38 +15,27 @@ pub enum AppError {
 
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
-        let error;
-        let resp = match self {
-            AppError::BadRequest(e) => {
-                error = e.to_owned();
-                HttpResponse::BadRequest().body(error.clone())
-            }
-            AppError::Bson(e) => {
-                error = format!("Bson error: {}", e);
-                HttpResponse::BadRequest().body(error.clone())
-            }
-            AppError::Parser(e) => {
-                error = format!("Parser error: {}", e);
-                HttpResponse::BadRequest().body(error.clone())
-            }
-            AppError::NotFound(e) => {
-                error = format!("{} not found", e);
-                HttpResponse::NotFound().body(error.clone())
-            }
-            AppError::InternalServer(e) => {
-                error = e.to_owned();
-                HttpResponse::InternalServerError().body(error.clone())
-            }
-            AppError::Middleware(e) => {
-                error = format!("Middleware error: {}", e);
-                HttpResponse::InternalServerError().body(error.clone())
-            }
-            AppError::MongoDriver(e) => {
-                error = format!("MongoDB driver error: {}", e);
-                HttpResponse::InternalServerError().body(error.clone())
-            }
+        let (status_code, error) = match self {
+            AppError::BadRequest(e) => (StatusCode::BAD_REQUEST, e.to_owned()),
+            AppError::Bson(e) => (StatusCode::BAD_REQUEST, format!("Bson error: {}", e)),
+            AppError::Parser(e) => (StatusCode::BAD_REQUEST, format!("Parser error: {}", e)),
+            AppError::NotFound(e) => (StatusCode::NOT_FOUND, format!("{} not found", e)),
+            AppError::InternalServer(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_owned()),
+            AppError::Middleware(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Middleware error: {}", e),
+            ),
+            AppError::MongoDriver(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("MongoDB driver error: {}", e),
+            ),
         };
         log::error!("{}", error.bold().red());
-        resp
+        match status_code {
+            StatusCode::BAD_REQUEST => HttpResponse::BadRequest().body(error),
+            StatusCode::NOT_FOUND => HttpResponse::NotFound().body(error),
+            StatusCode::INTERNAL_SERVER_ERROR => HttpResponse::InternalServerError().body(error),
+            _ => unreachable!(),
+        }
     }
 }

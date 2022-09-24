@@ -98,7 +98,9 @@ impl DegreeStatus {
         self.course_statuses.sort_by(|c1, c2| {
             c1.extract_semester()
                 .partial_cmp(&c2.extract_semester())
-                .unwrap() // unwrap cannot fail because we compare only integers or "half integers" (0.5,1,1.5,2,2.5...)
+                .unwrap_or(std::cmp::Ordering::Equal)
+            // partial_cmp returns None if one of the two values are NaN, which should never happen
+            // still, to be on the safe side, we use Ordering::Equal in that case instead of unwrapping
         });
     }
 }

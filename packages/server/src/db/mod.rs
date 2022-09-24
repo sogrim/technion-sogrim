@@ -1,17 +1,31 @@
+use mongodb::Client;
+
+use crate::config::CONFIG;
+
 pub mod services;
 
 #[cfg(test)]
 pub mod tests;
 
-#[macro_export]
-macro_rules! init_mongodb_client {
-    () => {{
-        let client = Client::with_uri_str(CONFIG.uri)
+#[derive(Debug, Clone)]
+pub struct Db {
+    client: Client,
+}
+
+impl Db {
+    pub async fn new() -> Self {
+        let client = Client::with_uri_str(&CONFIG.uri)
             .await
             .expect("Failed to connect to MongoDB");
+        Self { client }
+    }
+    pub fn client(&self) -> &Client {
+        &self.client
+    }
+}
 
-        log::info!("Connected to MongoDB");
-
-        client
-    }};
+impl From<Client> for Db {
+    fn from(client: Client) -> Self {
+        Self { client }
+    }
 }

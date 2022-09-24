@@ -1,9 +1,9 @@
 use crate::config::CONFIG;
 use actix_web::{web, App, HttpServer};
 use actix_web_lab::middleware::from_fn;
+use db::Db;
 use dotenv::dotenv;
 use middleware::auth;
-use mongodb::Client;
 
 mod api;
 mod config;
@@ -23,13 +23,13 @@ async fn main() -> std::io::Result<()> {
     // Initialize logger
     logger::init_env_logger();
 
-    // Initialize MongoDB client
-    let client = init_mongodb_client!();
+    // Initialize DB client
+    let db = Db::new().await;
 
     // Start the server
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(client.clone()))
+            .app_data(web::Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new())
             .wrap(from_fn(auth::authenticate))
             .wrap(cors::cors())
