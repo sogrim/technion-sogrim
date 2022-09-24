@@ -1,7 +1,9 @@
 use crate::config::CONFIG;
 use crate::core::bank_rule::BankRuleHandler;
+use crate::core::catalog_validations::validate_catalog;
 use crate::core::degree_status::DegreeStatus;
 use crate::core::parser;
+use crate::core::types::CreditOverflow;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
@@ -430,7 +432,7 @@ async fn test_duplicated_courses() {
 // Test core function in a full flow
 // ------------------------------------------------------------------------------------------------------
 
-pub async fn get_catalog(catalog: &str) -> Catalog {
+async fn get_catalog(catalog: &str) -> Catalog {
     dotenv().ok();
     let client = init_mongodb_client!();
     let obj_id = bson::oid::ObjectId::from_str(catalog).expect("failed to create oid");
@@ -784,4 +786,29 @@ async fn test_software_engineer_itinerary() {
         degree_status.overflow_msgs[3],
         messages::credit_leftovers_msg(0.0)
     );
+}
+
+// ------------------------------------------------------------------------------------------------------
+// Test catalog validations
+// ------------------------------------------------------------------------------------------------------
+
+#[test]
+async fn test_catalog_validations() {
+    let mut catalog = get_catalog(COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID).await;
+    assert!(validate_catalog(&catalog).is_ok());
+
+    // Add credit transfer between בחירה חופשית to רשימה א to close a cycle
+    catalog.credit_overflows.push(CreditOverflow {
+        from: "בחירה חופשית".to_string(),
+        to: "רשימה א".to_string(),
+    });
+
+    let result = validate_catalog(&catalog);
+    assert!(result.is_err());
+    if let Err(e) = result {
+        assert_eq!(
+            e.to_string(),
+            messages::cyclic_credit_transfer_graph("רשימה א")
+        )
+    }
 }

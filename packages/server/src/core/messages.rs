@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 const ZERO: f32 = 0.0;
 const HALF: f32 = 0.5;
 const SINGLE: f32 = 1.0;
@@ -61,7 +63,7 @@ pub fn completed_chain_msg(chain: &[String]) -> String {
         if course == chain.last().unwrap() {
             msg += course;
         } else {
-            msg += &format!("{}, ", course);
+            let _ = write!(msg, "{}, ", course);
         }
     }
     msg
@@ -79,7 +81,7 @@ pub fn completed_specialization_groups_msg(groups: &[String], needed: usize) -> 
         if group == groups.last().unwrap() {
             msg += group;
         } else {
-            msg += &format!("{}, ", group);
+            let _ = write!(msg, "{}, ", group);
         }
     }
     msg
@@ -107,7 +109,11 @@ pub fn cannot_find_course() -> String {
 
 pub fn cyclic_credit_transfer_graph(bank_in_cycle: &str) -> String {
     format!(
-        "קיימת תלות מעגלית במעברי הנקודות שמכילה את הבנק {}",
+        "קיימת תלות מעגלית במעברי הנקודות שנקבעו. התלות המעגלית מתחילה ונגמרת ב{}",
         bank_in_cycle
     )
+}
+
+pub fn build_credit_transfer_graph_failed() -> String {
+    "בניית הגרף נכשלה".to_string()
 }
