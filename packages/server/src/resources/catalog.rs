@@ -1,5 +1,5 @@
 use crate::{
-    core::types::{CreditOverflow, Rule},
+    core::{credit_transfer_graph::find_traversal_order, types::CreditOverflow},
     resources::course::CourseBank,
 };
 use serde::{self, Deserialize, Serialize};
@@ -38,14 +38,8 @@ impl Catalog {
         self.course_banks.iter().find(|bank| bank.name == name)
     }
 
-    pub fn get_bank_names_by_rule(&self, rule: Rule) -> Vec<String> {
-        let mut names = Vec::new();
-        for bank in self.course_banks.iter() {
-            if bank.rule == rule {
-                names.push(bank.name.clone());
-            }
-        }
-        names
+    pub fn get_bank_traversal_order(&self) -> Vec<CourseBank> {
+        find_traversal_order(self)
     }
 
     pub fn get_all_course_ids(&self) -> Vec<CourseId> {

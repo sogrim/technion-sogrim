@@ -188,8 +188,7 @@ fn run_exhaustive_search(
         &courses,
         &mut best_match,
     )
-    .or(Some(best_match))
-    .unwrap() // unwraping is safe since the line above always returns Some(_)
+    .unwrap_or(best_match)
 }
 
 impl<'a> BankRuleHandler<'a> {
