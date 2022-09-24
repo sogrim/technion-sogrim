@@ -12,8 +12,6 @@ use crate::resources::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::toposort;
-
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct DegreeStatus {
     pub course_statuses: Vec<CourseStatus>,
@@ -121,7 +119,7 @@ impl DegreeStatus {
         courses: HashMap<CourseId, Course>,
         malag_courses: Vec<CourseId>,
     ) {
-        let course_banks = toposort::set_order(&catalog.course_banks, &catalog.credit_overflows);
+        let course_banks = catalog.get_bank_traversal_order();
 
         // prepare the data for degree status computation
         self.preprocess(&mut catalog);

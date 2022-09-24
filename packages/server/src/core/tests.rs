@@ -1,6 +1,8 @@
 use crate::core::bank_rule::BankRuleHandler;
+use crate::core::catalog_validations::validate_catalog;
 use crate::core::degree_status::DegreeStatus;
 use crate::core::parser;
+use crate::core::types::CreditOverflow;
 use crate::db::Db;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseState::NotComplete;
@@ -14,6 +16,8 @@ use std::str::FromStr;
 
 use super::types::Requirement;
 use super::*;
+
+pub const COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID: &str = "61a102bb04c5400b98e6f401"; // catalog id from database
 
 #[test]
 async fn test_pdf_parser() {
@@ -254,8 +258,11 @@ async fn test_irrelevant_course() {
 
 #[test]
 async fn test_restore_irrelevant_course() {
-    let mut degree_status =
-        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_4.txt", "61a102bb04c5400b98e6f401").await;
+    let mut degree_status = run_degree_status_full_flow(
+        "pdf_ctrl_c_ctrl_v_4.txt",
+        COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID,
+    )
+    .await;
 
     for course_status in degree_status.course_statuses.iter_mut() {
         if course_status.course.id == "114071" {
@@ -264,8 +271,11 @@ async fn test_restore_irrelevant_course() {
         }
     }
 
-    degree_status =
-        run_degree_status(degree_status, get_catalog("61a102bb04c5400b98e6f401").await).await;
+    degree_status = run_degree_status(
+        degree_status,
+        get_catalog(COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID).await,
+    )
+    .await;
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
             id: "114071".to_string(),
@@ -281,8 +291,11 @@ async fn test_restore_irrelevant_course() {
         modified: true,
     });
 
-    degree_status =
-        run_degree_status(degree_status, get_catalog("61a102bb04c5400b98e6f401").await).await;
+    degree_status = run_degree_status(
+        degree_status,
+        get_catalog(COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID).await,
+    )
+    .await;
 
     // the first פיסיקה 1מ which was irrelevant should be removed from the list
     for course_status in degree_status.course_statuses.iter() {
@@ -374,8 +387,11 @@ async fn test_modified() {
 
 #[test]
 async fn test_duplicated_courses() {
-    let mut degree_status =
-        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_4.txt", "61a102bb04c5400b98e6f401").await;
+    let mut degree_status = run_degree_status_full_flow(
+        "pdf_ctrl_c_ctrl_v_4.txt",
+        COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID,
+    )
+    .await;
 
     // The user didn't take פיסיקה 1מ, therefore the algorithm adds it automatically to the course list
     // This code Simulates addition of פיסיקה 1 manuually by the user.
@@ -394,8 +410,11 @@ async fn test_duplicated_courses() {
         modified: true,
     });
 
-    degree_status =
-        run_degree_status(degree_status, get_catalog("61a102bb04c5400b98e6f401").await).await;
+    degree_status = run_degree_status(
+        degree_status,
+        get_catalog(COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID).await,
+    )
+    .await;
 
     assert_eq!(
         degree_status.course_bank_requirements[6].credit_requirement,
@@ -451,8 +470,11 @@ async fn run_degree_status_full_flow(file_name: &str, catalog: &str) -> DegreeSt
 
 #[test]
 async fn test_missing_credit() {
-    let degree_status =
-        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v.txt", "61a102bb04c5400b98e6f401").await;
+    let degree_status = run_degree_status_full_flow(
+        "pdf_ctrl_c_ctrl_v.txt",
+        COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID,
+    )
+    .await;
     //FOR VIEWING IN JSON FORMAT
     // std::fs::write(
     //     "degree_status.json",
@@ -570,8 +592,11 @@ async fn test_missing_credit() {
 
 #[test]
 async fn test_overflow_credit() {
-    let degree_status =
-        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_2.txt", "61a102bb04c5400b98e6f401").await;
+    let degree_status = run_degree_status_full_flow(
+        "pdf_ctrl_c_ctrl_v_2.txt",
+        COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID,
+    )
+    .await;
     //FOR VIEWING IN JSON FORMAT
     // std::fs::write(
     //     "degree_status.json",
@@ -760,4 +785,29 @@ async fn test_software_engineer_itinerary() {
         degree_status.overflow_msgs[3],
         messages::credit_leftovers_msg(0.0)
     );
+}
+
+// ------------------------------------------------------------------------------------------------------
+// Test catalog validations
+// ------------------------------------------------------------------------------------------------------
+
+#[test]
+async fn test_catalog_validations() {
+    let mut catalog = get_catalog(COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID).await;
+    assert!(validate_catalog(&catalog).is_ok());
+
+    // Add credit transfer between בחירה חופשית to רשימה א to close a cycle
+    catalog.credit_overflows.push(CreditOverflow {
+        from: "בחירה חופשית".to_string(),
+        to: "רשימה א".to_string(),
+    });
+
+    let result = validate_catalog(&catalog);
+    assert!(result.is_err());
+    if let Err(e) = result {
+        assert_eq!(
+            e.to_string(),
+            messages::cyclic_credit_transfer_graph("רשימה א")
+        )
+    }
 }

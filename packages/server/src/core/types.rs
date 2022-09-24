@@ -7,7 +7,7 @@ use std::collections::HashMap;
 pub type Chain = Vec<CourseId>;
 pub type NumCourses = u32;
 
-#[derive(PartialEq, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, PartialEq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
     pub courses_sum: usize, //Indicates how many courses should the user accomplish in this specialization group
@@ -22,7 +22,7 @@ pub struct SpecializationGroup {
     pub mandatory: Option<Vec<OptionalReplacements>>,
 }
 
-#[derive(PartialEq, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, PartialEq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroups {
     pub groups_list: Vec<SpecializationGroup>,
     pub groups_number: usize,
@@ -87,5 +87,5 @@ pub struct Requirement {
 pub struct CreditInfo {
     pub sum_credit: f32,
     pub count_courses: u32,
-    pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user
+    pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user (equal unless there was a replacement)
 }
