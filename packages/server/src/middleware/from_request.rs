@@ -16,8 +16,9 @@ macro_rules! impl_from_request {
                             ))
                         }
                     };
-                    match req.extensions().get::<Sub>() {
-                        Some(key) => db.$get_fn(key).await,
+                    let optional_sub = req.extensions().get::<Sub>().cloned();
+                    match optional_sub {
+                        Some(key) => db.$get_fn(&key).await,
                         None => Err(AppError::Middleware(
                             "Sub not found in request extensions".into(),
                         )),

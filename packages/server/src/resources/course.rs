@@ -15,7 +15,7 @@ pub struct Course {
     pub name: String,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CourseState {
     Complete,
     NotComplete,
@@ -167,7 +167,7 @@ pub struct Malags {
     pub malag_list: Vec<CourseId>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Grade {
     Numeric(u8),
     Binary(bool),

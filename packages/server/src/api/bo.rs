@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use crate::core::catalog_validations;
 use crate::db::Db;
 use crate::error::AppError;
 use crate::resources::catalog::Catalog;
@@ -78,6 +79,7 @@ pub async fn create_or_update_catalog(
     catalog: Json<Catalog>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
+    catalog_validations::validate_catalog(&catalog)?;
     let obj_id = bson::oid::ObjectId::from_str(&id).map_err(|e| AppError::Bson(e.to_string()))?;
     let catalog_doc = bson::to_document(&catalog).map_err(|e| AppError::Bson(e.to_string()))?;
     let document = doc! {"$setOnInsert" : catalog_doc};

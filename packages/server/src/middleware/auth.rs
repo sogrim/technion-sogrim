@@ -31,7 +31,7 @@ impl JwtDecoder {
     }
     // Decode the jwt and return id info (sub wrapper)
     pub async fn decode(&self, token: &str) -> Result<IdInfo, ParserError> {
-        Ok(self.parser.parse::<IdInfo>(token).await?)
+        self.parser.parse::<IdInfo>(token).await
     }
     // Set up a debug jwt parser for testing
     #[cfg(test)]
