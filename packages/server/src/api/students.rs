@@ -32,19 +32,19 @@ pub async fn get_all_catalogs(
 //TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
 #[get("/students/login")]
 pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppError> {
-    let extensions = req.extensions();
-    let user_id = extensions
+    let user_id = req
+        .extensions()
         .get::<Sub>()
+        .cloned()
         .ok_or_else(|| AppError::Middleware("No sub found in request extensions".into()))?;
-
     let user = User {
-        sub: user_id.to_string(),
+        sub: user_id,
         ..Default::default()
     };
     let document =
         doc! {"$setOnInsert" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
 
-    let updated_user = db.find_and_update_user(user_id, document).await?;
+    let updated_user = db.find_and_update_user(&user.sub, document).await?;
 
     Ok(HttpResponse::Ok().json(updated_user))
 }

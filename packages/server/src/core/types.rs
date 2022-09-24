@@ -7,7 +7,7 @@ use std::collections::HashMap;
 pub type Chain = Vec<CourseId>;
 pub type NumCourses = u32;
 
-#[derive(Default, PartialEq, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
     pub courses_sum: usize, //Indicates how many courses should the user accomplish in this specialization group
@@ -22,13 +22,13 @@ pub struct SpecializationGroup {
     pub mandatory: Option<Vec<OptionalReplacements>>,
 }
 
-#[derive(Default, PartialEq, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroups {
     pub groups_list: Vec<SpecializationGroup>,
     pub groups_number: usize,
 }
 
-#[derive(PartialEq, Clone, Debug, Deserialize, Serialize)]
+#[derive(PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub enum Rule {
     All,              //  כמו חובה פקולטית.
     AccumulateCredit, // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
