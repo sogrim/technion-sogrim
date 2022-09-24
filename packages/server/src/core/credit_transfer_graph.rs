@@ -22,7 +22,7 @@ fn build_credit_transfer_graph(
             g.node_indices().find(|i| g[*i] == credit_rule.to),
         ) {
             (Some(from), Some(to)) => g.add_edge(from, to, ()),
-            (Some(_), None) | (None, Some(_)) | (None, None) => {
+            _ => {
                 return Err(AppError::BadRequest(
                     messages::build_credit_transfer_graph_failed(),
                 ))
@@ -36,14 +36,12 @@ pub fn find_traversal_order(catalog: &Catalog) -> Vec<CourseBank> {
     let g = match build_credit_transfer_graph(&catalog.course_banks, &catalog.credit_overflows) {
         Ok(graph) => graph,
         Err(_) => {
-            log::error!("{}", messages::build_credit_transfer_graph_failed());
-            // Build graph failed, return empty vector
+            log::error!("corrupted catalog in the database - return empty list");
             return vec![];
         }
     };
     let order = toposort(&g, None).unwrap_or_else(|_| {
         log::error!(
-            "{}",
             "corrupted catalog in the database - course banks will be set in an arbitrary order"
         );
         g.node_indices().into_iter().collect::<Vec<_>>()

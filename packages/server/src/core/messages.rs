@@ -1,4 +1,4 @@
-use std::fmt::Write as _;
+use std::fmt::Write;
 
 const ZERO: f32 = 0.0;
 const HALF: f32 = 0.5;
