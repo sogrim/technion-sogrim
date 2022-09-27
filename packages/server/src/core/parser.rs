@@ -101,7 +101,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
 }
 
 fn set_grades_for_uncompleted_courses(
-    courses: &mut Vec<CourseStatus>,
+    courses: &mut [CourseStatus],
     asterisk_courses: Vec<CourseStatus>,
 ) {
     // The canditate course statuses are those with uncomplete (לא השלים) grades.
@@ -157,7 +157,7 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
                 .rev()
                 .collect::<String>()
                 .parse::<f32>()
-                .unwrap();
+                .map_err(|e| AppError::Parser(format!("Bad Format: {}", e)))?;
             break;
         }
         index += 1;

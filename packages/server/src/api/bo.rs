@@ -1,11 +1,10 @@
 use std::str::FromStr;
 
+use crate::core::catalog_validations;
+use crate::db::Db;
 use crate::error::AppError;
 use crate::resources::catalog::Catalog;
-use crate::{
-    db,
-    resources::{admin::Admin, course::Course},
-};
+use crate::resources::{admin::Admin, course::Course};
 use actix_web::web::{Data, Json, Path};
 use actix_web::{delete, get, put, HttpResponse};
 use bson::doc;
@@ -15,11 +14,8 @@ use bson::doc;
 /////////////////////////////////////////////////////////////////////////////
 
 #[get("/courses")]
-pub async fn get_all_courses(
-    _: Admin,
-    client: Data<mongodb::Client>,
-) -> Result<HttpResponse, AppError> {
-    db::services::get_all_courses(&client)
+pub async fn get_all_courses(_: Admin, db: Data<Db>) -> Result<HttpResponse, AppError> {
+    db.get_all_courses()
         .await
         .map(|courses| HttpResponse::Ok().json(courses))
 }
@@ -28,9 +24,9 @@ pub async fn get_all_courses(
 pub async fn get_course_by_id(
     _: Admin,
     id: Path<String>,
-    client: Data<mongodb::Client>,
+    db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    db::services::get_course_by_id(&id, &client)
+    db.get_course_by_id(&id)
         .await
         .map(|course| HttpResponse::Ok().json(course))
 }
@@ -40,11 +36,11 @@ pub async fn create_or_update_course(
     _: Admin,
     id: Path<String>,
     course: Json<Course>,
-    client: Data<mongodb::Client>,
+    db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
     let course_doc = bson::to_document(&course).map_err(|e| AppError::Bson(e.to_string()))?;
     let document = doc! {"$setOnInsert" : course_doc};
-    db::services::find_and_update_course(&id, document, &client)
+    db.find_and_update_course(&id, document)
         .await
         .map(|course| HttpResponse::Ok().json(course))
 }
@@ -53,9 +49,9 @@ pub async fn create_or_update_course(
 pub async fn delete_course(
     _: Admin,
     id: Path<String>,
-    client: Data<mongodb::Client>,
+    db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    db::services::delete_course(&id, &client)
+    db.delete_course(&id)
         .await
         .map(|_| HttpResponse::Ok().finish())
 }
@@ -68,10 +64,10 @@ pub async fn delete_course(
 pub async fn get_catalog_by_id(
     _: Admin,
     id: Path<String>,
-    client: Data<mongodb::Client>,
+    db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
     let obj_id = bson::oid::ObjectId::from_str(&id).map_err(|e| AppError::Bson(e.to_string()))?;
-    db::services::get_catalog_by_id(&obj_id, &client)
+    db.get_catalog_by_id(&obj_id)
         .await
         .map(|course| HttpResponse::Ok().json(course))
 }
@@ -81,12 +77,13 @@ pub async fn create_or_update_catalog(
     _: Admin,
     id: Path<String>,
     catalog: Json<Catalog>,
-    client: Data<mongodb::Client>,
+    db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
+    catalog_validations::validate_catalog(&catalog)?;
     let obj_id = bson::oid::ObjectId::from_str(&id).map_err(|e| AppError::Bson(e.to_string()))?;
     let catalog_doc = bson::to_document(&catalog).map_err(|e| AppError::Bson(e.to_string()))?;
     let document = doc! {"$setOnInsert" : catalog_doc};
-    db::services::find_and_update_catalog(&obj_id, document, &client)
+    db.find_and_update_catalog(&obj_id, document)
         .await
         .map(|catalog| HttpResponse::Ok().json(catalog))
 }

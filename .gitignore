@@ -8,5 +8,4 @@ debug_text.txt
 packages/server/private/
 packages/server/target/
 packages/server/.vscode/settings.json
-packages/server/Cargo.lock
 packages/server/*.txt

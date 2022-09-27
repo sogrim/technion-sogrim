@@ -584,7 +584,7 @@ async fn test_specialization_group() {
 
     // ---------------------------------------------------------------------------
     // change the state of 044202, which is a mandatory course in "תורת התקשורת", to notComplete,
-    // thus the user doen't complete the specialization groups requirement
+    // thus the user doesn't complete the specialization groups requirement
     degree_status.course_statuses[1].state = Some(CourseState::NotComplete);
     degree_status.course_statuses[1].grade = Some(Grade::Numeric(50));
 

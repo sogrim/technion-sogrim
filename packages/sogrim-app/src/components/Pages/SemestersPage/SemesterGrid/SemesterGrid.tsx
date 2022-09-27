@@ -8,7 +8,7 @@ import { useStore } from "../../../../hooks/useStore";
 import { ErrorToast } from "../../../Toasts/ErrorToast";
 import { RowData, UpdateUserDetailsAction } from "../SemesterTabsConsts";
 import { AddNewRow } from "./AddNewRow";
-import { courseFromUserValidations } from "./course-validator";
+import { courseFromUserValidations } from "../CourseValidator";
 import { columns } from "./semester-grid-interface";
 import { SemesterFooter } from "./SemesterFooter";
 

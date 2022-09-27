@@ -9,14 +9,17 @@ use crate::{
 use super::DegreeStatus;
 
 impl DegreeStatus {
-    fn reset(&mut self, catalog: &mut Catalog) {
-        self.course_bank_requirements.clear();
-        self.overflow_msgs.clear();
-        self.total_credit = 0.0;
+    // before running the algorithm we remove all the courses added by the algorithm in the previous run to prevent duplications.
+    // the algorithm adds courses only without semester, unmodified, incomplete and to a bank from type "All"
+    fn remove_courses_added_by_algorithm(&mut self, catalog: &mut Catalog) {
+        // get all courses from banks of type All
+        let bank_names = catalog
+            .course_banks
+            .iter()
+            .filter(|bank| bank.rule == Rule::All)
+            .map(|bank| bank.name.clone())
+            .collect::<Vec<_>>();
 
-        // before running the algorithm we remove all the courses added by the algorithm in the previous run to prevent duplication.
-        // the algorithm adds courses only without semeser, unmodified, incomplete and to a bank from type "all"
-        let bank_names = catalog.get_bank_names_by_rule(Rule::All);
         self.course_statuses.retain(|course_status| {
             if let Some(r#type) = &course_status.r#type {
                 course_status.semester.is_some()
@@ -27,8 +30,10 @@ impl DegreeStatus {
                 true
             }
         });
+    }
 
-        // remove course which were added by the user, and were tagged as irrelevant in a previous run
+    // courses which were tagged as irrelevant in a previous run, and then user added the same courses (same course id) manually, should be removed
+    fn remove_irrelevant_courses_added_by_user(&mut self) {
         let dispensable_irrelevant_courses = self
             .course_statuses
             .iter()
@@ -52,8 +57,9 @@ impl DegreeStatus {
             course_status.state != Some(CourseState::Irrelevant)
                 || !dispensable_irrelevant_courses.contains(&course_status.course.id)
         });
+    }
 
-        // clear the type for unmodified and irrelevant courses
+    fn clear_type_for_unmodified_and_irrelevant_courses(&mut self) {
         for course_status in self.course_statuses.iter_mut() {
             if !course_status.modified {
                 course_status.r#type = None;
@@ -75,13 +81,26 @@ impl DegreeStatus {
         }
     }
 
+    fn reset(&mut self, catalog: &mut Catalog) {
+        self.course_bank_requirements.clear();
+        self.overflow_msgs.clear();
+        self.total_credit = 0.0;
+
+        self.remove_courses_added_by_algorithm(catalog);
+        self.remove_irrelevant_courses_added_by_user();
+        self.clear_type_for_unmodified_and_irrelevant_courses();
+        self.remove_irrelevant_courses_from_catalog(catalog);
+    }
+
     pub fn preprocess(&mut self, catalog: &mut Catalog) {
         self.reset(catalog);
-        self.remove_irrelevant_courses_from_catalog(catalog);
+
         self.course_statuses.sort_by(|c1, c2| {
             c1.extract_semester()
                 .partial_cmp(&c2.extract_semester())
-                .unwrap() // unwrap can't fail because we compare only integers or "half integers" (0.5,1,1.5,2,2.5...)
+                .unwrap_or(std::cmp::Ordering::Equal)
+            // partial_cmp returns None if one of the two values are NaN, which should never happen
+            // still, to be on the safe side, we use Ordering::Equal in that case instead of unwrapping
         });
     }
 }

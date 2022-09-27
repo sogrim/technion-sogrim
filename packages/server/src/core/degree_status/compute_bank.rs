@@ -65,7 +65,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 sum_credit = bank_rule_handler.chain(chains, &mut chain_done);
                 completed = !chain_done.is_empty();
                 if completed {
-                    msg = Some(messages::completed_chain_msg(&chain_done));
+                    msg = Some(messages::completed_chain_msg(chain_done));
                 }
             }
             Rule::SpecializationGroups(specialization_groups) => {
@@ -73,7 +73,7 @@ impl<'a> DegreeStatusHandler<'a> {
                     .specialization_group(specialization_groups, &mut groups_done_list);
                 completed = groups_done_list.len() >= specialization_groups.groups_number;
                 msg = Some(messages::completed_specialization_groups_msg(
-                    &groups_done_list,
+                    groups_done_list,
                     specialization_groups.groups_number,
                 ));
             }

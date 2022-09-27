@@ -15,7 +15,7 @@ pub struct Course {
     pub name: String,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CourseState {
     Complete,
     NotComplete,
@@ -103,13 +103,17 @@ impl CourseStatus {
     }
 
     pub fn extract_semester(&self) -> f32 {
-        match self.semester.clone() {
-            Some(semester) => {
-                let semester: Vec<&str> = semester.split('_').collect();
-                semester.last().unwrap().parse::<f32>().unwrap_or(0.0) //TODO explain
-            }
-            None => 0.0,
-        }
+        self.semester
+            .as_ref()
+            .map(|semester| {
+                semester
+                    .split('_')
+                    .last()
+                    .unwrap_or("0.0")
+                    .parse::<f32>()
+                    .unwrap_or(0.0)
+            })
+            .unwrap_or(0.0)
     }
 
     pub fn valid_for_bank(&self, bank_name: &str) -> bool {
@@ -125,7 +129,7 @@ impl CourseStatus {
     pub fn set_state(&mut self) {
         self.state = self
             .passed()
-            .then(|| CourseState::Complete)
+            .then_some(CourseState::Complete)
             .or(if self.grade.is_none() {
                 Some(CourseState::InProgress)
             } else {
@@ -163,7 +167,7 @@ pub struct Malags {
     pub malag_list: Vec<CourseId>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Grade {
     Numeric(u8),
     Binary(bool),
@@ -206,7 +210,9 @@ impl<'de> Visitor<'de> for GradeStrVisitor {
             "פטור ללא ניקוד" => Ok(Grade::ExemptionWithoutCredit),
             "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
             "לא השלים" => Ok(Grade::NotComplete),
-            _ if v.parse::<u8>().is_ok() => Ok(Grade::Numeric(v.parse::<u8>().unwrap())),
+            _ if v.parse::<u8>().is_ok() => Ok(Grade::Numeric(
+                v.parse::<u8>().map_err(|e| Err::custom(e.to_string()))?,
+            )),
             _ => {
                 let err: E = Err::invalid_type(Unexpected::Str(v), &self);
                 log::error!("Json deserialize error: {}", err.to_string());

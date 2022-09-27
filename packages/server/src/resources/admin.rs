@@ -1,7 +1,7 @@
-use crate::db;
 use crate::error::AppError;
 use crate::impl_from_request;
 use crate::middleware::auth::Sub;
+use crate::Db;
 use actix_web::dev::Payload;
 use actix_web::{web::Data, FromRequest, HttpMessage, HttpRequest};
 use bson::doc;

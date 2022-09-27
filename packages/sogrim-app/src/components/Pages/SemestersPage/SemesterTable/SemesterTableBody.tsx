@@ -1,7 +1,6 @@
 import { TableBody, TableRow } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useStore } from "../../../../hooks/useStore";
-import { courseFromUserValidations } from "./CourseValidator";
 import { EditableRow } from "./SemesterTableRow/EditableRow";
 import { NewRow } from "./SemesterTableRow/NewRow";
 import { ReadOnlyRow } from "./SemesterTableRow/ReadOnlyRow";
@@ -10,6 +9,7 @@ import {
   RowData,
   UpdateUserDetailsAction,
 } from "../SemesterTabsConsts";
+import { courseFromUserValidations } from "../CourseValidator";
 
 interface SemesterTableBodyProps {
   tableRows: RowData[];

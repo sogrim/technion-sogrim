@@ -12,8 +12,6 @@ use crate::resources::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::toposort;
-
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct DegreeStatus {
     pub course_statuses: Vec<CourseStatus>,
@@ -25,22 +23,16 @@ pub struct DegreeStatus {
 impl DegreeStatus {
     pub fn get_course_status(&self, id: &str) -> Option<&CourseStatus> {
         // returns the first course_status with the given id
-        for course_status in self.course_statuses.iter() {
-            if course_status.course.id == id {
-                return Some(course_status);
-            }
-        }
-        None
+        self.course_statuses
+            .iter()
+            .find(|&course_status| course_status.course.id == id)
     }
 
     pub fn get_mut_course_status(&mut self, id: &str) -> Option<&mut CourseStatus> {
         // returns the first course_status with the given id
-        for course_status in &mut self.course_statuses.iter_mut() {
-            if course_status.course.id == id {
-                return Some(course_status);
-            }
-        }
-        None
+        self.course_statuses
+            .iter_mut()
+            .find(|course_status| course_status.course.id == id)
     }
 
     // This function sets the state for all courses where their state is "in progress" to "complete"
@@ -121,7 +113,7 @@ impl DegreeStatus {
         courses: HashMap<CourseId, Course>,
         malag_courses: Vec<CourseId>,
     ) {
-        let course_banks = toposort::set_order(&catalog.course_banks, &catalog.credit_overflows);
+        let course_banks = catalog.get_bank_traversal_order();
 
         // prepare the data for degree status computation
         self.preprocess(&mut catalog);

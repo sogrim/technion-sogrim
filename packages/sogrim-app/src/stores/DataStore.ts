@@ -6,6 +6,7 @@ import {
   UserDetails,
   CourseState,
   UserSettings,
+  ALL,
 } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
@@ -282,5 +283,12 @@ export class DataStore {
     this.userSettings.compute_in_progress = computeInProgress;
     this.userDetails.modified = true;
     return this.userSettings;
+  };
+
+  isBankTypeOfCourseAll = (type: string | undefined): boolean => {
+    return this.userDetails?.degree_status?.course_bank_requirements?.some(
+      (bankReq) =>
+        bankReq.course_bank_name === type && bankReq.bank_rule_name === ALL
+    );
   };
 }
