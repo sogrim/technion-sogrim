@@ -129,7 +129,7 @@ impl CourseStatus {
     pub fn set_state(&mut self) {
         self.state = self
             .passed()
-            .then(|| CourseState::Complete)
+            .then_some(CourseState::Complete)
             .or(if self.grade.is_none() {
                 Some(CourseState::InProgress)
             } else {
