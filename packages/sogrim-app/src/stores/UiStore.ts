@@ -93,6 +93,6 @@ export class UIStore {
     this.endGameLoading = true;
     setTimeout(() => {
       this.finishEndGameLoading();
-    }, 1500);
+    }, 1000);
   };
 }
