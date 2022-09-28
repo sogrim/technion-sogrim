@@ -39,22 +39,35 @@ async fn test_pdf_parser() {
 }
 
 #[test]
-async fn test_asterisk_course_edge_case() {
+async fn test_asterisk_course_input_from_edge_browser() {
+    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_5.txt")
+        .expect("Something went wrong reading the file");
+    let courses_display_from_pdf =
+        parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
+
+    let course_status = courses_display_from_pdf
+        .iter()
+        .find(|c| c.course.id == "094412")
+        .unwrap();
+
+    assert_eq!(course_status.grade.as_ref().unwrap(), &Grade::Numeric(92));
+    assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_3");
+}
+
+#[test]
+async fn test_asterisk_course_input_from_chrome_browser() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_3.txt")
         .expect("Something went wrong reading the file");
     let courses_display_from_pdf =
         parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
 
-    let edge_case_course = courses_display_from_pdf
+    let course_status = courses_display_from_pdf
         .iter()
         .find(|c| c.course.id == "234129")
         .unwrap();
 
-    assert_eq!(
-        edge_case_course.grade.as_ref().unwrap(),
-        &Grade::Numeric(67)
-    );
-    assert_eq!(edge_case_course.semester.as_ref().unwrap(), "חורף_1");
+    assert_eq!(course_status.grade.as_ref().unwrap(), &Grade::Numeric(67));
+    assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_1");
 }
 
 lazy_static! {
