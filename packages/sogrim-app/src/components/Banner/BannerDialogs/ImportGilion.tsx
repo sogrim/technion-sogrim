@@ -1,4 +1,12 @@
-import { Link, Theme, Tooltip, Typography, Box } from "@mui/material";
+import {
+  Link,
+  Theme,
+  Tooltip,
+  Typography,
+  Box,
+  Backdrop,
+  CircularProgress,
+} from "@mui/material";
 import Button from "@mui/material/Button";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
@@ -14,18 +22,18 @@ import { useAuth } from "../../../hooks/useAuth";
 export interface ImportGilionProps {
   handleSkip: () => void;
   handleClose: () => void;
-  handleError: (msg: string) => void;
 }
 
 export const ImportGilion: React.FC<ImportGilionProps> = ({
   handleSkip,
   handleClose,
-  handleError,
 }) => {
   const [ugText, setUgText] = useState<string | null>(null);
+  const [backdropOpen, setBackdropOpen] = useState(false);
   const { userAuthToken } = useAuth();
 
-  const { mutate, isError } = useUpdateUserUgData(userAuthToken);
+  const { mutate, isError, isLoading, isSuccess } =
+    useUpdateUserUgData(userAuthToken);
 
   const handleChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -33,17 +41,23 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
   };
   const handleSend = () => {
     if (ugText) {
+      setBackdropOpen(true);
       mutate(ugText);
     }
-    handleClose();
   };
 
   useEffect(() => {
-    const errorMsg = isError
-      ? "ייבוא גיליון הציונים כשל. האם העתקתם את כל גיליון הציונים (ולא תעודת ציונים!) , דרך דפדפן כרום?"
-      : "";
-    handleError(errorMsg);
-  }, [handleError, isError]);
+    if (isError) {
+      setBackdropOpen(false);
+    }
+  }, [isError]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      setBackdropOpen(false);
+      handleClose();
+    }
+  }, [isSuccess]);
 
   return (
     <>
@@ -102,6 +116,12 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
           autoFocus
           fullWidth
           margin="dense"
+          error={isError}
+          helperText={
+            isError
+              ? "ייבוא גיליון הציונים כשל. האם העתקתם את כל גיליון הציונים (ולא תעודת ציונים!) , דרך דפדפן כרום?"
+              : ""
+          }
           id="outlined-multiline-static"
           label="העתק לכאן את גיליון הציונים"
           multiline
@@ -133,6 +153,14 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
           בטל
         </Button>
       </Box>
+      {isLoading && (
+        <Backdrop
+          sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={backdropOpen}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
+      )}
     </>
   );
 };
