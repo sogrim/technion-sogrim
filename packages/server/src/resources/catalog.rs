@@ -1,5 +1,6 @@
 use crate::{
     core::{credit_transfer_graph::find_traversal_order, types::CreditOverflow},
+    db::CollectionName,
     resources::course::CourseBank,
 };
 use serde::{self, Deserialize, Serialize};
@@ -47,6 +48,11 @@ impl Catalog {
     }
 }
 
+impl CollectionName for Catalog {
+    fn collection_name() -> &'static str {
+        "Catalogs"
+    }
+}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DisplayCatalog {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
@@ -64,5 +70,11 @@ impl From<Catalog> for DisplayCatalog {
             total_credit: catalog.total_credit,
             description: catalog.description,
         }
+    }
+}
+
+impl CollectionName for DisplayCatalog {
+    fn collection_name() -> &'static str {
+        "Catalogs"
     }
 }

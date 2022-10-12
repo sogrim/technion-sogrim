@@ -1,6 +1,6 @@
 #[macro_export]
 macro_rules! impl_from_request {
-    (resource=$resource:ty, getter=$get_fn:ident) => {
+    (for $resource:ty) => {
         impl FromRequest for $resource {
             type Error = AppError;
             type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
@@ -18,7 +18,7 @@ macro_rules! impl_from_request {
                     };
                     let optional_sub = req.extensions().get::<Sub>().cloned();
                     match optional_sub {
-                        Some(key) => db.$get_fn(&key).await,
+                        Some(key) => db.get::<$resource>(&key).await,
                         None => Err(AppError::Middleware(
                             "Sub not found in request extensions".into(),
                         )),

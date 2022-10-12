@@ -1,5 +1,6 @@
 use super::catalog::DisplayCatalog;
 use crate::core::degree_status::DegreeStatus;
+use crate::db::CollectionName;
 use crate::error::AppError;
 use crate::impl_from_request;
 use crate::middleware::auth::Sub;
@@ -31,4 +32,10 @@ pub struct User {
     pub settings: UserSettings,
 }
 
-impl_from_request!(resource = User, getter = get_user_by_id);
+impl CollectionName for User {
+    fn collection_name() -> &'static str {
+        "Users"
+    }
+}
+
+impl_from_request!(for User);

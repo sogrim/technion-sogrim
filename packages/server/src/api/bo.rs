@@ -15,7 +15,7 @@ use bson::doc;
 
 #[get("/courses")]
 pub async fn get_all_courses(_: Admin, db: Data<Db>) -> Result<HttpResponse, AppError> {
-    db.get_all_courses()
+    db.get_all::<Course>()
         .await
         .map(|courses| HttpResponse::Ok().json(courses))
 }
@@ -26,7 +26,7 @@ pub async fn get_course_by_id(
     id: Path<String>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    db.get_course_by_id(&id)
+    db.get::<Course>(id.as_str())
         .await
         .map(|course| HttpResponse::Ok().json(course))
 }
@@ -40,7 +40,7 @@ pub async fn create_or_update_course(
 ) -> Result<HttpResponse, AppError> {
     let course_doc = bson::to_document(&course).map_err(|e| AppError::Bson(e.to_string()))?;
     let document = doc! {"$setOnInsert" : course_doc};
-    db.find_and_update_course(&id, document)
+    db.update::<Course>(id.as_str(), document)
         .await
         .map(|course| HttpResponse::Ok().json(course))
 }
@@ -51,7 +51,7 @@ pub async fn delete_course(
     id: Path<String>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    db.delete_course(&id)
+    db.delete::<Course>(id.as_str())
         .await
         .map(|_| HttpResponse::Ok().finish())
 }
@@ -67,7 +67,7 @@ pub async fn get_catalog_by_id(
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
     let obj_id = bson::oid::ObjectId::from_str(&id).map_err(|e| AppError::Bson(e.to_string()))?;
-    db.get_catalog_by_id(&obj_id)
+    db.get::<Catalog>(&obj_id)
         .await
         .map(|course| HttpResponse::Ok().json(course))
 }
@@ -83,7 +83,7 @@ pub async fn create_or_update_catalog(
     let obj_id = bson::oid::ObjectId::from_str(&id).map_err(|e| AppError::Bson(e.to_string()))?;
     let catalog_doc = bson::to_document(&catalog).map_err(|e| AppError::Bson(e.to_string()))?;
     let document = doc! {"$setOnInsert" : catalog_doc};
-    db.find_and_update_catalog(&obj_id, document)
+    db.update::<Catalog>(&obj_id, document)
         .await
         .map(|catalog| HttpResponse::Ok().json(catalog))
 }

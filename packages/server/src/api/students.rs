@@ -9,12 +9,12 @@ use bson::{doc, to_bson};
 
 use crate::{
     core::{degree_status::DegreeStatus, parser},
-    db::Db,
+    db::{Db, FilterType},
     error::AppError,
     middleware::auth::Sub,
     resources::{
-        catalog::DisplayCatalog,
-        course,
+        catalog::{Catalog, DisplayCatalog},
+        course::{self, Course, Malags},
         user::{User, UserDetails, UserSettings},
     },
 };
@@ -24,7 +24,7 @@ pub async fn get_all_catalogs(
     _: User, //TODO think about whether this is necessary
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    db.get_all_catalogs()
+    db.get_all::<DisplayCatalog>()
         .await
         .map(|catalogs| HttpResponse::Ok().json(catalogs))
 }
@@ -41,10 +41,9 @@ pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppEr
         sub: user_id,
         ..Default::default()
     };
-    let document =
-        doc! {"$setOnInsert" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
+    let document = doc! {"$setOnInsert" : to_bson(&user)?};
 
-    let updated_user = db.find_and_update_user(&user.sub, document).await?;
+    let updated_user = db.update::<User>(&user.sub, document).await?;
 
     Ok(HttpResponse::Ok().json(updated_user))
 }
@@ -55,17 +54,13 @@ pub async fn add_catalog(
     catalog_id: String,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    let obj_id =
-        bson::oid::ObjectId::from_str(&catalog_id).map_err(|e| AppError::Bson(e.to_string()))?;
-    let catalog = db.get_catalog_by_id(&obj_id).await?;
+    let obj_id = bson::oid::ObjectId::from_str(&catalog_id)?;
+    let catalog = db.get::<Catalog>(&obj_id).await?;
     user.details.catalog = Some(DisplayCatalog::from(catalog));
     user.details.degree_status = DegreeStatus::default();
     user.details.modified = true;
     let updated_user = db
-        .find_and_update_user(
-            &user.sub.clone(),
-            doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?},
-        )
+        .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
         .await?;
     Ok(HttpResponse::Ok().json(updated_user))
 }
@@ -80,11 +75,15 @@ pub async fn get_courses_by_filter(
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
     match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
-            let courses = db.get_courses_filtered_by_name(name).await?;
+            let courses = db
+                .get_filtered::<Course>(name, FilterType::Regex, "name")
+                .await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (None, Some(number)) => {
-            let courses = db.get_courses_filtered_by_number(number).await?;
+            let courses = db
+                .get_filtered::<Course>(number, FilterType::Regex, "_id")
+                .await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (Some(_), Some(_)) => Err(AppError::BadRequest("Invalid query params".into())),
@@ -102,10 +101,7 @@ pub async fn add_courses(
     user.details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
     user.details.modified = true;
     let updated_user = db
-        .find_and_update_user(
-            &user.sub.clone(),
-            doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?},
-        )
+        .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
         .await?;
     Ok(HttpResponse::Ok().json(updated_user))
 }
@@ -120,12 +116,22 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         .ok_or_else(|| AppError::InternalServer("No catalog chosen for user".into()))?
         .id;
 
-    let catalog = db.get_catalog_by_id(&catalog_id).await?;
+    let catalog = db.get::<Catalog>(&catalog_id).await?;
 
     user.details.modified = false;
 
-    let vec_courses = db.get_courses_by_ids(catalog.get_all_course_ids()).await?;
-    let malag_courses = db.get_all_malags().await?[0].malag_list.clone(); // The collection malags contain one item with the list of all malags
+    let vec_courses = db
+        .get_filtered::<Course>(catalog.get_all_course_ids(), FilterType::In, "_id")
+        .await?;
+
+    // The collection "Malags" should contain a single document with the list of all malags
+    let malag_course_ids = db
+        .get_all::<Malags>()
+        .await?
+        .into_iter()
+        .last() // Safer then indexing because it won't panic if the collection is empty
+        .map(|obj| obj.malag_list)
+        .unwrap_or_default();
 
     let mut course_list = Vec::new();
     if user.settings.compute_in_progress {
@@ -134,14 +140,14 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
 
     user.details
         .degree_status
-        .compute(catalog, course::vec_to_map(vec_courses), malag_courses);
+        .compute(catalog, course::vec_to_map(vec_courses), malag_course_ids);
 
     if user.settings.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);
     }
     let user_id = user.sub.clone();
-    let document = doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
-    db.find_and_update_user(&user_id, document).await?;
+    let document = doc! {"$set" : to_bson(&user)?};
+    db.update::<User>(&user_id, document).await?;
     Ok(HttpResponse::Ok().json(user))
 }
 
@@ -154,8 +160,8 @@ pub async fn update_details(
 ) -> Result<HttpResponse, AppError> {
     let user_id = user.sub.clone();
     user.details = details.into_inner();
-    let document = doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
-    db.find_and_update_user(&user_id, document).await?;
+    let document = doc! {"$set" : to_bson(&user)?};
+    db.update::<User>(&user_id, document).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -167,7 +173,7 @@ pub async fn update_settings(
 ) -> Result<HttpResponse, AppError> {
     let user_id = user.sub.clone();
     user.settings = settings.into_inner();
-    let document = doc! {"$set" : to_bson(&user).map_err(|e| AppError::Bson(e.to_string()))?};
-    db.find_and_update_user(&user_id, document).await?;
+    let document = doc! {"$set" : to_bson(&user)?};
+    db.update::<User>(&user_id, document).await?;
     Ok(HttpResponse::Ok().finish())
 }
