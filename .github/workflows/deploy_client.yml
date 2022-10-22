@@ -17,5 +17,5 @@ jobs:
         with:
           heroku_api_key: ${{secrets.HEROKU_CLIENT_API_KEY}}
           heroku_app_name: "sogrim-app"
-          heroku_email: "nissan.ohana@gmail.com"
+          heroku_email: "benick12@gmail.com"
           appdir: "packages/sogrim-app"
