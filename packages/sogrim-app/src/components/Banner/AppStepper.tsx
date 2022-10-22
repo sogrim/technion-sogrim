@@ -14,7 +14,6 @@ import { useAuth } from "../../hooks/useAuth";
 import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
 import { observer } from "mobx-react-lite";
 import useUserState from "../../hooks/apiHooks/useUserState";
-import { ErrorToast } from "../Toasts/ErrorToast";
 import { CircularProgress } from "@mui/material";
 
 const steps = [
@@ -40,7 +39,7 @@ const AppStepperComp: React.FC = () => {
 
   const [activeStep, setActiveStep] = React.useState<number>(0);
   const {
-    uiStore: { computeUserRegistrationState, setErrorMsg, errorMsg },
+    uiStore: { computeUserRegistrationState },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -137,10 +136,6 @@ const AppStepperComp: React.FC = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const handleError = (msg: string) => {
-    setErrorMsg(msg);
-  };
-
   return (
     <>
       {!skipLoading ? (
@@ -189,7 +184,6 @@ const AppStepperComp: React.FC = () => {
               <ImportGilion
                 handleSkip={coursesHandleSkip}
                 handleClose={coursesHandleClose}
-                handleError={handleError}
               />
             }
             handleClose={coursesHandleClose}
@@ -200,7 +194,6 @@ const AppStepperComp: React.FC = () => {
             handleClose={catalogsHandleClose}
             open={catalogsModalOpen}
           />
-          <ErrorToast msg={errorMsg} />
         </Box>
       ) : (
         <CircularProgress />
