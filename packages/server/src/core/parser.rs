@@ -90,7 +90,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     let mut vec_courses = courses.into_values().collect::<Vec<_>>();
 
     // Fix the grades for said courses
-    set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses.clone());
+    set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses);
 
     vec_courses.append(&mut sport_courses);
 
@@ -166,7 +166,7 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
     let name = clean_line.split_whitespace().collect::<Vec<&str>>()[1..index].join(" ");
 
     let grade_str = clean_line
-        .split(' ')
+        .split_whitespace()
         .last()
         .ok_or_else(|| AppError::Parser("Bad Format".into()))?
         .trim();

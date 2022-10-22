@@ -29,3 +29,21 @@ impl From<Client> for Db {
         Self { client }
     }
 }
+
+pub enum FilterType {
+    Regex,
+    In,
+}
+
+impl AsRef<str> for FilterType {
+    fn as_ref(&self) -> &str {
+        match self {
+            FilterType::Regex => "$regex",
+            FilterType::In => "$in",
+        }
+    }
+}
+
+pub trait CollectionName {
+    fn collection_name() -> &'static str;
+}

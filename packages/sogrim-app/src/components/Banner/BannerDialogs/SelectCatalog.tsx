@@ -7,6 +7,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import {
   Autocomplete,
   Box,
+  CircularProgress,
   FormControl,
   Link,
   TextField,
@@ -94,7 +95,21 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
             options={catalogs}
             getOptionLabel={(option: Catalog) => option.name}
             renderInput={(params) => (
-              <TextField {...params} label="בחר קטלוג" />
+              <TextField
+                {...params}
+                label="בחר קטלוג"
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <React.Fragment>
+                      {isLoading ? (
+                        <CircularProgress color="inherit" size={20} />
+                      ) : null}
+                      {params.InputProps.endAdornment}
+                    </React.Fragment>
+                  ),
+                }}
+              />
             )}
           />
         </FormControl>

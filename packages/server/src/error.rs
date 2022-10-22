@@ -13,6 +13,24 @@ pub enum AppError {
     MongoDriver(String),    // 500
 }
 
+impl From<mongodb::error::Error> for AppError {
+    fn from(err: mongodb::error::Error) -> Self {
+        AppError::MongoDriver(err.to_string())
+    }
+}
+
+impl From<bson::ser::Error> for AppError {
+    fn from(err: bson::ser::Error) -> Self {
+        AppError::Bson(err.to_string())
+    }
+}
+
+impl From<bson::oid::Error> for AppError {
+    fn from(err: bson::oid::Error) -> Self {
+        AppError::Bson(err.to_string())
+    }
+}
+
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         let (status_code, error) = match self {

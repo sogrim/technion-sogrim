@@ -7,7 +7,7 @@ use crate::db::Db;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
-use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade};
+use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Malags};
 use actix_rt::test;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
@@ -39,22 +39,35 @@ async fn test_pdf_parser() {
 }
 
 #[test]
-async fn test_asterisk_course_edge_case() {
+async fn test_asterisk_course_input_from_edge_browser() {
+    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_5.txt")
+        .expect("Something went wrong reading the file");
+    let courses_display_from_pdf =
+        parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
+
+    let course_status = courses_display_from_pdf
+        .iter()
+        .find(|c| c.course.id == "094412")
+        .unwrap();
+
+    assert_eq!(course_status.grade.as_ref().unwrap(), &Grade::Numeric(92));
+    assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_3");
+}
+
+#[test]
+async fn test_asterisk_course_input_from_chrome_browser() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_3.txt")
         .expect("Something went wrong reading the file");
     let courses_display_from_pdf =
         parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
 
-    let edge_case_course = courses_display_from_pdf
+    let course_status = courses_display_from_pdf
         .iter()
         .find(|c| c.course.id == "234129")
         .unwrap();
 
-    assert_eq!(
-        edge_case_course.grade.as_ref().unwrap(),
-        &Grade::Numeric(67)
-    );
-    assert_eq!(edge_case_course.semester.as_ref().unwrap(), "חורף_1");
+    assert_eq!(course_status.grade.as_ref().unwrap(), &Grade::Numeric(67));
+    assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_1");
 }
 
 lazy_static! {
@@ -434,7 +447,7 @@ async fn get_catalog(catalog: &str) -> Catalog {
     dotenv().ok();
     let db = Db::new().await;
     let obj_id = bson::oid::ObjectId::from_str(catalog).expect("failed to create oid");
-    db.get_catalog_by_id(&obj_id)
+    db.get::<Catalog>(&obj_id)
         .await
         .expect("failed to get catalog")
 }
@@ -443,10 +456,13 @@ async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) ->
     dotenv().ok();
     let db = Db::new().await;
     let vec_courses = db
-        .get_all_courses()
+        .get_all::<Course>()
         .await
         .expect("failed to get all courses");
-    let malag_courses = db.get_all_malags().await.expect("failed to get all malags")[0]
+    let malag_courses = db
+        .get_all::<Malags>()
+        .await
+        .expect("failed to get all malags")[0]
         .malag_list
         .clone();
     degree_status.compute(catalog, course::vec_to_map(vec_courses), malag_courses);

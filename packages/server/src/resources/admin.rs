@@ -1,3 +1,4 @@
+use crate::db::CollectionName;
 use crate::error::AppError;
 use crate::impl_from_request;
 use crate::middleware::auth::Sub;
@@ -17,4 +18,10 @@ pub struct Admin {
     pub faculty: String,
 }
 
-impl_from_request!(resource = Admin, getter = get_admin_by_id);
+impl CollectionName for Admin {
+    fn collection_name() -> &'static str {
+        "Admins"
+    }
+}
+
+impl_from_request!(for Admin);

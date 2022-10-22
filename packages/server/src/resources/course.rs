@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use crate::core::types::Rule;
+use crate::db::CollectionName;
 
 pub type CourseId = String;
 
@@ -13,6 +14,12 @@ pub struct Course {
     pub id: CourseId,
     pub credit: f32,
     pub name: String,
+}
+
+impl CollectionName for Course {
+    fn collection_name() -> &'static str {
+        "Courses"
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -165,6 +172,12 @@ pub struct Malags {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id: bson::oid::ObjectId,
     pub malag_list: Vec<CourseId>,
+}
+
+impl CollectionName for Malags {
+    fn collection_name() -> &'static str {
+        "Malags"
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
