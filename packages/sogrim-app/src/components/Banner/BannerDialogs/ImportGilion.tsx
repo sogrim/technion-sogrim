@@ -53,7 +53,7 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
       setBackdropOpen(false);
       handleClose();
     }
-  }, [isError, isSuccess]);
+  }, [isError, isSuccess, handleClose]);
 
   return (
     <>
