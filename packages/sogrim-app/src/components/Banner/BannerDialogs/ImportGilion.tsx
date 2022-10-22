@@ -49,15 +49,11 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
   useEffect(() => {
     if (isError) {
       setBackdropOpen(false);
-    }
-  }, [isError]);
-
-  useEffect(() => {
-    if (isSuccess) {
+    } else if (isSuccess) {
       setBackdropOpen(false);
       handleClose();
     }
-  }, [isSuccess]);
+  }, [isError, isSuccess]);
 
   return (
     <>
@@ -118,9 +114,18 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
           margin="dense"
           error={isError}
           helperText={
-            isError
-              ? "ייבוא גיליון הציונים כשל. האם העתקתם את כל גיליון הציונים (ולא תעודת ציונים!) , דרך דפדפן כרום?"
-              : ""
+            isError ? (
+              <>
+                <span style={{ fontSize: "11.5px" }}>
+                  {" "}
+                  {
+                    "ייבוא גיליון הציונים כשל. האם העתקתם את כל גיליון הציונים (ולא תעודת ציונים!) , דרך אחד מהדפדפנים הנתמכים?"
+                  }{" "}
+                </span>
+                <img src={chrome} alt={"chrome"} width="15px" height="15px" />
+                <img src={edge} alt={"edge"} width="15px" height="15px" />
+              </>
+            ) : null
           }
           id="outlined-multiline-static"
           label="העתק לכאן את גיליון הציונים"
