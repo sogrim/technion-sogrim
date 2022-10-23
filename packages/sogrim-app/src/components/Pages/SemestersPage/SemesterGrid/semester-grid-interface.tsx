@@ -39,7 +39,7 @@ export const columns: GridColumns = [
     field: "credit",
     headerName: "נק״ז",
     type: "number",
-    width: 125,
+    width: 95,
     editable: true,
     headerAlign: "center",
     align: "center",
@@ -47,7 +47,7 @@ export const columns: GridColumns = [
   {
     field: "grade",
     headerName: "ציון",
-    width: 200,
+    width: 150,
     editable: true,
     headerAlign: "center",
     align: "center",
@@ -57,7 +57,7 @@ export const columns: GridColumns = [
   {
     field: "type",
     headerName: "קטגוריה",
-    width: 170,
+    width: 250,
     editable: true,
     headerAlign: "center",
     align: "center",
