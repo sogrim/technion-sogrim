@@ -57,7 +57,6 @@ pub async fn add_catalog(
     let obj_id = bson::oid::ObjectId::from_str(&catalog_id)?;
     let catalog = db.get::<Catalog>(&obj_id).await?;
     user.details.catalog = Some(DisplayCatalog::from(catalog));
-    user.details.degree_status = DegreeStatus::default();
     user.details.modified = true;
     let updated_user = db
         .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
