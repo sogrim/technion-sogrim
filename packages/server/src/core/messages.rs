@@ -1,18 +1,21 @@
 use std::fmt::Write;
 
+use crate::resources::course::Course;
+
 const ZERO: f32 = 0.0;
 const HALF: f32 = 0.5;
 const SINGLE: f32 = 1.0;
 
-pub fn common_replacements_msg(name: &str) -> String {
+pub fn common_replacements_msg(course: &Course) -> String {
     format!(
-        "הנחנו כי קורס זה מחליף את הקורס {} בעקבות החלפות נפוצות. שימו לב כי נדרש אישור מהרכזות בשביל החלפה זו",
-        name
+        "הנחנו כי קורס זה מחליף את הקורס {} ({}) בעקבות החלפות נפוצות. שימו לב כי נדרש אישור מהרכזות בשביל החלפה זו",
+        course.name,
+        course.id
     )
 }
 
-pub fn catalog_replacements_msg(name: &str) -> String {
-    format!("קורס זה מחליף את הקורס {}", name)
+pub fn catalog_replacements_msg(course: &Course) -> String {
+    format!("קורס זה מחליף את הקורס {} ({})", course.name, course.id)
 }
 
 pub fn credit_overflow_msg(overflow: f32, from: &str, to: &str) -> String {
