@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useStore } from "../../../hooks/useStore";
 import { observer } from "mobx-react-lite";
 import { ComputeInProgressToggle } from "./ComputeInProgressToggle";
+import { FormModal } from "../../Commom/FormModal";
+import { SelectCatalog } from "../BannerDialogs/SelectCatalog";
 
 const DegreeMainStatusComp: React.FC = () => {
   const {
@@ -15,6 +17,7 @@ const DegreeMainStatusComp: React.FC = () => {
   const [pointsDone, setPointsDone] = useState<number>(0);
   const [catalogName, setCatalogName] = useState<string>("");
 
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
   const [showMainStatus, setShowMainStatus] = useState<boolean>(false);
   const [computeInProgress, setComputeInProgress] = useState<boolean>(
     userSettings ? userSettings.compute_in_progress : false
@@ -79,9 +82,20 @@ const DegreeMainStatusComp: React.FC = () => {
         <Typography sx={{ fontSize: 22 }} color="text.primary">
           {`השלמת ${pointsDone} מתוך ${totalCredit} נקודות`}
         </Typography>
-        <Button sx={{ display: "flex", justifyContent: "center" }} size="small">
+        <Button
+          sx={{ display: "flex", justifyContent: "center" }}
+          size="small"
+          onClick={() => setCatalogModalOpen(true)}
+        >
           {catalogName}
         </Button>
+        <FormModal
+          dialogContent={
+            <SelectCatalog handleClose={() => setCatalogModalOpen(false)} />
+          }
+          handleClose={() => setCatalogModalOpen(false)}
+          open={catalogModalOpen}
+        />
       </CardContent>
     </Card>
   ) : null;
