@@ -104,7 +104,7 @@ fn set_grades_for_uncompleted_courses(
     courses: &mut [CourseStatus],
     asterisk_courses: Vec<CourseStatus>,
 ) {
-    // The canditate course statuses are those with uncomplete (לא השלים) grades.
+    // The candidate course statuses are those with uncompleted (לא השלים) grades.
     // For each uncompleted course status, we iterate the asterisk list in reverse to find
     // the closest (most chronologically advanced) course status with a grade (anything other than NotComplete (לא השלים)).
     // This course status will replace the old one.

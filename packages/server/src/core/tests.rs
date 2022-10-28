@@ -407,7 +407,7 @@ async fn test_duplicated_courses() {
     .await;
 
     // The user didn't take פיסיקה 1מ, therefore the algorithm adds it automatically to the course list
-    // This code Simulates addition of פיסיקה 1 manuually by the user.
+    // This code Simulates addition of פיסיקה 1 manually by the user.
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
             id: "114051".to_string(),
