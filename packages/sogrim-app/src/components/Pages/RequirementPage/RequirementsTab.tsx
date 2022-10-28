@@ -1,13 +1,13 @@
 import { Box } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React from "react";
-import { BankRequirmentsTable } from "./BankRequirmentsTable/BankRequirmentsTable";
+import { BankRequirementsTable } from "./BankRequirementsTable/BankRequirementsTable";
 import { CreditOverflow } from "./CreditOverflow";
 import { ExemptionsAndCredits } from "./ExemptionsAndCredits";
 
-interface RequirmentsTabProps {}
+interface RequirementsTabProps {}
 
-const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
+const RequirementsPageComp: React.FC<RequirementsTabProps> = () => {
   return (
     <Box
       sx={{
@@ -18,7 +18,7 @@ const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
         gap: 3,
       }}
     >
-      <BankRequirmentsTable />
+      <BankRequirementsTable />
       <Box sx={{ display: "flex", gap: 4, flexDirection: "column" }}>
         <CreditOverflow />
         <ExemptionsAndCredits />
@@ -27,4 +27,4 @@ const RequirmentsPageComp: React.FC<RequirmentsTabProps> = () => {
   );
 };
 
-export const RequirmentsPage = observer(RequirmentsPageComp);
+export const RequirementsPage = observer(RequirementsPageComp);

@@ -6,7 +6,7 @@ import StepLabel from "@mui/material/StepLabel";
 import StepContent from "@mui/material/StepContent";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
-import { FormModal } from "../Commom/FormModal";
+import { FormModal } from "../Common/FormModal";
 import { SelectCatalog } from "./BannerDialogs/SelectCatalog";
 import { ImportGilion } from "./BannerDialogs/ImportGilion";
 import { useStore } from "../../hooks/useStore";
@@ -32,8 +32,8 @@ const steps = [
 ];
 
 const AppStepperComp: React.FC = () => {
-  const [coursesModalOpen, coursesModalsetOpen] = React.useState(false);
-  const [catalogsModalOpen, catalogsModalsetOpen] = React.useState(false);
+  const [coursesModalOpen, setCoursesModalOpen] = React.useState(false);
+  const [catalogsModalOpen, setCatalogsModalOpen] = React.useState(false);
   const [triggerCompute, setTriggerCompute] = React.useState(false);
   const [skipLoading, setSkipLoading] = React.useState(false);
 
@@ -96,26 +96,26 @@ const AppStepperComp: React.FC = () => {
   }, [tcData, tcIsLoading, tcIsError]);
 
   const coursesHandleClickOpen = () => {
-    coursesModalsetOpen(true);
+    setCoursesModalOpen(true);
   };
 
   const coursesHandleClose = () => {
-    coursesModalsetOpen(false);
+    setCoursesModalOpen(false);
   };
 
   const coursesHandleSkip = () => {
-    coursesModalsetOpen(false);
+    setCoursesModalOpen(false);
     setActiveStep(3);
     setTriggerCompute(true);
     setSkipLoading(true);
   };
 
   const catalogsHandleClickOpen = () => {
-    catalogsModalsetOpen(true);
+    setCatalogsModalOpen(true);
   };
 
   const catalogsHandleClose = () => {
-    catalogsModalsetOpen(false);
+    setCatalogsModalOpen(false);
   };
 
   const handleTriggerCompute = () => {

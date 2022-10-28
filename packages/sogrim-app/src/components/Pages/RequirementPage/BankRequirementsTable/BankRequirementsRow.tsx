@@ -17,13 +17,13 @@ import {
 import { LinearProgressBar } from "./LinearProgressBar";
 import { BankChip } from "./BankChip";
 import { useStore } from "../../../../hooks/useStore";
-import { BankRequirmentContent } from "./BankRequirmentContent";
-interface BankRequirmentRowProps {
-  bankRequirment: CourseBankReq;
+import { BankRequirementContent } from "./BankRequirementContent";
+interface BankRequirementRowProps {
+  bankRequirement: CourseBankReq;
 }
 
-const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
-  bankRequirment,
+const BankRequirementRowComp: React.FC<BankRequirementRowProps> = ({
+  bankRequirement,
 }) => {
   const {
     dataStore: { userDetails, generateRowsForBank },
@@ -32,11 +32,11 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
   const bankCourses = useMemo(
     () =>
       generateRowsForBank(
-        bankRequirment?.course_bank_name,
+        bankRequirement?.course_bank_name,
         userDetails?.degree_status?.course_statuses
       ),
     [
-      bankRequirment?.course_bank_name,
+      bankRequirement?.course_bank_name,
       generateRowsForBank,
       userDetails?.degree_status?.course_statuses,
     ]
@@ -49,7 +49,7 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
     course_requirement,
     bank_rule_name,
     completed,
-  } = bankRequirment;
+  } = bankRequirement;
 
   const progress =
     course_requirement === null && credit_requirement === null
@@ -67,8 +67,8 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
     <Accordion sx={{ minWidth: 700 }}>
       <AccordionSummary
         expandIcon={<ExpandMore />}
-        aria-controls="req-row-collaps"
-        id="req-row-collaps"
+        aria-controls="req-row-collapse"
+        id="req-row-collapse"
       >
         <Box
           sx={{
@@ -87,11 +87,11 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
             >
               <Typography fontWeight={"bold"}>{course_bank_name}</Typography>
               <BankChip completed={!!completed} />
-              {bankRequirment.message && (
+              {bankRequirement.message && (
                 <Tooltip
                   title={
                     <Typography fontSize={"16px"}>
-                      {bankRequirment.message}
+                      {bankRequirement.message}
                     </Typography>
                   }
                   arrow
@@ -114,10 +114,10 @@ const BankRequirmentRowComp: React.FC<BankRequirmentRowProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails>
-        <BankRequirmentContent bankCourses={bankCourses} />
+        <BankRequirementContent bankCourses={bankCourses} />
       </AccordionDetails>
     </Accordion>
   );
 };
 
-export const BankRequirmentRow = observer(BankRequirmentRowComp);
+export const BankRequirementRow = observer(BankRequirementRowComp);

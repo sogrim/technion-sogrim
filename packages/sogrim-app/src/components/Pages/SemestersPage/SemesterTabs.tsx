@@ -6,7 +6,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useStore } from "../../../hooks/useStore";
 import { SemesterOptions } from "../../../types/ui-types";
 import { TabPanel } from "../../AppPages/TabPanel";
-import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
+import LoadingEndGameSkeleton from "../../Common/LoadingEndGameSkeleton";
 import { SemesterGrid } from "./SemesterGrid/SemesterGrid";
 import { SemesterOptionsButton } from "./SemesterOptionsButton";
 

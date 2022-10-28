@@ -19,8 +19,8 @@ export class DataStore {
     makeAutoObservable(this, { rootStore: false });
   }
 
-  updateStoreUserDetails = (newUserDitails: UserDetails) => {
-    this.userDetails = newUserDitails;
+  updateStoreUserDetails = (newUserDetails: UserDetails) => {
+    this.userDetails = newUserDetails;
   };
 
   updateStoreUserSettings = (newUserSettings: UserSettings) => {
@@ -41,9 +41,9 @@ export class DataStore {
     );
     const allSemesters = Array.from(allSemestersSet);
     allSemesters.sort((first, second) => {
-      let firstSplited = first.split("_");
-      let secondSplited = second.split("_");
-      return Number(firstSplited[1]) >= Number(secondSplited[1]) ? 1 : -1;
+      let firstSplitted = first.split("_");
+      let secondSplitted = second.split("_");
+      return Number(firstSplitted[1]) >= Number(secondSplitted[1]) ? 1 : -1;
     });
     return allSemesters;
   };

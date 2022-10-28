@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { GoogleClinetSession } from "../../types/auth-types";
+import { GoogleClientSession } from "../../types/auth-types";
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID!;
 
@@ -15,7 +15,7 @@ export default function GoogleAuth() {
       if (res.credential) {
         setCredential(res);
       }
-      setGoogleSession(GoogleClinetSession.DONE);
+      setGoogleSession(GoogleClientSession.DONE);
     };
 
     const initializeGsi = () => {

@@ -15,11 +15,11 @@ enum IgnoreIconState {
   ShowV = 2,
 }
 
-interface BankRequirmentCourseProps {
+interface BankRequirementCourseProps {
   course: RowData;
 }
 
-const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
+const BankRequirementCourseRowComp: React.FC<BankRequirementCourseProps> = ({
   course,
 }) => {
   const [showIgnoreIcon, setShowIgnoreIcon] = useState<IgnoreIconState>(
@@ -158,4 +158,4 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
   );
 };
 
-export const BankRequirmentCourseRow = observer(BankRequirmentCourseRowComp);
+export const BankRequirementCourseRow = observer(BankRequirementCourseRowComp);

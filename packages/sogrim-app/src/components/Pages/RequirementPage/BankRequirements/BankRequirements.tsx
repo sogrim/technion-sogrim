@@ -2,12 +2,12 @@ import React from "react";
 import { observer } from "mobx-react-lite";
 import useUserState from "../../../../hooks/apiHooks/useUserState";
 import { CourseBankReq } from "../../../../types/data-types";
-import { RequirmentItem } from "./RequirmentItem";
+import { RequirementItem } from "./RequirementItem";
 import { Grid, Box } from "@mui/material";
 
-interface BankRequirmentsProps {}
+interface BankRequirementsProps {}
 
-const BankRequirmentsComp: React.FC<BankRequirmentsProps> = () => {
+const BankRequirementsComp: React.FC<BankRequirementsProps> = () => {
   const { data: userState } = useUserState();
 
   const banReqList: CourseBankReq[] =
@@ -23,7 +23,7 @@ const BankRequirmentsComp: React.FC<BankRequirmentsProps> = () => {
         columns={{ xs: 3, md: 3 }}
       >
         {banReqList?.map((banReq, id) => (
-          <RequirmentItem key={id} bankRequirment={banReq} />
+          <RequirementItem key={id} bankRequirement={banReq} />
         ))}
       </Grid>
     </Box>
@@ -36,4 +36,4 @@ const sxPages = {
   justifyContent: "center",
 };
 
-export const BankRequirments = observer(BankRequirmentsComp);
+export const BankRequirements = observer(BankRequirementsComp);

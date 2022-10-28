@@ -54,7 +54,7 @@ export const headCells: readonly HeadCell[] = [
     id: "state",
     numeric: true,
     disablePadding: false,
-    label: "סטאטוס",
+    label: "סטטוס",
   },
 ];
 

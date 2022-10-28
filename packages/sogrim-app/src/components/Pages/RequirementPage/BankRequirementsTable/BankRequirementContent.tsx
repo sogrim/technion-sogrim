@@ -3,13 +3,13 @@ import { observer } from "mobx-react-lite";
 import React from "react";
 import { RowData } from "../../SemestersPage/SemesterTabsConsts";
 
-import { BankRequirmentCourseRow } from "./BankRequirmentCourseRow";
+import { BankRequirementCourseRow } from "./BankRequirementCourseRow";
 
-interface BankRequirmentContentProps {
+interface BankRequirementContentProps {
   bankCourses: RowData[];
 }
 
-const BankRequirmentContentComp: React.FC<BankRequirmentContentProps> = ({
+const BankRequirementContentComp: React.FC<BankRequirementContentProps> = ({
   bankCourses,
 }) => {
   // TODO export to util function
@@ -25,7 +25,7 @@ const BankRequirmentContentComp: React.FC<BankRequirmentContentProps> = ({
         }}
       >
         {bankCourses.map((course, idx) => (
-          <BankRequirmentCourseRow
+          <BankRequirementCourseRow
             key={generateKey(course, idx)}
             course={course}
           />
@@ -35,4 +35,4 @@ const BankRequirmentContentComp: React.FC<BankRequirmentContentProps> = ({
   );
 };
 
-export const BankRequirmentContent = observer(BankRequirmentContentComp);
+export const BankRequirementContent = observer(BankRequirementContentComp);
