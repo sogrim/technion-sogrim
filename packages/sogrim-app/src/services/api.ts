@@ -57,17 +57,24 @@ export const putUserCatalog = async (
   authToken: string,
   userCatalogId: string
 ): Promise<UserState> => {
+  const fallback: UserState = {} as UserState;
   let res: UserState;
-
-  res = await axios.put(
-    `${API_URL}/students/catalog`,
-    userCatalogId || ({} as UserState),
-    {
-      headers: {
-        authorization: `${authToken}`,
-      },
-    }
-  );
+  try {
+    res =
+      (
+        await axios.put(
+          `${API_URL}/students/catalog`,
+          userCatalogId || ({} as UserState),
+          {
+            headers: {
+              authorization: `${authToken}`,
+            },
+          }
+        )
+      ).data || fallback;
+  } catch {
+    res = fallback;
+  }
   return res;
 };
 
