@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useStore } from "../../../hooks/useStore";
 import { observer } from "mobx-react-lite";
 import { ComputeInProgressToggle } from "./ComputeInProgressToggle";
-import { FormModal } from "../../Commom/FormModal";
+import { FormModal } from "../../Common/FormModal";
 import { SelectCatalog } from "../BannerDialogs/SelectCatalog";
 
 const DegreeMainStatusComp: React.FC = () => {
@@ -65,7 +65,7 @@ const DegreeMainStatusComp: React.FC = () => {
       <CardContent>
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
-            סטאטוס תואר
+            סטטוס תואר
           </Typography>
           <ComputeInProgressToggle
             computeInProgress={computeInProgress}

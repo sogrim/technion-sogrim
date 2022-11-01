@@ -312,7 +312,7 @@ const NewRowComp: React.FC<NewRowProps> = ({
         variant="outlined"
         size="small"
         type="number"
-        helperText="סטאטוס"
+        helperText="סטטוס"
       />
       <Divider orientation="vertical" variant="middle" flexItem />
 

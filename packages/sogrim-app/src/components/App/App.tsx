@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
 import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
 import { getAppTheme } from "../../themes/theme";
-import { GoogleClinetSession as GoogleClientSession } from "../../types/auth-types";
+import { GoogleClientSession } from "../../types/auth-types";
 import { Footer } from "../Footer/Footer";
 import GoogleAuth from "../GoogleAuth/GoogleAuth";
 import { AnonymousApp } from "./AnonymousApp";

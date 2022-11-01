@@ -8,12 +8,12 @@ import {
   CourseBankReq,
 } from "../../../../types/data-types";
 import { Box, CardActionArea, Chip, CircularProgress } from "@mui/material";
-export interface RequirmentItemProps {
-  bankRequirment: CourseBankReq;
+export interface RequirementItemProps {
+  bankRequirement: CourseBankReq;
 }
 
-export const RequirmentItem: React.FC<RequirmentItemProps> = ({
-  bankRequirment,
+export const RequirementItem: React.FC<RequirementItemProps> = ({
+  bankRequirement,
 }) => {
   const {
     course_bank_name,
@@ -22,7 +22,7 @@ export const RequirmentItem: React.FC<RequirmentItemProps> = ({
     course_completed,
     course_requirement,
     bank_rule_name,
-  } = bankRequirment;
+  } = bankRequirement;
 
   const progress =
     bank_rule_name === ACCUMULATE_COURSES

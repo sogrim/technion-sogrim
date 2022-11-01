@@ -12,7 +12,7 @@ import { AuthService } from "./services/auth";
 import { AuthStore } from "./stores/AuthStore";
 import { AuthProvider } from "./hooks/useAuth";
 
-const queryClinet = new QueryClient();
+const queryClient = new QueryClient();
 
 mobxConfigure({
   enforceActions: "observed",
@@ -25,7 +25,7 @@ const authStore = new AuthStore(authService);
 
 ReactDOM.render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClinet}>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider authStore={authStore}>
         <StoreProvider store={appStore}>
           <App />

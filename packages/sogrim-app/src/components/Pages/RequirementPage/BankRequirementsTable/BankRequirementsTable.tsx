@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
 import { CourseBankReq } from "../../../../types/data-types";
 import { Box } from "@mui/material";
-import { BankRequirmentRow } from "./BankRequirmentsRow";
+import { BankRequirementRow } from "./BankRequirementsRow";
 import { useStore } from "../../../../hooks/useStore";
 
-interface BankRequirmentsTableProps {}
+interface BankRequirementsTableProps {}
 
-const BankRequirmentsTableComp: React.FC<BankRequirmentsTableProps> = () => {
+const BankRequirementsTableComp: React.FC<BankRequirementsTableProps> = () => {
   const {
     dataStore: { userDetails },
   } = useStore();
@@ -27,10 +27,10 @@ const BankRequirmentsTableComp: React.FC<BankRequirmentsTableProps> = () => {
   return (
     <Box sx={{ flexGrow: 1, marginBottom: 15 }}>
       {bankReq?.map((banReq, id) => (
-        <BankRequirmentRow key={id} bankRequirment={banReq} />
+        <BankRequirementRow key={id} bankRequirement={banReq} />
       ))}
     </Box>
   );
 };
 
-export const BankRequirmentsTable = observer(BankRequirmentsTableComp);
+export const BankRequirementsTable = observer(BankRequirementsTableComp);

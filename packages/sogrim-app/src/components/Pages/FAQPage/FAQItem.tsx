@@ -16,8 +16,8 @@ export const FAQItem: React.FC<FAQItemProps> = ({ faqItem }) => {
     <Accordion sx={{ width: 700 }}>
       <AccordionSummary
         expandIcon={<ExpandMore />}
-        aria-controls="req-row-collaps"
-        id="req-row-collaps"
+        aria-controls="req-row-collapse"
+        id="req-row-collapse"
       >
         <Typography fontWeight={"bold"}>{faqItem.title}</Typography>
       </AccordionSummary>

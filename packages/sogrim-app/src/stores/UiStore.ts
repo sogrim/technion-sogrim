@@ -45,7 +45,7 @@ export class UIStore {
     this.rowToDeleteId = id;
   };
 
-  get userDisplyName(): string {
+  get userDisplayName(): string {
     return this.userDisplay?.given_name;
   }
 

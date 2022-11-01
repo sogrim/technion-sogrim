@@ -3,7 +3,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { observer } from "mobx-react-lite";
 import { RemoveDetails, SignOut } from "../Actions/Actions";
 import { useState } from "react";
-import { FormModal } from "../../Commom/FormModal";
+import { FormModal } from "../../Common/FormModal";
 import { RemoveUserDetails } from "./RemoveUserDetails";
 
 interface DefaultMenuProps {

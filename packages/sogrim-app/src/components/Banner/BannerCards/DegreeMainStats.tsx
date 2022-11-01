@@ -42,7 +42,7 @@ const DegreeMainStatsComp: React.FC = () => {
     <Card sx={{ minWidth: 275, maxHeight: 150 }}>
       <CardContent>
         <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
-          סטטיטיקות תואר
+          סטטיסטיקות תואר
         </Typography>
         <Typography sx={{ fontSize: 18 }} color="text.primary">
           {`ממוצע כללי: ${gpa} `}

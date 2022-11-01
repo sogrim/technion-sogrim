@@ -64,8 +64,8 @@ export const columns: GridColumns = [
   },
   {
     field: "state",
-    headerName: "סטאטוס",
-    flex: 125,
+    headerName: "סטטוס",
+    width: 125,
     editable: false,
     headerAlign: "center",
     align: "center",

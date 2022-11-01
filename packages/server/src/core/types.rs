@@ -71,16 +71,13 @@ pub enum Transfer {
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Requirement {
-    /*
-    בזין הזה יש את כל הבנקים והאם בוצעו או לא בכל קטלוג
-    */
     pub course_bank_name: String,
     pub bank_rule_name: String,
     pub credit_requirement: Option<f32>,
     pub course_requirement: Option<u32>,
     pub credit_completed: f32,
     pub course_completed: u32,
-    pub completed: bool, //Is the user completed the necessary demands for this bank
+    pub completed: bool, //Did the user complete the necessary demands for this bank
     // TODO planing ...
     pub message: Option<String>,
 }

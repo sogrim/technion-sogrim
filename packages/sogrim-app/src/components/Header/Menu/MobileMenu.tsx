@@ -3,7 +3,7 @@ import { observer } from "mobx-react-lite";
 import { Box, Menu, MenuItem } from "@mui/material";
 import { SignOut, RemoveDetails } from "../Actions/Actions";
 import { useAuth } from "../../../hooks/useAuth";
-import { FormModal } from "../../Commom/FormModal";
+import { FormModal } from "../../Common/FormModal";
 import { RemoveUserDetails } from "./RemoveUserDetails";
 
 interface MobileMenuProps {
