@@ -115,12 +115,12 @@ const SemesterTabsComp = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ width: "80%", justifyContent: "center" }}>
       <Box
         sx={{
           display: "flex",
           flexDirection: "row",
-          width: "1100px",
+          width: "100%",
           mb: 1,
           justifyContent:
             !allSemesters || allSemesters.length === 0
