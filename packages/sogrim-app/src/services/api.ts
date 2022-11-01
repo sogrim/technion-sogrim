@@ -9,22 +9,7 @@ import {
 import { API_URL } from "./api-url";
 
 export const getCatalogs = async (authToken: string): Promise<Catalog[]> => {
-  const fallback: Catalog[] = [];
-  let res: Catalog[];
-  try {
-    res =
-      (
-        await axios.get(`${API_URL}/catalogs`, {
-          headers: {
-            authorization: `${authToken}`,
-          },
-        })
-      ).data || fallback;
-  } catch (e) {
-    res = fallback;
-    throw e;
-  }
-  return res;
+  return axiosGet(authToken, `${API_URL}/catalogs`);
 };
 
 export const getCourseByFilter = async (
@@ -32,146 +17,110 @@ export const getCourseByFilter = async (
   filterName: string,
   filter: string
 ): Promise<Course[]> => {
-  const fallback: Course[] = [];
-  let res: Course[];
   if (!filter) {
     return [];
   }
-  try {
-    res =
-      (
-        await axios.get(`${API_URL}/students/courses?${filterName}=${filter}`, {
-          headers: {
-            authorization: `${authToken}`,
-          },
-        })
-      ).data || fallback;
-  } catch (e) {
-    res = fallback;
-    throw e;
-  }
-  return res;
+  return axiosGet(
+    authToken,
+    `${API_URL}/students/courses?${filterName}=${filter}`
+  );
 };
 
 export const putUserCatalog = async (
   authToken: string,
   userCatalogId: string
 ): Promise<UserState> => {
-  const fallback: UserState = {} as UserState;
-  let res: UserState;
-  try {
-    res =
-      (
-        await axios.put(
-          `${API_URL}/students/catalog`,
-          userCatalogId || ({} as UserState),
-          {
-            headers: {
-              authorization: `${authToken}`,
-            },
-          }
-        )
-      ).data || fallback;
-  } catch {
-    res = fallback;
-  }
-  return res;
+  return axiosPut(authToken, `${API_URL}/students/catalog`, userCatalogId);
 };
 
 export const postUserUgData = async (
   authToken: string,
   ugData: string
 ): Promise<UserState> => {
-  const fallback: UserState = {} as UserState;
-  let res: UserState;
-  try {
-    res =
-      (
-        await axios.post(`${API_URL}/students/courses`, ugData, {
-          headers: {
-            authorization: `${authToken}`,
-          },
-        })
-      ).data || fallback;
-  } catch {
-    res = fallback;
-  }
-
-  return res;
+  return axiosPost(authToken, `${API_URL}/students/courses`, ugData);
 };
 
 export const getUserState = async (authToken: string): Promise<UserState> => {
-  const fallback: UserState = {} as UserState;
-  let res: UserState;
-  try {
-    res =
-      (
-        await axios.get(`${API_URL}/students/login`, {
-          headers: {
-            authorization: `${authToken}`,
-          },
-        })
-      ).data || fallback;
-  } catch (e) {
-    res = fallback;
-    throw e;
-  }
-  return res;
+  return axiosGet(authToken, `${API_URL}/students/login`);
 };
 
 export const putUserState = async (
   authToken: string,
   updatedUserState: UserDetails
 ): Promise<UserDetails> => {
-  const fallback: UserDetails = {} as UserDetails;
-  let res: UserDetails;
-  try {
-    res =
-      (
-        await axios.put(`${API_URL}/students/details`, updatedUserState, {
-          headers: {
-            authorization: `${authToken}`,
-          },
-        })
-      ).data || fallback;
-  } catch (e) {
-    res = fallback;
-    throw e;
-  }
-  return res;
+  return axiosPut(authToken, `${API_URL}/students/details`, updatedUserState);
 };
 
 export const getComputeEndGame = async (
   authToken: string
 ): Promise<UserState> => {
-  const fallback: UserState = {} as UserState;
-  let res: UserState;
-  try {
-    res =
-      (
-        await axios.get(`${API_URL}/students/degree-status`, {
-          headers: {
-            authorization: `${authToken}`,
-          },
-        })
-      ).data || fallback;
-  } catch (e) {
-    res = fallback;
-    throw e;
-  }
-  return res;
+  return axiosGet(authToken, `${API_URL}/students/degree-status`);
 };
 
 export const putUserSettings = async (
   authToken: string,
   updatedUserSettings: UserSettings
 ): Promise<UserSettings> => {
-  const fallback: UserSettings = {} as UserSettings;
-  let res: UserSettings;
+  return axiosPut(
+    authToken,
+    `${API_URL}/students/settings`,
+    updatedUserSettings
+  );
+};
+
+const axiosGet = async (authToken: string, url: string): Promise<any> => {
+  const fallback: any = {};
+  let res: any;
   try {
     res =
       (
-        await axios.put(`${API_URL}/students/settings`, updatedUserSettings, {
+        await axios.get(url, {
+          headers: {
+            authorization: `${authToken}`,
+          },
+        })
+      ).data || fallback;
+  } catch (e) {
+    res = fallback;
+    throw e;
+  }
+  return res;
+};
+
+const axiosPut = async (
+  authToken: string,
+  url: string,
+  data: any
+): Promise<any> => {
+  const fallback: any = {};
+  let res: any;
+  try {
+    res =
+      (
+        await axios.put(url, data, {
+          headers: {
+            authorization: `${authToken}`,
+          },
+        })
+      ).data || fallback;
+  } catch (e) {
+    res = fallback;
+    throw e;
+  }
+  return res;
+};
+
+const axiosPost = async (
+  authToken: string,
+  url: string,
+  data: any
+): Promise<any> => {
+  const fallback: any = {};
+  let res: any;
+  try {
+    res =
+      (
+        await axios.post(url, data, {
           headers: {
             authorization: `${authToken}`,
           },
