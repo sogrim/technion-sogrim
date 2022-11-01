@@ -1,26 +1,25 @@
-import { GridCellValue, GridColumns, GridComparatorFn } from "@mui/x-data-grid";
+import { GridColumns, GridComparatorFn } from "@mui/x-data-grid";
 import { renderDeleteCell } from "./DeleteRowCell";
 import { renderCategoryEditInputCell } from "./EditCategoryCell";
 import { renderGradeEditInputCell } from "./EditGradeCell";
 
-const gradeComparator: GridComparatorFn = (
-  v1: GridCellValue,
-  v2: GridCellValue
-) => {
+const gradeComparator: GridComparatorFn = (v1: any, v2: any) => {
   if (isNaN(+v1!!) && !isNaN(+v2!!)) {
     return 1;
   } else if (!isNaN(+v1!!) && isNaN(+v2!!)) {
     return -1;
   } else {
-    return (v2 as any) - (v1 as any);
+    return v2 - v1;
   }
 };
+
+export const MAX_GRID_WIDTH = 1100;
 
 export const columns: GridColumns = [
   {
     field: "name",
     headerName: "קורס",
-    width: 250,
+    flex: 250 / MAX_GRID_WIDTH,
     editable: true,
     headerAlign: "center",
     align: "center",
@@ -28,7 +27,7 @@ export const columns: GridColumns = [
   {
     field: "courseNumber",
     headerName: "מס׳ קורס",
-    width: 125,
+    flex: 125 / MAX_GRID_WIDTH,
     editable: false,
     headerAlign: "center",
     align: "center",
@@ -39,7 +38,7 @@ export const columns: GridColumns = [
     field: "credit",
     headerName: "נק״ז",
     type: "number",
-    width: 95,
+    flex: 95 / MAX_GRID_WIDTH,
     editable: true,
     headerAlign: "center",
     align: "center",
@@ -47,7 +46,7 @@ export const columns: GridColumns = [
   {
     field: "grade",
     headerName: "ציון",
-    width: 150,
+    flex: 200 / MAX_GRID_WIDTH,
     editable: true,
     headerAlign: "center",
     align: "center",
@@ -57,7 +56,7 @@ export const columns: GridColumns = [
   {
     field: "type",
     headerName: "קטגוריה",
-    width: 250,
+    flex: 210 / MAX_GRID_WIDTH,
     editable: true,
     headerAlign: "center",
     align: "center",
@@ -66,19 +65,22 @@ export const columns: GridColumns = [
   {
     field: "state",
     headerName: "סטאטוס",
-    width: 125,
+    flex: 125,
     editable: false,
     headerAlign: "center",
     align: "center",
     description: "לא ניתן לערוך שדה זה. הוא מתעדכן בהתאם לציון",
   },
   {
-    field: "actions",
-    headerName: "פעולות",
-    width: 100,
+    field: "delete",
+    headerName: "מחק",
+    flex: 85 / MAX_GRID_WIDTH,
     editable: false,
     headerAlign: "center",
     align: "center",
     renderCell: renderDeleteCell,
+    hideSortIcons: true,
+    disableColumnMenu: true,
+    sortable: false,
   },
 ];

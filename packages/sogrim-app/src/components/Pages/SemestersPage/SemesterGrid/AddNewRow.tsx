@@ -23,6 +23,7 @@ import {
   newEmptyRow,
   RowData,
 } from "../SemesterTabsConsts";
+import { MAX_GRID_WIDTH } from "./semester-grid-interface";
 
 export interface NewRowProps {
   handleAddClicked: (newRowInput: RowData) => void;
@@ -167,7 +168,7 @@ const NewRowComp: React.FC<NewRowProps> = ({
         display: "flex",
         gap: 0.5,
         height: 40,
-        width: 1100,
+        width: MAX_GRID_WIDTH,
       }}
     >
       <Autocomplete

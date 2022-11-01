@@ -6,10 +6,10 @@ import useUpdateUserState from "../../../../hooks/apiHooks/useUpdateUserState";
 import { useAuth } from "../../../../hooks/useAuth";
 import { useStore } from "../../../../hooks/useStore";
 import { ErrorToast } from "../../../Toasts/ErrorToast";
+import { courseFromUserValidations } from "../CourseValidator";
 import { RowData, UpdateUserDetailsAction } from "../SemesterTabsConsts";
 import { AddNewRow } from "./AddNewRow";
-import { courseFromUserValidations } from "../CourseValidator";
-import { columns } from "./semester-grid-interface";
+import { columns, MAX_GRID_WIDTH } from "./semester-grid-interface";
 import { SemesterFooter } from "./SemesterFooter";
 
 const rowDataKeys = ["name", "grade", "credit", "type"];
@@ -184,24 +184,24 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
   return (
     <Box
       sx={{
-        width: "100%",
+        flexGrow: 1,
         display: "flex",
-        alignItems: "center",
         flexDirection: "column",
+        width: "100%",
+        maxWidth: MAX_GRID_WIDTH,
+        alignItems: "center",
       }}
     >
-      <Box sx={{ mb: 4 }}>
-        <div style={{ width: 1100 }}>
-          <DataGrid
-            rows={tableRows}
-            columns={columns}
-            localeText={heIL.components.MuiDataGrid.defaultProps.localeText}
-            getRowId={(row) => row.courseNumber}
-            autoHeight
-            onCellEditCommit={handleEditRowsModelChange}
-            components={{ Footer: () => <SemesterFooter rows={tableRows} /> }}
-          />
-        </div>
+      <Box sx={{ mb: 4, marginLeft: 4, marginRight: 4, width: "100%" }}>
+        <DataGrid
+          rows={tableRows}
+          columns={columns}
+          localeText={heIL.components.MuiDataGrid.defaultProps.localeText}
+          getRowId={(row) => row.courseNumber}
+          autoHeight
+          onCellEditCommit={handleEditRowsModelChange}
+          components={{ Footer: () => <SemesterFooter rows={tableRows} /> }}
+        />
       </Box>
       <Box sx={{ marginBottom: 10 }}>
         {!addRowToggle ? (
