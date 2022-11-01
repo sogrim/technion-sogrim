@@ -1,12 +1,11 @@
 import { makeAutoObservable } from "mobx";
-import { createData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTableUtils";
 import { RowData } from "../components/Pages/SemestersPage/SemesterTabsConsts";
 import {
+  ALL,
+  CourseState,
   CourseStatus,
   UserDetails,
-  CourseState,
   UserSettings,
-  ALL,
 } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
@@ -126,18 +125,17 @@ export class DataStore {
     });
     const rows: RowData[] = [];
     allSemesterCourses.forEach((course) =>
-      rows.push(
-        createData(
-          course.course.name,
-          course.course._id,
-          course.course.credit,
-          course.semester,
-          course.state,
-          this.displayContent(course.grade),
-          this.displayContent(course.type),
-          course.additional_msg
-        )
-      )
+      rows.push({
+        name: course.course.name,
+        courseNumber: course.course._id,
+        credit: course.course.credit,
+        semester: course.semester,
+        state: course.state,
+        grade: this.displayContent(course.grade),
+        type: this.displayContent(course.type),
+        sg_name: course.specialization_group_name,
+        msg: course.additional_msg,
+      })
     );
     return rows;
   };
@@ -151,19 +149,17 @@ export class DataStore {
     });
     const rows: RowData[] = [];
     allSemesterCourses?.forEach((course) =>
-      rows.push(
-        createData(
-          course.course.name,
-          course.course._id,
-          course.course.credit,
-          course.semester,
-          course.state,
-          this.displayContent(course.grade),
-          this.displayContent(course.type),
-          course.specialization_group_name,
-          course.additional_msg
-        )
-      )
+      rows.push({
+        name: course.course.name,
+        courseNumber: course.course._id,
+        credit: course.course.credit,
+        semester: course.semester,
+        state: course.state,
+        grade: this.displayContent(course.grade),
+        type: this.displayContent(course.type),
+        sg_name: course.specialization_group_name,
+        msg: course.additional_msg,
+      })
     );
 
     return rows;
