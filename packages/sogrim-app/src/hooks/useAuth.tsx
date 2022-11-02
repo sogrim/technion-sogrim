@@ -3,6 +3,7 @@ import { AuthStore } from "../stores/AuthStore";
 
 interface AuthProviderProps {
   authStore: AuthStore;
+  children?: React.ReactNode;
 }
 
 export const AuthContext = React.createContext({} as AuthStore);
