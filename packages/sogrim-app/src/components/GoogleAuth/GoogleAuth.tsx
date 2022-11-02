@@ -48,7 +48,11 @@ export default function GoogleAuth() {
 
   return (
     <>
-      <div id="g_id_onload" data-client_id={GOOGLE_CLIENT_ID}></div>
+      <div
+        id="g_id_onload"
+        data-client_id={GOOGLE_CLIENT_ID}
+        data-auto_select="true"
+      ></div>
     </>
   );
 }
