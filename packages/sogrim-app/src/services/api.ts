@@ -47,7 +47,7 @@ export const getUserState = async (authToken: string): Promise<UserState> => {
 export const putUserState = async (
   authToken: string,
   updatedUserState: UserDetails
-): Promise<UserDetails> => {
+): Promise<{}> => {
   return axiosPut(authToken, `${API_URL}/students/details`, updatedUserState);
 };
 
@@ -60,7 +60,7 @@ export const getComputeEndGame = async (
 export const putUserSettings = async (
   authToken: string,
   updatedUserSettings: UserSettings
-): Promise<UserSettings> => {
+): Promise<{}> => {
   return axiosPut(
     authToken,
     `${API_URL}/students/settings`,
