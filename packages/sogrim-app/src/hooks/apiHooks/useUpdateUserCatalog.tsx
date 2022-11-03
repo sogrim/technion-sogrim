@@ -16,6 +16,7 @@ export default function useUpdateUserCatalog(authToken: any) {
           return current;
         });
       },
+      useErrorBoundary: true,
     }
   );
 }

@@ -45,11 +45,6 @@ const SemesterTabsComp = () => {
   };
 
   useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (userDetails) {
       setAllSemesters(
         getAllUserSemesters(userDetails.degree_status.course_statuses)

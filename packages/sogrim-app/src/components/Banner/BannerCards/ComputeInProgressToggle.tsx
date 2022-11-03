@@ -15,13 +15,7 @@ export const ComputeInProgressToggle: React.FC<{
   const { userAuthToken } = useAuth();
   const { mutate, isError, error } = useUpdateUserSettings(userAuthToken);
 
-  useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
-  }, [isError, error]);
+  useEffect(() => {}, [isError, error]);
 
   const handleChange = (
     _: React.SyntheticEvent,

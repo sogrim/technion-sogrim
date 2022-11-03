@@ -17,6 +17,8 @@ import createCache from "@emotion/cache";
 import { isMobile } from "react-device-detect";
 import { MobilePage } from "./MobilePage";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { ErrorBoundary } from "react-error-boundary";
+import { FallbackPage } from "../Pages/FallbackPage/FallbackPage";
 
 const AppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
@@ -56,11 +58,11 @@ const AppComp: React.FC = () => {
         {isMobile || !matches ? (
           <MobilePage />
         ) : (
-          <>
+          <ErrorBoundary FallbackComponent={FallbackPage}>
             <GoogleAuth />
             {isAuthenticated ? <UserApp /> : <AnonymousApp />}
             <Footer />
-          </>
+          </ErrorBoundary>
         )}
       </CacheProvider>
     </ThemeProvider>

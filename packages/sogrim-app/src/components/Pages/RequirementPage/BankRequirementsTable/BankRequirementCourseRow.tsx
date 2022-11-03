@@ -32,11 +32,6 @@ const BankRequirementCourseRowComp: React.FC<BankRequirementCourseProps> = ({
   } = useStore();
 
   useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (isBankTypeOfCourseAll(course.type)) {
       if (course.state === "לא רלוונטי") {
         setShowIgnoreIcon(IgnoreIconState.ShowV);

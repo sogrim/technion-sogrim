@@ -36,11 +36,6 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
   const [addRowToggle, setAddRowToggle] = useState<boolean>(false);
 
   useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (userDetails) {
       setTableRows(
         generateRowsForSemester(

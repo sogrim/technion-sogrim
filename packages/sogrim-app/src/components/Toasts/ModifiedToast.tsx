@@ -20,13 +20,7 @@ const ModifiedToastComp = () => {
     refetch();
   };
 
-  useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
-  }, [isError, error]);
+  useEffect(() => {}, [isError, error]);
 
   return (
     <>
