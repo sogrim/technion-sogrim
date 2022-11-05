@@ -8,7 +8,7 @@ import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
 import { getAppTheme } from "../../themes/theme";
 import { GoogleClientSession } from "../../types/auth-types";
 import { Footer } from "../Footer/Footer";
-import GoogleAuth from "../GoogleAuth/GoogleAuth";
+import { GoogleAuth } from "../GoogleAuth/GoogleAuth";
 import { AnonymousApp } from "./AnonymousApp";
 import { UserApp } from "./UserApp";
 import rtlPlugin from "stylis-plugin-rtl";
@@ -58,11 +58,13 @@ const AppComp: React.FC = () => {
         {isMobile || !matches ? (
           <MobilePage />
         ) : (
-          <ErrorBoundary FallbackComponent={FallbackPage}>
+          <>
             <GoogleAuth />
-            {isAuthenticated ? <UserApp /> : <AnonymousApp />}
-            <Footer />
-          </ErrorBoundary>
+            <ErrorBoundary FallbackComponent={FallbackPage}>
+              {isAuthenticated ? <UserApp /> : <AnonymousApp />}
+              <Footer />
+            </ErrorBoundary>
+          </>
         )}
       </CacheProvider>
     </ThemeProvider>

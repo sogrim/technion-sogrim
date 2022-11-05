@@ -1,7 +1,8 @@
 import { Box, LinearProgress, Typography } from "@mui/material";
 import { AxiosError } from "axios";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { FallbackProps } from "react-error-boundary";
+import { GoogleAuth } from "../../GoogleAuth/GoogleAuth";
 
 export const FallbackPage: React.FC<FallbackProps> = ({
   error,
@@ -9,20 +10,20 @@ export const FallbackPage: React.FC<FallbackProps> = ({
 }) => {
   const statusCode = (error as AxiosError<unknown>).response?.status;
 
+  const [loginReady, setLoginReady] = useState(false);
+
   useEffect(() => {
-    if (statusCode === 401) {
-      setTimeout(() => {
-        resetErrorBoundary();
-      }, 1500);
+    if (statusCode === 401 && loginReady) {
+      resetErrorBoundary();
     }
-  });
+  }, [loginReady, resetErrorBoundary, statusCode]);
 
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
-        mt: 20,
+        mt: 40,
         gap: 5,
         alignItems: "center",
       }}
@@ -35,6 +36,14 @@ export const FallbackPage: React.FC<FallbackProps> = ({
           >
             פג תוקף ההתחברות, כבר מחברים אותך מחדש...
           </Typography>
+          <Typography
+            sx={{ display: "flex", justifySelf: "center" }}
+            variant="h6"
+          >
+            אם הדף לא עובר אוטומטית לעמוד הראשי בעוד כמה שניות, נסו ללחוץ על
+            ההתחברות דרך גוגל למעלה.
+          </Typography>
+          <GoogleAuth onLogin={() => setLoginReady(true)} />
           <LinearProgress
             sx={{ width: "100%", height: 30 }}
             color="secondary"
