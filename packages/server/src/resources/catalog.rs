@@ -72,8 +72,8 @@ impl From<Catalog> for DisplayCatalog {
             description: catalog.description,
             course_bank_names: catalog
                 .course_banks
-                .iter()
-                .map(|bank| bank.name.clone())
+                .into_iter()
+                .map(|bank| bank.name)
                 .collect(),
         }
     }
