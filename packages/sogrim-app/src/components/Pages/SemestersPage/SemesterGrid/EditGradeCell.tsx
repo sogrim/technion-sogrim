@@ -8,7 +8,7 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
-import { GridRenderCellParams } from "@mui/x-data-grid";
+import { GridRenderCellParams, useGridApiContext } from "@mui/x-data-grid";
 import { useState } from "react";
 import { courseGradeOptions } from "../SemesterTabsConsts";
 
@@ -23,14 +23,15 @@ const EditGradeCellComp = (props: GridRenderCellParams) => {
     setGradeToggle(!gradeToggle);
   };
 
-  const { id, api, field } = props;
+  const { id, field } = props;
+  const api = useGridApiContext();
 
   const handleChangeSelect = async (event: SelectChangeEvent) => {
     event.preventDefault();
     const value = event.target.value;
     setDisplayValue(value);
     setNonNumericGrade(value);
-    api.setEditCellValue({ id, field, value }, event);
+    api.current.setEditCellValue({ id, field, value }, event);
   };
 
   const handleChangeNumber = async (
@@ -39,7 +40,7 @@ const EditGradeCellComp = (props: GridRenderCellParams) => {
     event.preventDefault();
     const value = event.target.value;
     setDisplayValue(value);
-    api.setEditCellValue({ id, field, value }, event);
+    api.current.setEditCellValue({ id, field, value }, event);
   };
 
   return (
