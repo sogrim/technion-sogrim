@@ -17,7 +17,14 @@ export const getCourseByFilter = async (
   filterName: string,
   filter: string
 ): Promise<Course[]> => {
+  try {
+    new RegExp(filter);
+  } catch {
+    // Don't allow invalid regex expressions to be sent to the server
+    return [];
+  }
   if (!filter) {
+    // Don't allow empty filters to be sent to the server
     return [];
   }
   return axiosGet(
