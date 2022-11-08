@@ -24,9 +24,14 @@ pub async fn get_all_catalogs(
     _: User, //TODO think about whether this is necessary
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    db.get_all::<DisplayCatalog>()
-        .await
-        .map(|catalogs| HttpResponse::Ok().json(catalogs))
+    db.get_all::<Catalog>().await.map(|catalogs| {
+        HttpResponse::Ok().json(
+            catalogs
+                .into_iter()
+                .map(DisplayCatalog::from)
+                .collect::<Vec<DisplayCatalog>>(),
+        )
+    })
 }
 
 //TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
@@ -49,7 +54,7 @@ pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppEr
 }
 
 #[put("/students/catalog")]
-pub async fn add_catalog(
+pub async fn update_catalog(
     mut user: User,
     catalog_id: String,
     db: Data<Db>,
@@ -58,6 +63,19 @@ pub async fn add_catalog(
     let catalog = db.get::<Catalog>(&obj_id).await?;
     user.details.catalog = Some(DisplayCatalog::from(catalog));
     user.details.modified = true;
+
+    // Updating the catalog renders the current course statuses invalid in the new catalog's context,
+    // so we need to clear them out and let the algorithm recompute them
+    user.details
+        .degree_status
+        .course_statuses
+        .iter_mut()
+        .for_each(|cs| {
+            cs.set_state();
+            cs.r#type = None;
+            cs.modified = false;
+        });
+
     let updated_user = db
         .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
         .await?;

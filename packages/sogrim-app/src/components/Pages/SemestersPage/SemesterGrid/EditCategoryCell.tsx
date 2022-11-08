@@ -37,7 +37,7 @@ const SelectCategoryEditComp = (props: GridRenderCellParams) => {
         fullWidth
         sx={{ width: "140px" }}
       >
-        {banksNamesOptions.map((option) => (
+        {banksNamesOptions?.map((option) => (
           <MenuItem key={option} value={option}>
             {option}
           </MenuItem>

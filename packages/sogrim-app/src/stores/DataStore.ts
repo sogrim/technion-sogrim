@@ -48,10 +48,7 @@ export class DataStore {
   };
 
   getUserBankNames = () => {
-    if (this.userBankNames.length === 0) {
-      this.generateUserBanksNames();
-    }
-    return this.userBankNames;
+    return this.userDetails?.catalog?.course_bank_names;
   };
 
   getUserGPA = (): number => {
@@ -89,16 +86,6 @@ export class DataStore {
       return "-";
     }
     return content.toString();
-  };
-
-  private generateUserBanksNames = () => {
-    const userBanksNamesList: string[] = [];
-    this.userDetails?.degree_status?.course_bank_requirements?.forEach(
-      (bankReq) => {
-        userBanksNamesList.push(bankReq.course_bank_name);
-      }
-    );
-    this.userBankNames = userBanksNamesList;
   };
 
   generateRowsForSemester = (

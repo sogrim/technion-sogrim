@@ -36,7 +36,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(logger::init_actix_logger())
             .service(api::students::get_all_catalogs)
             .service(api::students::login)
-            .service(api::students::add_catalog)
+            .service(api::students::update_catalog)
             .service(api::students::get_courses_by_filter)
             .service(api::students::add_courses)
             .service(api::students::compute_degree_status)

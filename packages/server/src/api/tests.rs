@@ -67,7 +67,7 @@ async fn test_students_api_full_flow() {
             .wrap(from_fn(middleware::auth::authenticate))
             .service(students::get_all_catalogs)
             .service(students::login)
-            .service(students::add_catalog)
+            .service(students::update_catalog)
             .service(students::add_courses)
             .service(students::compute_degree_status)
             .service(students::update_details),

@@ -60,6 +60,7 @@ pub struct DisplayCatalog {
     pub name: String,
     pub total_credit: f64,
     pub description: String,
+    pub course_bank_names: Vec<String>,
 }
 
 impl From<Catalog> for DisplayCatalog {
@@ -69,12 +70,11 @@ impl From<Catalog> for DisplayCatalog {
             name: catalog.name,
             total_credit: catalog.total_credit,
             description: catalog.description,
+            course_bank_names: catalog
+                .course_banks
+                .iter()
+                .map(|bank| bank.name.clone())
+                .collect(),
         }
-    }
-}
-
-impl CollectionName for DisplayCatalog {
-    fn collection_name() -> &'static str {
-        "Catalogs"
     }
 }
