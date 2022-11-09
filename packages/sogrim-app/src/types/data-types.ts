@@ -5,6 +5,7 @@ export type Catalog = {
   _id: {
     $oid: string;
   };
+  course_bank_names: string[];
 };
 
 export type Course = {

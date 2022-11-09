@@ -297,7 +297,7 @@ const NewRowComp: React.FC<NewRowProps> = ({
         size="small"
         sx={{ width: "170px" }}
       >
-        {banksNamesOptions.map((option) => (
+        {banksNamesOptions?.map((option) => (
           <MenuItem key={option} value={option}>
             {option}
           </MenuItem>
