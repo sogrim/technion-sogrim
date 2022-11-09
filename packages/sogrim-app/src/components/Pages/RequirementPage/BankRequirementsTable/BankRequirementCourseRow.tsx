@@ -86,7 +86,9 @@ const BankRequirementCourseRowComp: React.FC<BankRequirementCourseProps> = ({
       }}
     >
       <Box sx={{ display: "flex", gap: 1 }}>
-        <Typography fontWeight={500}>{course.name} </Typography>
+        <Typography fontWeight={500}>
+          {course.name || course.courseNumber}
+        </Typography>
         <Tooltip
           title={<Typography>מס׳ קורס {course.courseNumber}</Typography>}
           arrow
