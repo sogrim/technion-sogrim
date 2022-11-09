@@ -6,7 +6,7 @@ use crate::{
     db::Db,
     middleware::{self, auth},
     resources::{
-        catalog::DisplayCatalog,
+        catalog::{Catalog, DisplayCatalog},
         course::{Course, CourseStatus},
         user::{User, UserDetails},
     },
@@ -293,8 +293,8 @@ async fn test_bo_api_catalogs() {
         .send_request(&app)
         .await;
     assert!(res.status().is_success());
-    let display_catalog: DisplayCatalog = test::read_body_json(res).await;
-    assert_eq!(display_catalog.name, "מדמח הנדסת מחשבים 2018-2019");
+    let catalog: Catalog = test::read_body_json(res).await;
+    assert_eq!(catalog.name, "מדמח הנדסת מחשבים 2018-2019");
 
     //TODO: create? delete?
 }
