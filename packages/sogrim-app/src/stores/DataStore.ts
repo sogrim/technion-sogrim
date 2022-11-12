@@ -12,7 +12,6 @@ import { RootStore } from "./RootStore";
 export class DataStore {
   public userDetails: UserDetails = {} as UserDetails;
   public userSettings: UserSettings = {} as UserSettings;
-  public userBankNames: string[] = [];
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
