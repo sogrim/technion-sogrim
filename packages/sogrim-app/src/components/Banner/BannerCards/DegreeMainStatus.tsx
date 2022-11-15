@@ -1,24 +1,43 @@
-import { Button, Card, CardContent, Typography, Box } from "@mui/material";
-import { DegreeStatusBar } from "./DegreeStatusBar";
-import { useState, useEffect } from "react";
-import { useStore } from "../../../hooks/useStore";
+import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { ComputeInProgressToggle } from "./ComputeInProgressToggle";
+import { useEffect, useState } from "react";
+import { useStore } from "../../../hooks/useStore";
+import { UserDetails } from "../../../types/data-types";
 import { FormModal } from "../../Common/FormModal";
 import { SelectCatalog } from "../BannerDialogs/SelectCatalog";
+import { ComputeInProgressToggle } from "./ComputeInProgressToggle";
+import { DegreeStatusBar } from "./DegreeStatusBar";
+
+const getCreditOfCompleteCourses = (userDetails: UserDetails) =>
+  userDetails?.degree_status?.course_statuses.reduce(
+    (partialSum, courseStatus) => {
+      let credit =
+        courseStatus.state === "הושלם" ? courseStatus.course.credit : 0;
+      return partialSum + credit;
+    },
+    0
+  ) || 0;
 
 const DegreeMainStatusComp: React.FC = () => {
   const {
     dataStore: { userDetails, userSettings },
   } = useStore();
 
-  const [totalCredit, setTotalCredit] = useState<number>(0);
-  const [onlyCompleteCredit, setOnlyCompleteCredit] = useState<number>(0);
-  const [pointsDone, setPointsDone] = useState<number>(0);
-  const [catalogName, setCatalogName] = useState<string>("");
+  const [catalogName, setCatalogName] = useState<string>(
+    userDetails?.catalog?.name || ""
+  );
+  const [pointsDone, setPointsDone] = useState<number>(
+    userDetails?.degree_status?.total_credit || 0
+  );
+  const [totalCredit, setTotalCredit] = useState<number>(
+    userDetails?.catalog?.total_credit || 0
+  );
+  const [onlyCompleteCredit, setOnlyCompleteCredit] = useState<number>(
+    getCreditOfCompleteCourses(userDetails)
+  );
 
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
-  const [showMainStatus, setShowMainStatus] = useState<boolean>(false);
+  const [showMainStatus, setShowMainStatus] = useState<boolean>(true);
   const [computeInProgress, setComputeInProgress] = useState<boolean>(
     userSettings ? userSettings.compute_in_progress : false
   );
@@ -28,15 +47,7 @@ const DegreeMainStatusComp: React.FC = () => {
     if (userDetails) {
       const studentTotal = userDetails?.degree_status?.total_credit || 0;
       const totalCredit = userDetails?.catalog?.total_credit || 0;
-      const onlyCompleteCredit =
-        userDetails?.degree_status?.course_statuses.reduce(
-          (partialSum, courseStatus) => {
-            let credit =
-              courseStatus.state === "הושלם" ? courseStatus.course.credit : 0;
-            return partialSum + credit;
-          },
-          0
-        ) || 0;
+      const onlyCompleteCredit = getCreditOfCompleteCourses(userDetails);
       const catalogName = userDetails?.catalog?.name || "";
 
       setPointsDone(studentTotal);
@@ -52,13 +63,13 @@ const DegreeMainStatusComp: React.FC = () => {
     userSettings,
   ]);
 
-  const coursesTotalProgress =
-    pointsDone / totalCredit >= 1 ? 100 : (pointsDone / totalCredit) * 100;
+  const coursesTotalProgress = isNaN(pointsDone / totalCredit)
+    ? 0
+    : Math.min((pointsDone / totalCredit) * 100, 100);
 
-  const coursesCompleteProgress =
-    onlyCompleteCredit / totalCredit >= 1
-      ? 100
-      : (onlyCompleteCredit / totalCredit) * 100;
+  const coursesCompleteProgress = isNaN(onlyCompleteCredit / totalCredit)
+    ? 0
+    : Math.min((onlyCompleteCredit / totalCredit) * 100, 100);
 
   return showMainStatus ? (
     <Card sx={{ minWidth: 275, maxHeight: 150 }}>

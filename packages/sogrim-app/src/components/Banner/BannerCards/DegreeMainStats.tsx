@@ -8,8 +8,8 @@ const DegreeMainStatsComp: React.FC = () => {
   const {
     dataStore: { userDetails, getUserGPA, getNumberOfBankComplete },
   } = useStore();
-  const [gpa, setGpa] = useState<number | null>(null);
-  const [banksDone, setBanksDone] = useState<number | null>(0);
+  const [gpa, setGpa] = useState<number>(getUserGPA());
+  const [banksDone, setBanksDone] = useState<number>(getNumberOfBankComplete());
   const [confetti, setConfetti] = useState(false);
   const [confettiRecycle, setConfettiRecycle] = useState(false);
   const totalBanks =

@@ -12,8 +12,6 @@ import { SemesterGrid } from "./SemesterGrid/SemesterGrid";
 import { SemesterOptionsButton } from "./SemesterOptionsButton";
 
 const SemesterTabsComp = () => {
-  const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
-
   const { userAuthToken } = useAuth();
   const { mutate, isError, error } = useUpdateUserState(userAuthToken);
   const {
@@ -30,6 +28,10 @@ const SemesterTabsComp = () => {
       deleteSemesterInUserDetails,
     },
   } = useStore();
+
+  const [allSemesters, setAllSemesters] = useState<string[]>(
+    getAllUserSemesters(userDetails.degree_status.course_statuses)
+  );
 
   const handleChangeSemester = (newSemesterTab: number) => {
     setCurrentSemester(newSemesterTab);
