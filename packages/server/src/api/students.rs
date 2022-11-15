@@ -61,28 +61,18 @@ pub async fn update_catalog(
 ) -> Result<HttpResponse, AppError> {
     let obj_id = bson::oid::ObjectId::from_str(&catalog_id)?;
     let catalog = db.get::<Catalog>(&obj_id).await?;
+    user.details.catalog = Some(DisplayCatalog::from(catalog));
+    user.details.modified = true;
 
-    // Courses that are not modified, not completed, and don't have a semester should be removed,
-    // since they were not added by the user and they are irrelevant to the new catalog
-    user.details
-        .degree_status
-        .course_statuses
-        .retain(|cs| cs.modified || cs.completed() || cs.semester.is_some());
-
-    // Updating the catalog renders the current course statuses invalid in the new catalog's context,
+    // Updating the catalog renders the current course types invalid in the new catalog's context,
     // so we need to clear them out and let the algorithm recompute them
     user.details
         .degree_status
         .course_statuses
         .iter_mut()
         .for_each(|cs| {
-            cs.set_state();
             cs.r#type = None;
-            cs.modified = false;
         });
-
-    user.details.catalog = Some(DisplayCatalog::from(catalog));
-    user.details.modified = true;
 
     let updated_user = db
         .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
