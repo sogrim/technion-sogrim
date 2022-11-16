@@ -64,16 +64,14 @@ pub async fn update_catalog(
     user.details.catalog = Some(DisplayCatalog::from(catalog));
     user.details.modified = true;
 
-    // Updating the catalog renders the current course statuses invalid in the new catalog's context,
+    // Updating the catalog renders the current course types invalid in the new catalog's context,
     // so we need to clear them out and let the algorithm recompute them
     user.details
         .degree_status
         .course_statuses
         .iter_mut()
         .for_each(|cs| {
-            cs.set_state();
             cs.r#type = None;
-            cs.modified = false;
         });
 
     let updated_user = db
