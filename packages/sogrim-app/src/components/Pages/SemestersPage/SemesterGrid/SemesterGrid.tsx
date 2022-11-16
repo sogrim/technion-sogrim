@@ -32,15 +32,12 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
   const { userAuthToken } = useAuth();
   const { mutate, isError, error } = useUpdateUserState(userAuthToken);
 
-  const [tableRows, setTableRows] = useState<RowData[]>([]);
+  const [tableRows, setTableRows] = useState<RowData[]>(
+    generateRowsForSemester(semester, userDetails.degree_status.course_statuses)
+  );
   const [addRowToggle, setAddRowToggle] = useState<boolean>(false);
 
   useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (userDetails) {
       setTableRows(
         generateRowsForSemester(

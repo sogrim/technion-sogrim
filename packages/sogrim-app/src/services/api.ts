@@ -17,7 +17,14 @@ export const getCourseByFilter = async (
   filterName: string,
   filter: string
 ): Promise<Course[]> => {
+  try {
+    new RegExp(filter);
+  } catch {
+    // Don't allow invalid regex expressions to be sent to the server
+    return [];
+  }
   if (!filter) {
+    // Don't allow empty filters to be sent to the server
     return [];
   }
   return axiosGet(
@@ -47,7 +54,7 @@ export const getUserState = async (authToken: string): Promise<UserState> => {
 export const putUserState = async (
   authToken: string,
   updatedUserState: UserDetails
-): Promise<UserDetails> => {
+): Promise<{}> => {
   return axiosPut(authToken, `${API_URL}/students/details`, updatedUserState);
 };
 
@@ -60,7 +67,7 @@ export const getComputeEndGame = async (
 export const putUserSettings = async (
   authToken: string,
   updatedUserSettings: UserSettings
-): Promise<UserSettings> => {
+): Promise<{}> => {
   return axiosPut(
     authToken,
     `${API_URL}/students/settings`,

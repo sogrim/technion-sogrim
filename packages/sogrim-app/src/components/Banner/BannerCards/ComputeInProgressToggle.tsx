@@ -1,8 +1,7 @@
-import { Typography, Switch, Tooltip, Box } from "@mui/material";
-import { useEffect } from "react";
-import { useStore } from "../../../hooks/useStore";
+import { Box, Switch, Tooltip, Typography } from "@mui/material";
 import useUpdateUserSettings from "../../../hooks/apiHooks/useUpdateUserSettings";
 import { useAuth } from "../../../hooks/useAuth";
+import { useStore } from "../../../hooks/useStore";
 
 export const ComputeInProgressToggle: React.FC<{
   computeInProgress: boolean;
@@ -13,15 +12,7 @@ export const ComputeInProgressToggle: React.FC<{
   } = useStore();
 
   const { userAuthToken } = useAuth();
-  const { mutate, isError, error } = useUpdateUserSettings(userAuthToken);
-
-  useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
-  }, [isError, error]);
+  const { mutate } = useUpdateUserSettings(userAuthToken);
 
   const handleChange = (
     _: React.SyntheticEvent,

@@ -8,7 +8,7 @@ import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
 import { getAppTheme } from "../../themes/theme";
 import { GoogleClientSession } from "../../types/auth-types";
 import { Footer } from "../Footer/Footer";
-import GoogleAuth from "../GoogleAuth/GoogleAuth";
+import { GoogleAuth } from "../GoogleAuth/GoogleAuth";
 import { AnonymousApp } from "./AnonymousApp";
 import { UserApp } from "./UserApp";
 import rtlPlugin from "stylis-plugin-rtl";
@@ -17,6 +17,8 @@ import createCache from "@emotion/cache";
 import { isMobile } from "react-device-detect";
 import { MobilePage } from "./MobilePage";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { ErrorBoundary } from "react-error-boundary";
+import { FallbackPage } from "../Pages/FallbackPage/FallbackPage";
 
 const AppComp: React.FC = () => {
   const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
@@ -58,8 +60,10 @@ const AppComp: React.FC = () => {
         ) : (
           <>
             <GoogleAuth />
-            {isAuthenticated ? <UserApp /> : <AnonymousApp />}
-            <Footer />
+            <ErrorBoundary FallbackComponent={FallbackPage}>
+              {isAuthenticated ? <UserApp /> : <AnonymousApp />}
+              <Footer />
+            </ErrorBoundary>
           </>
         )}
       </CacheProvider>

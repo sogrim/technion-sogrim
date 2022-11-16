@@ -1,5 +1,5 @@
 import React from "react";
-import ReactDOM from "react-dom";
+import ReactDOM from "react-dom/client";
 import { configure as mobxConfigure } from "mobx";
 import "./index.css";
 import { App } from "./components/App/App";
@@ -22,8 +22,9 @@ mobxConfigure({
 const appStore = new RootStore();
 const authService = new AuthService();
 const authStore = new AuthStore(authService);
+const root = ReactDOM.createRoot(document.getElementById("root")!);
 
-ReactDOM.render(
+root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider authStore={authStore}>
@@ -33,8 +34,7 @@ ReactDOM.render(
       </AuthProvider>
       <ReactQueryDevtools />
     </QueryClientProvider>
-  </React.StrictMode>,
-  document.getElementById("root")
+  </React.StrictMode>
 );
 
 // TODO: check about this

@@ -5,6 +5,8 @@ import { UserDetails } from "../../types/data-types";
 export default function useUpdateUserState(authToken: any) {
   return useMutation(
     "userState", // The caching key
-    (updatedUserState: UserDetails) => putUserState(authToken, updatedUserState)
+    (updatedUserState: UserDetails) =>
+      putUserState(authToken, updatedUserState),
+    { useErrorBoundary: true }
   );
 }

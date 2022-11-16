@@ -22,7 +22,13 @@ const ExemptionsAndCreditsComp: React.FC<ExemptionsAndCreditsProps> = () => {
     dataStore: { generateRowsForSemester, userDetails },
   } = useStore();
 
-  const [semester0Courses, setSemester0Courses] = useState<RowData[]>([]);
+  const [semester0Courses, setSemester0Courses] = useState<RowData[]>(
+    generateRowsForSemester(
+      null,
+      userDetails.degree_status.course_statuses,
+      true
+    )
+  );
 
   useEffect(() => {
     if (userDetails) {

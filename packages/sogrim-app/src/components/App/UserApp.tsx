@@ -22,11 +22,6 @@ const UserAppComp: React.FC = () => {
   } = useStore();
 
   useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (!isLoading && data) {
       updateStoreUserDetails(data.details);
       updateStoreUserSettings(data.settings);

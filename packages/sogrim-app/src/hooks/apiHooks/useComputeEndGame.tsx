@@ -7,5 +7,6 @@ export default function useComputeEndGame(
 ) {
   return useQuery("userState", () => getComputeEndGame(authToken), {
     enabled: !!authToken && trigger,
+    useErrorBoundary: true,
   });
 }

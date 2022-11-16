@@ -13,6 +13,7 @@ export default function useCoursesByFilter(
     {
       retry: false,
       enabled: !!authToken && trigger,
+      useErrorBoundary: true,
     }
   );
 }

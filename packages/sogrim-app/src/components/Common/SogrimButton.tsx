@@ -2,6 +2,7 @@ import { Button, ButtonProps, Theme, styled } from "@mui/material";
 import { purple } from "@mui/material/colors";
 
 export interface SogrimButtonProps {
+  children?: React.ReactNode;
   onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
