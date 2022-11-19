@@ -126,7 +126,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
           newUserDetails = deleteCourseInUserDetails(rowData, semester);
           break;
       }
-      mutate(newUserDetails);
+      newUserDetails.modified && mutate(newUserDetails);
     },
     [
       deleteCourseInUserDetails,

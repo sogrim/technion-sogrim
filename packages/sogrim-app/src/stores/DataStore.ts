@@ -9,6 +9,18 @@ import {
 } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
+const isCourseRowEqualToCourseStatus = (
+  row: RowData,
+  courseStatus: CourseStatus,
+  semester: string
+) =>
+  row.courseNumber === courseStatus.course._id &&
+  row.name === courseStatus.course.name &&
+  row.credit === courseStatus.course.credit &&
+  row.grade === courseStatus.grade &&
+  row.type === courseStatus.type &&
+  row.state === courseStatus.state &&
+  semester === courseStatus.semester;
 export class DataStore {
   public userDetails: UserDetails = {} as UserDetails;
   public userSettings: UserSettings = {} as UserSettings;
@@ -167,15 +179,23 @@ export class DataStore {
       modified: true,
     };
 
-    const updatedCourseStatus: CourseStatus[] = courseList.map((courseStatus) =>
-      courseStatus.course._id === rowData.courseNumber &&
-      courseStatus.semester === rowData.semester
-        ? updateCourseRow
-        : courseStatus
+    const updatedCourseStatuses: CourseStatus[] = courseList.map(
+      (courseStatus) => {
+        if (
+          courseStatus.course._id === rowData.courseNumber &&
+          courseStatus.semester === semester
+        ) {
+          this.userDetails.modified =
+            this.userDetails.modified ||
+            !isCourseRowEqualToCourseStatus(rowData, courseStatus, semester);
+          return updateCourseRow;
+        } else {
+          return courseStatus;
+        }
+      }
     );
 
-    this.userDetails.degree_status.course_statuses = updatedCourseStatus;
-    this.userDetails.modified = true;
+    this.userDetails.degree_status.course_statuses = updatedCourseStatuses;
 
     return this.userDetails;
   };
@@ -185,7 +205,7 @@ export class DataStore {
     const idx = courseList.findIndex(
       (courseStatus) =>
         courseStatus.course._id === rowData.courseNumber &&
-        courseStatus.semester === rowData.semester
+        courseStatus.semester === semester
     );
     const newCourseList = [...courseList];
     newCourseList.splice(idx, 1);

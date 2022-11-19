@@ -1,5 +1,5 @@
-import { Box, Select, MenuItem, SelectChangeEvent } from "@mui/material";
-import { GridRenderCellParams } from "@mui/x-data-grid";
+import { Box, MenuItem, Select, SelectChangeEvent } from "@mui/material";
+import { GridRenderCellParams, useGridApiContext } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { useMemo, useState } from "react";
 import { useStore } from "../../../../hooks/useStore";
@@ -16,13 +16,14 @@ const SelectCategoryEditComp = (props: GridRenderCellParams) => {
     [getUserBankNames]
   );
 
-  const { id, api, field } = props;
+  const { id, field } = props;
+  const api = useGridApiContext();
 
   const handleChange = async (event: SelectChangeEvent) => {
     event.preventDefault();
     const value = event.target.value;
     setDisplayValue(value);
-    api.setEditCellValue({ id, field, value }, event);
+    api.current.setEditCellValue({ id, field, value }, event);
   };
 
   return (
