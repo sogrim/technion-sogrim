@@ -172,6 +172,7 @@ pub async fn update_settings(
 ) -> Result<HttpResponse, AppError> {
     let user_id = user.sub.clone();
     user.settings = settings.into_inner();
+    user.details.modified = true; // Hack - TODO: increase level of modified to User (instead of UserDetails)
     let document = doc! {"$set" : to_bson(&user)?};
     db.update::<User>(&user_id, document).await?;
     Ok(HttpResponse::Ok().finish())
