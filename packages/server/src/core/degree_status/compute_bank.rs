@@ -16,7 +16,7 @@ impl<'a> DegreeStatusHandler<'a> {
         course_list_for_bank: Vec<CourseId>,
         credit_overflow: f32,
         missing_credit_from_prev_banks: f32,
-        courses_overflow: u32,
+        courses_overflow: usize,
     ) {
         let bank_rule_handler = BankRuleHandler {
             degree_status: self.degree_status,
@@ -98,10 +98,12 @@ impl<'a> DegreeStatusHandler<'a> {
                 course_bank_name: bank.name.clone(),
                 bank_rule_name: bank.rule.to_string(),
                 credit_requirement: new_bank_credit,
-                course_requirement: if let Rule::AccumulateCourses(num_courses) = bank.rule {
-                    Some(num_courses)
-                } else {
-                    None
+                course_requirement: match &bank.rule {
+                    Rule::AccumulateCourses(num_courses) => Some(*num_courses),
+                    Rule::SpecializationGroups(sg) if new_bank_credit.is_none() => {
+                        Some(sg.groups_number)
+                    }
+                    _ => None,
                 },
                 credit_completed: sum_credit,
                 course_completed: count_courses,

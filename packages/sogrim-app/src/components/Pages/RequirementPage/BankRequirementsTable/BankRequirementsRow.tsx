@@ -13,6 +13,7 @@ import { ExpandMore } from "@mui/icons-material";
 import {
   ACCUMULATE_COURSES,
   CourseBankReq,
+  SPECIALIZATION_GROUPS,
 } from "../../../../types/data-types";
 import { LinearProgressBar } from "./LinearProgressBar";
 import { BankChip } from "./BankChip";
@@ -54,13 +55,17 @@ const BankRequirementRowComp: React.FC<BankRequirementRowProps> = ({
   const progress =
     course_requirement === null && credit_requirement === null
       ? null
-      : bank_rule_name === ACCUMULATE_COURSES
+      : bank_rule_name === ACCUMULATE_COURSES ||
+        (bank_rule_name === SPECIALIZATION_GROUPS &&
+          credit_requirement === null)
       ? (course_completed / course_requirement) * 100
       : (credit_completed / credit_requirement) * 100;
 
   const subtitle =
     bank_rule_name === ACCUMULATE_COURSES
       ? `השלמת ${course_completed} מתוך ${course_requirement} קורסים`
+      : bank_rule_name === SPECIALIZATION_GROUPS && credit_requirement === null
+      ? `השלמת ${course_completed} מתוך ${course_requirement} קבוצות`
       : `השלמת ${credit_completed} מתוך ${credit_requirement} נק״ז`;
 
   return (
