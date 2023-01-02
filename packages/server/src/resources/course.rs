@@ -109,6 +109,10 @@ impl CourseStatus {
         self.state == Some(CourseState::Complete)
     }
 
+    pub fn credit(&self) -> Option<f32> {
+        self.completed().then_some(self.course.credit)
+    }
+
     pub fn extract_semester(&self) -> f32 {
         self.semester
             .as_ref()
@@ -143,16 +147,17 @@ impl CourseStatus {
                 Some(CourseState::NotComplete)
             });
     }
-    pub fn set_type(&mut self, r#type: String) -> &mut Self {
-        self.r#type = Some(r#type);
+    pub fn set_type(&mut self, r#type: impl AsRef<str>) -> &mut Self {
+        self.r#type = Some(r#type.as_ref().to_owned());
         self
     }
-    pub fn set_msg(&mut self, msg: String) -> &mut Self {
-        self.additional_msg = Some(msg);
+
+    pub fn set_msg(&mut self, msg: impl AsRef<str>) -> &mut Self {
+        self.additional_msg = Some(msg.as_ref().to_owned());
         self
     }
-    pub fn set_specialization_group_name(&mut self, group_name: &str) {
-        self.specialization_group_name = Some(group_name.to_string());
+    pub fn set_specialization_group_name(&mut self, group_name: impl AsRef<str>) {
+        self.specialization_group_name = Some(group_name.as_ref().to_owned());
     }
 
     pub fn is_sport(&self) -> bool {
