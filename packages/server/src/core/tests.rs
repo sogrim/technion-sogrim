@@ -70,6 +70,41 @@ async fn test_asterisk_course_input_from_chrome_browser() {
     assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_1");
 }
 
+#[test]
+async fn test_parser_reverse_credit_hotfix() {
+    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
+        .expect("Something went wrong reading the file");
+    let courses_display_from_pdf =
+        parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
+    assert_eq!(
+        courses_display_from_pdf
+            .iter()
+            .find(|cs| cs.course.id == "320101")
+            .unwrap()
+            .course
+            .credit,
+        1.0
+    );
+    assert_eq!(
+        courses_display_from_pdf
+            .iter()
+            .find(|cs| cs.course.id == "320102")
+            .unwrap()
+            .course
+            .credit,
+        1.0
+    );
+    assert_eq!(
+        courses_display_from_pdf
+            .iter()
+            .find(|cs| cs.course.id == "324033")
+            .unwrap()
+            .course
+            .credit,
+        3.0
+    );
+}
+
 lazy_static! {
     static ref COURSES: HashMap<String, Course> = HashMap::from([
         (
@@ -605,6 +640,13 @@ async fn test_missing_credit() {
         messages::credit_leftovers_msg(5.5)
     );
 }
+
+// #[test]
+// async fn modify_users_with_invalid_course_credit() {
+//     dotenv().ok();
+//     let db = Db::new().await;
+//     db.get_all()
+// }
 
 #[test]
 async fn test_overflow_credit() {
