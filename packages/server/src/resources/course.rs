@@ -163,6 +163,11 @@ impl CourseStatus {
     pub fn is_sport(&self) -> bool {
         self.course.id.starts_with("394")
     }
+
+    pub fn is_language(&self) -> bool {
+        let course_num = self.course.id.parse::<u32>().unwrap_or_default();
+        (324600..=324695).contains(&course_num) || (324002..=324068).contains(&course_num)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

@@ -34,7 +34,6 @@ impl<'a> DegreeStatusHandler<'a> {
         let mut count_courses = 0; // for accumulate courses rule
         let mut missing_credit = 0.0; // for all rule
         let mut completed = true;
-        let mut groups_done_list = Vec::new(); // for specialization groups rule
         let mut msg = None;
 
         match bank.rule {
@@ -69,6 +68,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 }
             }
             Rule::SpecializationGroups(ref specialization_groups) => {
+                let mut groups_done_list = Vec::new();
                 sum_credit = bank_rule_handler
                     .specialization_group(specialization_groups, &mut groups_done_list);
                 completed = groups_done_list.len() >= specialization_groups.groups_number;

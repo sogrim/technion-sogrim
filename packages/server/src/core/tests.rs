@@ -795,10 +795,6 @@ async fn test_software_engineer_itinerary() {
     );
     assert_eq!(
         degree_status.overflow_msgs[2],
-        messages::credit_overflow_msg(2.0, "בחירת העשרה", "בחירה חופשית")
-    );
-    assert_eq!(
-        degree_status.overflow_msgs[3],
         messages::credit_leftovers_msg(0.0)
     );
 }

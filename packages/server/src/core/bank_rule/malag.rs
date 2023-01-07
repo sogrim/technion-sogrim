@@ -15,12 +15,12 @@ impl<'a> BankRuleHandler<'a> {
                 .filter(|course_status| {
                     malag_courses.contains(&course_status.course.id)
                         || course_status.r#type.is_some()
-                        // TODO: remove next line after we get the answer from the coordinators
-                        || (course_status.course.id.starts_with("324") && course_status.course.credit == 2.0)
+                        // TODO: maybe think of a better way to do this
+                        || (course_status.course.id.starts_with("324") 
+                            && course_status.course.credit == 2.0 
+                            && !course_status.is_language())
                 })
-                .filter_map(|course_status| {
-                    course_status.set_type(&self.bank_name).credit()
-                })
+                .filter_map(|course_status| course_status.set_type(&self.bank_name).credit())
                 .sum::<f32>()
     }
 }
