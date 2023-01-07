@@ -6,6 +6,5 @@ pub mod parser;
 pub mod types;
 
 pub mod catalog_validations;
-#[allow(clippy::float_cmp)]
 #[cfg(test)]
 pub mod tests;

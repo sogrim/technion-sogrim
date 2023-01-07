@@ -3,8 +3,6 @@ use crate::resources::course::CourseId;
 use super::BankRuleHandler;
 
 impl<'a> BankRuleHandler<'a> {
-    // TODO: remove this when removing the condition in the if statement
-    #[allow(clippy::float_cmp)]
     pub fn malag(self, malag_courses: &[CourseId]) -> f32 {
         self.credit_overflow
             + self
