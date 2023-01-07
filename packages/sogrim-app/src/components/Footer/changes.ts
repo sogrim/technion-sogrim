@@ -5,6 +5,12 @@ export type VersionChanges = {
 
 export const versionChanges: VersionChanges[] = [
   {
+    version: "v1.1.2",
+    changes: [
+      'תוקן באג שבו לחלק מהסטודנטים הנק"ז של הקורסים היה שגוי לאחר העתקה מגיליון הציונים',
+    ],
+  },
+  {
     version: "v1.1.1",
     changes: [
       "נוספו כל הקטלוגים ממסלול הנדסת נתונים ומידע מ3 השנים האחרונות",
