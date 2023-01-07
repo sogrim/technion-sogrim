@@ -641,13 +641,6 @@ async fn test_missing_credit() {
     );
 }
 
-// #[test]
-// async fn modify_users_with_invalid_course_credit() {
-//     dotenv().ok();
-//     let db = Db::new().await;
-//     db.get_all()
-// }
-
 #[test]
 async fn test_overflow_credit() {
     let degree_status = run_degree_status_full_flow(
