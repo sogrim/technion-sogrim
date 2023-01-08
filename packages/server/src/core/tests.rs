@@ -74,35 +74,8 @@ async fn test_asterisk_course_input_from_chrome_browser() {
 async fn test_parser_reverse_credit_hotfix() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
         .expect("Something went wrong reading the file");
-    let courses_display_from_pdf =
-        parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
-    assert_eq!(
-        courses_display_from_pdf
-            .iter()
-            .find(|cs| cs.course.id == "320101")
-            .unwrap()
-            .course
-            .credit,
-        1.0
-    );
-    assert_eq!(
-        courses_display_from_pdf
-            .iter()
-            .find(|cs| cs.course.id == "320102")
-            .unwrap()
-            .course
-            .credit,
-        1.0
-    );
-    assert_eq!(
-        courses_display_from_pdf
-            .iter()
-            .find(|cs| cs.course.id == "324033")
-            .unwrap()
-            .course
-            .credit,
-        3.0
-    );
+
+    parser::parse_copy_paste_data(&from_pdf).expect_err("should fail to parse pdf data");
 }
 
 lazy_static! {
