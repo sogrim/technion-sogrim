@@ -34,6 +34,7 @@ export type CourseStatus = {
 };
 
 export const ACCUMULATE_COURSES = "accumulate courses";
+export const SPECIALIZATION_GROUPS = "specialization groups";
 export const ALL = "all";
 
 export type CourseBankReq = {

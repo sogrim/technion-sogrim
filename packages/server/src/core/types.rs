@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub type Chain = Vec<CourseId>;
-pub type NumCourses = u32;
+pub type NumCourses = usize;
 
 #[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
@@ -74,15 +74,15 @@ pub struct Requirement {
     pub course_bank_name: String,
     pub bank_rule_name: String,
     pub credit_requirement: Option<f32>,
-    pub course_requirement: Option<u32>,
+    pub course_requirement: Option<usize>,
     pub credit_completed: f32,
-    pub course_completed: u32,
+    pub course_completed: usize,
     pub completed: bool, //Did the user complete the necessary demands for this bank
     // TODO planing ...
     pub message: Option<String>,
 }
 pub struct CreditInfo {
     pub sum_credit: f32,
-    pub count_courses: u32,
+    pub count_courses: usize,
     pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user (equal unless there was a replacement)
 }

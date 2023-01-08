@@ -72,6 +72,8 @@ pub async fn update_catalog(
         .iter_mut()
         .for_each(|cs| {
             cs.r#type = None;
+            cs.specialization_group_name = None;
+            cs.additional_msg = None;
         });
 
     let updated_user = db

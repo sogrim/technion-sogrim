@@ -38,56 +38,57 @@ impl DegreeStatus {
     // This function sets the state for all courses where their state is "in progress" to "complete"
     // and returns a list of all courses which were changed, (CourseId, Semester) is a key for each courseStatus.
     pub fn set_in_progress_to_complete(&mut self) -> Vec<(CourseId, Option<String>)> {
-        let mut changed_course_statuses = Vec::new();
-        for course_status in self.course_statuses.iter_mut() {
-            if course_status.state == Some(CourseState::InProgress) {
-                changed_course_statuses.push((
+        self.course_statuses
+            .iter_mut()
+            .filter(|course_status| course_status.state == Some(CourseState::InProgress))
+            .map(|course_status| {
+                course_status.state = Some(CourseState::Complete);
+                (
                     course_status.course.id.clone(),
                     course_status.semester.clone(),
-                ));
-                course_status.state = Some(CourseState::Complete);
-            }
-        }
-        changed_course_statuses
+                )
+            })
+            .collect()
     }
 
     // This function gets a list of courses and sets their state to "in progress"
     pub fn set_to_in_progress(&mut self, course_list: Vec<(CourseId, Option<String>)>) {
-        for course_status in self.course_statuses.iter_mut() {
-            if course_list.contains(&(
-                course_status.course.id.clone(),
-                course_status.semester.clone(),
-            )) && course_status.state == Some(CourseState::Complete)
-            {
+        self.course_statuses
+            .iter_mut()
+            .filter(|course_status| {
+                course_list.contains(&(
+                    course_status.course.id.clone(),
+                    course_status.semester.clone(),
+                )) && course_status.state == Some(CourseState::Complete)
+            })
+            .for_each(|course_status| {
                 course_status.state = Some(CourseState::InProgress);
-            }
-        }
+            })
     }
 }
 
 pub struct DegreeStatusHandler<'a> {
-    pub degree_status: &'a mut DegreeStatus,
-    pub course_banks: Vec<CourseBank>,
-    pub catalog: Catalog,
-    pub courses: HashMap<CourseId, Course>,
-    pub malag_courses: Vec<CourseId>,
-    pub credit_overflow_map: HashMap<String, f32>,
-    pub missing_credit_map: HashMap<String, f32>,
-    pub courses_overflow_map: HashMap<String, f32>,
+    degree_status: &'a mut DegreeStatus,
+    course_banks: Vec<CourseBank>,
+    catalog: Catalog,
+    courses: HashMap<CourseId, Course>,
+    malag_courses: Vec<CourseId>,
+    credit_overflow_map: HashMap<String, f32>,
+    missing_credit_map: HashMap<String, f32>,
+    courses_overflow_map: HashMap<String, f32>,
 }
 
 impl<'a> DegreeStatusHandler<'a> {
-    fn find_next_bank(&self, bank_name: &str) -> Option<&CourseBank> {
-        for overflow_rule in &self.catalog.credit_overflows {
-            if overflow_rule.from == bank_name {
-                return self.catalog.get_course_bank_by_name(&overflow_rule.to);
-            }
-        }
-        None
-    }
     fn find_next_bank_with_credit_requirement(&self, bank_name: &str) -> Option<String> {
+        let find_next_bank = |bank_name: &str| {
+            self.catalog
+                .credit_overflows
+                .iter()
+                .find(|overflow| overflow.from == bank_name)
+                .and_then(|overflow| self.catalog.get_course_bank_by_name(&overflow.to))
+        };
         let mut current_bank = bank_name.to_string();
-        while let Some(course_bank) = self.find_next_bank(&current_bank) {
+        while let Some(course_bank) = find_next_bank(&current_bank) {
             if course_bank.credit.is_none() {
                 current_bank = course_bank.name.clone();
             } else {
@@ -95,14 +96,6 @@ impl<'a> DegreeStatusHandler<'a> {
             }
         }
         None
-    }
-
-    fn calculate_credit_leftovers(&self) -> f32 {
-        let mut sum_credit = 0.0;
-        for credit_overflow in self.credit_overflow_map.values() {
-            sum_credit += *credit_overflow;
-        }
-        sum_credit
     }
 }
 

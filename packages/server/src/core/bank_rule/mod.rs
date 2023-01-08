@@ -25,7 +25,7 @@ pub struct BankRuleHandler<'a> {
     pub course_list: Vec<CourseId>,
     pub courses: &'a HashMap<CourseId, Course>,
     pub credit_overflow: f32,
-    pub courses_overflow: u32,
+    pub courses_overflow: usize,
     pub catalog_replacements: &'a HashMap<CourseId, OptionalReplacements>,
     pub common_replacements: &'a HashMap<CourseId, OptionalReplacements>,
 }

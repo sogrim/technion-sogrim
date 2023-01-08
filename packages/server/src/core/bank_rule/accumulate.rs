@@ -6,7 +6,7 @@ impl<'a> BankRuleHandler<'a> {
         credit_info.sum_credit
     }
 
-    pub fn accumulate_courses(mut self, count_courses: &mut u32) -> f32 {
+    pub fn accumulate_courses(mut self, count_courses: &mut usize) -> f32 {
         let credit_info = self.iterate_course_list();
         *count_courses = credit_info.count_courses;
         credit_info.sum_credit
