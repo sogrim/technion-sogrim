@@ -66,7 +66,8 @@ impl<'a> BankRuleHandler<'a> {
             })
             .for_each(|(course_id, course_status)| {
                 handled_courses.insert(course_id, course_status.course.id.clone());
-                if let Some(credit) = course_status.set_type(&self.bank_name).credit() {
+                course_status.set_type(&self.bank_name);
+                if let Some(credit) = course_status.credit() {
                     sum_credit += credit;
                     count_courses += 1;
                 }
