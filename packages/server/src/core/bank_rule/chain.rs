@@ -1,34 +1,36 @@
-use crate::core::types::Chain;
+use crate::{
+    core::types::Chain,
+    resources::course::{CourseId, CourseStatus},
+};
 
 use super::BankRuleHandler;
 
 impl<'a> BankRuleHandler<'a> {
     pub fn chain(mut self, chains: &[Chain], chain_done: &mut Vec<String>) -> f32 {
         let credit_info = self.iterate_course_list();
+        let map_to_actual_course = |course_id: &CourseId| -> Option<&CourseStatus> {
+            credit_info
+                .handled_courses
+                .get(course_id)
+                .and_then(|course_id| self.degree_status.get_course_status(course_id))
+        };
         for chain in chains {
-            //check if the user completed one of the chains.
-            let mut completed_chain = true;
-            for course_id in chain {
-                if let Some(course_id) = credit_info.handled_courses.get(course_id) {
-                    if let Some(course_status) = self.degree_status.get_course_status(course_id) {
-                        if course_status.completed() {
-                            chain_done.push(course_status.course.name.clone());
-                        } else {
-                            completed_chain = false;
-                            break;
-                        }
-                    }
-                } else {
-                    completed_chain = false;
-                    break;
-                }
-            }
-            if completed_chain {
-                return credit_info.sum_credit;
-            } else {
-                chain_done.clear();
+            let chain_complete = chain.iter().all(|course_id| {
+                map_to_actual_course(course_id)
+                    .map(|course_status| course_status.completed())
+                    .unwrap_or(false)
+            });
+            if chain_complete {
+                *chain_done = chain
+                    .iter()
+                    .filter_map(|course_id| map_to_actual_course(course_id))
+                    .map(|course_status| course_status.course.name.clone())
+                    .collect();
+
+                break;
             }
         }
+
         credit_info.sum_credit
     }
 }

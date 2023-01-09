@@ -25,7 +25,7 @@ impl<'a> DegreeStatusHandler<'a> {
             }
 
             self.compute_bank(
-                &bank,
+                bank,
                 course_list_for_bank,
                 credit_overflow,
                 missing_credit,
