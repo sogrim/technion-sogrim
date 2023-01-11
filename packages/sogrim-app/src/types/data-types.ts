@@ -25,7 +25,7 @@ export type CourseGradeOptions =
 export type CourseStatus = {
   course: Course;
   grade?: string;
-  semester: string;
+  semester: string | null;
   state: CourseState;
   type?: string;
   modified: boolean;

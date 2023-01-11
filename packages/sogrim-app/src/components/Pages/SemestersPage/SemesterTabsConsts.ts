@@ -7,7 +7,7 @@ export interface RowData {
   state: string;
   type?: string;
   grade?: string;
-  semester: string;
+  semester: string | null;
   sg_name?: string;
   msg?: string;
 }
