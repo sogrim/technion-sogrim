@@ -12,7 +12,7 @@ import { RootStore } from "./RootStore";
 const isCourseRowEqualToCourseStatus = (
   row: RowData,
   courseStatus: CourseStatus,
-  semester: string
+  semester: string | null
 ) =>
   row.courseNumber === courseStatus.course._id &&
   row.name === courseStatus.course.name &&
@@ -163,7 +163,7 @@ export class DataStore {
     return rows;
   };
 
-  updateCourseInUserDetails = (rowData: RowData, semester: string) => {
+  updateCourseInUserDetails = (rowData: RowData, semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
 
     const updateCourseRow: CourseStatus = {
@@ -200,7 +200,7 @@ export class DataStore {
     return this.userDetails;
   };
 
-  deleteCourseInUserDetails = (rowData: RowData, semester: string) => {
+  deleteCourseInUserDetails = (rowData: RowData, semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
     const idx = courseList.findIndex(
       (courseStatus) =>
@@ -216,7 +216,7 @@ export class DataStore {
     return this.userDetails;
   };
 
-  insertCourseInUserDetails = (rowData: RowData, semester: string) => {
+  insertCourseInUserDetails = (rowData: RowData, semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
 
     const newCourse: CourseStatus = {
@@ -239,7 +239,7 @@ export class DataStore {
     return this.userDetails;
   };
 
-  deleteSemesterInUserDetails = (semester: string) => {
+  deleteSemesterInUserDetails = (semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
     const newCourseList = [...courseList];
 

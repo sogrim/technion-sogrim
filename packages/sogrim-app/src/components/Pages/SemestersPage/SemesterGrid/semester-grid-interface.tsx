@@ -1,4 +1,8 @@
-import { GridColumns, GridComparatorFn } from "@mui/x-data-grid";
+import {
+  GridColumns,
+  GridComparatorFn,
+  GridRenderCellParams,
+} from "@mui/x-data-grid";
 import { renderDeleteCell } from "./DeleteRowCell";
 import { renderCategoryEditInputCell } from "./EditCategoryCell";
 import { renderGradeEditInputCell } from "./EditGradeCell";
@@ -15,7 +19,7 @@ const gradeComparator: GridComparatorFn = (v1: any, v2: any) => {
 
 export const MAX_GRID_WIDTH = 1100;
 
-export const columns: GridColumns = [
+export const columns = (isSemester0: boolean): GridColumns => [
   {
     field: "name",
     headerName: "קורס",
@@ -51,13 +55,14 @@ export const columns: GridColumns = [
     headerAlign: "center",
     align: "center",
     sortComparator: gradeComparator,
-    renderEditCell: renderGradeEditInputCell,
+    renderEditCell: (params: GridRenderCellParams) =>
+      renderGradeEditInputCell(params, isSemester0),
   },
   {
     field: "type",
     headerName: "קטגוריה",
     flex: 210 / MAX_GRID_WIDTH,
-    editable: true,
+    editable: !isSemester0,
     headerAlign: "center",
     align: "center",
     renderEditCell: renderCategoryEditInputCell,
