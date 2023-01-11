@@ -9,7 +9,7 @@ impl<'a> DegreeStatusHandler<'a> {
             let credit_overflow = self.calculate_overflows(&bank.name, Transfer::CreditOverflow);
             let missing_credit = self.calculate_overflows(&bank.name, Transfer::MissingCredit);
             let courses_overflow =
-                self.calculate_overflows(&bank.name, Transfer::CoursesOverflow) as u32;
+                self.calculate_overflows(&bank.name, Transfer::CoursesOverflow) as usize;
 
             if bank.credit.is_none() {
                 // Add a message where this bank's credit are counted.
@@ -25,7 +25,7 @@ impl<'a> DegreeStatusHandler<'a> {
             }
 
             self.compute_bank(
-                &bank,
+                bank,
                 course_list_for_bank,
                 credit_overflow,
                 missing_credit,
@@ -33,7 +33,7 @@ impl<'a> DegreeStatusHandler<'a> {
             );
         }
 
-        let credit_leftovers = self.calculate_credit_leftovers(); // if different from 0 then the user has extra credit he doesn't use
+        let credit_leftovers = self.credit_overflow_map.values().sum(); // if different from 0 then the user has extra credit he doesn't use
         self.degree_status.total_credit += credit_leftovers;
         self.degree_status
             .overflow_msgs

@@ -7,7 +7,7 @@ export interface RowData {
   state: string;
   type?: string;
   grade?: string;
-  semester: string;
+  semester: string | null;
   sg_name?: string;
   msg?: string;
 }
@@ -54,7 +54,7 @@ export const headCells: readonly HeadCell[] = [
     id: "state",
     numeric: true,
     disablePadding: false,
-    label: "סטאטוס",
+    label: "סטטוס",
   },
 ];
 

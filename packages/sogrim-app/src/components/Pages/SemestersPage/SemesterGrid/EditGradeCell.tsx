@@ -8,11 +8,19 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
-import { GridRenderCellParams } from "@mui/x-data-grid";
+import {
+  GridRenderCellParams,
+  GridRenderEditCellParams,
+  useGridApiContext,
+} from "@mui/x-data-grid";
 import { useState } from "react";
 import { courseGradeOptions } from "../SemesterTabsConsts";
 
-const EditGradeCellComp = (props: GridRenderCellParams) => {
+interface EditGradeCellCompParams extends GridRenderCellParams {
+  isSemester0: boolean;
+}
+
+const EditGradeCellComp = (props: EditGradeCellCompParams) => {
   const [displayValue, setDisplayValue] = useState<string>(props.row.grade);
 
   const [gradeToggle, setGradeToggle] = useState<boolean>(true);
@@ -23,14 +31,15 @@ const EditGradeCellComp = (props: GridRenderCellParams) => {
     setGradeToggle(!gradeToggle);
   };
 
-  const { id, api, field } = props;
+  const { id, field } = props;
+  const api = useGridApiContext();
 
   const handleChangeSelect = async (event: SelectChangeEvent) => {
     event.preventDefault();
     const value = event.target.value;
     setDisplayValue(value);
     setNonNumericGrade(value);
-    api.setEditCellValue({ id, field, value }, event);
+    api.current.setEditCellValue({ id, field, value }, event);
   };
 
   const handleChangeNumber = async (
@@ -39,17 +48,19 @@ const EditGradeCellComp = (props: GridRenderCellParams) => {
     event.preventDefault();
     const value = event.target.value;
     setDisplayValue(value);
-    api.setEditCellValue({ id, field, value }, event);
+    api.current.setEditCellValue({ id, field, value }, event);
   };
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", p: 1 }}>
-      <Tooltip title={gradeToggle ? "ציון לא מספרי" : "ציון מספרי"} arrow>
-        <IconButton color="primary" onClick={gradeToggleClick}>
-          <AutoFixNormalOutlinedIcon />
-        </IconButton>
-      </Tooltip>
-      {gradeToggle ? (
+      {!props.isSemester0 && (
+        <Tooltip title={gradeToggle ? "ציון לא מספרי" : "ציון מספרי"} arrow>
+          <IconButton color="primary" onClick={gradeToggleClick}>
+            <AutoFixNormalOutlinedIcon />
+          </IconButton>
+        </Tooltip>
+      )}
+      {gradeToggle && !props.isSemester0 ? (
         <TextField
           id="course-grade"
           value={displayValue}
@@ -70,11 +81,13 @@ const EditGradeCellComp = (props: GridRenderCellParams) => {
           size="small"
           sx={{ width: "140px" }}
         >
-          {courseGradeOptions.map((option) => (
-            <MenuItem key={option} value={option}>
-              {option}
-            </MenuItem>
-          ))}
+          {courseGradeOptions
+            .filter((option) => !props.isSemester0 || option.includes("פטור"))
+            .map((option) => (
+              <MenuItem key={option} value={option}>
+                {option}
+              </MenuItem>
+            ))}
         </Select>
       )}
     </Box>
@@ -83,6 +96,10 @@ const EditGradeCellComp = (props: GridRenderCellParams) => {
 
 const EditGradeCell = EditGradeCellComp;
 
-export function renderGradeEditInputCell(params: any) {
-  return <EditGradeCell {...params} />;
+export function renderGradeEditInputCell(
+  params: GridRenderEditCellParams,
+  isSemester0: boolean
+) {
+  // Send params and isSemester0 to EditGradeCell
+  return <EditGradeCell {...params} isSemester0={isSemester0} />;
 }

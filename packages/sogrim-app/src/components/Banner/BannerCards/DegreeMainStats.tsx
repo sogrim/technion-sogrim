@@ -8,8 +8,8 @@ const DegreeMainStatsComp: React.FC = () => {
   const {
     dataStore: { userDetails, getUserGPA, getNumberOfBankComplete },
   } = useStore();
-  const [gpa, setGpa] = useState<number | null>(null);
-  const [banksDone, setBanksDone] = useState<number | null>(0);
+  const [gpa, setGpa] = useState<number>(getUserGPA());
+  const [banksDone, setBanksDone] = useState<number>(getNumberOfBankComplete());
   const [confetti, setConfetti] = useState(false);
   const [confettiRecycle, setConfettiRecycle] = useState(false);
   const totalBanks =
@@ -42,7 +42,7 @@ const DegreeMainStatsComp: React.FC = () => {
     <Card sx={{ minWidth: 275, maxHeight: 150 }}>
       <CardContent>
         <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
-          סטטיטיקות תואר
+          סטטיסטיקות תואר
         </Typography>
         <Typography sx={{ fontSize: 18 }} color="text.primary">
           {`ממוצע כללי: ${gpa} `}
@@ -61,7 +61,6 @@ const DegreeMainStatsComp: React.FC = () => {
         </Button>
         {confetti && (
           <Confetti
-            width={2000}
             numberOfPieces={500}
             recycle={confettiRecycle}
             onConfettiComplete={() => setConfetti(false)}

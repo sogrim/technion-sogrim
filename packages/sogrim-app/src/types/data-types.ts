@@ -5,6 +5,7 @@ export type Catalog = {
   _id: {
     $oid: string;
   };
+  course_bank_names: string[];
 };
 
 export type Course = {
@@ -24,7 +25,7 @@ export type CourseGradeOptions =
 export type CourseStatus = {
   course: Course;
   grade?: string;
-  semester: string;
+  semester: string | null;
   state: CourseState;
   type?: string;
   modified: boolean;
@@ -33,6 +34,7 @@ export type CourseStatus = {
 };
 
 export const ACCUMULATE_COURSES = "accumulate courses";
+export const SPECIALIZATION_GROUPS = "specialization groups";
 export const ALL = "all";
 
 export type CourseBankReq = {

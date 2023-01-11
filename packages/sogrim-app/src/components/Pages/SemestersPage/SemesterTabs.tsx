@@ -6,13 +6,12 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useStore } from "../../../hooks/useStore";
 import { SemesterOptions } from "../../../types/ui-types";
 import { TabPanel } from "../../AppPages/TabPanel";
-import LoadingEndGameSkeleton from "../../Commom/LoadingEndGameSkeleton";
+import LoadingEndGameSkeleton from "../../Common/LoadingEndGameSkeleton";
+import { MAX_GRID_WIDTH } from "./SemesterGrid/semester-grid-interface";
 import { SemesterGrid } from "./SemesterGrid/SemesterGrid";
 import { SemesterOptionsButton } from "./SemesterOptionsButton";
 
 const SemesterTabsComp = () => {
-  const [allSemesters, setAllSemesters] = useState<string[] | null>(null);
-
   const { userAuthToken } = useAuth();
   const { mutate, isError, error } = useUpdateUserState(userAuthToken);
   const {
@@ -30,6 +29,10 @@ const SemesterTabsComp = () => {
     },
   } = useStore();
 
+  const [allSemesters, setAllSemesters] = useState<string[]>(
+    getAllUserSemesters(userDetails.degree_status.course_statuses)
+  );
+
   const handleChangeSemester = (newSemesterTab: number) => {
     setCurrentSemester(newSemesterTab);
   };
@@ -44,11 +47,6 @@ const SemesterTabsComp = () => {
   };
 
   useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (userDetails) {
       setAllSemesters(
         getAllUserSemesters(userDetails.degree_status.course_statuses)
@@ -115,12 +113,12 @@ const SemesterTabsComp = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ width: "80%", maxWidth: MAX_GRID_WIDTH }}>
       <Box
         sx={{
           display: "flex",
           flexDirection: "row",
-          width: "1100px",
+          width: "100%",
           mb: 1,
           justifyContent:
             !allSemesters || allSemesters.length === 0

@@ -45,7 +45,7 @@ export const LinearProgressMultiColorWithLabel = (props: {
           />
         </Box>
         <Box
-          sx={{ display: "flex", flexDiretion: "row", minWidth: 35, mr: -1 }}
+          sx={{ display: "flex", flexDirection: "row", minWidth: 35, mr: -1 }}
         >
           <Typography variant="body2">
             {`${Math.round(props.totalProgress)}%`}

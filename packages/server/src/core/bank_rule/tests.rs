@@ -330,7 +330,7 @@ async fn test_rule_sport() {
 }
 #[test]
 async fn test_specialization_group() {
-    // Simulate specialization groups behavior from catalog 2018 computer enginnering
+    // Simulate specialization groups behavior from catalog 2018 computer engineering
     let bank_name = "specialization group".to_string();
     let mut degree_status = DegreeStatus {
         course_statuses: vec![

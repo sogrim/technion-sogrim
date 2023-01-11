@@ -3,6 +3,7 @@ import { RootStore } from "../stores/RootStore";
 
 interface StoreProviderProps {
   store: RootStore;
+  children?: React.ReactNode;
 }
 
 export const StoreContext = React.createContext({} as RootStore);

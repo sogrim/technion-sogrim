@@ -1,11 +1,11 @@
 import { makeAutoObservable } from "mobx";
 import { AuthService } from "../services/auth";
-import { GoogleClinetSession } from "../types/auth-types";
+import { GoogleClientSession } from "../types/auth-types";
 
 export class AuthStore {
   private authenticated: boolean = false;
   public userCredentialResponse: CredentialResponse = {};
-  public googleSession: GoogleClinetSession = GoogleClinetSession.LOAD;
+  public googleSession: GoogleClientSession = GoogleClientSession.LOAD;
 
   constructor(private readonly authService: AuthService) {
     makeAutoObservable(this);
@@ -31,13 +31,13 @@ export class AuthStore {
   }
 
   get userAuthToken() {
-    if (this.googleSession === GoogleClinetSession.DONE) {
+    if (this.googleSession === GoogleClientSession.DONE) {
       return this.userCredentialResponse.credential;
     }
     return null;
   }
 
-  setGoogleSession = (gss: GoogleClinetSession) => {
+  setGoogleSession = (gss: GoogleClientSession) => {
     this.googleSession = gss;
   };
 }

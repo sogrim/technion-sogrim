@@ -6,6 +6,7 @@ import {
   AutocompleteInputChangeReason,
   Box,
   Divider,
+  FormHelperText,
   IconButton,
   MenuItem,
   Select,
@@ -23,13 +24,16 @@ import {
   newEmptyRow,
   RowData,
 } from "../SemesterTabsConsts";
+import { MAX_GRID_WIDTH } from "./semester-grid-interface";
 
 export interface NewRowProps {
   handleAddClicked: (newRowInput: RowData) => void;
   setAddRowToggle: React.Dispatch<React.SetStateAction<boolean>>;
+  isSemester0: boolean;
 }
 
 const NewRowComp: React.FC<NewRowProps> = ({
+  isSemester0,
   handleAddClicked,
   setAddRowToggle,
 }) => {
@@ -167,7 +171,7 @@ const NewRowComp: React.FC<NewRowProps> = ({
         display: "flex",
         gap: 0.5,
         height: 40,
-        width: 1100,
+        width: MAX_GRID_WIDTH,
       }}
     >
       <Autocomplete
@@ -248,12 +252,14 @@ const NewRowComp: React.FC<NewRowProps> = ({
       <Divider orientation="vertical" variant="middle" flexItem />
 
       <>
-        <Tooltip title={gradeToggle ? "ציון לא מספרי" : "ציון מספרי"} arrow>
-          <IconButton size="small" color="primary" onClick={gradeToggleClick}>
-            <AutoFixNormalOutlinedIcon />
-          </IconButton>
-        </Tooltip>
-        {gradeToggle ? (
+        {!isSemester0 && (
+          <Tooltip title={gradeToggle ? "ציון לא מספרי" : "ציון מספרי"} arrow>
+            <IconButton size="small" color="primary" onClick={gradeToggleClick}>
+              <AutoFixNormalOutlinedIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        {gradeToggle && !isSemester0 ? (
           <TextField
             id="course-grade"
             name="grade"
@@ -265,55 +271,54 @@ const NewRowComp: React.FC<NewRowProps> = ({
             helperText="ציון"
           />
         ) : (
+          <Box sx={{ flexDirection: "column" }}>
+            <Select
+              id="course-grade"
+              value={nonNumericGrade}
+              name="grade"
+              onChange={(event, newValue) => {
+                setNonNumericGrade(event.target.value);
+                handleEditChange(event, "grade");
+              }}
+              variant="outlined"
+              size="small"
+              sx={{ width: "170px" }}
+            >
+              {courseGradeOptions
+                .filter((option) => !isSemester0 || option.includes("פטור"))
+                .map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+            </Select>
+            <FormHelperText sx={{ ml: 2 }}>ציון</FormHelperText>
+          </Box>
+        )}
+      </>
+      <Divider orientation="vertical" variant="middle" flexItem />
+
+      {!isSemester0 && (
+        <Box sx={{ flexDirection: "column" }}>
           <Select
-            id="course-grade"
-            value={nonNumericGrade}
-            name="grade"
-            onChange={(event, newValue) => {
-              setNonNumericGrade(event.target.value);
-              handleEditChange(event, "grade");
-            }}
+            id="course-type"
+            name="type"
+            onChange={(event, newValue) => handleEditChange(event, "type")}
+            value={type}
             variant="outlined"
             size="small"
             sx={{ width: "170px" }}
           >
-            {courseGradeOptions.map((option) => (
+            {banksNamesOptions?.map((option) => (
               <MenuItem key={option} value={option}>
                 {option}
               </MenuItem>
             ))}
           </Select>
-        )}
-      </>
-      <Divider orientation="vertical" variant="middle" flexItem />
-
-      <Select
-        id="course-type"
-        name="type"
-        onChange={(event, newValue) => handleEditChange(event, "type")}
-        value={type}
-        variant="outlined"
-        size="small"
-        sx={{ width: "170px" }}
-      >
-        {banksNamesOptions.map((option) => (
-          <MenuItem key={option} value={option}>
-            {option}
-          </MenuItem>
-        ))}
-      </Select>
-      <Divider orientation="vertical" variant="middle" flexItem />
-
-      <TextField
-        disabled
-        id="course-grade"
-        name="state"
-        variant="outlined"
-        size="small"
-        type="number"
-        helperText="סטאטוס"
-      />
-      <Divider orientation="vertical" variant="middle" flexItem />
+          <FormHelperText sx={{ ml: 2 }}>קטגוריה</FormHelperText>
+          <Divider orientation="vertical" variant="middle" flexItem />
+        </Box>
+      )}
 
       <IconButton
         sx={{ alignSelf: "flex-end" }}

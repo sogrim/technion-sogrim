@@ -22,7 +22,13 @@ const ExemptionsAndCreditsComp: React.FC<ExemptionsAndCreditsProps> = () => {
     dataStore: { generateRowsForSemester, userDetails },
   } = useStore();
 
-  const [semester0Courses, setSemester0Courses] = useState<RowData[]>([]);
+  const [semester0Courses, setSemester0Courses] = useState<RowData[]>(
+    generateRowsForSemester(
+      null,
+      userDetails.degree_status.course_statuses,
+      true
+    )
+  );
 
   useEffect(() => {
     if (userDetails) {
@@ -50,8 +56,8 @@ const ExemptionsAndCreditsComp: React.FC<ExemptionsAndCreditsProps> = () => {
       >
         <AccordionSummary
           expandIcon={<ExpandMore />}
-          aria-controls="overflow-collaps"
-          id="overflow-collaps"
+          aria-controls="overflow-collapse"
+          id="overflow-collapse"
         >
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography variant="h6" fontWeight={"bold"}>

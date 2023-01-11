@@ -1,6 +1,5 @@
-import { Alert, Snackbar, Button, Tooltip, Typography } from "@mui/material";
+import { Alert, Button, Snackbar, Tooltip, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { useEffect } from "react";
 import useComputeEndGame from "../../hooks/apiHooks/useComputeEndGame";
 import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
@@ -13,20 +12,12 @@ const ModifiedToastComp = () => {
 
   const { userAuthToken } = useAuth();
 
-  const { refetch, isError, error } = useComputeEndGame(userAuthToken);
+  const { refetch } = useComputeEndGame(userAuthToken);
 
   const triggerComputeEndGame = () => {
     endGameRefetch();
     refetch();
   };
-
-  useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
-  }, [isError, error]);
 
   return (
     <>
@@ -43,7 +34,7 @@ const ModifiedToastComp = () => {
             }}
             severity="info"
           >
-            סטאטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר.
+            סטטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר.
             <Button
               onClick={triggerComputeEndGame}
               sx={{ margin: "0px 5px 0px 5px", fontWeight: "bold" }}
@@ -56,7 +47,7 @@ const ModifiedToastComp = () => {
               arrow
               title={
                 <Typography>
-                  לאחר עריכת קורסים, המידע שלכם נשמר - אך סטאטוס התואר אינו
+                  לאחר עריכת קורסים, המידע שלכם נשמר - אך סטטוס התואר אינו
                   מתעדכן.
                   <br />
                   כאשר תסיימו לערוך ולעדכן את הקורסים שלכם, לחצו על{" "}

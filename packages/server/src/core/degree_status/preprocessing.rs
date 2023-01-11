@@ -1,35 +1,16 @@
-use crate::{
-    core::types::Rule,
-    resources::{
-        catalog::Catalog,
-        course::{CourseId, CourseState},
-    },
+use crate::resources::{
+    catalog::Catalog,
+    course::{CourseId, CourseState},
 };
 
 use super::DegreeStatus;
 
 impl DegreeStatus {
-    // before running the algorithm we remove all the courses added by the algorithm in the previous run to prevent duplications.
-    // the algorithm adds courses only without semester, unmodified, incomplete and to a bank from type "All"
-    fn remove_courses_added_by_algorithm(&mut self, catalog: &mut Catalog) {
-        // get all courses from banks of type All
-        let bank_names = catalog
-            .course_banks
-            .iter()
-            .filter(|bank| bank.rule == Rule::All)
-            .map(|bank| bank.name.clone())
-            .collect::<Vec<_>>();
-
-        self.course_statuses.retain(|course_status| {
-            if let Some(r#type) = &course_status.r#type {
-                course_status.semester.is_some()
-                    || course_status.modified
-                    || course_status.completed()
-                    || !bank_names.contains(r#type)
-            } else {
-                true
-            }
-        });
+    // Courses that are not modified, not completed, and don't have a semester should be removed,
+    // since they were not added by the user and they are irrelevant to the new catalog
+    fn remove_courses_added_by_algorithm(&mut self) {
+        self.course_statuses
+            .retain(|cs| cs.modified || cs.completed() || cs.semester.is_some());
     }
 
     // courses which were tagged as irrelevant in a previous run, and then user added the same courses (same course id) manually, should be removed
@@ -86,7 +67,7 @@ impl DegreeStatus {
         self.overflow_msgs.clear();
         self.total_credit = 0.0;
 
-        self.remove_courses_added_by_algorithm(catalog);
+        self.remove_courses_added_by_algorithm();
         self.remove_irrelevant_courses_added_by_user();
         self.clear_type_for_unmodified_and_irrelevant_courses();
         self.remove_irrelevant_courses_from_catalog(catalog);

@@ -15,11 +15,11 @@ enum IgnoreIconState {
   ShowV = 2,
 }
 
-interface BankRequirmentCourseProps {
+interface BankRequirementCourseProps {
   course: RowData;
 }
 
-const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
+const BankRequirementCourseRowComp: React.FC<BankRequirementCourseProps> = ({
   course,
 }) => {
   const [showIgnoreIcon, setShowIgnoreIcon] = useState<IgnoreIconState>(
@@ -32,11 +32,6 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
   } = useStore();
 
   useEffect(() => {
-    if (isError) {
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (isBankTypeOfCourseAll(course.type)) {
       if (course.state === "לא רלוונטי") {
         setShowIgnoreIcon(IgnoreIconState.ShowV);
@@ -86,7 +81,9 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
       }}
     >
       <Box sx={{ display: "flex", gap: 1 }}>
-        <Typography fontWeight={500}>{course.name} </Typography>
+        <Typography fontWeight={500}>
+          {course.name || course.courseNumber}
+        </Typography>
         <Tooltip
           title={<Typography>מס׳ קורס {course.courseNumber}</Typography>}
           arrow
@@ -119,7 +116,7 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
       </Box>
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <Typography fontWeight={50}>
-          סמסטר {decodeSemesterNumber(course.semester)}
+          סמסטר {decodeSemesterNumber(course.semester!!)}
         </Typography>
         {course.msg && (
           <Tooltip sx={{ fontSize: "14px" }} title={course.msg} arrow>
@@ -158,4 +155,4 @@ const BankRequirmentCourseRowComp: React.FC<BankRequirmentCourseProps> = ({
   );
 };
 
-export const BankRequirmentCourseRow = observer(BankRequirmentCourseRowComp);
+export const BankRequirementCourseRow = observer(BankRequirementCourseRowComp);

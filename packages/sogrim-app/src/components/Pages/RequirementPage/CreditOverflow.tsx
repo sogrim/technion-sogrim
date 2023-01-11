@@ -36,8 +36,8 @@ const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
       >
         <AccordionSummary
           expandIcon={<ExpandMore />}
-          aria-controls="overflow-collaps"
-          id="overflow-collaps"
+          aria-controls="overflow-collapse"
+          id="overflow-collapse"
         >
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography variant="h6" fontWeight={"bold"}>

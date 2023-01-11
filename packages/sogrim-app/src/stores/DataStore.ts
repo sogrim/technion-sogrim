@@ -1,26 +1,36 @@
 import { makeAutoObservable } from "mobx";
-import { createData } from "../components/Pages/SemestersPage/SemesterTable/SemesterTableUtils";
 import { RowData } from "../components/Pages/SemestersPage/SemesterTabsConsts";
 import {
+  ALL,
+  CourseState,
   CourseStatus,
   UserDetails,
-  CourseState,
   UserSettings,
-  ALL,
 } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
+const isCourseRowEqualToCourseStatus = (
+  row: RowData,
+  courseStatus: CourseStatus,
+  semester: string | null
+) =>
+  row.courseNumber === courseStatus.course._id &&
+  row.name === courseStatus.course.name &&
+  row.credit === courseStatus.course.credit &&
+  row.grade === courseStatus.grade &&
+  row.type === courseStatus.type &&
+  row.state === courseStatus.state &&
+  semester === courseStatus.semester;
 export class DataStore {
   public userDetails: UserDetails = {} as UserDetails;
   public userSettings: UserSettings = {} as UserSettings;
-  public userBankNames: string[] = [];
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
   }
 
-  updateStoreUserDetails = (newUserDitails: UserDetails) => {
-    this.userDetails = newUserDitails;
+  updateStoreUserDetails = (newUserDetails: UserDetails) => {
+    this.userDetails = newUserDetails;
   };
 
   updateStoreUserSettings = (newUserSettings: UserSettings) => {
@@ -41,18 +51,15 @@ export class DataStore {
     );
     const allSemesters = Array.from(allSemestersSet);
     allSemesters.sort((first, second) => {
-      let firstSplited = first.split("_");
-      let secondSplited = second.split("_");
-      return Number(firstSplited[1]) >= Number(secondSplited[1]) ? 1 : -1;
+      let firstSplitted = first.split("_");
+      let secondSplitted = second.split("_");
+      return Number(firstSplitted[1]) >= Number(secondSplitted[1]) ? 1 : -1;
     });
     return allSemesters;
   };
 
   getUserBankNames = () => {
-    if (this.userBankNames.length === 0) {
-      this.generateUserBanksNames();
-    }
-    return this.userBankNames;
+    return this.userDetails?.catalog?.course_bank_names;
   };
 
   getUserGPA = (): number => {
@@ -92,16 +99,6 @@ export class DataStore {
     return content.toString();
   };
 
-  private generateUserBanksNames = () => {
-    const userBanksNamesList: string[] = [];
-    this.userDetails?.degree_status?.course_bank_requirements?.forEach(
-      (bankReq) => {
-        userBanksNamesList.push(bankReq.course_bank_name);
-      }
-    );
-    this.userBankNames = userBanksNamesList;
-  };
-
   generateRowsForSemester = (
     semester: string | null,
     courseList: CourseStatus[],
@@ -126,18 +123,17 @@ export class DataStore {
     });
     const rows: RowData[] = [];
     allSemesterCourses.forEach((course) =>
-      rows.push(
-        createData(
-          course.course.name,
-          course.course._id,
-          course.course.credit,
-          course.semester,
-          course.state,
-          this.displayContent(course.grade),
-          this.displayContent(course.type),
-          course.additional_msg
-        )
-      )
+      rows.push({
+        name: course.course.name,
+        courseNumber: course.course._id,
+        credit: course.course.credit,
+        semester: course.semester,
+        state: course.state,
+        grade: this.displayContent(course.grade),
+        type: this.displayContent(course.type),
+        sg_name: course.specialization_group_name,
+        msg: course.additional_msg,
+      })
     );
     return rows;
   };
@@ -151,25 +147,23 @@ export class DataStore {
     });
     const rows: RowData[] = [];
     allSemesterCourses?.forEach((course) =>
-      rows.push(
-        createData(
-          course.course.name,
-          course.course._id,
-          course.course.credit,
-          course.semester,
-          course.state,
-          this.displayContent(course.grade),
-          this.displayContent(course.type),
-          course.specialization_group_name,
-          course.additional_msg
-        )
-      )
+      rows.push({
+        name: course.course.name,
+        courseNumber: course.course._id,
+        credit: course.course.credit,
+        semester: course.semester,
+        state: course.state,
+        grade: this.displayContent(course.grade),
+        type: this.displayContent(course.type),
+        sg_name: course.specialization_group_name,
+        msg: course.additional_msg,
+      })
     );
 
     return rows;
   };
 
-  updateCourseInUserDetails = (rowData: RowData, semester: string) => {
+  updateCourseInUserDetails = (rowData: RowData, semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
 
     const updateCourseRow: CourseStatus = {
@@ -185,25 +179,33 @@ export class DataStore {
       modified: true,
     };
 
-    const updatedCourseStatus: CourseStatus[] = courseList.map((courseStatus) =>
-      courseStatus.course._id === rowData.courseNumber &&
-      courseStatus.semester === rowData.semester
-        ? updateCourseRow
-        : courseStatus
+    const updatedCourseStatuses: CourseStatus[] = courseList.map(
+      (courseStatus) => {
+        if (
+          courseStatus.course._id === rowData.courseNumber &&
+          courseStatus.semester === semester
+        ) {
+          this.userDetails.modified =
+            this.userDetails.modified ||
+            !isCourseRowEqualToCourseStatus(rowData, courseStatus, semester);
+          return updateCourseRow;
+        } else {
+          return courseStatus;
+        }
+      }
     );
 
-    this.userDetails.degree_status.course_statuses = updatedCourseStatus;
-    this.userDetails.modified = true;
+    this.userDetails.degree_status.course_statuses = updatedCourseStatuses;
 
     return this.userDetails;
   };
 
-  deleteCourseInUserDetails = (rowData: RowData, semester: string) => {
+  deleteCourseInUserDetails = (rowData: RowData, semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
     const idx = courseList.findIndex(
       (courseStatus) =>
         courseStatus.course._id === rowData.courseNumber &&
-        courseStatus.semester === rowData.semester
+        courseStatus.semester === semester
     );
     const newCourseList = [...courseList];
     newCourseList.splice(idx, 1);
@@ -214,7 +216,7 @@ export class DataStore {
     return this.userDetails;
   };
 
-  insertCourseInUserDetails = (rowData: RowData, semester: string) => {
+  insertCourseInUserDetails = (rowData: RowData, semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
 
     const newCourse: CourseStatus = {
@@ -237,7 +239,7 @@ export class DataStore {
     return this.userDetails;
   };
 
-  deleteSemesterInUserDetails = (semester: string) => {
+  deleteSemesterInUserDetails = (semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
     const newCourseList = [...courseList];
 

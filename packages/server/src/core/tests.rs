@@ -415,7 +415,7 @@ async fn test_duplicated_courses() {
     .await;
 
     // The user didn't take פיסיקה 1מ, therefore the algorithm adds it automatically to the course list
-    // This code Simulates addition of פיסיקה 1 manuually by the user.
+    // This code Simulates addition of פיסיקה 1 manually by the user.
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
             id: "114051".to_string(),
@@ -803,10 +803,6 @@ async fn test_software_engineer_itinerary() {
     );
     assert_eq!(
         degree_status.overflow_msgs[2],
-        messages::credit_overflow_msg(2.0, "בחירת העשרה", "בחירה חופשית")
-    );
-    assert_eq!(
-        degree_status.overflow_msgs[3],
         messages::credit_leftovers_msg(0.0)
     );
 }

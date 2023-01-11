@@ -2,32 +2,9 @@ use std::collections::HashMap;
 
 use crate::core::messages;
 use crate::core::types::CreditInfo;
+use crate::resources::course::Course;
 
 use super::BankRuleHandler;
-
-#[macro_export]
-macro_rules! check_if_replacement {
-    ($self:ident, $course_status: expr, $course_id_in_list: expr, $replacements: ident, $replacements_msg: ident) => {
-        for course_id in &$self.course_list {
-            if let Some(replacements) =
-                &$self.$replacements.get(course_id)
-            {
-                if replacements.contains(&$course_status.course.id) {
-                    if let Some(course) = $self.courses.get(course_id) {
-                        $course_status
-                            .set_msg(messages::$replacements_msg(&course.name));
-                    } else {
-                        // Shouldn't get here but to prevent crash in case of a bug we use the course id instead
-                        $course_status
-                            .set_msg(messages::$replacements_msg(course_id));
-                    }
-                    $course_id_in_list = Some(course_id);
-                    break;
-                }
-            }
-        }
-    };
-}
 
 impl<'a> BankRuleHandler<'a> {
     pub fn iterate_course_list(&mut self) -> CreditInfo {
@@ -35,63 +12,66 @@ impl<'a> BankRuleHandler<'a> {
         let mut sum_credit = self.credit_overflow;
         let mut count_courses = self.courses_overflow;
         let mut handled_courses = HashMap::new(); // mapping between the course in the catalog to the course which was taken by the student (relevant for replacements)
-        for course_status in self.degree_status.course_statuses.iter_mut() {
-            let mut course_chosen_for_bank = false;
-            if course_status.valid_for_bank(&self.bank_name) {
+        self.degree_status
+            .course_statuses
+            .iter_mut()
+            .filter(|course_status| course_status.valid_for_bank(&self.bank_name))
+            .filter_map(|course_status| {
                 if self.course_list.contains(&course_status.course.id) {
-                    course_chosen_for_bank = true;
-                    handled_courses.insert(
-                        course_status.course.id.clone(),
-                        course_status.course.id.clone(),
-                    );
+                    Some((course_status.course.id.clone(), course_status))
                 } else {
-                    // check if course_status is a replacement for a course in course list
-                    let mut course_id_in_list = None;
-                    // First try to find catalog replacements
-                    check_if_replacement!(
-                        self,
-                        course_status,
-                        course_id_in_list,
-                        catalog_replacements,
-                        catalog_replacements_msg
-                    );
+                    let mut find_replacement = |replacements: &HashMap<String, Vec<String>>,
+                                                replacements_msg: fn(&Course) -> String|
+                     -> Option<String> {
+                        self.course_list.iter().find_map(|course_id| {
+                            replacements
+                                .get(course_id)
+                                .and_then(|replacements| {
+                                    replacements.contains(&course_status.course.id).then(|| {
+                                        course_status.set_msg(replacements_msg(
+                                            self.courses.get(course_id).unwrap_or(&Course {
+                                                id: course_id.clone(),
+                                                ..Default::default()
+                                            }),
+                                        ));
+                                        Some(course_id.into())
+                                    })
+                                })
+                                .flatten()
+                        })
+                    };
+                    // check if course_status is a common replacement or a catalog replacement for a course in course list
+                    let course_id_in_list = find_replacement(
+                        self.catalog_replacements,
+                        messages::catalog_replacements_msg,
+                    )
+                    .or_else(|| {
+                        find_replacement(
+                            self.common_replacements,
+                            messages::common_replacements_msg,
+                        )
+                    });
 
-                    if course_id_in_list.is_none() {
-                        // Didn't find a catalog replacement so trying to find a common replacement
-                        check_if_replacement!(
-                            self,
-                            course_status,
-                            course_id_in_list,
-                            common_replacements,
-                            common_replacements_msg
-                        );
-                    }
                     if let Some(course_id) = course_id_in_list {
-                        course_chosen_for_bank = true;
-                        handled_courses.insert(course_id.clone(), course_status.course.id.clone());
+                        Some((course_id, course_status))
                     } else if course_status.r#type == Some(self.bank_name.clone()) {
                         // The course is not in the list and not a replacement for any other course on the list
                         // but its type is modified and its the current bank name.
                         // Therefore the course should be added anyway.
-                        course_chosen_for_bank = true;
-                        handled_courses.insert(
-                            course_status.course.id.clone(),
-                            course_status.course.id.clone(),
-                        );
+                        Some((course_status.course.id.clone(), course_status))
+                    } else {
+                        None
                     }
                 }
-            }
-
-            if course_chosen_for_bank
-                && Self::set_type_and_add_credit(
-                    course_status,
-                    self.bank_name.clone(),
-                    &mut sum_credit,
-                )
-            {
-                count_courses += 1;
-            }
-        }
+            })
+            .for_each(|(course_id, course_status)| {
+                handled_courses.insert(course_id, course_status.course.id.clone());
+                course_status.set_type(&self.bank_name);
+                if let Some(credit) = course_status.credit() {
+                    sum_credit += credit;
+                    count_courses += 1;
+                }
+            });
 
         CreditInfo {
             sum_credit,
