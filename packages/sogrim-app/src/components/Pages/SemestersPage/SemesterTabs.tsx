@@ -171,7 +171,7 @@ const SemesterTabsComp = () => {
             <Box sx={{ display: "flex", justifyContent: "center" }} key={index}>
               <TabPanel value={currentSemesterIdx} index={index}>
                 {userDetails?.degree_status?.course_statuses ? (
-                  <SemesterGrid {...{ semester, is_semester0: false }} />
+                  <SemesterGrid semester={semester} />
                 ) : null}
               </TabPanel>
             </Box>
