@@ -70,6 +70,14 @@ async fn test_asterisk_course_input_from_chrome_browser() {
     assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_1");
 }
 
+#[test]
+async fn test_parser_reverse_credit_hotfix() {
+    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
+        .expect("Something went wrong reading the file");
+
+    parser::parse_copy_paste_data(&from_pdf).expect_err("should fail to parse pdf data");
+}
+
 lazy_static! {
     static ref COURSES: HashMap<String, Course> = HashMap::from([
         (
