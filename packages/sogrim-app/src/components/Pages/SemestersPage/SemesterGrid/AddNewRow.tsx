@@ -172,8 +172,8 @@ const NewRowComp: React.FC<NewRowProps> = ({
         }
         value={name}
         inputValue={name}
-        onChange={(_, value, type) =>
-          value ? handleValueSelected(value, type) : null
+        onChange={(_, value) =>
+          value ? handleValueSelected(value, "name") : null
         }
         onInputChange={(e, _, reason) => handleEditChange(e, "name", reason)}
         renderInput={(params) => (
@@ -203,8 +203,9 @@ const NewRowComp: React.FC<NewRowProps> = ({
           )
         }
         value={courseNumber}
-        onChange={(_, value, type) =>
-          value ? handleValueSelected(value, type) : null
+        inputValue={courseNumber}
+        onChange={(_, value) =>
+          value ? handleValueSelected(value, "courseNumber") : null
         }
         onInputChange={(e, _, reason) =>
           handleEditChange(e, "courseNumber", reason)
