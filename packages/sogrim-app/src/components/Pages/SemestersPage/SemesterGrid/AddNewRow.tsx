@@ -50,32 +50,33 @@ const NewRowComp: React.FC<NewRowProps> = ({
 
   const { name, courseNumber, credit, grade, type } = editRow;
 
+  const [nameFilter, setNameFilter] = useState<string>("");
+  const [numberFilter, setCourseNumberFilter] = useState<string>("");
+
   const { userAuthToken } = useAuth();
 
-  const {
-    status: statusByName,
-    data: dataByName,
-    refetch: refetchByName,
-    isError: isErrorByName,
-    error: errorByName,
-  } = useCoursesByFilter(userAuthToken, !!name, "name", name);
+  const { status: statusByName, data: dataByName } = useCoursesByFilter(
+    userAuthToken,
+    !!name,
+    "name",
+    nameFilter
+  );
 
-  const {
-    status: statusByNumber,
-    data: dataByNumber,
-    refetch: refetchByNumber,
-    isError: isErrorByNumber,
-    error: errorByNumber,
-  } = useCoursesByFilter(userAuthToken, !!courseNumber, "number", courseNumber);
+  const { status: statusByNumber, data: dataByNumber } = useCoursesByFilter(
+    userAuthToken,
+    !!courseNumber,
+    "number",
+    numberFilter
+  );
 
   const refetchCoursesByName = React.useMemo(
-    () => throttle(() => refetchByName(), 350),
-    [refetchByName]
+    () => throttle((name) => setNameFilter(name), 350),
+    []
   );
 
   const refetchCoursesByNumber = React.useMemo(
-    () => throttle(() => refetchByNumber(), 350),
-    [refetchByNumber]
+    () => throttle((number) => setCourseNumberFilter(number), 350),
+    []
   );
 
   const handleEditChange = (
@@ -91,10 +92,10 @@ const NewRowComp: React.FC<NewRowProps> = ({
       fieldName = type;
       fieldValue = event?.target?.value;
       if (type === "name") {
-        refetchCoursesByName();
+        refetchCoursesByName(fieldValue);
       }
       if (type === "courseNumber") {
-        refetchCoursesByNumber();
+        refetchCoursesByNumber(fieldValue);
       }
     } else {
       event.preventDefault();
@@ -138,32 +139,13 @@ const NewRowComp: React.FC<NewRowProps> = ({
   >([]);
 
   React.useEffect(() => {
-    if (isErrorByName) {
-      if ((errorByName as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
-    if (isErrorByNumber) {
-      if ((errorByNumber as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (statusByName === "success" && dataByName) {
       setCourseNameOptions(dataByName);
     }
     if (statusByNumber === "success" && dataByNumber) {
       setCourseNumberOptions(dataByNumber);
     }
-  }, [
-    dataByName,
-    dataByNumber,
-    errorByName,
-    errorByNumber,
-    isErrorByName,
-    isErrorByNumber,
-    statusByName,
-    statusByNumber,
-  ]);
+  }, [dataByName, dataByNumber, statusByName, statusByNumber]);
 
   return (
     <Box
