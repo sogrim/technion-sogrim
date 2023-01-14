@@ -1,4 +1,5 @@
 import { Theme, Typography } from "@mui/material";
+import { LIGHT_MODE_THEME } from "../../../themes/constants";
 
 export const AppTitle: React.FC = () => {
   return (
@@ -9,7 +10,10 @@ export const AppTitle: React.FC = () => {
 };
 
 const sxAppTitle = {
-  color: (theme: Theme) => theme.palette.primary.main,
+  color: (theme: Theme) =>
+    theme.palette.mode === LIGHT_MODE_THEME
+      ? theme.palette.primary.main
+      : theme.palette.primary.contrastText,
   cursor: "default",
   ml: "80px",
   mb: "3px",

@@ -1,7 +1,13 @@
+import createCache from "@emotion/cache";
+import { CacheProvider } from "@emotion/react";
 import { ThemeProvider } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import jwtDecode from "jwt-decode";
 import { observer } from "mobx-react-lite";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { isMobile } from "react-device-detect";
+import { ErrorBoundary } from "react-error-boundary";
+import rtlPlugin from "stylis-plugin-rtl";
 import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
 import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
@@ -9,23 +15,30 @@ import { getAppTheme } from "../../themes/theme";
 import { GoogleClientSession } from "../../types/auth-types";
 import { Footer } from "../Footer/Footer";
 import { GoogleAuth } from "../GoogleAuth/GoogleAuth";
-import { AnonymousApp } from "./AnonymousApp";
-import { UserApp } from "./UserApp";
-import rtlPlugin from "stylis-plugin-rtl";
-import { CacheProvider } from "@emotion/react";
-import createCache from "@emotion/cache";
-import { isMobile } from "react-device-detect";
-import { MobilePage } from "./MobilePage";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { ErrorBoundary } from "react-error-boundary";
 import { FallbackPage } from "../Pages/FallbackPage/FallbackPage";
+import { AnonymousApp } from "./AnonymousApp";
+import { MobilePage } from "./MobilePage";
+import { UserApp } from "./UserApp";
+
+export const ColorModeContext = React.createContext({
+  toggleColorMode: () => {},
+});
 
 const AppComp: React.FC = () => {
-  const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
-    LIGHT_MODE_THEME
+  const [mode, setMode] = useState<
+    typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME
+  >(LIGHT_MODE_THEME);
+  const colorMode = React.useMemo(
+    () => ({
+      toggleColorMode: () => {
+        setMode((prevMode) =>
+          prevMode === LIGHT_MODE_THEME ? DARK_MODE_THEME : LIGHT_MODE_THEME
+        );
+      },
+    }),
+    []
   );
   const theme = useMemo(() => getAppTheme(mode), [mode]);
-
   const matches = useMediaQuery(theme.breakpoints.up("sm"));
 
   const {
@@ -53,21 +66,23 @@ const AppComp: React.FC = () => {
   });
 
   return (
-    <ThemeProvider theme={theme}>
-      <CacheProvider value={cacheRtl}>
-        {isMobile || !matches ? (
-          <MobilePage />
-        ) : (
-          <>
-            <GoogleAuth />
-            <ErrorBoundary FallbackComponent={FallbackPage}>
-              {isAuthenticated ? <UserApp /> : <AnonymousApp />}
-              <Footer />
-            </ErrorBoundary>
-          </>
-        )}
-      </CacheProvider>
-    </ThemeProvider>
+    <ColorModeContext.Provider value={colorMode}>
+      <ThemeProvider theme={theme}>
+        <CacheProvider value={cacheRtl}>
+          {isMobile || !matches ? (
+            <MobilePage />
+          ) : (
+            <>
+              <GoogleAuth />
+              <ErrorBoundary FallbackComponent={FallbackPage}>
+                {isAuthenticated ? <UserApp /> : <AnonymousApp />}
+                <Footer />
+              </ErrorBoundary>
+            </>
+          )}
+        </CacheProvider>
+      </ThemeProvider>
+    </ColorModeContext.Provider>
   );
 };
 

@@ -58,6 +58,7 @@ export type DegreeStatus = {
 
 export type UserSettings = {
   compute_in_progress: boolean;
+  dark_mode: boolean;
 };
 
 export type UserDetails = {

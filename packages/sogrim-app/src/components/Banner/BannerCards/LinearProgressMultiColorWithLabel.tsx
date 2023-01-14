@@ -5,6 +5,7 @@ import LinearProgress, {
 } from "@mui/material/LinearProgress";
 import { styled, useTheme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
+import { DARK_MODE_THEME } from "../../../themes/constants";
 
 export const LinearProgressMultiColorWithLabel = (props: {
   onlyCompleteProgress: number;
@@ -14,7 +15,10 @@ export const LinearProgressMultiColorWithLabel = (props: {
   const MultiColorLinearProgress = styled(LinearProgress)(({ theme }) => ({
     [`& .${linearProgressClasses.dashed}`]: {
       backgroundImage: "none",
-      backgroundColor: "rgba(0, 0, 0, 0.178)",
+      backgroundColor:
+        theme.palette.mode === DARK_MODE_THEME
+          ? theme.palette.secondary.dark
+          : "rgba(0, 0, 0, 0.178)",
       animation: "none",
     },
 

@@ -287,6 +287,11 @@ export class DataStore {
     return this.userSettings;
   };
 
+  toggleDarkMode = (): UserSettings => {
+    this.userSettings.dark_mode = !this.userSettings.dark_mode;
+    return this.userSettings;
+  };
+
   isBankTypeOfCourseAll = (type: string | undefined): boolean => {
     return this.userDetails?.degree_status?.course_bank_requirements?.some(
       (bankReq) =>
