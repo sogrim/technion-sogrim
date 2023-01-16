@@ -15,8 +15,6 @@ export default function useUpdateUserUgData(authToken: any) {
           return current;
         });
       },
-      onError: (error) => console.error(error),
-      useErrorBoundary: true,
     }
   );
 }
