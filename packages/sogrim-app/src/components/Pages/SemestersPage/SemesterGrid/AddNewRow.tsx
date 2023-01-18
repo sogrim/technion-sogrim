@@ -2,7 +2,6 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import {
-  Autocomplete,
   AutocompleteInputChangeReason,
   Box,
   Divider,
@@ -24,6 +23,7 @@ import {
   newEmptyRow,
   RowData,
 } from "../SemesterTabsConsts";
+import { CourseAutocomplete } from "./CourseAutocomplete";
 import { MAX_GRID_WIDTH } from "./semester-grid-interface";
 
 export interface NewRowProps {
@@ -50,32 +50,31 @@ const NewRowComp: React.FC<NewRowProps> = ({
 
   const { name, courseNumber, credit, grade, type } = editRow;
 
+  const [nameFilter, setNameFilter] = useState<string>("");
+  const [numberFilter, setCourseNumberFilter] = useState<string>("");
+
   const { userAuthToken } = useAuth();
 
   const {
     status: statusByName,
     data: dataByName,
-    refetch: refetchByName,
-    isError: isErrorByName,
-    error: errorByName,
-  } = useCoursesByFilter(userAuthToken, !!name, "name", name);
+    isLoading: isLoadingByName,
+  } = useCoursesByFilter(userAuthToken, !!name, "name", nameFilter);
 
   const {
     status: statusByNumber,
     data: dataByNumber,
-    refetch: refetchByNumber,
-    isError: isErrorByNumber,
-    error: errorByNumber,
-  } = useCoursesByFilter(userAuthToken, !!courseNumber, "number", courseNumber);
+    isLoading: isLoadingByNumber,
+  } = useCoursesByFilter(userAuthToken, !!courseNumber, "number", numberFilter);
 
   const refetchCoursesByName = React.useMemo(
-    () => throttle(() => refetchByName(), 350),
-    [refetchByName]
+    () => throttle((name) => setNameFilter(name), 350),
+    []
   );
 
   const refetchCoursesByNumber = React.useMemo(
-    () => throttle(() => refetchByNumber(), 350),
-    [refetchByNumber]
+    () => throttle((number) => setCourseNumberFilter(number), 350),
+    []
   );
 
   const handleEditChange = (
@@ -91,10 +90,10 @@ const NewRowComp: React.FC<NewRowProps> = ({
       fieldName = type;
       fieldValue = event?.target?.value;
       if (type === "name") {
-        refetchCoursesByName();
+        refetchCoursesByName(fieldValue);
       }
       if (type === "courseNumber") {
-        refetchCoursesByNumber();
+        refetchCoursesByNumber(fieldValue);
       }
     } else {
       event.preventDefault();
@@ -138,32 +137,13 @@ const NewRowComp: React.FC<NewRowProps> = ({
   >([]);
 
   React.useEffect(() => {
-    if (isErrorByName) {
-      if ((errorByName as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
-    if (isErrorByNumber) {
-      if ((errorByNumber as any).response.status === 401) {
-        window.location.reload();
-      }
-    }
     if (statusByName === "success" && dataByName) {
       setCourseNameOptions(dataByName);
     }
     if (statusByNumber === "success" && dataByNumber) {
       setCourseNumberOptions(dataByNumber);
     }
-  }, [
-    dataByName,
-    dataByNumber,
-    errorByName,
-    errorByNumber,
-    isErrorByName,
-    isErrorByNumber,
-    statusByName,
-    statusByNumber,
-  ]);
+  }, [dataByName, dataByNumber, statusByName, statusByNumber]);
 
   return (
     <Box
@@ -174,69 +154,42 @@ const NewRowComp: React.FC<NewRowProps> = ({
         width: MAX_GRID_WIDTH,
       }}
     >
-      <Autocomplete
-        sx={{ width: "250px" }}
-        freeSolo
-        disableClearable
-        autoComplete
-        includeInputInList
-        options={courseNameOptions.map(
-          (option) => `${option._id} - ${option.name}`
-        )}
-        filterOptions={(options, state) =>
+      <CourseAutocomplete
+        name="name"
+        helperText="שם הקורס"
+        options={courseNameOptions}
+        option_map={(option) => `${option._id} - ${option.name}`}
+        option_filter={(options, state) =>
           options.filter((option: string) =>
             option.split("-")[1].includes(state.inputValue)
           )
         }
         value={name}
         inputValue={name}
-        onChange={(_, value, type) =>
-          value ? handleValueSelected(value, type) : null
-        }
-        onInputChange={(e, _, reason) => handleEditChange(e, "name", reason)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            name="name"
-            variant="outlined"
-            size="small"
-            helperText="שם הקורס"
-          />
-        )}
+        onChange={handleValueSelected}
+        onInputChange={handleEditChange}
+        isLoading={isLoadingByName}
       />
+
       <Divider orientation="vertical" variant="middle" flexItem />
 
-      <Autocomplete
-        sx={{ width: "250px" }}
-        freeSolo
-        disableClearable
-        autoComplete
-        includeInputInList
-        options={courseNumberOptions.map(
-          (option) => `${option._id} - ${option.name}`
-        )}
-        filterOptions={(options, state) =>
+      <CourseAutocomplete
+        name="courseNumber"
+        helperText="מס׳ הקורס"
+        options={courseNumberOptions}
+        option_map={(option) => `${option._id} - ${option.name}`}
+        option_filter={(options, state) =>
           options.filter((option: string) =>
             option.split("-")[0].includes(state.inputValue)
           )
         }
         value={courseNumber}
-        onChange={(_, value, type) =>
-          value ? handleValueSelected(value, type) : null
-        }
-        onInputChange={(e, _, reason) =>
-          handleEditChange(e, "courseNumber", reason)
-        }
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            name="courseNumber"
-            variant="outlined"
-            size="small"
-            helperText="מס׳ הקורס"
-          />
-        )}
+        inputValue={courseNumber}
+        onChange={handleValueSelected}
+        onInputChange={handleEditChange}
+        isLoading={isLoadingByNumber}
       />
+
       <Divider orientation="vertical" variant="middle" flexItem />
 
       <TextField
