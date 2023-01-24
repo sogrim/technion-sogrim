@@ -1,5 +1,4 @@
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
-use colored::Colorize;
 use derive_more::Display;
 
 #[derive(Debug, Display)]
@@ -48,12 +47,15 @@ impl ResponseError for AppError {
                 format!("MongoDB driver error: {e}"),
             ),
         };
-        log::error!("{}", error.bold().red());
-        match status_code {
-            StatusCode::BAD_REQUEST => HttpResponse::BadRequest().body(error),
-            StatusCode::NOT_FOUND => HttpResponse::NotFound().body(error),
-            StatusCode::INTERNAL_SERVER_ERROR => HttpResponse::InternalServerError().body(error),
+        let mut res = match status_code {
+            StatusCode::BAD_REQUEST => HttpResponse::BadRequest().body(error.clone()),
+            StatusCode::NOT_FOUND => HttpResponse::NotFound().body(error.clone()),
+            StatusCode::INTERNAL_SERVER_ERROR => {
+                HttpResponse::InternalServerError().body(error.clone())
+            }
             _ => unreachable!(),
-        }
+        };
+        res.extensions_mut().insert(error);
+        res
     }
 }
