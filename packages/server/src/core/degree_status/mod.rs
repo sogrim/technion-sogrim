@@ -1,6 +1,7 @@
 pub mod compute_bank;
 pub mod compute_status;
 pub mod overflow;
+pub mod postprocessing;
 pub mod preprocessing;
 
 use std::collections::HashMap;
@@ -122,5 +123,8 @@ impl DegreeStatus {
             courses_overflow_map: HashMap::new(),
         }
         .compute_status();
+
+        // process the data after degree status computation
+        self.postprocess();
     }
 }

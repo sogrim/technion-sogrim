@@ -185,5 +185,13 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
         "השלים(מ)" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
         _ => grade_str.parse::<u8>().ok().map(Grade::Numeric),
     };
-    Ok((Course { id, credit, name }, grade))
+    Ok((
+        Course {
+            id,
+            credit,
+            name,
+            tags: None,
+        },
+        grade,
+    )) // TODO: call the db to get the tags for courses from parser
 }

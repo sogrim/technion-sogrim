@@ -78,6 +78,7 @@ lazy_static! {
                 id: "104031".to_string(),
                 credit: 5.5,
                 name: "infi1m".to_string(),
+                tags: None,
             },
         ),
         (
@@ -86,6 +87,7 @@ lazy_static! {
                 id: "104166".to_string(),
                 credit: 5.5,
                 name: "Algebra alef".to_string(),
+                tags: None,
             },
         ),
         (
@@ -94,6 +96,7 @@ lazy_static! {
                 id: "114052".to_string(),
                 credit: 3.5,
                 name: "פיסיקה 2".to_string(),
+                tags: None,
             },
         ),
         (
@@ -102,6 +105,7 @@ lazy_static! {
                 id: "114054".to_string(),
                 credit: 3.5,
                 name: "פיסיקה 3".to_string(),
+                tags: None,
             },
         ),
         (
@@ -110,6 +114,7 @@ lazy_static! {
                 id: "236303".to_string(),
                 credit: 3.0,
                 name: "project1".to_string(),
+                tags: None,
             },
         ),
         (
@@ -118,6 +123,7 @@ lazy_static! {
                 id: "236512".to_string(),
                 credit: 3.0,
                 name: "project2".to_string(),
+                tags: None,
             },
         ),
         (
@@ -126,6 +132,7 @@ lazy_static! {
                 id: "1".to_string(),
                 credit: 1.0,
                 name: "".to_string(),
+                tags: None,
             },
         ),
         (
@@ -134,6 +141,7 @@ lazy_static! {
                 id: "2".to_string(),
                 credit: 2.0,
                 name: "".to_string(),
+                tags: None,
             },
         ),
         (
@@ -142,6 +150,7 @@ lazy_static! {
                 id: "3".to_string(),
                 credit: 3.0,
                 name: "".to_string(),
+                tags: None,
             },
         ),
     ]);
@@ -171,6 +180,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "104031".to_string(),
                     credit: 5.5,
                     name: "infi1m".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -181,6 +191,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "104166".to_string(),
                     credit: 5.5,
                     name: "Algebra alef".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::NotComplete),
                 grade: Some(Grade::Binary(false)),
@@ -191,6 +202,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "114052".to_string(),
                     credit: 3.5,
                     name: "פיסיקה 2".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -201,6 +213,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "114054".to_string(),
                     credit: 3.5,
                     name: "פיסיקה 3".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -211,6 +224,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "236303".to_string(),
                     credit: 3.0,
                     name: "project1".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -221,6 +235,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "236512".to_string(),
                     credit: 3.0,
                     name: "project2".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -231,6 +246,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "324057".to_string(), // Malag
                     credit: 2.0,
                     name: "mlg".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(99)),
@@ -241,6 +257,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "394645".to_string(), // Sport
                     credit: 1.0,
                     name: "sport".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(100)),
@@ -294,6 +311,7 @@ async fn test_restore_irrelevant_course() {
             id: "114071".to_string(),
             credit: 2.5,
             name: "פיסיקה 1מ".to_string(),
+            tags: None,
         },
         state: Some(NotComplete),
         semester: Some("חורף_1".to_string()),
@@ -413,6 +431,7 @@ async fn test_duplicated_courses() {
             id: "114051".to_string(),
             credit: 2.5,
             name: "פיסיקה 1".to_string(),
+            tags: None,
         },
         state: Some(NotComplete),
         semester: Some("חורף_1".to_string()),

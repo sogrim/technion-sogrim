@@ -1,5 +1,6 @@
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -14,12 +15,20 @@ pub struct Course {
     pub id: CourseId,
     pub credit: f32,
     pub name: String,
+    pub tags: Option<Vec<Tag>>, // All tags for the course, for example "english" and "malag"
 }
 
 impl CollectionName for Course {
     fn collection_name() -> &'static str {
         "Courses"
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize_repr, Deserialize_repr)]
+#[repr(u8)]
+pub enum Tag {
+    English,
+    Malag,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
