@@ -9,7 +9,7 @@ use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
 use actix_rt::test;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::str::FromStr;

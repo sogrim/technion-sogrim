@@ -7,7 +7,7 @@ use actix_web::{
     App,
 };
 use actix_web_lab::middleware::from_fn;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 #[test]
 async fn test_from_request_no_db_client() {
