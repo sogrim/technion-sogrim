@@ -8,7 +8,7 @@ export default function useCoursesByFilter(
   filter: string
 ) {
   return useQuery(
-    "coursesByFilter",
+    ["coursesByFilter", filter],
     () => getCourseByFilter(authToken, filterName, filter),
     {
       retry: false,

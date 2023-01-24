@@ -15,7 +15,7 @@ impl<'a> BankRuleHandler<'a> {
                         || course_status.r#type.is_some()
                         // TODO: maybe think of a better way to do this
                         || (course_status.course.id.starts_with("324") 
-                            && course_status.course.credit == 2.0 
+                            && course_status.course.credit == 2.0
                             && !course_status.is_language())
                 })
                 .filter_map(|course_status| course_status.set_type(&self.bank_name).credit())

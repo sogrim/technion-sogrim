@@ -14,7 +14,7 @@ import { SemesterFooter } from "./SemesterFooter";
 
 const rowDataKeys = ["name", "grade", "credit", "type"];
 export interface SemesterGridProps {
-  semester: string;
+  semester: string | null;
 }
 
 const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
@@ -33,7 +33,11 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
   const { mutate, isError, error } = useUpdateUserState(userAuthToken);
 
   const [tableRows, setTableRows] = useState<RowData[]>(
-    generateRowsForSemester(semester, userDetails.degree_status.course_statuses)
+    generateRowsForSemester(
+      semester,
+      userDetails.degree_status.course_statuses,
+      semester === null
+    )
   );
   const [addRowToggle, setAddRowToggle] = useState<boolean>(false);
 
@@ -42,7 +46,8 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       setTableRows(
         generateRowsForSemester(
           semester,
-          userDetails.degree_status.course_statuses
+          userDetails.degree_status.course_statuses,
+          semester === null
         )
       );
     }
@@ -111,7 +116,11 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
   };
 
   const handleUpdateUserDetails = useCallback(
-    (action: UpdateUserDetailsAction, rowData: RowData, semester: string) => {
+    (
+      action: UpdateUserDetailsAction,
+      rowData: RowData,
+      semester: string | null
+    ) => {
       let newUserDetails;
       switch (action) {
         case UpdateUserDetailsAction.AfterEdit:
@@ -192,14 +201,18 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       <Box sx={{ mb: 4, marginLeft: 4, marginRight: 4, width: "100%" }}>
         <DataGrid
           rows={tableRows}
-          columns={columns}
+          columns={columns(semester === null)}
           localeText={heIL.components.MuiDataGrid.defaultProps.localeText}
           getRowId={(row) => row.courseNumber}
           autoHeight
           onCellEditCommit={handleEditRowsModelChange}
-          components={{ Footer: () => <SemesterFooter rows={tableRows} /> }}
+          components={{
+            Footer: () =>
+              semester ? <SemesterFooter rows={tableRows} /> : <></>,
+          }}
         />
       </Box>
+
       <Box sx={{ marginBottom: 10 }}>
         {!addRowToggle ? (
           <Button
@@ -212,6 +225,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
           <AddNewRow
             handleAddClicked={handleAddClicked}
             setAddRowToggle={setAddRowToggle}
+            isSemester0={!semester}
           />
         )}
       </Box>

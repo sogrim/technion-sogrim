@@ -89,6 +89,18 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     }
     let mut vec_courses = courses.into_values().collect::<Vec<_>>();
 
+    // HOTFIX - Some students had their course credit reversed.
+    // This happend because the parser was not able to parse the course credit correctly,
+    // probably because the student used a browser that was not supported.
+    if vec_courses
+        .iter()
+        .any(|cs| cs.course.credit.fract() != 0.0 && cs.course.credit.fract() != 0.5)
+    {
+        return Err(AppError::Parser(
+            "Bad format, probably unsupported browser".into(),
+        ));
+    }
+
     // Fix the grades for said courses
     set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses);
 

@@ -31,22 +31,17 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
 
   const { userAuthToken } = useAuth();
 
-  const { data, isLoading, isError, error } = useCatalogs(userAuthToken);
+  const { data, isLoading } = useCatalogs(userAuthToken);
   const { mutate } = useUpdateUserCatalog(userAuthToken);
 
   React.useEffect(() => {
-    if (isError) {
-      // TODO: handle error
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    } else if (data && !isLoading) {
+    if (data && !isLoading) {
       const sortedCatalogs = data.sort((first, second) =>
         first.name <= second.name ? 1 : -1
       );
       setCatalogs(sortedCatalogs);
     }
-  }, [data, isLoading, isError, error]);
+  }, [data, isLoading]);
 
   const handleSend = () => {
     if (selectedCatalog?._id.$oid) {
@@ -65,15 +60,40 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
           בחר את קטלוג הלימודים שלך מרשימת הקטלוגים. שים לב, שחישוב ״סגור את
           התואר״ מתבסס על הקטלוג אותו בחרת.
         </DialogContentText>
-        <Link
-          color={(theme: Theme) => theme.palette.secondary.dark}
-          href="http://www.cs.technion.ac.il/he/undergraduate/programs/catalogs/"
-          underline="hover"
-          target="_blank"
-          rel="noopener"
-        >
-          {"עבור לאתר הפקולטה לעיון בקטלוג הלימודים"}
-        </Link>
+        <DialogContentText>
+          קישורים לאתר לימודי הסמכה לעיון בקטלוגי הלימודים לפי שנים:
+        </DialogContentText>
+        <Box sx={{ display: "flex", justifyContent: "space-around" }}>
+          {[
+            {
+              link: "https://ugportal.technion.ac.il/קטלוג-לימודים-תשף-2019-20/",
+              year: "תש”ף 2019/20",
+            },
+            {
+              link: "https://ugportal.technion.ac.il/קטלוג-לימודים-שנה-נוכחית/",
+              year: "תשפ”א 2020/21",
+            },
+            {
+              link: "https://ugportal.technion.ac.il/קטלוג-לימודים-תשפב-2021-22/",
+              year: "תשפ”ב 2021/22",
+            },
+            {
+              link: "https://ugportal.technion.ac.il/קטלוג-לימודים-תשפג-2022-23/",
+              year: "תשפ”ג 2022/23",
+            },
+          ].map((catalogs) => (
+            <Link
+              key={catalogs.year}
+              color={(theme: Theme) => theme.palette.secondary.dark}
+              href={catalogs.link}
+              underline="hover"
+              target="_blank"
+              rel="noopener"
+            >
+              {`${catalogs.year}`}
+            </Link>
+          ))}
+        </Box>
       </DialogContent>
       <Box
         noValidate
