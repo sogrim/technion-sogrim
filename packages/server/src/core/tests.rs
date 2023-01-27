@@ -734,6 +734,68 @@ async fn test_overflow_credit() {
 }
 
 #[test]
+async fn test_postprocessing_english_requirement() {
+    let mut degree_status = run_degree_status_full_flow(
+        "pdf_ctrl_c_ctrl_v_2.txt",
+        COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID,
+    )
+    .await;
+    //FOR VIEWING IN JSON FORMAT
+    // std::fs::write(
+    //     "degree_status.json",
+    //     serde_json::to_string_pretty(&degree_status).expect("json serialization failed"),
+    // )
+    // .expect("Unable to write file");
+
+    // The student has english exemption, so he has to complete to english content courses
+    assert_eq!(
+        degree_status.overflow_msgs[4],
+        messages::english_requirement_for_exempt_students_msg()
+    );
+
+    // Update technical english advanced b course grade to numeric, thus the student did not get exemption
+    degree_status
+        .course_statuses
+        .iter_mut()
+        .find(|course_status| {
+            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
+        })
+        .unwrap()
+        .grade = Some(Grade::Numeric(80));
+
+    degree_status = run_degree_status(
+        degree_status,
+        get_catalog(COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID).await,
+    )
+    .await;
+
+    assert_eq!(
+        degree_status.overflow_msgs[4],
+        messages::english_requirement_for_technical_advanced_b_students_msg()
+    );
+
+    // Update technical english advanced b course grade to fail, thus the a message shouldn't be displayed for the user
+    degree_status
+        .course_statuses
+        .iter_mut()
+        .find(|course_status| {
+            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
+        })
+        .unwrap()
+        .state = Some(CourseState::NotComplete);
+
+    degree_status = run_degree_status(
+        degree_status,
+        get_catalog(COMPUTER_SCIENCE_3_YEARS_18_19_CATALOG_ID).await,
+    )
+    .await;
+
+    println!("{:#?}", degree_status.overflow_msgs);
+
+    assert_eq!(degree_status.overflow_msgs.len(), 3);
+}
+
+#[test]
 async fn test_software_engineer_itinerary() {
     let degree_status =
         run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_3.txt", "61d84fce5c5e7813e895a27d").await;

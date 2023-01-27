@@ -5,7 +5,7 @@ use crate::{
 
 use super::DegreeStatus;
 
-const TECHNICAL_ENGLISH_ADVANCED_B: &str = "324033";
+pub const TECHNICAL_ENGLISH_ADVANCED_B: &str = "324033";
 const EXEMPT_COURSES_COUNT_DEMAND: usize = 2;
 const ADVANCED_B_COURSES_COUNT_DEMAND: usize = 1;
 

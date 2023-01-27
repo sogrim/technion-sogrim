@@ -205,5 +205,5 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
             tags: None,
         },
         grade,
-    )) // TODO: call the db to get the tags for courses from parser
+    ))
 }

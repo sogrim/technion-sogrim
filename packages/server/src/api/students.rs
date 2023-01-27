@@ -141,6 +141,19 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         .get_filtered::<Course>(catalog.get_all_course_ids(), FilterType::In, "_id")
         .await?;
 
+    // Fill tags for all student courses
+    user.details
+        .degree_status
+        .course_statuses
+        .iter_mut()
+        .for_each(|course_status| {
+            course_status.course.tags.as_mut().map(|_| {
+                vec_courses
+                    .iter()
+                    .find(|course| course.id == course_status.course.id)
+            });
+        });
+
     // The collection "Malags" should contain a single document with the list of all malags
     let malag_course_ids = db
         .get_all::<Malags>()

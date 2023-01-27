@@ -1,6 +1,5 @@
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -24,11 +23,11 @@ impl CollectionName for Course {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize_repr, Deserialize_repr)]
-#[repr(u8)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Tag {
     English,
     Malag,
+    Sport,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
