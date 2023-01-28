@@ -21,7 +21,7 @@ fn format_duration(duration: Duration) -> String {
             green.2 * (1. - t) + yellow.2 * t,
         )
     } else {
-        let t = (duration_micros - 500_000) as f32 / 500_000.;
+        let t = ((duration_micros - 500_000) as f32 / 500_000.).min(1.);
         (
             yellow.0 * (1. - t) + dark_yellow.0 * t,
             yellow.1 * (1. - t) + dark_yellow.1 * t,
