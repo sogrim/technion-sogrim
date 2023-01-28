@@ -69,7 +69,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
             ..Default::default()
         };
         course_status.set_state();
-        if course_status.is_sport() {
+        if course_status.course.id.starts_with("394") {
             sport_courses.push(course_status);
             continue;
         }
@@ -197,5 +197,13 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
         "השלים(מ)" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
         _ => grade_str.parse::<u8>().ok().map(Grade::Numeric),
     };
-    Ok((Course { id, credit, name }, grade))
+    Ok((
+        Course {
+            id,
+            credit,
+            name,
+            tags: None,
+        },
+        grade,
+    ))
 }

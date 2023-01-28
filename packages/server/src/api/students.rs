@@ -14,7 +14,7 @@ use crate::{
     middleware::auth::Sub,
     resources::{
         catalog::{Catalog, DisplayCatalog},
-        course::{self, Course, Malags},
+        course::{self, Course},
         user::{User, UserDetails, UserSettings},
     },
 };
@@ -141,14 +141,17 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         .get_filtered::<Course>(catalog.get_all_course_ids(), FilterType::In, "_id")
         .await?;
 
-    // The collection "Malags" should contain a single document with the list of all malags
-    let malag_course_ids = db
-        .get_all::<Malags>()
-        .await?
-        .into_iter()
-        .last() // Safer then indexing because it won't panic if the collection is empty
-        .map(|obj| obj.malag_list)
-        .unwrap_or_default();
+    // Fill tags for all student courses
+    user.details
+        .degree_status
+        .course_statuses
+        .iter_mut()
+        .for_each(|course_status| {
+            course_status.course.tags = vec_courses
+                .iter()
+                .find(|course| course.id == course_status.course.id)
+                .and_then(|course| course.tags.clone());
+        });
 
     let mut course_list = Vec::new();
     if user.settings.compute_in_progress {
@@ -157,7 +160,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
 
     user.details
         .degree_status
-        .compute(catalog, course::vec_to_map(vec_courses), malag_course_ids);
+        .compute(catalog, course::vec_to_map(vec_courses));
 
     if user.settings.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);

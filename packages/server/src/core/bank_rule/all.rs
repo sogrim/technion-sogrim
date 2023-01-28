@@ -23,6 +23,7 @@ impl<'a> BankRuleHandler<'a> {
                         id: course_id.clone(),
                         credit: 0.0,
                         name: messages::cannot_find_course(),
+                        tags: None,
                     });
                 self.degree_status.course_statuses.push(CourseStatus {
                     course,
