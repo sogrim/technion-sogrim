@@ -2,7 +2,6 @@ use crate::{
     error::AppError,
     resources::course::{Course, CourseStatus, Grade},
 };
-use std::collections::HashMap;
 
 fn contains_course_number(str: &str) -> bool {
     for word in str.split_whitespace() {
@@ -23,9 +22,8 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
 
-    let mut courses = HashMap::<String, CourseStatus>::new();
+    let mut courses = Vec::<CourseStatus>::new();
     let mut asterisk_courses = Vec::<CourseStatus>::new();
-    let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter: f32 = 0.0;
 
@@ -69,10 +67,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
             ..Default::default()
         };
         course_status.set_state();
-        if course_status.is_sport() {
-            sport_courses.push(course_status);
-            continue;
-        }
+
         if line.contains('*') {
             // If a student decides to retake a course for which he already had a grade,
             // and then ends up not receiving a grade (לא השלים) for that course,
@@ -82,17 +77,14 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
             // and then search this list for courses who fall in this particular case, and fix their grade.
             asterisk_courses.push(course_status);
         } else {
-            *courses
-                .entry(course_status.course.id.clone())
-                .or_insert(course_status) = course_status.clone();
+            courses.push(course_status);
         }
     }
-    let mut vec_courses = courses.into_values().collect::<Vec<_>>();
 
     // HOTFIX - Some students had their course credit reversed.
     // This happend because the parser was not able to parse the course credit correctly,
     // probably because the student used a browser that was not supported.
-    if vec_courses
+    if courses
         .iter()
         .any(|cs| cs.course.credit.fract() != 0.0 && cs.course.credit.fract() != 0.5)
     {
@@ -102,14 +94,12 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     }
 
     // Fix the grades for said courses
-    set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses);
+    set_grades_for_uncompleted_courses(&mut courses, asterisk_courses);
 
-    vec_courses.append(&mut sport_courses);
-
-    if vec_courses.is_empty() {
+    if courses.is_empty() {
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
-    Ok(vec_courses)
+    Ok(courses)
 }
 
 fn set_grades_for_uncompleted_courses(
@@ -120,22 +110,18 @@ fn set_grades_for_uncompleted_courses(
     // For each uncompleted course status, we iterate the asterisk list in reverse to find
     // the closest (most chronologically advanced) course status with a grade (anything other than NotComplete (לא השלים)).
     // This course status will replace the old one.
-    let uncompleted_courses = courses
+    courses
         .iter_mut()
         .filter(|c| c.grade == Some(Grade::NotComplete))
-        .collect::<Vec<_>>();
-    for uncompleted_course in uncompleted_courses {
-        for asterisk_course in asterisk_courses.iter().rev() {
-            if let Some(grade) = &asterisk_course.grade {
-                if uncompleted_course.course.id == asterisk_course.course.id
-                    && grade != &Grade::NotComplete
-                {
-                    *uncompleted_course = asterisk_course.clone();
-                    break;
-                }
+        .for_each(|uncompleted_course| {
+            if let Some(asterisk_course) = asterisk_courses.iter().rev().find(|cs| {
+                uncompleted_course.course.id == cs.course.id
+                    && cs.grade.is_some()
+                    && cs.grade != Some(Grade::NotComplete)
+            }) {
+                *uncompleted_course = asterisk_course.clone();
             }
-        }
-    }
+        });
 }
 
 fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>), AppError> {
