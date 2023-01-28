@@ -14,6 +14,7 @@ pub struct Course {
     pub id: CourseId,
     pub credit: f32,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<Tag>>, // All tags for the course, for example "english" and "malag"
 }
 
