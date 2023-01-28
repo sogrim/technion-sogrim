@@ -73,7 +73,6 @@ pub struct DegreeStatusHandler<'a> {
     course_banks: Vec<CourseBank>,
     catalog: Catalog,
     courses: HashMap<CourseId, Course>,
-    malag_courses: Vec<CourseId>,
     credit_overflow_map: HashMap<String, f32>,
     missing_credit_map: HashMap<String, f32>,
     courses_overflow_map: HashMap<String, f32>,
@@ -101,12 +100,7 @@ impl<'a> DegreeStatusHandler<'a> {
 }
 
 impl DegreeStatus {
-    pub fn compute(
-        &mut self,
-        mut catalog: Catalog,
-        courses: HashMap<CourseId, Course>,
-        malag_courses: Vec<CourseId>,
-    ) {
+    pub fn compute(&mut self, mut catalog: Catalog, courses: HashMap<CourseId, Course>) {
         let course_banks = catalog.get_bank_traversal_order();
 
         // prepare the data for degree status computation
@@ -117,7 +111,6 @@ impl DegreeStatus {
             course_banks,
             catalog,
             courses,
-            malag_courses,
             credit_overflow_map: HashMap::new(),
             missing_credit_map: HashMap::new(),
             courses_overflow_map: HashMap::new(),

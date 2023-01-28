@@ -7,7 +7,7 @@ use crate::db::Db;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
-use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Malags};
+use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
 use actix_rt::test;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
@@ -251,10 +251,10 @@ pub fn create_degree_status() -> DegreeStatus {
             },
             CourseStatus {
                 course: Course {
-                    id: "324057".to_string(), // Malag
+                    id: "324057".to_string(),
                     credit: 2.0,
                     name: "mlg".to_string(),
-                    tags: None,
+                    tags: Some(vec![Tag::Malag]),
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(99)),
@@ -265,7 +265,7 @@ pub fn create_degree_status() -> DegreeStatus {
                     id: "394645".to_string(), // Sport
                     credit: 1.0,
                     name: "sport".to_string(),
-                    tags: None,
+                    tags: Some(vec![Tag::Sport]),
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(100)),
@@ -486,13 +486,7 @@ async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) ->
         .get_all::<Course>()
         .await
         .expect("failed to get all courses");
-    let malag_courses = db
-        .get_all::<Malags>()
-        .await
-        .expect("failed to get all malags")[0]
-        .malag_list
-        .clone();
-    degree_status.compute(catalog, course::vec_to_map(vec_courses), malag_courses);
+    degree_status.compute(catalog, course::vec_to_map(vec_courses));
     degree_status
 }
 

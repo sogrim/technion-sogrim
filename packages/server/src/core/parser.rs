@@ -69,7 +69,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
             ..Default::default()
         };
         course_status.set_state();
-        if course_status.is_sport() {
+        if course_status.course.is_sport() {
             sport_courses.push(course_status);
             continue;
         }

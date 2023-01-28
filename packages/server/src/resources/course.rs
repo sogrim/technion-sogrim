@@ -28,6 +28,27 @@ pub enum Tag {
     English,
     Malag,
     Sport,
+    SportTeam, // TODO: check if need this
+}
+
+impl Course {
+    pub fn is_english(&self) -> bool {
+        // TODO: change it to "is_some_and()" when become stable
+        self.tags
+            .clone()
+            .unwrap_or_default()
+            .contains(&Tag::English)
+    }
+
+    pub fn is_sport(&self) -> bool {
+        // TODO: change it to "is_some_and()" when become stable
+        self.tags.clone().unwrap_or_default().contains(&Tag::Sport)
+    }
+
+    pub fn is_malag(&self) -> bool {
+        // TODO: change it to "is_some_and()" when become stable
+        self.tags.clone().unwrap_or_default().contains(&Tag::Malag)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -167,15 +188,6 @@ impl CourseStatus {
     pub fn set_specialization_group_name(&mut self, group_name: impl AsRef<str>) {
         self.specialization_group_name = Some(group_name.as_ref().to_owned());
     }
-
-    pub fn is_sport(&self) -> bool {
-        self.course.id.starts_with("394")
-    }
-
-    pub fn is_language(&self) -> bool {
-        let course_num = self.course.id.parse::<u32>().unwrap_or_default();
-        (324600..=324695).contains(&course_num) || (324002..=324068).contains(&course_num)
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -183,19 +195,6 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Reshima A.
     pub rule: Rule,
     pub credit: Option<f32>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Malags {
-    #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub id: bson::oid::ObjectId,
-    pub malag_list: Vec<CourseId>,
-}
-
-impl CollectionName for Malags {
-    fn collection_name() -> &'static str {
-        "Malags"
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

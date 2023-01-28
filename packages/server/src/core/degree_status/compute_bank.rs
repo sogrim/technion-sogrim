@@ -56,7 +56,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 count_courses = self.handle_courses_overflow(&bank, num_courses, count_courses);
                 completed = count_courses >= num_courses;
             }
-            Rule::Malag => sum_credit = bank_rule_handler.malag(&self.malag_courses),
+            Rule::Malag => sum_credit = bank_rule_handler.malag(),
             Rule::Sport => sum_credit = bank_rule_handler.sport(),
             Rule::Elective => sum_credit = bank_rule_handler.elective(),
             Rule::Chains(ref chains) => {

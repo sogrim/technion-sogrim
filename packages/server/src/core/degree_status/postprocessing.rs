@@ -1,7 +1,4 @@
-use crate::{
-    core::messages,
-    resources::course::{Grade, Tag},
-};
+use crate::{core::messages, resources::course::Grade};
 
 use super::DegreeStatus;
 
@@ -14,15 +11,7 @@ impl DegreeStatus {
         let completed_english_content_courses_count = self
             .course_statuses
             .iter()
-            .filter(|course_status| {
-                course_status
-                    .course
-                    .tags
-                    .clone()
-                    .unwrap_or_default()
-                    .contains(&Tag::English)
-                    && course_status.completed()
-            })
+            .filter(|course_status| course_status.course.is_english())
             .count();
 
         let technical_english_advanced_b_course_status =
@@ -37,32 +26,22 @@ impl DegreeStatus {
             // Same reason as above
             return;
         }
-        let Some(technical_english_grade) = technical_english_advanced_b_course_status.grade.clone() else {
-            // Same reason as above
-            return;
-        };
 
         // Determine by the technical english advanced b course grade kind the english level of the student
-        match technical_english_grade {
-            Grade::ExemptionWithoutCredit => {
-                if completed_english_content_courses_count < EXEMPT_COURSES_COUNT_DEMAND {
-                    self.overflow_msgs
-                        .push(messages::english_requirement_for_exempt_students_msg());
-                }
+        match technical_english_advanced_b_course_status.grade {
+            Some(Grade::ExemptionWithoutCredit | Grade::ExemptionWithCredit)
+                if completed_english_content_courses_count < EXEMPT_COURSES_COUNT_DEMAND =>
+            {
+                self.overflow_msgs
+                    .push(messages::english_requirement_for_exempt_students_msg());
             }
-            Grade::ExemptionWithCredit => {
-                if completed_english_content_courses_count < EXEMPT_COURSES_COUNT_DEMAND {
-                    self.overflow_msgs
-                        .push(messages::english_requirement_for_exempt_students_msg());
-                }
+            Some(_)
+                if completed_english_content_courses_count < ADVANCED_B_COURSES_COUNT_DEMAND =>
+            {
+                self.overflow_msgs
+                    .push(messages::english_requirement_for_technical_advanced_b_students_msg());
             }
-            _ => {
-                if completed_english_content_courses_count < ADVANCED_B_COURSES_COUNT_DEMAND {
-                    self.overflow_msgs.push(
-                        messages::english_requirement_for_technical_advanced_b_students_msg(),
-                    );
-                }
-            }
+            _ => {}
         }
     }
     pub fn postprocess(&mut self) {

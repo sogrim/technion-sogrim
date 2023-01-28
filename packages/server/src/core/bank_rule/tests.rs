@@ -290,7 +290,7 @@ async fn test_rule_malag() {
     let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
-    let res = handle_bank_rule_processor.malag(&["324057".to_string()]);
+    let res = handle_bank_rule_processor.malag();
 
     // check it adds the type
     assert_eq!(degree_status.course_statuses[0].r#type, None);
