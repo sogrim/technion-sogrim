@@ -53,7 +53,7 @@ pub async fn authenticate(
 
     let Ok(jwt) = header.to_str() else {
         let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
-        resp.response_mut().extensions_mut().insert::<String>(String::from("Invalid  authorization header"));
+        resp.response_mut().extensions_mut().insert::<String>(String::from("Invalid authorization header"));
         return Ok(resp);
     };
 
