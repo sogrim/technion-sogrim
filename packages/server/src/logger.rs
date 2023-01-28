@@ -1,13 +1,14 @@
 use std::time::{Duration, Instant};
 
 use actix_web::{middleware::Logger, HttpMessage};
-use colored::{Color, Colorize};
+use colored::{Color, ColoredString, Colorize};
 
 const SEP: &str = "  |  ";
 const MAX_QUERY_LEN: usize = 20;
 const MAX_REQ_LINE_LEN: usize = 52;
+const DURATION_TO_DETAILS_OFFSET: usize = 7;
 
-fn format_duration(duration: Duration) -> String {
+fn format_duration(duration: Duration) -> ColoredString {
     // lerp between green, yellow and red depending on the duration
     let duration_micros = duration.as_micros();
     let green = (0., 255., 0.);
@@ -39,15 +40,14 @@ fn format_duration(duration: Duration) -> String {
         500_000..=999_999 => format!("{}ms", duration.as_millis()).color(color),
         _ => format!("{:.2}s", duration.as_secs_f32()).color(color),
     }
-    .to_string()
 }
 
 fn log_header_once() {
     static ONCE: tokio::sync::OnceCell<()> = tokio::sync::OnceCell::const_new();
     tokio::spawn(ONCE.get_or_init(|| async {
-        log::info!(target: "sogrim_server", "+ ------------------------------------------------------ + -------- + ---------- +");
-        log::info!(target: "sogrim_server", "|                       REQUEST                          |  STATUS  |  DURATION  |");
-        log::info!(target: "sogrim_server", "+ ------------------------------------------------------ + -------- + ---------- +");
+        log::info!(target: "sogrim_server", "+ ------------------------------------------------------ + -------- + ---------- + --------------------- +");
+        log::info!(target: "sogrim_server", "|                       REQUEST                          |  STATUS  |  DURATION  |       DETAILS         |");
+        log::info!(target: "sogrim_server", "+ ------------------------------------------------------ + -------- + ---------- + --------------------- +");
     }));
 }
 
@@ -108,27 +108,37 @@ pub fn init_actix_logger() -> Logger {
             .copied()
             .unwrap_or_else(Instant::now);
         if res.status().is_success() {
+            let duration = format_duration(start.elapsed());
             format!(
-                "  {} {SEP} {}",
+                "  {} {SEP} {}{}",
                 res.status().as_str().green(),
-                format_duration(start.elapsed())
+                duration,
+                " ".repeat(DURATION_TO_DETAILS_OFFSET - duration.chars().count()),
             )
         } else {
-            format!("  {} ", res.status().as_str().red())
+            let duration = format_duration(start.elapsed()).red();
+            format!(
+                "  {} {SEP} {}{}",
+                res.status().as_str().red(),
+                duration,
+                " ".repeat(DURATION_TO_DETAILS_OFFSET - duration.chars().count()),
+            )
         }
     })
     .custom_response_replace("reason", |res| {
+        let canonical_reason = res
+            .response()
+            .status()
+            .canonical_reason()
+            .unwrap_or_default()
+            .to_string();
         if res.status().is_success() {
-            // no reason for success
-            String::new()
+            format!("{SEP}{}", canonical_reason.green().italic())
         } else {
-            // get the error from extensions
+            // get the error from extensions or use canonical reason
             let extensions = res.response().extensions();
-            let reason = extensions
-                .get::<String>()
-                .map(|e| e.red().italic())
-                .unwrap_or_default();
-            format!("{SEP}{}", reason)
+            let reason = extensions.get::<String>().unwrap_or(&canonical_reason);
+            format!("{SEP}{}", reason.red().italic())
         }
     })
     .log_target("sogrim_server")
