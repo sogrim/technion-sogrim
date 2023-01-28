@@ -91,15 +91,12 @@ pub fn init_actix_logger() -> Logger {
             &query[0..std::cmp::min(query.len(), MAX_QUERY_LEN)]
         );
         let version = format!("{:?}", req.version());
-        let len = method.len() + path.len() + version.len();
         format!(
-            "{}{} {} {}{}{}",
-            " ".repeat(MAX_REQ_LINE_LEN.saturating_sub(len) / 2),
+            "{} {} {}{}",
             method,
             path,
             version,
-            " ".repeat(MAX_REQ_LINE_LEN.saturating_sub(len) / 2),
-            if len % 2 == 0 { "" } else { " " },
+            " ".repeat(MAX_REQ_LINE_LEN.saturating_sub(method.len() + path.len() + version.len())),
         )
         .yellow()
         .to_string()
@@ -108,16 +105,16 @@ pub fn init_actix_logger() -> Logger {
         let extensions = res.request().extensions();
         let start = extensions
             .get::<Instant>()
-            .map(|inst| *inst)
+            .copied()
             .unwrap_or_else(Instant::now);
         if res.status().is_success() {
             format!(
                 "  {} {SEP} {}",
-                res.status().as_str().green().to_string(),
+                res.status().as_str().green(),
                 format_duration(start.elapsed())
             )
         } else {
-            format!("  {} ", res.status().as_str().red().to_string())
+            format!("  {} ", res.status().as_str().red())
         }
     })
     .custom_response_replace("reason", |res| {

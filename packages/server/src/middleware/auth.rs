@@ -40,48 +40,38 @@ impl JwtDecoder {
     }
 }
 
-macro_rules! return_401_with_reason(
-    ($request:ident,$reason:expr) => {{
-        if $reason.contains("Expired") {
-            log::warn!("{}", $reason);
-        } else {
-            log::error!("{}", $reason);
-        }
-        return Ok(ServiceResponse::new(
-            $request,
-            HttpResponse::Unauthorized().body($reason),
-        ))
-    }};
-);
-
 pub async fn authenticate(
     req: ServiceRequest,
     next: Next<impl MessageBody + 'static>,
 ) -> Result<ServiceResponse<impl MessageBody>, Error> {
     let (request, payload) = req.into_parts();
-    let auth_header = match request.headers().get(header::AUTHORIZATION) {
-        Some(header) => header,
-        None => return_401_with_reason!(request, "No authorization header found"),
+    let Some(header) = request.headers().get(header::AUTHORIZATION) else {
+        let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
+        resp.response_mut().extensions_mut().insert::<String>(String::from("No authorization header"));
+        return Ok(resp);
     };
 
-    let jwt = match auth_header.to_str() {
-        Ok(jwt) => jwt,
-        Err(_) => return_401_with_reason!(request, "Invalid authorization header"),
+    let Ok(jwt) = header.to_str() else {
+        let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
+        resp.response_mut().extensions_mut().insert::<String>(String::from("Invalid  authorization header"));
+        return Ok(resp);
     };
 
-    let decoder = match request.app_data::<JwtDecoder>() {
-        Some(decoder) => decoder,
-        None => {
-            return Ok(ServiceResponse::new(
-                request,
-                HttpResponse::InternalServerError().body("JwtDecoder not initialized"),
-            ));
-        }
+    let Some(decoder) = request.app_data::<JwtDecoder>() else {
+        let mut resp = ServiceResponse::new(request, HttpResponse::InternalServerError().finish());
+        resp.response_mut().extensions_mut().insert::<String>(String::from("JwtDecoder not initialized"));
+        return Ok(resp);
     };
 
     let sub = match decoder.decode(jwt).await {
         Ok(id_info) => id_info.sub,
-        Err(err) => return_401_with_reason!(request, format!("Invalid JWT: {err}")),
+        Err(err) => {
+            let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
+            resp.response_mut()
+                .extensions_mut()
+                .insert::<String>(format!("Invalid JWT: {err}"));
+            return Ok(resp);
+        }
     };
 
     request.extensions_mut().insert::<Sub>(sub);
