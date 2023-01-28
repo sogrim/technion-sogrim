@@ -11,7 +11,7 @@ impl DegreeStatus {
         let completed_english_content_courses_count = self
             .course_statuses
             .iter()
-            .filter(|course_status| course_status.course.is_english())
+            .filter(|course_status| course_status.course.is_english() && course_status.completed())
             .count();
 
         let technical_english_advanced_b_course_status =

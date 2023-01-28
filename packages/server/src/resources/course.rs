@@ -32,22 +32,20 @@ pub enum Tag {
 }
 
 impl Course {
-    pub fn is_english(&self) -> bool {
+    fn is(&self, tag: Tag) -> bool {
         // TODO: change it to "is_some_and()" when become stable
-        self.tags
-            .clone()
-            .unwrap_or_default()
-            .contains(&Tag::English)
+        self.tags.clone().unwrap_or_default().contains(&tag)
+    }
+    pub fn is_english(&self) -> bool {
+        self.is(Tag::English)
     }
 
     pub fn is_sport(&self) -> bool {
-        // TODO: change it to "is_some_and()" when become stable
-        self.tags.clone().unwrap_or_default().contains(&Tag::Sport)
+        self.is(Tag::Sport)
     }
 
     pub fn is_malag(&self) -> bool {
-        // TODO: change it to "is_some_and()" when become stable
-        self.tags.clone().unwrap_or_default().contains(&Tag::Malag)
+        self.is(Tag::Malag)
     }
 }
 
