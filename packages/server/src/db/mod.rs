@@ -33,6 +33,7 @@ impl From<Client> for Db {
 pub enum FilterType {
     Regex,
     In,
+    Exists,
 }
 
 impl AsRef<str> for FilterType {
@@ -40,6 +41,7 @@ impl AsRef<str> for FilterType {
         match self {
             FilterType::Regex => "$regex",
             FilterType::In => "$in",
+            FilterType::Exists => "$exists",
         }
     }
 }
