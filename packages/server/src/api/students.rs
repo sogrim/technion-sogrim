@@ -14,7 +14,7 @@ use crate::{
     middleware::auth::Sub,
     resources::{
         catalog::{Catalog, DisplayCatalog},
-        course::{self, Course},
+        course::{self, Course, CourseId},
         user::{User, UserDetails, UserSettings},
     },
 };
@@ -93,13 +93,13 @@ pub async fn get_courses_by_filter(
     match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
             let courses = db
-                .get_filtered::<Course>(name, FilterType::Regex, "name")
+                .get_filtered::<Course>(FilterType::Regex, "name", name)
                 .await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (None, Some(number)) => {
             let courses = db
-                .get_filtered::<Course>(number, FilterType::Regex, "_id")
+                .get_filtered::<Course>(FilterType::Regex, "_id", number)
                 .await?;
             Ok(HttpResponse::Ok().json(courses))
         }
@@ -137,8 +137,22 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
 
     user.details.modified = false;
 
-    let vec_courses = db
-        .get_filtered::<Course>(catalog.get_all_course_ids(), FilterType::In, "_id")
+    let courses = db
+        .get_filtered::<Course>(
+            FilterType::In,
+            "_id",
+            catalog
+                .get_all_course_ids()
+                .into_iter()
+                .chain(
+                    user.details
+                        .degree_status
+                        .course_statuses
+                        .iter()
+                        .map(|cs| cs.course.id.clone()),
+                )
+                .collect::<Vec<CourseId>>(),
+        )
         .await?;
 
     // Fill tags for all student courses
@@ -147,7 +161,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         .course_statuses
         .iter_mut()
         .for_each(|course_status| {
-            course_status.course.tags = vec_courses
+            course_status.course.tags = courses
                 .iter()
                 .find(|course| course.id == course_status.course.id)
                 .and_then(|course| course.tags.clone());
@@ -160,7 +174,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
 
     user.details
         .degree_status
-        .compute(catalog, course::vec_to_map(vec_courses));
+        .compute(catalog, course::vec_to_map(courses));
 
     if user.settings.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);
