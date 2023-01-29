@@ -38,9 +38,9 @@ impl Db {
 
     pub async fn get_filtered<T>(
         &self,
-        filter: impl Into<Bson>,
         filter_type: FilterType,
         field_to_filter: impl AsRef<str>,
+        filter: impl Into<Bson>,
     ) -> Result<Vec<T>, AppError>
     where
         T: CollectionName + DeserializeOwned + Send + Sync + Unpin,
