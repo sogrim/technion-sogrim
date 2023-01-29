@@ -14,7 +14,7 @@ use crate::{
     middleware::auth::Sub,
     resources::{
         catalog::{Catalog, DisplayCatalog},
-        course::{self, Course},
+        course::{self, Course, CourseId},
         user::{User, UserDetails, UserSettings},
     },
 };
@@ -138,11 +138,21 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
     user.details.modified = false;
 
     let courses = db
-        .get_filtered::<Course>(FilterType::In, "_id", catalog.get_all_course_ids())
-        .await?;
-
-    let tagged_courses = db
-        .get_filtered::<Course>(FilterType::Exists, "tags", true)
+        .get_filtered::<Course>(
+            FilterType::In,
+            "_id",
+            catalog
+                .get_all_course_ids()
+                .into_iter()
+                .chain(
+                    user.details
+                        .degree_status
+                        .course_statuses
+                        .iter()
+                        .map(|cs| cs.course.id.clone()),
+                )
+                .collect::<Vec<CourseId>>(),
+        )
         .await?;
 
     // Fill tags for all student courses
@@ -151,7 +161,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         .course_statuses
         .iter_mut()
         .for_each(|course_status| {
-            course_status.course.tags = tagged_courses
+            course_status.course.tags = courses
                 .iter()
                 .find(|course| course.id == course_status.course.id)
                 .and_then(|course| course.tags.clone());
