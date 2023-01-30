@@ -6,6 +6,7 @@ const Disclaimer: React.FC = () => {
     <Card
       sx={{
         maxWidth: "400px",
+        marginTop: 5,
         marginBottom: 20,
         alignSelf: "center",
       }}

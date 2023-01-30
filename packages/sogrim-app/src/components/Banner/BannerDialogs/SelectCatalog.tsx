@@ -89,7 +89,7 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
           ].map((catalogs) => (
             <Link
               key={catalogs.year}
-              color={(theme: Theme) => theme.palette.secondary.dark}
+              color={(theme: Theme) => theme.palette.secondary.main}
               href={catalogs.link}
               underline="hover"
               target="_blank"
