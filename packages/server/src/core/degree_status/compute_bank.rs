@@ -33,8 +33,17 @@ impl<'a> DegreeStatusHandler<'a> {
         let mut sum_credit;
         let mut count_courses = 0; // for accumulate courses rule
         let mut missing_credit = 0.0; // for all rule
+        let mut groups_done_list = Vec::new(); // for specialization group rule
         let mut completed = true;
         let mut msg = None;
+
+        // let calculate_new_credit = || -> f32 {
+        //     if let Some(bank_credit) = bank.credit {
+        //         bank_credit - missing_credit + missing_credit_from_prev_banks
+        //     } else {
+        //         0.0
+        //     }
+        // };
 
         match bank.rule {
             Rule::All => {
@@ -68,12 +77,11 @@ impl<'a> DegreeStatusHandler<'a> {
                 }
             }
             Rule::SpecializationGroups(ref specialization_groups) => {
-                let mut groups_done_list = Vec::new();
                 sum_credit = bank_rule_handler
                     .specialization_group(specialization_groups, &mut groups_done_list);
                 completed = groups_done_list.len() >= specialization_groups.groups_number;
                 msg = Some(messages::completed_specialization_groups_msg(
-                    groups_done_list,
+                    groups_done_list.clone(),
                     specialization_groups.groups_number,
                 ));
             }
@@ -106,7 +114,14 @@ impl<'a> DegreeStatusHandler<'a> {
                     _ => None,
                 },
                 credit_completed: sum_credit,
-                course_completed: count_courses,
+                course_completed: match &bank.rule {
+                    Rule::AccumulateCourses(_) => count_courses,
+                    Rule::SpecializationGroups(_) if new_bank_credit.is_none() => {
+                        println!("{:#?}", groups_done_list.len());
+                        groups_done_list.len()
+                    }
+                    _ => 0,
+                },
                 completed,
                 message: msg,
             });
