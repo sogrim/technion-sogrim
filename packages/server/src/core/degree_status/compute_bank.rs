@@ -77,15 +77,15 @@ impl<'a> DegreeStatusHandler<'a> {
                 sum_credit = bank_rule_handler
                     .specialization_group(specialization_groups, &mut groups_done_list);
                 completed = groups_done_list.len() >= specialization_groups.groups_number;
-                requirement.message(messages::completed_specialization_groups_msg(
-                    groups_done_list.clone(),
-                    specialization_groups.groups_number,
-                ));
                 if bank.credit.is_none() {
                     requirement
                         .course_requirement(specialization_groups.groups_number)
                         .course_completed(groups_done_list.len());
                 }
+                requirement.message(messages::completed_specialization_groups_msg(
+                    groups_done_list,
+                    specialization_groups.groups_number,
+                ));
             }
             Rule::Wildcard(_) => {
                 sum_credit = 0.0; // TODO: change this
