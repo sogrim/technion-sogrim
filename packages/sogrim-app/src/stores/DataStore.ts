@@ -279,12 +279,12 @@ export class DataStore {
     return this.userDetails;
   };
 
-  updateComputeInProgressInUserSettings = (
+  updateComputeInProgressInUserDetails = (
     computeInProgress: boolean
-  ): UserSettings => {
-    this.userSettings.compute_in_progress = computeInProgress;
+  ): UserDetails => {
+    this.userDetails.compute_in_progress = computeInProgress;
     this.userDetails.modified = true;
-    return this.userSettings;
+    return this.userDetails;
   };
 
   toggleDarkMode = (): UserSettings => {

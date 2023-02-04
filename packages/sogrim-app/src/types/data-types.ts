@@ -57,13 +57,13 @@ export type DegreeStatus = {
 };
 
 export type UserSettings = {
-  compute_in_progress: boolean;
   dark_mode: boolean;
 };
 
 export type UserDetails = {
   degree_status: DegreeStatus;
   catalog?: Catalog;
+  compute_in_progress: boolean;
   modified: boolean;
 };
 
