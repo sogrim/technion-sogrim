@@ -1,9 +1,6 @@
+use crate::core::types::Requirement;
 use crate::{
-    core::{
-        bank_rule::BankRuleHandler,
-        messages,
-        types::{Requirement, Rule},
-    },
+    core::{bank_rule::BankRuleHandler, messages, types::Rule},
     resources::course::{CourseBank, CourseId},
 };
 
@@ -31,10 +28,14 @@ impl<'a> DegreeStatusHandler<'a> {
 
         // Initialize necessary variable for rules handling
         let mut sum_credit;
-        let mut count_courses = 0; // for accumulate courses rule
         let mut missing_credit = 0.0; // for all rule
         let mut completed = true;
-        let mut msg = None;
+
+        let mut requirement = Requirement {
+            course_bank_name: bank.name.clone(),
+            bank_rule_name: bank.rule.clone().to_string(),
+            ..Default::default()
+        };
 
         match bank.rule {
             Rule::All => {
@@ -52,8 +53,12 @@ impl<'a> DegreeStatusHandler<'a> {
             }
             Rule::AccumulateCredit => sum_credit = bank_rule_handler.accumulate_credit(),
             Rule::AccumulateCourses(num_courses) => {
+                let mut count_courses = 0;
                 sum_credit = bank_rule_handler.accumulate_courses(&mut count_courses);
                 count_courses = self.handle_courses_overflow(&bank, num_courses, count_courses);
+                requirement
+                    .course_requirement(num_courses)
+                    .course_completed(count_courses);
                 completed = count_courses >= num_courses;
             }
             Rule::Malag => sum_credit = bank_rule_handler.malag(),
@@ -64,7 +69,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 sum_credit = bank_rule_handler.chain(chains, &mut chain_done);
                 completed = !chain_done.is_empty();
                 if completed {
-                    msg = Some(messages::completed_chain_msg(chain_done));
+                    requirement.message(messages::completed_chain_msg(chain_done));
                 }
             }
             Rule::SpecializationGroups(ref specialization_groups) => {
@@ -72,7 +77,12 @@ impl<'a> DegreeStatusHandler<'a> {
                 sum_credit = bank_rule_handler
                     .specialization_group(specialization_groups, &mut groups_done_list);
                 completed = groups_done_list.len() >= specialization_groups.groups_number;
-                msg = Some(messages::completed_specialization_groups_msg(
+                if bank.credit.is_none() {
+                    requirement
+                        .course_requirement(specialization_groups.groups_number)
+                        .course_completed(groups_done_list.len());
+                }
+                requirement.message(messages::completed_specialization_groups_msg(
                     groups_done_list,
                     specialization_groups.groups_number,
                 ));
@@ -82,33 +92,22 @@ impl<'a> DegreeStatusHandler<'a> {
             }
         }
 
-        let mut new_bank_credit = None;
-        if let Some(bank_credit) = bank.credit {
-            let new_credit = bank_credit - missing_credit + missing_credit_from_prev_banks;
-            new_bank_credit = Some(new_credit);
-            sum_credit = self.handle_credit_overflow(&bank, new_credit, sum_credit);
-            completed &= sum_credit >= new_credit;
-        } else {
-            sum_credit = self.handle_credit_overflow(&bank, 0.0, sum_credit);
+        match bank.credit {
+            Some(bank_credit) => {
+                let new_bank_credit = bank_credit - missing_credit + missing_credit_from_prev_banks;
+                sum_credit = self.handle_credit_overflow(&bank, new_bank_credit, sum_credit);
+                completed &= sum_credit >= new_bank_credit;
+                requirement.credit_requirement(new_bank_credit);
+            }
+            None => sum_credit = self.handle_credit_overflow(&bank, 0.0, sum_credit),
         };
+
+        requirement
+            .credit_completed(sum_credit)
+            .completed(completed);
 
         self.degree_status
             .course_bank_requirements
-            .push(Requirement {
-                course_bank_name: bank.name.clone(),
-                bank_rule_name: bank.rule.to_string(),
-                credit_requirement: new_bank_credit,
-                course_requirement: match &bank.rule {
-                    Rule::AccumulateCourses(num_courses) => Some(*num_courses),
-                    Rule::SpecializationGroups(sg) if new_bank_credit.is_none() => {
-                        Some(sg.groups_number)
-                    }
-                    _ => None,
-                },
-                credit_completed: sum_credit,
-                course_completed: count_courses,
-                completed,
-                message: msg,
-            });
+            .push(requirement);
     }
 }
