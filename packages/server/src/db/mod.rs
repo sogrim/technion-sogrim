@@ -1,4 +1,6 @@
+use bson::Document;
 use mongodb::Client;
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::config::CONFIG;
 
@@ -35,6 +37,11 @@ pub enum FilterType {
     In,
 }
 
+pub enum InsertType {
+    Set,
+    SetOnInsert,
+}
+
 impl AsRef<str> for FilterType {
     fn as_ref(&self) -> &str {
         match self {
@@ -44,6 +51,20 @@ impl AsRef<str> for FilterType {
     }
 }
 
-pub trait CollectionName {
-    fn collection_name() -> &'static str;
+impl AsRef<str> for InsertType {
+    fn as_ref(&self) -> &str {
+        match self {
+            InsertType::Set => "$set",
+            InsertType::SetOnInsert => "$setOnInsert",
+        }
+    }
 }
+
+pub trait Resource: Serialize + DeserializeOwned {
+    fn collection_name() -> &'static str;
+    fn key(&self) -> Document;
+}
+
+// A trait for getting the key to find a document
+// This is used for updating and deleting documents
+// Better name for this trait..

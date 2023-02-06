@@ -1,5 +1,6 @@
 use super::catalog::DisplayCatalog;
-use crate::{core::degree_status::DegreeStatus, db::CollectionName, impl_from_request};
+use crate::{core::degree_status::DegreeStatus, db::Resource, impl_from_request};
+use bson::{doc, Document};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -22,9 +23,12 @@ pub struct User {
     pub settings: UserSettings,
 }
 
-impl CollectionName for User {
+impl Resource for User {
     fn collection_name() -> &'static str {
         "Users"
+    }
+    fn key(&self) -> Document {
+        doc! {"_id": self.sub.clone()}
     }
 }
 

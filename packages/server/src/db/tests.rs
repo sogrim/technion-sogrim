@@ -39,9 +39,12 @@ pub async fn test_db_internal_error() {
             .await
             .expect_err("Expected error"),
         db.get_all::<Course>().await.expect_err("Expected error"),
-        db.update::<Course>("124400", bson::doc! {"$setOnInsert": {}})
-            .await
-            .expect_err("Expected error"),
+        db.update::<Course>(Course {
+            id: "124400".into(),
+            ..Default::default()
+        })
+        .await
+        .expect_err("Expected error"),
         db.delete::<Course>("124400")
             .await
             .expect_err("Expected error"),

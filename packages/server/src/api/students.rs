@@ -5,7 +5,6 @@ use actix_web::{
     web::{Data, Json, Query},
     HttpMessage, HttpRequest, HttpResponse,
 };
-use bson::{doc, to_bson};
 
 use crate::{
     core::{degree_status::DegreeStatus, parser},
@@ -46,9 +45,8 @@ pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppEr
         sub: user_id,
         ..Default::default()
     };
-    let document = doc! {"$setOnInsert" : to_bson(&user)?};
 
-    let updated_user = db.update::<User>(&user.sub, document).await?;
+    let updated_user = db.create_or_update::<User>(user).await?;
 
     Ok(HttpResponse::Ok().json(updated_user))
 }
@@ -76,9 +74,7 @@ pub async fn update_catalog(
             cs.additional_msg = None;
         });
 
-    let updated_user = db
-        .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
-        .await?;
+    let updated_user = db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
@@ -117,9 +113,7 @@ pub async fn add_courses(
     user.details.degree_status = DegreeStatus::default();
     user.details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
     user.details.modified = true;
-    let updated_user = db
-        .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
-        .await?;
+    let updated_user = db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
@@ -179,9 +173,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
     if user.settings.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);
     }
-    let user_id = user.sub.clone();
-    let document = doc! {"$set" : to_bson(&user)?};
-    db.update::<User>(&user_id, document).await?;
+    db.update::<User>(user.clone()).await?;
     Ok(HttpResponse::Ok().json(user))
 }
 
@@ -192,10 +184,8 @@ pub async fn update_details(
     details: Json<UserDetails>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    let user_id = user.sub.clone();
     user.details = details.into_inner();
-    let document = doc! {"$set" : to_bson(&user)?};
-    db.update::<User>(&user_id, document).await?;
+    db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -205,10 +195,8 @@ pub async fn update_settings(
     settings: Json<UserSettings>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    let user_id = user.sub.clone();
     user.settings = settings.into_inner();
     user.details.modified = true; // Hack - TODO: increase level of modified to User (instead of UserDetails)
-    let document = doc! {"$set" : to_bson(&user)?};
-    db.update::<User>(&user_id, document).await?;
+    db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().finish())
 }

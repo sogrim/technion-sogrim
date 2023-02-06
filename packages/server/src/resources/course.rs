@@ -1,10 +1,11 @@
+use bson::{doc, Document};
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use crate::core::types::Rule;
-use crate::db::CollectionName;
+use crate::db::Resource;
 
 pub type CourseId = String;
 
@@ -18,9 +19,12 @@ pub struct Course {
     pub tags: Option<Vec<Tag>>, // All tags for the course, for example "english" and "malag"
 }
 
-impl CollectionName for Course {
+impl Resource for Course {
     fn collection_name() -> &'static str {
         "Courses"
+    }
+    fn key(&self) -> Document {
+        doc! {"_id": self.id.clone()}
     }
 }
 

@@ -1,8 +1,9 @@
 use crate::{
     core::{credit_transfer_graph::find_traversal_order, types::CreditOverflow},
-    db::CollectionName,
+    db::Resource,
     resources::course::CourseBank,
 };
+use bson::{doc, Document};
 use serde::{self, Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -48,9 +49,13 @@ impl Catalog {
     }
 }
 
-impl CollectionName for Catalog {
+impl Resource for Catalog {
     fn collection_name() -> &'static str {
         "Catalogs"
+    }
+
+    fn key(&self) -> Document {
+        doc! {"_id": self.id}
     }
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
