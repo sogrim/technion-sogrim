@@ -64,7 +64,3 @@ pub trait Resource: Serialize + DeserializeOwned {
     fn collection_name() -> &'static str;
     fn key(&self) -> Document;
 }
-
-// A trait for getting the key to find a document
-// This is used for updating and deleting documents
-// Better name for this trait..
