@@ -51,7 +51,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
                 "חורף"
             };
 
-            format!("{}_{}", semester_term, semester_counter)
+            format!("{semester_term}_{semester_counter}")
         } else {
             semester
         };
@@ -169,7 +169,7 @@ fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>),
                 .rev()
                 .collect::<String>()
                 .parse::<f32>()
-                .map_err(|e| AppError::Parser(format!("Bad Format: {}", e)))?;
+                .map_err(|e| AppError::Parser(format!("Bad Format: {e}")))?;
             break;
         }
         index += 1;

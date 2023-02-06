@@ -35,17 +35,17 @@ impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         let (status_code, error) = match self {
             AppError::BadRequest(e) => (StatusCode::BAD_REQUEST, e.to_owned()),
-            AppError::Bson(e) => (StatusCode::BAD_REQUEST, format!("Bson error: {}", e)),
-            AppError::Parser(e) => (StatusCode::BAD_REQUEST, format!("Parser error: {}", e)),
-            AppError::NotFound(e) => (StatusCode::NOT_FOUND, format!("{} not found", e)),
+            AppError::Bson(e) => (StatusCode::BAD_REQUEST, format!("Bson error: {e}")),
+            AppError::Parser(e) => (StatusCode::BAD_REQUEST, format!("Parser error: {e}")),
+            AppError::NotFound(e) => (StatusCode::NOT_FOUND, format!("{e} not found")),
             AppError::InternalServer(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_owned()),
             AppError::Middleware(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Middleware error: {}", e),
+                format!("Middleware error: {e}"),
             ),
             AppError::MongoDriver(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("MongoDB driver error: {}", e),
+                format!("MongoDB driver error: {e}"),
             ),
         };
         log::error!("{}", error.bold().red());

@@ -502,7 +502,7 @@ async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) ->
 async fn run_degree_status_full_flow(file_name: &str, catalog: &str) -> DegreeStatus {
     let catalog = get_catalog(catalog).await;
 
-    let contents = std::fs::read_to_string(format!("../docs/{}", file_name))
+    let contents = std::fs::read_to_string(format!("../docs/{file_name}"))
         .expect("Something went wrong reading the file");
     let course_statuses =
         parser::parse_copy_paste_data(&contents).expect("failed to parse courses data");

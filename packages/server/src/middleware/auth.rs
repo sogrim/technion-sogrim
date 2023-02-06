@@ -81,7 +81,7 @@ pub async fn authenticate(
 
     let sub = match decoder.decode(jwt).await {
         Ok(id_info) => id_info.sub,
-        Err(err) => return_401_with_reason!(request, format!("Invalid JWT: {}", err)),
+        Err(err) => return_401_with_reason!(request, format!("Invalid JWT: {err}")),
     };
 
     request.extensions_mut().insert::<Sub>(sub);
