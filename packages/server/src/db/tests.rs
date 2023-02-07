@@ -6,7 +6,7 @@ use crate::{
 use actix_rt::test;
 use actix_web::{body::MessageBody, http::StatusCode, web::Bytes, ResponseError};
 
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use mongodb::{
     options::{ClientOptions, Credential},
     Client,

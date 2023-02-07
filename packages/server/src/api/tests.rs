@@ -19,7 +19,7 @@ use actix_web::{
     App, HttpMessage,
 };
 use actix_web_lab::middleware::from_fn;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 #[test]
 pub async fn test_get_all_catalogs() {

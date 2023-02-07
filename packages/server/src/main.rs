@@ -2,7 +2,7 @@ use crate::config::CONFIG;
 use actix_web::{web, App, HttpServer};
 use actix_web_lab::middleware::from_fn;
 use db::Db;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use middleware::auth;
 
 mod api;

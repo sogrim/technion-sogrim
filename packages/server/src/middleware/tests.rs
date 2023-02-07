@@ -7,7 +7,7 @@ use actix_web::{
     App,
 };
 use actix_web_lab::middleware::from_fn;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 #[test]
 async fn test_from_request_no_db_client() {
@@ -89,8 +89,12 @@ async fn test_auth_mw_no_jwt_decoder() {
     // Check for correct response (internal server error in this case)
     assert!(resp.status().is_server_error());
     assert_eq!(
-        Bytes::from("JwtDecoder not initialized"),
-        test::read_body(resp).await
+        String::from("JwtDecoder not initialized"),
+        resp.response()
+            .extensions()
+            .get::<String>()
+            .unwrap()
+            .clone()
     );
 }
 
@@ -114,8 +118,13 @@ async fn test_auth_mw_client_errors() {
     // Check for correct response (401 in this case)
     assert_eq!(resp_no_header.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(
-        Bytes::from("No authorization header found"),
-        test::read_body(resp_no_header).await
+        String::from("No authorization header"),
+        resp_no_header
+            .response()
+            .extensions()
+            .get::<String>()
+            .unwrap()
+            .clone()
     );
 
     // INVALID JWT - WRONG HEADER
@@ -128,8 +137,13 @@ async fn test_auth_mw_client_errors() {
     // Check for correct response (401 in this case)
     assert_eq!(resp_bad_jwt.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(
-        Bytes::from("Invalid JWT: Wrong header."),
-        test::read_body(resp_bad_jwt).await
+        String::from("Invalid JWT: Wrong header."),
+        resp_bad_jwt
+            .response()
+            .extensions()
+            .get::<String>()
+            .unwrap()
+            .clone()
     );
 
     // INVALID JWT - EXPIRED
@@ -142,7 +156,12 @@ async fn test_auth_mw_client_errors() {
     // Check for correct response (401 in this case)
     assert_eq!(resp_jwt_expired.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(
-        Bytes::from("Invalid JWT: Wrong token format - ExpiredSignature."),
-        test::read_body(resp_jwt_expired).await
+        String::from("Invalid JWT: Wrong token format - ExpiredSignature."),
+        resp_jwt_expired
+            .response()
+            .extensions()
+            .get::<String>()
+            .unwrap()
+            .clone()
     );
 }
