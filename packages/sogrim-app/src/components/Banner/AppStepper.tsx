@@ -143,16 +143,7 @@ const AppStepperComp: React.FC = () => {
           <Stepper activeStep={activeStep} orientation="vertical">
             {steps.map((step, index) => (
               <Step key={step.label}>
-                <StepLabel
-                  color="white"
-                  optional={
-                    index === 2 ? (
-                      <Typography color="white" variant="caption">
-                        Last step
-                      </Typography>
-                    ) : null
-                  }
-                >
+                <StepLabel color="white">
                   <Typography variant="h4">{step.label}</Typography>
                 </StepLabel>
                 <StepContent>

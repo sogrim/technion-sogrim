@@ -6,12 +6,13 @@ use serde::{Deserialize, Serialize};
 pub struct UserDetails {
     pub catalog: Option<DisplayCatalog>,
     pub degree_status: DegreeStatus,
+    pub compute_in_progress: bool,
     pub modified: bool,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserSettings {
-    pub compute_in_progress: bool,
+    pub dark_mode: bool,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]

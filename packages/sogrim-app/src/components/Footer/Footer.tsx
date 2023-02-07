@@ -16,9 +16,9 @@ export const Footer: React.FC = () => {
   return (
     <AppBar
       position="fixed"
-      color="primary"
       sx={{
         top: "auto",
+        bgcolor: (theme) => theme.palette.primary.dark,
         justifyContent: "center",
         bottom: 0,
         minHeight: "35px",

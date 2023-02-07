@@ -8,6 +8,7 @@ import { ExportToCsv } from "../Common/ExportToCsv";
 import { UserAccount } from "./Actions/Actions";
 import { AppTitle } from "./AppTitle/AppTitle";
 import { DefaultMenu } from "./Menu";
+import { ToggleDarkMode } from "./ToggleDarkMode";
 
 interface HeaderProps {}
 
@@ -57,6 +58,7 @@ const HeaderComp: React.FC<HeaderProps> = () => {
               >
                 {navButtonText}
               </Button>
+              <ToggleDarkMode />
               {isAuthenticated ? (
                 <UserAccount onClick={handleProfileMenuOpen} />
               ) : null}
@@ -77,7 +79,7 @@ export const Header = observer(HeaderComp);
 
 const sxAppBar = {
   zIndex: (theme: Theme) => theme.zIndex.drawer + 1,
-  bgcolor: (theme: Theme) => theme.palette.common.white,
+  bgcolor: (theme: Theme) => theme.palette.background.default,
   height: 80,
   display: "flex",
   justifyContent: "center",
