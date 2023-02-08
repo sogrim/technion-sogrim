@@ -162,7 +162,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         });
 
     let mut course_list = Vec::new();
-    if user.settings.compute_in_progress {
+    if user.details.compute_in_progress {
         course_list = user.details.degree_status.set_in_progress_to_complete();
     }
 
@@ -170,7 +170,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         .degree_status
         .compute(catalog, course::vec_to_map(courses));
 
-    if user.settings.compute_in_progress {
+    if user.details.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);
     }
     db.update::<User>(user.clone()).await?;
@@ -196,7 +196,6 @@ pub async fn update_settings(
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
     user.settings = settings.into_inner();
-    user.details.modified = true; // Hack - TODO: increase level of modified to User (instead of UserDetails)
     db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().finish())
 }

@@ -1,5 +1,5 @@
 import { Box, Switch, Tooltip, Typography } from "@mui/material";
-import useUpdateUserSettings from "../../../hooks/apiHooks/useUpdateUserSettings";
+import useUpdateUserState from "../../../hooks/apiHooks/useUpdateUserState";
 import { useAuth } from "../../../hooks/useAuth";
 import { useStore } from "../../../hooks/useStore";
 
@@ -8,20 +8,20 @@ export const ComputeInProgressToggle: React.FC<{
   setComputeInProgress: any;
 }> = ({ computeInProgress, setComputeInProgress }) => {
   const {
-    dataStore: { updateComputeInProgressInUserSettings },
+    dataStore: { updateComputeInProgressInUserDetails },
   } = useStore();
 
   const { userAuthToken } = useAuth();
-  const { mutate } = useUpdateUserSettings(userAuthToken);
+  const { mutate } = useUpdateUserState(userAuthToken);
 
   const handleChange = (
     _: React.SyntheticEvent,
     computeInProgress: boolean
   ) => {
     setComputeInProgress(computeInProgress);
-    let newUserSettings =
-      updateComputeInProgressInUserSettings(computeInProgress);
-    mutate(newUserSettings);
+    let newUserDetails =
+      updateComputeInProgressInUserDetails(computeInProgress);
+    mutate(newUserDetails);
   };
 
   return (

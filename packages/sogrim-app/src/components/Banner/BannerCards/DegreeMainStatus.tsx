@@ -20,7 +20,7 @@ const getCreditOfCompleteCourses = (userDetails: UserDetails) =>
 
 const DegreeMainStatusComp: React.FC = () => {
   const {
-    dataStore: { userDetails, userSettings },
+    dataStore: { userDetails },
   } = useStore();
 
   const [catalogName, setCatalogName] = useState<string>(
@@ -39,7 +39,7 @@ const DegreeMainStatusComp: React.FC = () => {
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
   const [showMainStatus, setShowMainStatus] = useState<boolean>(true);
   const [computeInProgress, setComputeInProgress] = useState<boolean>(
-    userSettings ? userSettings.compute_in_progress : false
+    userDetails ? userDetails.compute_in_progress : false
   );
 
   // TODO: loading? or loading to all the banner!
@@ -56,12 +56,7 @@ const DegreeMainStatusComp: React.FC = () => {
       setCatalogName(catalogName);
       setShowMainStatus(catalogName !== "");
     }
-  }, [
-    pointsDone,
-    userDetails,
-    userDetails?.degree_status.course_statuses,
-    userSettings,
-  ]);
+  }, [pointsDone, userDetails, userDetails?.degree_status.course_statuses]);
 
   const coursesTotalProgress = isNaN(pointsDone / totalCredit)
     ? 0

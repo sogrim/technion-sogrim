@@ -19,7 +19,7 @@ use actix_web::{
     App, HttpMessage,
 };
 use actix_web_lab::middleware::from_fn;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 #[test]
 pub async fn test_get_all_catalogs() {
@@ -163,7 +163,7 @@ async fn test_compute_in_progress() {
     let mut user: User = test::read_body_json(res).await;
     assert_eq!(user.details.degree_status.total_credit, 0.0);
 
-    user.settings.compute_in_progress = true;
+    user.details.compute_in_progress = true;
     let put_user_settings = test::TestRequest::put()
         .uri("/students/settings")
         .insert_header(("content-type", "application/json"))
@@ -186,7 +186,7 @@ async fn test_compute_in_progress() {
     let mut user: User = test::read_body_json(res).await;
     assert_eq!(user.details.degree_status.total_credit, 2.5);
 
-    user.settings.compute_in_progress = false;
+    user.details.compute_in_progress = false;
     let put_user_settings = test::TestRequest::put()
         .uri("/students/settings")
         .insert_header(("content-type", "application/json"))

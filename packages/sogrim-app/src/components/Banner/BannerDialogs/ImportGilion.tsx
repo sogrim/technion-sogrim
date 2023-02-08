@@ -100,7 +100,7 @@ export const ImportGilion: React.FC<ImportGilionProps> = ({
           </ul>
         </DialogContentText>
         <Link
-          color={(theme: Theme) => theme.palette.secondary.dark}
+          color={(theme: Theme) => theme.palette.secondary.main}
           href="https://students.technion.ac.il/local/docsgenerator/"
           underline="hover"
           target="_blank"
