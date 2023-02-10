@@ -8,7 +8,7 @@ use actix_web::{
 
 use crate::{
     core::{degree_status::DegreeStatus, parser},
-    db::{Db, FilterType},
+    db::{Db, FilterOption},
     error::AppError,
     middleware::auth::Sub,
     resources::{
@@ -89,13 +89,13 @@ pub async fn get_courses_by_filter(
     match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
             let courses = db
-                .get_filtered::<Course>(FilterType::Regex, "name", name)
+                .get_filtered::<Course>(FilterOption::Regex, "name", name)
                 .await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (None, Some(number)) => {
             let courses = db
-                .get_filtered::<Course>(FilterType::Regex, "_id", number)
+                .get_filtered::<Course>(FilterOption::Regex, "_id", number)
                 .await?;
             Ok(HttpResponse::Ok().json(courses))
         }
@@ -133,7 +133,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
 
     let courses = db
         .get_filtered::<Course>(
-            FilterType::In,
+            FilterOption::In,
             "_id",
             catalog
                 .get_all_course_ids()

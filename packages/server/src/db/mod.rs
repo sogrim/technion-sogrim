@@ -32,30 +32,30 @@ impl From<Client> for Db {
     }
 }
 
-pub enum FilterType {
+pub enum FilterOption {
     Regex,
     In,
 }
 
-pub enum InsertType {
+pub enum InsertOption {
     Set,
     SetOnInsert,
 }
 
-impl AsRef<str> for FilterType {
+impl AsRef<str> for FilterOption {
     fn as_ref(&self) -> &str {
         match self {
-            FilterType::Regex => "$regex",
-            FilterType::In => "$in",
+            FilterOption::Regex => "$regex",
+            FilterOption::In => "$in",
         }
     }
 }
 
-impl AsRef<str> for InsertType {
+impl AsRef<str> for InsertOption {
     fn as_ref(&self) -> &str {
         match self {
-            InsertType::Set => "$set",
-            InsertType::SetOnInsert => "$setOnInsert",
+            InsertOption::Set => "$set",
+            InsertOption::SetOnInsert => "$setOnInsert",
         }
     }
 }

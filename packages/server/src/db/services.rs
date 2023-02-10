@@ -6,7 +6,7 @@ use futures_util::TryStreamExt;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications};
 use serde::{de::DeserializeOwned, Serialize};
 
-use super::{Db, FilterType, InsertType, Resource};
+use super::{Db, FilterOption, InsertOption, Resource};
 
 impl Db {
     pub async fn get<R>(&self, id: impl Serialize) -> Result<R, AppError>
@@ -38,7 +38,7 @@ impl Db {
 
     pub async fn get_filtered<R>(
         &self,
-        filter_type: FilterType,
+        filter_option: FilterOption,
         field_to_filter: impl AsRef<str>,
         filter: impl Into<Bson>,
     ) -> Result<Vec<R>, AppError>
@@ -50,7 +50,7 @@ impl Db {
             .database(CONFIG.profile)
             .collection::<R>(R::collection_name())
             .find(
-                doc! {field_to_filter.as_ref(): { filter_type.as_ref(): filter.into()}},
+                doc! {field_to_filter.as_ref(): { filter_option.as_ref(): filter.into()}},
                 None,
             )
             .await?
@@ -58,7 +58,7 @@ impl Db {
             .await?)
     }
 
-    async fn _update<R>(&self, resource: R, insert_option: InsertType) -> Result<R, AppError>
+    async fn _update<R>(&self, resource: R, insert_option: InsertOption) -> Result<R, AppError>
     where
         R: Resource + Send + Sync + Unpin,
     {
@@ -86,14 +86,14 @@ impl Db {
     where
         R: Resource + Send + Sync + Unpin,
     {
-        self._update::<R>(resource, InsertType::Set).await
+        self._update::<R>(resource, InsertOption::Set).await
     }
 
     pub async fn create_or_update<R>(&self, resource: R) -> Result<R, AppError>
     where
         R: Resource + Send + Sync + Unpin,
     {
-        self._update::<R>(resource, InsertType::SetOnInsert).await
+        self._update::<R>(resource, InsertOption::SetOnInsert).await
     }
 
     pub async fn delete<R>(&self, id: impl Serialize) -> Result<(), AppError>
