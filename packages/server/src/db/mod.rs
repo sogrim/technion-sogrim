@@ -1,4 +1,6 @@
+use bson::Document;
 use mongodb::Client;
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::config::CONFIG;
 
@@ -30,20 +32,35 @@ impl From<Client> for Db {
     }
 }
 
-pub enum FilterType {
+pub enum FilterOption {
     Regex,
     In,
 }
 
-impl AsRef<str> for FilterType {
+pub enum InsertOption {
+    Set,
+    SetOnInsert,
+}
+
+impl AsRef<str> for FilterOption {
     fn as_ref(&self) -> &str {
         match self {
-            FilterType::Regex => "$regex",
-            FilterType::In => "$in",
+            FilterOption::Regex => "$regex",
+            FilterOption::In => "$in",
         }
     }
 }
 
-pub trait CollectionName {
+impl AsRef<str> for InsertOption {
+    fn as_ref(&self) -> &str {
+        match self {
+            InsertOption::Set => "$set",
+            InsertOption::SetOnInsert => "$setOnInsert",
+        }
+    }
+}
+
+pub trait Resource: Serialize + DeserializeOwned {
     fn collection_name() -> &'static str;
+    fn key(&self) -> Document;
 }

@@ -7,7 +7,6 @@ use crate::resources::catalog::Catalog;
 use crate::resources::{admin::Admin, course::Course};
 use actix_web::web::{Data, Json, Path};
 use actix_web::{delete, get, put, HttpResponse};
-use bson::doc;
 
 /////////////////////////////////////////////////////////////////////////////
 // Course API
@@ -34,13 +33,11 @@ pub async fn get_course_by_id(
 #[put("/courses/{id}")]
 pub async fn create_or_update_course(
     _: Admin,
-    id: Path<String>,
+    _id: Path<String>,
     course: Json<Course>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    let course_doc = bson::to_document(&course).map_err(|e| AppError::Bson(e.to_string()))?;
-    let document = doc! {"$setOnInsert" : course_doc};
-    db.update::<Course>(id.as_str(), document)
+    db.create_or_update::<Course>(course.into_inner())
         .await
         .map(|course| HttpResponse::Ok().json(course))
 }
@@ -75,15 +72,12 @@ pub async fn get_catalog_by_id(
 #[put("/catalogs/{id}")]
 pub async fn create_or_update_catalog(
     _: Admin,
-    id: Path<String>,
+    _id: Path<String>,
     catalog: Json<Catalog>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
     catalog_validations::validate_catalog(&catalog)?;
-    let obj_id = bson::oid::ObjectId::from_str(&id).map_err(|e| AppError::Bson(e.to_string()))?;
-    let catalog_doc = bson::to_document(&catalog).map_err(|e| AppError::Bson(e.to_string()))?;
-    let document = doc! {"$setOnInsert" : catalog_doc};
-    db.update::<Catalog>(&obj_id, document)
+    db.create_or_update::<Catalog>(catalog.into_inner())
         .await
         .map(|catalog| HttpResponse::Ok().json(catalog))
 }

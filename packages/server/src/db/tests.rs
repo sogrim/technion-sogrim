@@ -1,6 +1,6 @@
 use crate::{
     config::CONFIG,
-    db::{Db, FilterType},
+    db::{Db, FilterOption},
     resources::course::Course,
 };
 use actix_rt::test;
@@ -39,9 +39,12 @@ pub async fn test_db_internal_error() {
             .await
             .expect_err("Expected error"),
         db.get_all::<Course>().await.expect_err("Expected error"),
-        db.update::<Course>("124400", bson::doc! {"$setOnInsert": {}})
-            .await
-            .expect_err("Expected error"),
+        db.update::<Course>(Course {
+            id: "124400".into(),
+            ..Default::default()
+        })
+        .await
+        .expect_err("Expected error"),
         db.delete::<Course>("124400")
             .await
             .expect_err("Expected error"),
@@ -63,7 +66,7 @@ pub async fn test_get_courses_by_filters() {
     let db = Db::new().await;
 
     let courses = db
-        .get_filtered::<Course>(FilterType::Regex, "name", "חשבון אינפיניטסימלי 1מ'")
+        .get_filtered::<Course>(FilterOption::Regex, "name", "חשבון אינפיניטסימלי 1מ'")
         .await
         .expect("Failed to get courses by name");
 
@@ -72,7 +75,7 @@ pub async fn test_get_courses_by_filters() {
     assert_eq!(courses[0].id, "104031");
 
     let courses = db
-        .get_filtered::<Course>(FilterType::Regex, "_id", "104031")
+        .get_filtered::<Course>(FilterOption::Regex, "_id", "104031")
         .await
         .expect("Failed to get courses by number");
 
@@ -81,7 +84,7 @@ pub async fn test_get_courses_by_filters() {
     assert_eq!(courses[0].id, "104031");
 
     let courses = db
-        .get_filtered::<Course>(FilterType::In, "_id", vec!["104031", "104166"])
+        .get_filtered::<Course>(FilterOption::In, "_id", vec!["104031", "104166"])
         .await
         .expect("Failed to get courses by number");
 
