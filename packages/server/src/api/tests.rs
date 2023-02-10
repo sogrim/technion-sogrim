@@ -148,7 +148,7 @@ async fn test_compute_in_progress() {
         App::new()
             .app_data(Data::new(db.clone()))
             .service(students::compute_degree_status)
-            .service(students::update_settings),
+            .service(students::update_details),
     )
     .await;
 
@@ -164,15 +164,15 @@ async fn test_compute_in_progress() {
     assert_eq!(user.details.degree_status.total_credit, 0.0);
 
     user.details.compute_in_progress = true;
-    let put_user_settings = test::TestRequest::put()
-        .uri("/students/settings")
+    let put_user_details = test::TestRequest::put()
+        .uri("/students/details")
         .insert_header(("content-type", "application/json"))
-        .set_payload(serde_json::to_string(&user.settings).expect("Fail to deserialize user"))
+        .set_payload(serde_json::to_string(&user.details).expect("Fail to deserialize user"))
         .to_request();
-    put_user_settings
+    put_user_details
         .extensions_mut()
         .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
-    let res = test::call_service(&app, put_user_settings).await;
+    let res = test::call_service(&app, put_user_details).await;
     assert_eq!(res.status(), StatusCode::OK);
 
     let get_degree_status_after = test::TestRequest::get()
@@ -187,15 +187,15 @@ async fn test_compute_in_progress() {
     assert_eq!(user.details.degree_status.total_credit, 2.5);
 
     user.details.compute_in_progress = false;
-    let put_user_settings = test::TestRequest::put()
-        .uri("/students/settings")
+    let put_user_details = test::TestRequest::put()
+        .uri("/students/details")
         .insert_header(("content-type", "application/json"))
-        .set_payload(serde_json::to_string(&user.settings).expect("Fail to deserialize user"))
+        .set_payload(serde_json::to_string(&user.details).expect("Fail to deserialize user"))
         .to_request();
-    put_user_settings
+    put_user_details
         .extensions_mut()
         .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
-    let res = test::call_service(&app, put_user_settings).await;
+    let res = test::call_service(&app, put_user_details).await;
     assert_eq!(res.status(), StatusCode::OK);
 }
 
