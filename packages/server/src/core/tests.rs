@@ -71,11 +71,32 @@ async fn test_asterisk_course_input_from_chrome_browser() {
 }
 
 #[test]
-async fn test_parser_reverse_credit_hotfix() {
+async fn test_parser_copy_paste_from_acrobat_reader() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
         .expect("Something went wrong reading the file");
 
-    parser::parse_copy_paste_data(&from_pdf).expect_err("should fail to parse pdf data");
+    let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
+    let course_status = courses.iter().find(|c| c.course.id == "234325").unwrap();
+
+    assert_eq!(course_status.course.credit, 3.0);
+    assert_eq!(course_status.course.name, "גרפיקה ממוחשבת1");
+    assert!(course_status.grade.is_none());
+}
+
+#[test]
+async fn test_parser_copy_paste_med_status() {
+    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_7.txt")
+        .expect("Something went wrong reading the file");
+
+    let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
+    let course_status = courses.iter().find(|c| c.course.id == "274400").unwrap();
+
+    assert_eq!(course_status.course.credit, 20.0);
+    assert_eq!(
+        course_status.course.name,
+        "שילוב מערכות פרה קליניקה-קליניקה"
+    );
+    assert!(course_status.grade.is_none());
 }
 
 lazy_static! {
