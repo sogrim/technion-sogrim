@@ -27,6 +27,7 @@ dotenvy = "0.15"
 lazy_static = "1.4"
 petgraph = "0.6"
 derive_more = "0.99"
+regex = "1.7.1"
 
 [dev-dependencies.jsonwebtoken-google]
 version = "0.1" 

@@ -1750,9 +1750,9 @@ dependencies = [
 
 [[package]]
 name = "linked-hash-map"
-version = "0.5.6"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
+checksum = "8dd5a6d5999d9907cda8ed67bbd137d3af8085216c2ac62de5be860bd41f304a"
 
 [[package]]
 name = "local-channel"
@@ -2724,6 +2724,7 @@ dependencies = [
  "log",
  "mongodb",
  "petgraph",
+ "regex",
  "serde",
  "serde_json",
  "tokio",
