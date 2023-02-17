@@ -123,6 +123,7 @@ pub struct CourseStatus {
     pub specialization_group_name: Option<String>,
     pub additional_msg: Option<String>,
     pub modified: bool,
+    pub times_repeated: usize,
 }
 
 impl CourseStatus {
