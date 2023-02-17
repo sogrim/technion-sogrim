@@ -37,6 +37,8 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
                 .join("\n")
                 .as_str(),
         )
+        // A potential bug here if the student only has courses with credit in one of [0.0, 0.5, 5.0, 5.5]
+        // TODO: Fix this
         .any(|credit| !credit["credit"].ends_with('0') && !credit["credit"].ends_with('5'));
     let should_reverse_name = data.contains("ציונים גליון סוף");
 
