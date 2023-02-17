@@ -127,6 +127,8 @@ async fn test_parser_course_status_repetitions() {
     assert_eq!(course_status.times_repeated, 1);
     assert_eq!(course_status2.times_repeated, 1);
     assert_eq!(course_status3.times_repeated, 2);
+
+    dbg!(course_status3);
 }
 
 lazy_static! {

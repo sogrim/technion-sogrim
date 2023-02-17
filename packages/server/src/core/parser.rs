@@ -139,7 +139,7 @@ fn set_grades_for_uncompleted_courses(
     // The candidate course statuses are those with uncompleted (לא השלים) grades.
     // For each uncompleted course status, we iterate the asterisk list in reverse to find
     // the closest (most chronologically advanced) course status with a grade (anything other than NotComplete (לא השלים)).
-    // This course status will replace the old one.
+    // if we find a course with such grade, then this course status will replace the old one.
     let uncompleted_courses = courses
         .iter_mut()
         .filter(|c| c.grade == Some(Grade::NotComplete))
