@@ -1,13 +1,22 @@
-use crate::{core::messages, resources::course::Grade};
+use crate::{
+    core::messages,
+    resources::{catalog::Catalog, course::Grade},
+};
 
 use super::DegreeStatus;
 
 pub const TECHNICAL_ENGLISH_ADVANCED_B: &str = "324033";
 const EXEMPT_COURSES_COUNT_DEMAND: usize = 2;
 const ADVANCED_B_COURSES_COUNT_DEMAND: usize = 1;
+const MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT: usize = 2021;
 
 impl DegreeStatus {
-    fn check_english_requirement(&mut self) {
+    fn check_english_requirement(&mut self, year: usize) {
+        // English requirement is not relevant for students that started their studies before 2021
+        if year < MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT {
+            return;
+        }
+
         let completed_english_content_courses_count = self
             .course_statuses
             .iter()
@@ -44,7 +53,7 @@ impl DegreeStatus {
             _ => {}
         }
     }
-    pub fn postprocess(&mut self) {
-        self.check_english_requirement();
+    pub fn postprocess(&mut self, catalog: &Catalog) {
+        self.check_english_requirement(catalog.year());
     }
 }
