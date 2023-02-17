@@ -45,7 +45,6 @@ const AppPagesComp: React.FC = () => {
       ) : (
         <Box sx={{ flexDirection: "column" }}>
           <Intro />
-          <Disclaimer />
         </Box>
       )}
     </Box>
