@@ -104,7 +104,11 @@ pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
     "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
 }
 
-pub fn medicine_retake_courses_requirement() -> String {
+pub fn medicine_course_retake_limit_exceeded_error_message() -> String {
+    "פסילה: לא ניתן לסגור את התואר. חרגת מכמות הפעמים המותרת לחזור על כל קורס".to_string()
+}
+
+pub fn medicine_total_retake_limit_exceeded_error_message() -> String {
     "פסילה: לא ניתן לסגור את התואר. חרגת מכמות הפעמים המותרת לחזור על קורס".to_string()
 }
 
