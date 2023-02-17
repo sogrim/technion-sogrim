@@ -104,19 +104,37 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     let mut vec_courses = courses.into_values().collect::<Vec<_>>();
 
     // Fix the grades for said courses
-    set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses);
+    set_grades_for_uncompleted_courses(&mut vec_courses, &asterisk_courses);
 
     vec_courses.append(&mut sport_courses);
 
     if vec_courses.is_empty() {
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
+
+    for course_status in vec_courses.iter_mut() {
+        // Use asterisk courses to look for repetitions of the current course
+        let mut course_repetitions = asterisk_courses
+            .iter()
+            .filter(|cs| course_status.course.id == cs.course.id)
+            .collect::<Vec<_>>();
+
+        // Deduplicate the list of repetitions by semester
+        course_repetitions.dedup_by_key(|cs| cs.semester.clone());
+
+        // Remove the current course status from the list of repetitions
+        course_repetitions.retain(|cs| cs.semester != course_status.semester);
+
+        // Set the number of repetitions
+        course_status.times_repeated = course_repetitions.len();
+    }
+
     Ok(vec_courses)
 }
 
 fn set_grades_for_uncompleted_courses(
     courses: &mut [CourseStatus],
-    asterisk_courses: Vec<CourseStatus>,
+    asterisk_courses: &[CourseStatus],
 ) {
     // The candidate course statuses are those with uncompleted (לא השלים) grades.
     // For each uncompleted course status, we iterate the asterisk list in reverse to find

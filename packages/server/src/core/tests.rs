@@ -114,6 +114,21 @@ async fn test_parser_copy_paste_med_status() {
     assert!(course_status.grade.is_none());
 }
 
+#[test]
+async fn test_parser_course_status_repetitions() {
+    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
+        .expect("Something went wrong reading the file");
+
+    let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
+    let course_status = courses.iter().find(|c| c.course.id == "234247").unwrap();
+    let course_status2 = courses.iter().find(|c| c.course.id == "094591").unwrap();
+    let course_status3 = courses.iter().find(|c| c.course.id == "114052").unwrap();
+
+    assert_eq!(course_status.times_repeated, 1);
+    assert_eq!(course_status2.times_repeated, 1);
+    assert_eq!(course_status3.times_repeated, 2);
+}
+
 lazy_static! {
     static ref COURSES: HashMap<String, Course> = HashMap::from([
         (
@@ -360,10 +375,8 @@ async fn test_restore_irrelevant_course() {
         state: Some(NotComplete),
         semester: Some("חורף_1".to_string()),
         grade: Some(Numeric(51)),
-        r#type: None,
-        specialization_group_name: None,
-        additional_msg: None,
         modified: true,
+        ..Default::default()
     });
 
     degree_status = run_degree_status(
@@ -480,10 +493,8 @@ async fn test_duplicated_courses() {
         state: Some(NotComplete),
         semester: Some("חורף_1".to_string()),
         grade: Some(Numeric(51)),
-        r#type: None,
-        specialization_group_name: None,
-        additional_msg: None,
         modified: true,
+        ..Default::default()
     });
 
     degree_status = run_degree_status(
