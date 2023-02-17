@@ -33,7 +33,7 @@ pub async fn test_get_all_catalogs() {
             .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
-            .service(students::get_all_catalogs),
+            .service(students::get_catalogs),
     )
     .await;
 
@@ -65,7 +65,7 @@ async fn test_students_api_full_flow() {
             .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
-            .service(students::get_all_catalogs)
+            .service(students::get_catalogs)
             .service(students::login)
             .service(students::update_catalog)
             .service(students::add_courses)
