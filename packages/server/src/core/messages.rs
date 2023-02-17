@@ -34,9 +34,7 @@ pub fn credit_overflow_detailed_msg(from: &str, to: &str) -> String {
 
 pub fn courses_overflow_msg(overflow: f32, from: &str, to: &str) -> String {
     if overflow == SINGLE {
-        format!(
-            "ביצעת יותר קורסים ממה שנדרש ב{from}, הקורס העודף נספר תחת הדרישה {to}"
-        )
+        format!("ביצעת יותר קורסים ממה שנדרש ב{from}, הקורס העודף נספר תחת הדרישה {to}")
     } else {
         format!(
             "ביצעת יותר קורסים ממה שנדרש ב{from}, {overflow} הקורסים העודפים נספרים תחת הדרישה {to}"
@@ -115,9 +113,7 @@ pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
 /////////////////////////////////////////////////////////////////////////////////
 
 pub fn cyclic_credit_transfer_graph(bank_in_cycle: &str) -> String {
-    format!(
-        "קיימת תלות מעגלית במעברי הנקודות שנקבעו. התלות המעגלית מתחילה ונגמרת ב{bank_in_cycle}"
-    )
+    format!("קיימת תלות מעגלית במעברי הנקודות שנקבעו. התלות המעגלית מתחילה ונגמרת ב{bank_in_cycle}")
 }
 
 pub fn build_credit_transfer_graph_failed() -> String {
