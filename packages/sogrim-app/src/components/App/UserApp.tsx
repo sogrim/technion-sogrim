@@ -14,7 +14,6 @@ const UserAppComp: React.FC = () => {
   const { data, isLoading, isError, error } = useUserState(userAuthToken);
   const {
     dataStore: { updateStoreUserDetails, updateStoreUserSettings },
-    uiStore: { computeUserRegistrationState, userRegistrationState },
   } = useStore();
 
   const theme = useTheme();
@@ -34,8 +33,6 @@ const UserAppComp: React.FC = () => {
     updateStoreUserDetails,
     updateStoreUserSettings,
     isLoading,
-    userRegistrationState,
-    computeUserRegistrationState,
     isError,
     error,
   ]);
