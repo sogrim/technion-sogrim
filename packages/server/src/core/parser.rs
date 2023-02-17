@@ -1,24 +1,25 @@
+use lazy_static::lazy_static;
+use regex::Regex;
+
 use crate::{
     error::AppError,
     resources::course::{Course, CourseStatus, Grade},
 };
 use std::collections::HashMap;
 
-fn contains_course_number(str: &str) -> bool {
-    for word in str.split_whitespace() {
-        let course_number = word.parse::<u32>();
-        match course_number {
-            Ok(number) if 10000 < number && number < 999999 => return true,
-            Ok(_) => continue,
-            Err(_) => continue,
-        }
-    }
-    false
+lazy_static! {
+    static ref CREDIT_RE: Regex = Regex::new(r"(?P<credit>(([1-9][0-9]|[0-9])\.[0-9]))").unwrap();
+    static ref COURSE_ID_RE: Regex = Regex::new(r"(?P<course_id>[0-9]{6})").unwrap();
+    static ref GRADE_RE: Regex = Regex::new(
+        r"(?P<grade>(100|([1-9][0-9])|[0-9]$)|פטור ללא ניקוד|פטור עם ניקוד|עבר|נכשל|לא השלים|לא השלים(מ)|-$|^--| -  )"
+    )
+    .unwrap();
 }
 
 pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> {
     // Sanity validation
-    if !(data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
+    if !((data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
+        || (data.contains("ציונים גליון") && data.contains("ציונים גליון סוף")))
     {
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
@@ -28,6 +29,18 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter: f32 = 0.0;
+    let should_reverse_credit = CREDIT_RE
+        .captures_iter(
+            data.split_terminator('\n')
+                .filter(|line| COURSE_ID_RE.is_match(line) && !line.contains("ת.ז"))
+                .collect::<Vec<_>>()
+                .join("\n")
+                .as_str(),
+        )
+        // A potential bug here if the student only has courses with credit in one of [0.0, 0.5, 5.0, 5.5]
+        // TODO: Fix this
+        .any(|credit| !credit["credit"].ends_with('0') && !credit["credit"].ends_with('5'));
+    let should_reverse_name = data.contains("ציונים גליון סוף");
 
     for line_ref in data.split_terminator('\n') {
         let line = line_ref.to_string();
@@ -56,11 +69,12 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
             semester
         };
 
-        if !contains_course_number(&line) {
+        if !COURSE_ID_RE.is_match(&line) || line.contains("ת.ז") {
             continue;
         }
 
-        let (course, grade) = parse_course_status_pdf_format(&line)?;
+        let (course, grade) =
+            parse_course_status_pdf_format(&line, should_reverse_credit, should_reverse_name)?;
 
         let mut course_status = CourseStatus {
             course,
@@ -88,18 +102,6 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         }
     }
     let mut vec_courses = courses.into_values().collect::<Vec<_>>();
-
-    // HOTFIX - Some students had their course credit reversed.
-    // This happend because the parser was not able to parse the course credit correctly,
-    // probably because the student used a browser that was not supported.
-    if vec_courses
-        .iter()
-        .any(|cs| cs.course.credit.fract() != 0.0 && cs.course.credit.fract() != 0.5)
-    {
-        return Err(AppError::Parser(
-            "Bad format, probably unsupported browser".into(),
-        ));
-    }
 
     // Fix the grades for said courses
     set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses);
@@ -138,64 +140,58 @@ fn set_grades_for_uncompleted_courses(
     }
 }
 
-fn parse_course_status_pdf_format(line: &str) -> Result<(Course, Option<Grade>), AppError> {
-    let clean_line = line.replace('*', "");
-    let id = {
-        let number = clean_line
-            .split(' ')
-            .next()
-            .ok_or_else(|| AppError::Parser("Bad Format".into()))?;
-        if number.parse::<f32>().is_ok() {
-            Ok(String::from(number))
-        } else {
-            Err(AppError::Parser("Bad Format".into()))
-        }?
+fn extract_str_by_regex(
+    line: &str,
+    regex: &Regex,
+    regex_name: &str,
+) -> Result<(String, String), AppError> {
+    let extracted = regex
+        .captures(line)
+        .ok_or_else(|| AppError::Parser("Bad Format".into()))?[regex_name]
+        .trim()
+        .to_string();
+    let line = regex.replace(line, "");
+    Ok((extracted, line.trim().to_string()))
+}
+
+fn parse_course_status_pdf_format(
+    line: &str,
+    should_reverse_credit: bool,
+    should_reverse_name: bool,
+) -> Result<(Course, Option<Grade>), AppError> {
+    let line = line.replace('*', "");
+    let (id, line) = extract_str_by_regex(&line, &COURSE_ID_RE, "course_id")?;
+    let (credit, line) = extract_str_by_regex(&line, &CREDIT_RE, "credit")?;
+    let (grade, line) = extract_str_by_regex(&line, &GRADE_RE, "grade")?;
+    let name = if should_reverse_name {
+        line.split_ascii_whitespace()
+            .rev()
+            .collect::<Vec<_>>()
+            .join(" ")
+    } else {
+        line.trim().to_string()
     };
 
-    let mut index = 0;
-    let mut credit = 0.0;
-    let mut word;
-    for part in clean_line.split(' ') {
-        word = part.to_string();
-        // When a grade is missing, a hyphen (מקף) char is written instead, without any whitespaces between it and the credit.
-        // This means that the credit part is no longer parsable as f32, and therefore the hyphen must be manually removed.
-        // This won't create a problem later in the code since 'word' only lives in the for-loop scope.
-        if word.contains('-') && word.contains('.') {
-            word = word.replace('-', "").trim().to_string();
-        }
-        if word.parse::<f32>().is_ok() && word.contains('.') {
-            credit = word
-                .chars()
-                .rev()
-                .collect::<String>()
-                .parse::<f32>()
-                .map_err(|e| AppError::Parser(format!("Bad Format: {e}")))?;
-            break;
-        }
-        index += 1;
-    }
-
-    let name = clean_line.split_whitespace().collect::<Vec<&str>>()[1..index].join(" ");
-
-    let grade_str = clean_line
-        .split_whitespace()
-        .last()
-        .ok_or_else(|| AppError::Parser("Bad Format".into()))?
-        .trim();
-
-    let grade = match grade_str as &str {
-        "ניקוד" => {
-            if clean_line.contains("ללא") {
-                Some(Grade::ExemptionWithoutCredit)
-            } else {
-                Some(Grade::ExemptionWithCredit)
-            }
-        }
+    let credit: f32 = if should_reverse_credit {
+        credit
+            .chars()
+            .rev()
+            .collect::<String>()
+            .parse()
+            .map_err(|_| AppError::Parser("Bad Format".into()))?
+    } else {
+        credit
+            .parse()
+            .map_err(|_| AppError::Parser("Bad Format".into()))?
+    };
+    let grade = match grade.as_str() {
+        "פטור ללא ניקוד" => Some(Grade::ExemptionWithoutCredit),
+        "פטור עם ניקוד" => Some(Grade::ExemptionWithCredit),
         "עבר" => Some(Grade::Binary(true)),
         "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
-        "השלים" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
-        "השלים(מ)" if clean_line.contains("לא השלים") => Some(Grade::NotComplete),
-        _ => grade_str.parse::<u8>().ok().map(Grade::Numeric),
+        "לא השלים" => Some(Grade::NotComplete),
+        "לא השלים(מ)" => Some(Grade::NotComplete),
+        _ => grade.parse::<u8>().ok().map(Grade::Numeric),
     };
     Ok((
         Course {
