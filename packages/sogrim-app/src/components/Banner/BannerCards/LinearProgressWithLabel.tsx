@@ -4,6 +4,7 @@ import LinearProgress, {
 } from "@mui/material/LinearProgress";
 import { useTheme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
+import { DARK_MODE_THEME } from "../../../themes/constants";
 
 export const LinearProgressWithLabel = (props: { value: number }) => {
   const theme = useTheme();
@@ -15,7 +16,11 @@ export const LinearProgressWithLabel = (props: { value: number }) => {
           value={props.value}
           variant="determinate"
           sx={{
-            backgroundColor: "rgba(0, 0, 0, 0.178)",
+            backgroundColor:
+              theme.palette.mode === DARK_MODE_THEME
+                ? theme.palette.secondary.dark
+                : "rgba(0, 0, 0, 0.178)",
+            animation: "none",
             [`& .${linearProgressClasses.bar}`]: {
               backgroundColor: theme.palette.secondary.main,
             },

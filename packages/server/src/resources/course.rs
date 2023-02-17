@@ -1,10 +1,11 @@
+use bson::{doc, Document};
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use crate::core::types::Rule;
-use crate::db::CollectionName;
+use crate::db::Resource;
 
 pub type CourseId = String;
 
@@ -14,11 +15,42 @@ pub struct Course {
     pub id: CourseId,
     pub credit: f32,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<Tag>>, // All tags for the course, for example "english" and "malag"
 }
 
-impl CollectionName for Course {
+impl Resource for Course {
     fn collection_name() -> &'static str {
         "Courses"
+    }
+    fn key(&self) -> Document {
+        doc! {"_id": self.id.clone()}
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub enum Tag {
+    English,
+    Malag,
+    Sport,
+    SportTeam, // TODO: check if need this
+}
+
+impl Course {
+    fn is(&self, tag: Tag) -> bool {
+        // TODO: change it to "is_some_and()" when become stable
+        self.tags.clone().unwrap_or_default().contains(&tag)
+    }
+    pub fn is_english(&self) -> bool {
+        self.is(Tag::English)
+    }
+
+    pub fn is_sport(&self) -> bool {
+        self.is(Tag::Sport)
+    }
+
+    pub fn is_malag(&self) -> bool {
+        self.is(Tag::Malag)
     }
 }
 
@@ -159,15 +191,6 @@ impl CourseStatus {
     pub fn set_specialization_group_name(&mut self, group_name: impl AsRef<str>) {
         self.specialization_group_name = Some(group_name.as_ref().to_owned());
     }
-
-    pub fn is_sport(&self) -> bool {
-        self.course.id.starts_with("394")
-    }
-
-    pub fn is_language(&self) -> bool {
-        let course_num = self.course.id.parse::<u32>().unwrap_or_default();
-        (324600..=324695).contains(&course_num) || (324002..=324068).contains(&course_num)
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -175,19 +198,6 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Reshima A.
     pub rule: Rule,
     pub credit: Option<f32>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Malags {
-    #[serde(rename(serialize = "_id", deserialize = "_id"))]
-    pub id: bson::oid::ObjectId,
-    pub malag_list: Vec<CourseId>,
-}
-
-impl CollectionName for Malags {
-    fn collection_name() -> &'static str {
-        "Malags"
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -20,7 +20,7 @@ async fn test_course_state_serde() {
     let res: Result<CourseState, _> = serde_json::from_value(json!("השלים"));
     assert!(res.is_err());
     assert!(
-        format!("{:#?}", res).contains("expected a valid string representation of a course state")
+        format!("{res:#?}").contains("expected a valid string representation of a course state")
     );
 }
 
@@ -52,5 +52,5 @@ async fn test_course_grade_serde() {
 
     let res: Result<Grade, _> = serde_json::from_value(json!("-"));
     assert!(res.is_err());
-    assert!(format!("{:#?}", res).contains("expected a valid string representation of a grade"));
+    assert!(format!("{res:#?}").contains("expected a valid string representation of a grade"));
 }

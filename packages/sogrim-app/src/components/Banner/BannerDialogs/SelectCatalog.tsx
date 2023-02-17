@@ -31,22 +31,17 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
 
   const { userAuthToken } = useAuth();
 
-  const { data, isLoading, isError, error } = useCatalogs(userAuthToken);
+  const { data, isLoading } = useCatalogs(userAuthToken);
   const { mutate } = useUpdateUserCatalog(userAuthToken);
 
   React.useEffect(() => {
-    if (isError) {
-      // TODO: handle error
-      if ((error as any).response.status === 401) {
-        window.location.reload();
-      }
-    } else if (data && !isLoading) {
+    if (data && !isLoading) {
       const sortedCatalogs = data.sort((first, second) =>
         first.name <= second.name ? 1 : -1
       );
       setCatalogs(sortedCatalogs);
     }
-  }, [data, isLoading, isError, error]);
+  }, [data, isLoading]);
 
   const handleSend = () => {
     if (selectedCatalog?._id.$oid) {
@@ -89,7 +84,7 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
           ].map((catalogs) => (
             <Link
               key={catalogs.year}
-              color={(theme: Theme) => theme.palette.secondary.dark}
+              color={(theme: Theme) => theme.palette.secondary.main}
               href={catalogs.link}
               underline="hover"
               target="_blank"

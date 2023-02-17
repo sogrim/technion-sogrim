@@ -12,6 +12,7 @@ import { UserDetails } from "../../../types/data-types";
 const emptyUserDetails: UserDetails = {
   catalog: undefined,
   modified: false,
+  compute_in_progress: false,
   degree_status: {
     course_statuses: [],
     course_bank_requirements: [],

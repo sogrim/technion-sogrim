@@ -1,24 +1,16 @@
-import { useMemo, useState } from "react";
-import { Box, ThemeProvider } from "@mui/material";
-import { getAppTheme } from "../../themes/theme";
-import { DARK_MODE_THEME, LIGHT_MODE_THEME } from "../../themes/constants";
+import { Box } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { BannerAnonymous } from "../Banner/BannerAnonymous";
+import { ReactComponent as LandingPageSvg } from "../../assets/splashpage.svg";
 import { useStore } from "../../hooks/useStore";
 import { PageState } from "../../types/ui-types";
+import { BannerAnonymous } from "../Banner/BannerAnonymous";
 import { FAQPage } from "../Pages/FAQPage/FAQPage";
-import { ReactComponent as LandingPageSvg } from "../../assets/splashpage.svg";
 const AnonymousAppComp: React.FC = () => {
-  const [mode] = useState<typeof LIGHT_MODE_THEME | typeof DARK_MODE_THEME>(
-    LIGHT_MODE_THEME
-  );
-  const theme = useMemo(() => getAppTheme(mode), [mode]);
-
   const {
     uiStore: { currentPage },
   } = useStore();
   return (
-    <ThemeProvider theme={theme}>
+    <>
       <BannerAnonymous />
       {currentPage === PageState.FAQ ? (
         <FAQPage />
@@ -27,7 +19,7 @@ const AnonymousAppComp: React.FC = () => {
           <LandingPageSvg />
         </Box>
       )}
-    </ThemeProvider>
+    </>
   );
 };
 

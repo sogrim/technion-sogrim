@@ -1,8 +1,10 @@
 use crate::{
     core::{credit_transfer_graph::find_traversal_order, types::CreditOverflow},
-    db::CollectionName,
+    db::Resource,
     resources::course::CourseBank,
 };
+use bson::{doc, Document};
+use regex::Regex;
 use serde::{self, Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -25,6 +27,15 @@ pub struct Catalog {
 }
 
 impl Catalog {
+    pub fn year(&self) -> usize {
+        let default_year = 2018;
+        Regex::new(r"(?P<year>\d{4})")
+            .unwrap()
+            .captures(&self.name)
+            .map(|cap| cap["year"].parse::<usize>().unwrap_or(default_year))
+            .unwrap_or(default_year)
+    }
+
     pub fn get_course_list(&self, name: &str) -> Vec<CourseId> {
         let mut course_list_for_bank = Vec::new();
         for (course_id, bank_name) in &self.course_to_bank {
@@ -48,9 +59,13 @@ impl Catalog {
     }
 }
 
-impl CollectionName for Catalog {
+impl Resource for Catalog {
     fn collection_name() -> &'static str {
         "Catalogs"
+    }
+
+    fn key(&self) -> Document {
+        doc! {"_id": self.id}
     }
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]

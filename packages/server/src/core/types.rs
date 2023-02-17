@@ -44,16 +44,17 @@ pub enum Rule {
 impl ToString for Rule {
     fn to_string(&self) -> String {
         match self {
-            Rule::All => "all".into(),
-            Rule::AccumulateCredit => "accumulate credit".into(),
-            Rule::AccumulateCourses(_) => "accumulate courses".into(),
-            Rule::Malag => "malag".into(),
-            Rule::Sport => "sport".into(),
-            Rule::Elective => "elective".into(),
-            Rule::Chains(_) => "chains".into(),
-            Rule::SpecializationGroups(_) => "specialization groups".into(),
-            Rule::Wildcard(_) => "wildcard".into(),
+            Rule::All => "all",
+            Rule::AccumulateCredit => "accumulate credit",
+            Rule::AccumulateCourses(_) => "accumulate courses",
+            Rule::Malag => "malag",
+            Rule::Sport => "sport",
+            Rule::Elective => "elective",
+            Rule::Chains(_) => "chains",
+            Rule::SpecializationGroups(_) => "specialization groups",
+            Rule::Wildcard(_) => "wildcard",
         }
+        .into()
     }
 }
 
@@ -78,8 +79,33 @@ pub struct Requirement {
     pub credit_completed: f32,
     pub course_completed: usize,
     pub completed: bool, //Did the user complete the necessary demands for this bank
-    // TODO planing ...
     pub message: Option<String>,
+}
+impl Requirement {
+    pub fn credit_requirement(&mut self, credit: f32) -> &mut Self {
+        self.credit_requirement = Some(credit);
+        self
+    }
+    pub fn course_requirement(&mut self, course: usize) -> &mut Self {
+        self.course_requirement = Some(course);
+        self
+    }
+    pub fn credit_completed(&mut self, credit: f32) -> &mut Self {
+        self.credit_completed = credit;
+        self
+    }
+    pub fn course_completed(&mut self, course: usize) -> &mut Self {
+        self.course_completed = course;
+        self
+    }
+    pub fn completed(&mut self, completed: bool) -> &mut Self {
+        self.completed = completed;
+        self
+    }
+    pub fn message(&mut self, message: String) -> &mut Self {
+        self.message = Some(message);
+        self
+    }
 }
 pub struct CreditInfo {
     pub sum_credit: f32,

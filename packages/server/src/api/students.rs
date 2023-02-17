@@ -5,16 +5,15 @@ use actix_web::{
     web::{Data, Json, Query},
     HttpMessage, HttpRequest, HttpResponse,
 };
-use bson::{doc, to_bson};
 
 use crate::{
     core::{degree_status::DegreeStatus, parser},
-    db::{Db, FilterType},
+    db::{Db, FilterOption},
     error::AppError,
     middleware::auth::Sub,
     resources::{
         catalog::{Catalog, DisplayCatalog},
-        course::{self, Course, Malags},
+        course::{self, Course, CourseId},
         user::{User, UserDetails, UserSettings},
     },
 };
@@ -46,9 +45,8 @@ pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppEr
         sub: user_id,
         ..Default::default()
     };
-    let document = doc! {"$setOnInsert" : to_bson(&user)?};
 
-    let updated_user = db.update::<User>(&user.sub, document).await?;
+    let updated_user = db.create_or_update::<User>(user).await?;
 
     Ok(HttpResponse::Ok().json(updated_user))
 }
@@ -76,9 +74,7 @@ pub async fn update_catalog(
             cs.additional_msg = None;
         });
 
-    let updated_user = db
-        .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
-        .await?;
+    let updated_user = db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
@@ -93,13 +89,13 @@ pub async fn get_courses_by_filter(
     match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
             let courses = db
-                .get_filtered::<Course>(name, FilterType::Regex, "name")
+                .get_filtered::<Course>(FilterOption::Regex, "name", name)
                 .await?;
             Ok(HttpResponse::Ok().json(courses))
         }
         (None, Some(number)) => {
             let courses = db
-                .get_filtered::<Course>(number, FilterType::Regex, "_id")
+                .get_filtered::<Course>(FilterOption::Regex, "_id", number)
                 .await?;
             Ok(HttpResponse::Ok().json(courses))
         }
@@ -117,9 +113,7 @@ pub async fn add_courses(
     user.details.degree_status = DegreeStatus::default();
     user.details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
     user.details.modified = true;
-    let updated_user = db
-        .update::<User>(&user.sub.clone(), doc! {"$set" : to_bson(&user)?})
-        .await?;
+    let updated_user = db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
@@ -137,34 +131,49 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
 
     user.details.modified = false;
 
-    let vec_courses = db
-        .get_filtered::<Course>(catalog.get_all_course_ids(), FilterType::In, "_id")
+    let courses = db
+        .get_filtered::<Course>(
+            FilterOption::In,
+            "_id",
+            catalog
+                .get_all_course_ids()
+                .into_iter()
+                .chain(
+                    user.details
+                        .degree_status
+                        .course_statuses
+                        .iter()
+                        .map(|cs| cs.course.id.clone()),
+                )
+                .collect::<Vec<CourseId>>(),
+        )
         .await?;
 
-    // The collection "Malags" should contain a single document with the list of all malags
-    let malag_course_ids = db
-        .get_all::<Malags>()
-        .await?
-        .into_iter()
-        .last() // Safer then indexing because it won't panic if the collection is empty
-        .map(|obj| obj.malag_list)
-        .unwrap_or_default();
+    // Fill tags for all student courses
+    user.details
+        .degree_status
+        .course_statuses
+        .iter_mut()
+        .for_each(|course_status| {
+            course_status.course.tags = courses
+                .iter()
+                .find(|course| course.id == course_status.course.id)
+                .and_then(|course| course.tags.clone());
+        });
 
     let mut course_list = Vec::new();
-    if user.settings.compute_in_progress {
+    if user.details.compute_in_progress {
         course_list = user.details.degree_status.set_in_progress_to_complete();
     }
 
     user.details
         .degree_status
-        .compute(catalog, course::vec_to_map(vec_courses), malag_course_ids);
+        .compute(catalog, course::vec_to_map(courses));
 
-    if user.settings.compute_in_progress {
+    if user.details.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);
     }
-    let user_id = user.sub.clone();
-    let document = doc! {"$set" : to_bson(&user)?};
-    db.update::<User>(&user_id, document).await?;
+    db.update::<User>(user.clone()).await?;
     Ok(HttpResponse::Ok().json(user))
 }
 
@@ -175,10 +184,8 @@ pub async fn update_details(
     details: Json<UserDetails>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    let user_id = user.sub.clone();
     user.details = details.into_inner();
-    let document = doc! {"$set" : to_bson(&user)?};
-    db.update::<User>(&user_id, document).await?;
+    db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -188,10 +195,7 @@ pub async fn update_settings(
     settings: Json<UserSettings>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    let user_id = user.sub.clone();
     user.settings = settings.into_inner();
-    user.details.modified = true; // Hack - TODO: increase level of modified to User (instead of UserDetails)
-    let document = doc! {"$set" : to_bson(&user)?};
-    db.update::<User>(&user_id, document).await?;
+    db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().finish())
 }

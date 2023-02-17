@@ -1,6 +1,7 @@
 pub mod compute_bank;
 pub mod compute_status;
 pub mod overflow;
+pub mod postprocessing;
 pub mod preprocessing;
 
 use std::collections::HashMap;
@@ -70,9 +71,8 @@ impl DegreeStatus {
 pub struct DegreeStatusHandler<'a> {
     degree_status: &'a mut DegreeStatus,
     course_banks: Vec<CourseBank>,
-    catalog: Catalog,
+    catalog: &'a Catalog,
     courses: HashMap<CourseId, Course>,
-    malag_courses: Vec<CourseId>,
     credit_overflow_map: HashMap<String, f32>,
     missing_credit_map: HashMap<String, f32>,
     courses_overflow_map: HashMap<String, f32>,
@@ -100,12 +100,7 @@ impl<'a> DegreeStatusHandler<'a> {
 }
 
 impl DegreeStatus {
-    pub fn compute(
-        &mut self,
-        mut catalog: Catalog,
-        courses: HashMap<CourseId, Course>,
-        malag_courses: Vec<CourseId>,
-    ) {
+    pub fn compute(&mut self, mut catalog: Catalog, courses: HashMap<CourseId, Course>) {
         let course_banks = catalog.get_bank_traversal_order();
 
         // prepare the data for degree status computation
@@ -114,13 +109,15 @@ impl DegreeStatus {
         DegreeStatusHandler {
             degree_status: self,
             course_banks,
-            catalog,
+            catalog: &catalog,
             courses,
-            malag_courses,
             credit_overflow_map: HashMap::new(),
             missing_credit_map: HashMap::new(),
             courses_overflow_map: HashMap::new(),
         }
         .compute_status();
+
+        // process the data after degree status computation
+        self.postprocess(&catalog);
     }
 }

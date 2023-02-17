@@ -18,6 +18,7 @@ lazy_static! {
                 id: "104031".to_string(),
                 credit: 5.5,
                 name: "infi1m".to_string(),
+                tags: None
             },
         ),
         (
@@ -26,6 +27,7 @@ lazy_static! {
                 id: "104166".to_string(),
                 credit: 5.5,
                 name: "Algebra alef".to_string(),
+                tags: None
             },
         ),
         (
@@ -34,6 +36,7 @@ lazy_static! {
                 id: "114052".to_string(),
                 credit: 3.5,
                 name: "פיסיקה 2".to_string(),
+                tags: None
             },
         ),
         (
@@ -42,6 +45,7 @@ lazy_static! {
                 id: "114054".to_string(),
                 credit: 3.5,
                 name: "פיסיקה 3".to_string(),
+                tags: None
             },
         ),
         (
@@ -50,6 +54,7 @@ lazy_static! {
                 id: "236303".to_string(),
                 credit: 3.0,
                 name: "project1".to_string(),
+                tags: None
             },
         ),
         (
@@ -58,6 +63,7 @@ lazy_static! {
                 id: "236512".to_string(),
                 credit: 3.0,
                 name: "project2".to_string(),
+                tags: None
             },
         ),
         (
@@ -66,6 +72,7 @@ lazy_static! {
                 id: "1".to_string(),
                 credit: 1.0,
                 name: "".to_string(),
+                tags: None
             },
         ),
         (
@@ -74,6 +81,7 @@ lazy_static! {
                 id: "2".to_string(),
                 credit: 2.0,
                 name: "".to_string(),
+                tags: None
             },
         ),
         (
@@ -82,6 +90,7 @@ lazy_static! {
                 id: "3".to_string(),
                 credit: 3.0,
                 name: "".to_string(),
+                tags: None
             },
         ),
     ]);
@@ -281,7 +290,7 @@ async fn test_rule_malag() {
     let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
-    let res = handle_bank_rule_processor.malag(&["324057".to_string()]);
+    let res = handle_bank_rule_processor.malag();
 
     // check it adds the type
     assert_eq!(degree_status.course_statuses[0].r#type, None);
@@ -339,6 +348,7 @@ async fn test_specialization_group() {
                     id: "236334".to_string(),
                     credit: 5.5,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -349,6 +359,7 @@ async fn test_specialization_group() {
                     id: "044202".to_string(),
                     credit: 5.5,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Binary(true)),
@@ -359,6 +370,7 @@ async fn test_specialization_group() {
                     id: "236374".to_string(),
                     credit: 3.5,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -369,6 +381,7 @@ async fn test_specialization_group() {
                     id: "044198".to_string(),
                     credit: 3.0,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -379,6 +392,7 @@ async fn test_specialization_group() {
                     id: "236501".to_string(),
                     credit: 3.0,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),
@@ -389,6 +403,7 @@ async fn test_specialization_group() {
                     id: "236329".to_string(),
                     credit: 2.0,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(99)),
@@ -399,6 +414,7 @@ async fn test_specialization_group() {
                     id: "234325".to_string(),
                     credit: 1.0,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(100)),
@@ -409,6 +425,7 @@ async fn test_specialization_group() {
                     id: "044191".to_string(),
                     credit: 1.0,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(100)),
@@ -419,6 +436,7 @@ async fn test_specialization_group() {
                     id: "046206".to_string(),
                     credit: 3.5,
                     name: "".to_string(),
+                    tags: None,
                 },
                 state: Some(CourseState::Complete),
                 grade: Some(Grade::Numeric(85)),

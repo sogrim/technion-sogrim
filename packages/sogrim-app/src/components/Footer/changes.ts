@@ -5,6 +5,13 @@ export type VersionChanges = {
 
 export const versionChanges: VersionChanges[] = [
   {
+    version: "v1.3.0",
+    changes: [
+      "נוסף dark mode למערכת",
+      'נוספה תמיכה בתקנת האנגלית לקטלוגים החל משנת תשפ"ב',
+    ],
+  },
+  {
     version: "v1.2.1",
     changes: [
       "תוקן באג שגרם למסך לבן לאחר העתקה של גיליון ציונים בפורמט לא תקין",
