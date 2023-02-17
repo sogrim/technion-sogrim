@@ -35,6 +35,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
             .service(api::students::get_all_catalogs)
+            .service(api::students::get_catalog_by_faculty)
             .service(api::students::login)
             .service(api::students::update_catalog)
             .service(api::students::get_courses_by_filter)

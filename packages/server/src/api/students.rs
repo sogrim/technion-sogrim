@@ -2,7 +2,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use actix_web::{
     get, post, put,
-    web::{Data, Json, Query},
+    web::{Data, Json, Path, Query},
     HttpMessage, HttpRequest, HttpResponse,
 };
 
@@ -31,6 +31,24 @@ pub async fn get_all_catalogs(
                 .collect::<Vec<DisplayCatalog>>(),
         )
     })
+}
+
+#[get("/catalogs/{faculty}")]
+pub async fn get_catalog_by_faculty(
+    _: User,
+    db: Data<Db>,
+    faculty: Path<String>,
+) -> Result<HttpResponse, AppError> {
+    db.get_filtered::<Catalog>(FilterOption::Regex, "faculty", faculty.as_str())
+        .await
+        .map(|catalogs| {
+            HttpResponse::Ok().json(
+                catalogs
+                    .into_iter()
+                    .map(DisplayCatalog::from)
+                    .collect::<Vec<DisplayCatalog>>(),
+            )
+        })
 }
 
 //TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
