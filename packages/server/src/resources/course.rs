@@ -34,6 +34,8 @@ pub enum Tag {
     Malag,
     Sport,
     SportTeam, // TODO: check if need this
+    MedicinePreclinical,
+    MedicineClinical
 }
 
 impl Course {

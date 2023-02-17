@@ -96,16 +96,16 @@ pub fn credit_leftovers_msg(credit: f32) -> String {
     }
 }
 
-pub fn cannot_find_course() -> String {
-    "שגיאה - קורס לא נמצא".to_string()
-}
-
 pub fn english_requirement_for_exempt_students_msg() -> String {
-    "לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים שני קורסי תוכן באנגלית.".to_string()
+    "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים שני קורסי תוכן באנגלית.".to_string()
 }
 
 pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
-    "לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
+    "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
+}
+
+pub fn medicine_retake_courses_requirement() -> String {
+    "פסילה: לא ניתן לסגור את התואר. חרגת מכמות הפעמים המותרת לחזור על קורס".to_string()
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -118,4 +118,8 @@ pub fn cyclic_credit_transfer_graph(bank_in_cycle: &str) -> String {
 
 pub fn build_credit_transfer_graph_failed() -> String {
     "בניית הגרף נכשלה".to_string()
+}
+
+pub fn cannot_find_course() -> String {
+    "שגיאה - קורס לא נמצא".to_string()
 }
