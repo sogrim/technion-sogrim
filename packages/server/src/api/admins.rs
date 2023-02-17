@@ -2,10 +2,10 @@ use crate::core::degree_status::DegreeStatus;
 use crate::core::parser;
 use crate::db::{Db, FilterOption};
 use crate::error::AppError;
+use crate::resources::admin::Admin;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseId;
 use crate::resources::course::{self, Course};
-use crate::resources::user::User;
 use actix_web::web::{Data, Json};
 use actix_web::{post, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,7 @@ pub struct ComputeDegreeStatusPayload {
 
 #[post("/admins/parse-compute")]
 pub async fn parse_courses_and_compute_degree_status(
-    _: User,
+    _admin: Admin,
     payload: Json<ComputeDegreeStatusPayload>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
