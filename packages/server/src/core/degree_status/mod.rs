@@ -71,7 +71,7 @@ impl DegreeStatus {
 pub struct DegreeStatusHandler<'a> {
     degree_status: &'a mut DegreeStatus,
     course_banks: Vec<CourseBank>,
-    catalog: Catalog,
+    catalog: &'a Catalog,
     courses: HashMap<CourseId, Course>,
     credit_overflow_map: HashMap<String, f32>,
     missing_credit_map: HashMap<String, f32>,
@@ -109,7 +109,7 @@ impl DegreeStatus {
         DegreeStatusHandler {
             degree_status: self,
             course_banks,
-            catalog,
+            catalog: &catalog,
             courses,
             credit_overflow_map: HashMap::new(),
             missing_credit_map: HashMap::new(),
@@ -118,6 +118,6 @@ impl DegreeStatus {
         .compute_status();
 
         // process the data after degree status computation
-        self.postprocess();
+        self.postprocess(&catalog);
     }
 }
