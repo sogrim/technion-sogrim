@@ -2,7 +2,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use actix_web::{
     get, post, put,
-    web::{Data, Json, Path, Query},
+    web::{Data, Json, Query},
     HttpMessage, HttpRequest, HttpResponse,
 };
 
@@ -19,36 +19,26 @@ use crate::{
 };
 
 #[get("/catalogs")]
-pub async fn get_all_catalogs(
+pub async fn get_catalogs(
     _: User, //TODO think about whether this is necessary
+    req: HttpRequest,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    db.get_all::<Catalog>().await.map(|catalogs| {
-        HttpResponse::Ok().json(
-            catalogs
-                .into_iter()
-                .map(DisplayCatalog::from)
-                .collect::<Vec<DisplayCatalog>>(),
-        )
-    })
-}
-
-#[get("/catalogs/{faculty}")]
-pub async fn get_catalog_by_faculty(
-    _: User,
-    db: Data<Db>,
-    faculty: Path<String>,
-) -> Result<HttpResponse, AppError> {
-    db.get_filtered::<Catalog>(FilterOption::Regex, "faculty", faculty.as_str())
-        .await
-        .map(|catalogs| {
-            HttpResponse::Ok().json(
-                catalogs
-                    .into_iter()
-                    .map(DisplayCatalog::from)
-                    .collect::<Vec<DisplayCatalog>>(),
-            )
-        })
+    let params = Query::<HashMap<String, String>>::from_query(req.query_string())
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    let catalogs = match params.iter().last() {
+        Some((key, value)) => {
+            db.get_filtered::<Catalog>(FilterOption::Regex, key, value)
+                .await
+        }
+        None => db.get_all::<Catalog>().await,
+    }?;
+    Ok(HttpResponse::Ok().json(
+        catalogs
+            .into_iter()
+            .map(DisplayCatalog::from)
+            .collect::<Vec<DisplayCatalog>>(),
+    ))
 }
 
 //TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
