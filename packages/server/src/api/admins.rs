@@ -47,16 +47,7 @@ pub async fn parse_courses_and_compute_degree_status(
         )
         .await?;
 
-    // Fill tags for all student courses
-    degree_status
-        .course_statuses
-        .iter_mut()
-        .for_each(|course_status| {
-            course_status.course.tags = courses
-                .iter()
-                .find(|course| course.id == course_status.course.id)
-                .and_then(|course| course.tags.clone());
-        });
+    degree_status.fill_tags(&courses);
 
     degree_status.compute(catalog, course::vec_to_map(courses));
 
