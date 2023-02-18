@@ -107,7 +107,10 @@ pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
 }
 
 pub fn medicine_preclinical_avg_error_msg(avg: f64) -> String {
-    format!("פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. ממוצע זה נמוך מ-{} ולכן לא ניתן לסגור את התואר.", avg, MEDICINE_PRECLINICAL_MIN_AVG)
+    format!(
+        "פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. המשך הלימודים מותנים בשמירה על ממוצע גבוה מ-{}.",
+        avg, MEDICINE_PRECLINICAL_MIN_AVG
+    )
 }
 
 pub fn medicine_preclinical_avg_msg(avg: f64) -> String {
@@ -117,19 +120,19 @@ pub fn medicine_preclinical_avg_msg(avg: f64) -> String {
 pub fn medicine_preclinical_course_repetitions_error_msg(course_status: &CourseStatus) -> String {
     if course_status.times_repeated == 2 {
         format!(
-            "פסילה: חזרת על הקורס \"{}\" פעמיים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת ולכן לא ניתן לסגור את התואר",
+            "פסילה: חזרת על הקורס \"{}\" פעמיים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת",
             course_status.course.name
         )
     } else {
         format!(
-            "פסילה: חזרת על הקורס \"{}\" {} פעמים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת ולכן לא ניתן לסגור את התואר",
+            "פסילה: חזרת על הקורס \"{}\" {} פעמים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת",
             course_status.course.name, course_status.times_repeated
         )
     }
 }
 
 pub fn medicine_preclinical_total_repetitions_error_msg(repetitions: usize) -> String {
-    format!("פסילה: כמות הפעמים הכוללת המותרת לחזור על קורס היא פעמיים. חזרת על קורס {repetitions} פעמים ולכן לא ניתן לסגור את התואר")
+    format!("פסילה: סך הכל, חזרת על קורסים {repetitions} פעמים. לא ניתן לחזור על יותר משני קורסים, או לחזור על קורס אחד יותר מפעמיים")
 }
 
 /////////////////////////////////////////////////////////////////////////////////
