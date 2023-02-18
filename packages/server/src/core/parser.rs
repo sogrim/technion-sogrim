@@ -79,7 +79,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         let mut course_status = CourseStatus {
             course,
             semester: (!semester.is_empty()).then(|| semester.clone()),
-            grade: grade.clone(),
+            grade,
             ..Default::default()
         };
         course_status.set_state();
@@ -209,7 +209,7 @@ fn parse_course_status_pdf_format(
         "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
         "לא השלים" => Some(Grade::NotComplete),
         "לא השלים(מ)" => Some(Grade::NotComplete),
-        _ => grade.parse::<u8>().ok().map(Grade::Numeric),
+        _ => grade.parse::<u32>().ok().map(Grade::Numeric),
     };
     Ok((
         Course {

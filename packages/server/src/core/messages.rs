@@ -1,6 +1,8 @@
 use std::fmt::Write;
 
-use crate::resources::course::Course;
+use crate::resources::course::{Course, CourseStatus};
+
+use super::degree_status::postprocessing::MEDICINE_PRECLINICAL_MIN_AVG;
 
 const ZERO: f32 = 0.0;
 const HALF: f32 = 0.5;
@@ -96,16 +98,38 @@ pub fn credit_leftovers_msg(credit: f32) -> String {
     }
 }
 
-pub fn cannot_find_course() -> String {
-    "שגיאה - קורס לא נמצא".to_string()
-}
-
 pub fn english_requirement_for_exempt_students_msg() -> String {
-    "לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים שני קורסי תוכן באנגלית.".to_string()
+    "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים שני קורסי תוכן באנגלית.".to_string()
 }
 
 pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
-    "לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
+    "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
+}
+
+pub fn medicine_preclinical_avg_error_msg(avg: f64) -> String {
+    format!("פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. ממוצע זה נמוך מ-{} ולכן לא ניתן לסגור את התואר.", avg, MEDICINE_PRECLINICAL_MIN_AVG)
+}
+
+pub fn medicine_preclinical_avg_msg(avg: f64) -> String {
+    format!("ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}", avg)
+}
+
+pub fn medicine_preclinical_course_repetitions_error_msg(course_status: &CourseStatus) -> String {
+    if course_status.times_repeated == 2 {
+        format!(
+            "פסילה: חזרת על הקורס \"{}\" פעמיים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת ולכן לא ניתן לסגור את התואר",
+            course_status.course.name
+        )
+    } else {
+        format!(
+            "פסילה: חזרת על הקורס \"{}\" {} פעמים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת ולכן לא ניתן לסגור את התואר",
+            course_status.course.name, course_status.times_repeated
+        )
+    }
+}
+
+pub fn medicine_preclinical_total_repetitions_error_msg(repetitions: usize) -> String {
+    format!("פסילה: כמות הפעמים הכוללת המותרת לחזור על קורס היא פעמיים. חזרת על קורס {repetitions} פעמים ולכן לא ניתן לסגור את התואר")
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -118,4 +142,8 @@ pub fn cyclic_credit_transfer_graph(bank_in_cycle: &str) -> String {
 
 pub fn build_credit_transfer_graph_failed() -> String {
     "בניית הגרף נכשלה".to_string()
+}
+
+pub fn cannot_find_course() -> String {
+    "שגיאה - קורס לא נמצא".to_string()
 }
