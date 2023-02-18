@@ -374,7 +374,7 @@ async fn test_admins_parse_and_compute_api() {
         .expect("Something went wrong reading the file");
 
     let post_admins_compute = test::TestRequest::post()
-        .uri("/admins/compute")
+        .uri("/admins/parse-compute")
         .insert_header(("authorization", jwt.clone()))
         .set_json(ComputeDegreeStatusPayload {
             catalog_id: ObjectId::from_str("61a102bb04c5400b98e6f401").unwrap(),
