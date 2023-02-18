@@ -19,7 +19,7 @@ lazy_static! {
 pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> {
     // Sanity validation
     if !((data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
-        || (data.contains("ציונים גליון") && data.contains("ציונים גליון סוף")))
+        || !(data.contains("ציונים גליון") && data.contains("ציונים גליון סוף")))
     {
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
