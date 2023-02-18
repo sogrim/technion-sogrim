@@ -19,6 +19,7 @@ use super::*;
 
 pub const COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID: &str = "61a102bb04c5400b98e6f401"; // catalog id from database
 pub const COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID: &str = "61ec835f015bedeab20397a4"; // catalog id from database
+pub const MEDICINE_18_19_CATALOG_ID: &str = "63efa36f9e57dc03df270751"; // catalog id from database
 
 #[test]
 async fn test_year_catalog() {
@@ -844,6 +845,48 @@ async fn test_postprocessing_english_requirement() {
     .await;
 
     assert_eq!(degree_status.overflow_msgs.len(), 3);
+}
+
+#[test]
+async fn test_postprocessing_medicine_requirement() {
+    let mut degree_status =
+        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_9.txt", MEDICINE_18_19_CATALOG_ID).await;
+
+    //FOR VIEWING IN JSON FORMAT
+    // std::fs::write(
+    //     "degree_status.json",
+    //     serde_json::to_string_pretty(&degree_status).expect("json serialization failed"),
+    // )
+    // .expect("Unable to write file");
+
+    // The student repeated a mandatory course 274109 twice
+    assert!(degree_status.overflow_msgs.contains(
+        &messages::medicine_preclinical_course_repetitions_error_msg(
+            degree_status
+                .course_statuses
+                .iter()
+                .find(|course_status| course_status.course.id == "274109")
+                .unwrap()
+        )
+    ));
+
+    // The student repeated a course 3 times
+    assert!(degree_status.overflow_msgs.contains(
+        &messages::medicine_preclinical_total_repetitions_error_msg(3)
+    ));
+
+    for course_status in degree_status.course_statuses.iter_mut() {
+        if let Some(grade) = course_status.grade.as_mut() {
+            *grade = Grade::Numeric(70);
+        }
+    }
+
+    degree_status =
+        run_degree_status(degree_status, get_catalog(MEDICINE_18_19_CATALOG_ID).await).await;
+
+    assert!(degree_status
+        .overflow_msgs
+        .contains(&messages::medicine_preclinical_avg_error_msg(70.0)));
 }
 
 #[test]
