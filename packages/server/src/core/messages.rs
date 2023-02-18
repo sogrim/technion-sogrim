@@ -108,7 +108,7 @@ pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
 
 pub fn medicine_preclinical_avg_error_msg(avg: f64) -> String {
     format!(
-        "פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. המשך הלימודים מותנים בשמירה על ממוצע גבוה מ-{}.",
+        "פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. המשך הלימודים מותנה בשמירה על ממוצע גבוה מ-{}.",
         avg, MEDICINE_PRECLINICAL_MIN_AVG
     )
 }
