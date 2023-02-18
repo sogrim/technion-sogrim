@@ -1,8 +1,11 @@
+use std::str::FromStr;
+
 use crate::{
     api::{
         bo,
         students::{self, login},
     },
+    core::{degree_status::DegreeStatus, messages},
     db::Db,
     middleware::{self, auth},
     resources::{
@@ -19,7 +22,10 @@ use actix_web::{
     App, HttpMessage,
 };
 use actix_web_lab::middleware::from_fn;
+use bson::oid::ObjectId;
 use dotenvy::dotenv;
+
+use super::admins::{self, ComputeDegreeStatusPayload};
 
 #[test]
 pub async fn test_get_all_catalogs() {
@@ -345,4 +351,42 @@ async fn test_students_api_no_catalog() {
         Bytes::from("No catalog chosen for user"),
         test::read_body(resp).await
     );
+}
+
+#[test]
+async fn test_admins_parse_and_compute_api() {
+    dotenv().ok();
+    // Create authorization header
+    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
+    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
+    // Init env and app
+    let db = Db::new().await;
+    let app = test::init_service(
+        App::new()
+            .app_data(Data::new(db.clone()))
+            .app_data(auth::JwtDecoder::new_with_parser(parser))
+            .wrap(from_fn(middleware::auth::authenticate))
+            .service(admins::parse_courses_and_compute_degree_status),
+    )
+    .await;
+
+    let copy_paste_data = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
+        .expect("Something went wrong reading the file");
+
+    let post_admins_compute = test::TestRequest::post()
+        .uri("/admins/compute")
+        .insert_header(("authorization", jwt.clone()))
+        .set_json(ComputeDegreeStatusPayload {
+            catalog_id: ObjectId::from_str("61a102bb04c5400b98e6f401").unwrap(),
+            grade_sheet_as_string: copy_paste_data,
+        })
+        .to_request();
+
+    let resp = test::call_service(&app, post_admins_compute).await;
+
+    let degree_status: DegreeStatus = test::read_body_json(resp).await;
+    assert_eq!(degree_status.total_credit, 106.5);
+    assert!(degree_status
+        .overflow_msgs
+        .contains(&messages::credit_leftovers_msg(0.0)))
 }
