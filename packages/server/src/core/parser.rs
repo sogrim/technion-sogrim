@@ -16,11 +16,36 @@ lazy_static! {
     .unwrap();
 }
 
+enum Format {
+    Default,
+    MedicineFirefox,
+    MedicineAcrobatReader,
+}
+
+impl Format {
+    fn validate(&self, data: &str) -> bool {
+        match self {
+            Format::Default => {
+                data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים")
+            }
+            Format::MedicineFirefox => {
+                data.contains("ציונים גליון") && data.contains("ציונים גליון סוף")
+            }
+            Format::MedicineAcrobatReader => {
+                data.contains("גליון ציונים") && data.contains("סוף גליון ציונים")
+            }
+        }
+    }
+    fn is_one_of_valid_formats(data: &str) -> bool {
+        Self::Default.validate(data)
+            || Self::MedicineFirefox.validate(data)
+            || Self::MedicineAcrobatReader.validate(data)
+    }
+}
+
 pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> {
     // Sanity validation
-    if !((data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
-        || !(data.contains("ציונים גליון") && data.contains("ציונים גליון סוף")))
-    {
+    if !(Format::is_one_of_valid_formats(data)) {
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
 
