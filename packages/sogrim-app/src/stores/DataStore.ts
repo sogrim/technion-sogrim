@@ -7,6 +7,7 @@ import {
   UserDetails,
   UserSettings,
 } from "../types/data-types";
+import { UserRegistrationState } from "../types/ui-types";
 import { RootStore } from "./RootStore";
 
 const isCourseRowEqualToCourseStatus = (

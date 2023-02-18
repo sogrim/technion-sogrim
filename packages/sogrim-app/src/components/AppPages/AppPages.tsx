@@ -7,6 +7,7 @@ import { useStore } from "../../hooks/useStore";
 import { UserRegistrationState } from "../../types/ui-types";
 import { AppStepper } from "../Banner/AppStepper";
 import Disclaimer from "../Banner/Disclaimer";
+import { Intro } from "../Intro/Intro";
 import { PagesTabs } from "./PagesTabs";
 
 const AppPagesComp: React.FC = () => {
@@ -43,8 +44,7 @@ const AppPagesComp: React.FC = () => {
         <PagesTabs />
       ) : (
         <Box sx={{ flexDirection: "column" }}>
-          <AppStepper />
-          <Disclaimer />
+          <Intro />
         </Box>
       )}
     </Box>
