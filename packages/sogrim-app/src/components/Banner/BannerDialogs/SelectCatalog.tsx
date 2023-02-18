@@ -15,8 +15,10 @@ import {
 } from "@mui/material";
 import useCatalogs from "../../../hooks/apiHooks/useCatalogs";
 import { useAuth } from "../../../hooks/useAuth";
-import { Catalog } from "../../../types/data-types";
+import { Catalog, Faculty } from "../../../types/data-types";
 import useUpdateUserCatalog from "../../../hooks/apiHooks/useUpdateUserCatalog";
+import { useStore } from "../../../hooks/useStore";
+import { transalteFacultyName } from "../../Intro/IntroSteps/ChooseFaculty/faculty-content";
 
 export interface SelectCatalogProps {
   handleClose: () => void;
@@ -31,17 +33,24 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
 
   const { userAuthToken } = useAuth();
 
-  const { data, isLoading } = useCatalogs(userAuthToken);
+  const {
+    dataStore: { userDetails },
+  } = useStore();
+
+  const { data: catalogsData, isLoading } = useCatalogs(
+    userAuthToken,
+    userDetails?.catalog?.faculty
+  );
   const { mutate } = useUpdateUserCatalog(userAuthToken);
 
   React.useEffect(() => {
-    if (data && !isLoading) {
-      const sortedCatalogs = data.sort((first, second) =>
-        first.name <= second.name ? 1 : -1
+    if (catalogsData && !isLoading) {
+      const sortedCatalogs = catalogsData.sort((first, second) =>
+        first.name > second.name ? 1 : -1
       );
       setCatalogs(sortedCatalogs);
     }
-  }, [data, isLoading]);
+  }, [catalogsData, isLoading]);
 
   const handleSend = () => {
     if (selectedCatalog?._id.$oid) {
@@ -52,9 +61,18 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
     handleClose();
   };
 
+  const modalTitle = React.useMemo(() => {
+    const faculty = userDetails?.catalog?.faculty as unknown;
+    console.log(faculty as Faculty);
+
+    const facultyName = transalteFacultyName.get(faculty as Faculty);
+    return "בחר קטלוג - " + facultyName;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
-      <DialogTitle>בחר קטלוג</DialogTitle>
+      <DialogTitle>{modalTitle}</DialogTitle>
       <DialogContent>
         <DialogContentText>
           בחר את קטלוג הלימודים שלך מרשימת הקטלוגים. שים לב, שחישוב ״סגור את

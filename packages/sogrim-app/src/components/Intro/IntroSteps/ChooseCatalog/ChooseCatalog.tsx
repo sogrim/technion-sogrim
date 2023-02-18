@@ -11,17 +11,17 @@ import React from "react";
 import useCatalogs from "../../../../hooks/apiHooks/useCatalogs";
 import useUpdateUserCatalog from "../../../../hooks/apiHooks/useUpdateUserCatalog";
 import { useAuth } from "../../../../hooks/useAuth";
-import { Catalog } from "../../../../types/data-types";
+import { Catalog, Faculty } from "../../../../types/data-types";
 import { IntroStepCard } from "../IntroStepCard";
 import { CatalogsLinks } from "./CatalogsLinks";
 
-interface IntroStepperProps {
+interface ChooseCatalogProps {
   handleNext: () => void;
-  handleBack: () => void;
+  chosenFaculty: Faculty;
 }
 
-export const ChooseFaculty: React.FC<IntroStepperProps> = ({
-  handleBack,
+export const ChooseCatalog: React.FC<ChooseCatalogProps> = ({
+  chosenFaculty,
   handleNext,
 }) => {
   const [catalogs, setCatalogs] = React.useState<Catalog[]>([] as Catalog[]);
@@ -31,13 +31,16 @@ export const ChooseFaculty: React.FC<IntroStepperProps> = ({
 
   const { userAuthToken } = useAuth();
 
-  const { data, isLoading } = useCatalogs(userAuthToken);
+  const { data, isLoading } = useCatalogs(
+    userAuthToken,
+    Faculty[chosenFaculty]
+  );
   const { mutate, isSuccess } = useUpdateUserCatalog(userAuthToken);
 
   React.useEffect(() => {
     if (data && !isLoading) {
       const sortedCatalogs = data.sort((first, second) =>
-        first.name <= second.name ? 1 : -1
+        first.name > second.name ? 1 : -1
       );
       setCatalogs(sortedCatalogs);
     }
@@ -47,6 +50,7 @@ export const ChooseFaculty: React.FC<IntroStepperProps> = ({
     if (isSuccess) {
       handleNext();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess]);
 
   const handleSend = () => {
