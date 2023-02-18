@@ -16,22 +16,22 @@ const EXEMPT_COURSES_COUNT_DEMAND: usize = 2;
 const ADVANCED_B_COURSES_COUNT_DEMAND: usize = 1;
 const MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT: usize = 2021;
 
-impl DegreeStatus {
-    fn get_courses_of_rule_all(catalog: &Catalog) -> Vec<CourseId> {
-        catalog
-            .course_to_bank
-            .iter()
-            .filter(|&(_, bank_name)| {
-                catalog
-                    .course_banks
-                    .iter()
-                    .filter(|course_bank| matches!(course_bank.rule, Rule::All))
-                    .any(|course_bank| course_bank.name == *bank_name)
-            })
-            .map(|(course, _)| course.clone())
-            .collect()
-    }
+fn get_courses_of_rule_all(catalog: &Catalog) -> Vec<CourseId> {
+    catalog
+        .course_to_bank
+        .iter()
+        .filter(|&(_, bank_name)| {
+            catalog
+                .course_banks
+                .iter()
+                .filter(|course_bank| matches!(course_bank.rule, Rule::All))
+                .any(|course_bank| course_bank.name == *bank_name)
+        })
+        .map(|(course, _)| course.clone())
+        .collect()
+}
 
+impl DegreeStatus {
     fn check_english_requirement(&mut self, year: usize) {
         // English requirement is not relevant for students that started their studies before 2021
         if year < MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT {
@@ -100,7 +100,7 @@ impl DegreeStatus {
             .iter()
             .filter(|course_status| {
                 course_status.course.is_medicine_preclinical()
-                    && Self::get_courses_of_rule_all(catalog).contains(&course_status.course.id)
+                    && get_courses_of_rule_all(catalog).contains(&course_status.course.id)
             })
             .find(|course_status| {
                 course_status.times_repeated >= MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT
@@ -112,7 +112,7 @@ impl DegreeStatus {
             .iter()
             .filter(|course_status| {
                 course_status.course.is_medicine_preclinical()
-                    && Self::get_courses_of_rule_all(catalog).contains(&course_status.course.id)
+                    && get_courses_of_rule_all(catalog).contains(&course_status.course.id)
             })
             .map(|course_status| course_status.times_repeated)
             .sum()
