@@ -41,15 +41,14 @@ export const Banner = observer(BannerComp);
 
 const sxBanner = {
   width: "100%",
-  height: 300,
+  height: 270,
   backgroundColor: "primary.dark",
   display: "flex",
   justifyContent: "center",
 };
 
 const StyledBox = styled(Box)(({ theme }) => ({
-  width: "60%",
-  height: 300,
+  //width: "60%",
   marginTop: "100px",
   display: "flex",
   justifyContent: "space-around",

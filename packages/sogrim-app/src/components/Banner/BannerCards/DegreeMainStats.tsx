@@ -52,13 +52,6 @@ const DegreeMainStatsComp: React.FC = () => {
             totalBanks ? totalBanks : "..."
           } דרישות בתואר`}
         </Typography>
-        <Button
-          disabled
-          sx={{ display: "flex", justifyContent: "center" }}
-          size="small"
-        >
-          {"לעמוד הסטטיסטיקות (בקרוב)"}
-        </Button>
         {confetti && (
           <Confetti
             numberOfPieces={500}
