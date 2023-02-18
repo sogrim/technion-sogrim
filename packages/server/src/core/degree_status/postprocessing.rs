@@ -118,33 +118,37 @@ impl DegreeStatus {
             .sum()
     }
 
+    fn medicine_postprocessing(&mut self, catalog: &Catalog) {
+        self.overflow_msgs
+            .push(match self.medicine_preclinical_avg() {
+                avg if avg < MEDICINE_PRECLINICAL_MIN_AVG => {
+                    messages::medicine_preclinical_avg_error_msg(avg)
+                }
+                avg => messages::medicine_preclinical_avg_msg(avg),
+            });
+
+        if let Some(course_status_exceeded_repetitions_limit) =
+            self.medicine_preclinical_course_repetitions(catalog)
+        {
+            self.overflow_msgs
+                .push(messages::medicine_preclinical_course_repetitions_error_msg(
+                    course_status_exceeded_repetitions_limit,
+                ));
+        }
+
+        let repetitions = self.medicine_preclinical_total_repetitions(catalog);
+        if repetitions >= MEDICINE_PRECLINICAL_TOTAL_REPETITIONS_LIMIT {
+            self.overflow_msgs
+                .push(messages::medicine_preclinical_total_repetitions_error_msg(
+                    repetitions,
+                ));
+        }
+    }
+
     pub fn postprocess(&mut self, catalog: &Catalog) {
         self.check_english_requirement(catalog.year());
         if catalog.is_medicine() {
-            self.overflow_msgs
-                .push(match self.medicine_preclinical_avg() {
-                    avg if avg < MEDICINE_PRECLINICAL_MIN_AVG => {
-                        messages::medicine_preclinical_avg_error_msg(avg)
-                    }
-                    avg => messages::medicine_preclinical_avg_msg(avg),
-                });
-
-            if let Some(course_status_exceeded_repetitions_limit) =
-                self.medicine_preclinical_course_repetitions(catalog)
-            {
-                self.overflow_msgs.push(
-                    messages::medicine_preclinical_course_repetitions_error_msg(
-                        course_status_exceeded_repetitions_limit,
-                    ),
-                );
-            }
-
-            let repetitions = self.medicine_preclinical_total_repetitions(catalog);
-            if repetitions >= MEDICINE_PRECLINICAL_TOTAL_REPETITIONS_LIMIT {
-                self.overflow_msgs.push(
-                    messages::medicine_preclinical_total_repetitions_error_msg(repetitions),
-                );
-            }
+            self.medicine_postprocessing(catalog);
         }
     }
 }

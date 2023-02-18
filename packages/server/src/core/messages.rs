@@ -115,14 +115,15 @@ pub fn medicine_preclinical_avg_msg(avg: f64) -> String {
 }
 
 pub fn medicine_preclinical_course_repetitions_error_msg(course_status: &CourseStatus) -> String {
-    match course_status.times_repeated {
-        repetitions if repetitions == 2 => format!(
+    if course_status.times_repeated == 2 {
+        format!(
             "פסילה: חזרת על הקורס \"{}\" פעמיים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת ולכן לא ניתן לסגור את התואר",
             course_status.course.name
-        ),
-        repetitions => format!(
+        )
+    } else {
+        format!(
             "פסילה: חזרת על הקורס \"{}\" {} פעמים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת ולכן לא ניתן לסגור את התואר",
-            course_status.course.name, repetitions
+            course_status.course.name, course_status.times_repeated
         )
     }
 }
