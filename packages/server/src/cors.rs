@@ -10,6 +10,7 @@ pub fn cors() -> actix_cors::Cors {
         cors.allowed_origin_fn(|origin, _req_head| {
             origin.as_bytes().starts_with(b"http://localhost")
         })
+        .allowed_origin("https://sogrim.onrender.com")
     } else {
         cors.allowed_origin("https://sogrim.org")
             .allowed_origin("https://students.sogrim.org")
