@@ -13,10 +13,13 @@ const WarningMessagesComp: React.FC<WarningMessagesProps> = () => {
   const { data: userState } = useUserState();
   const theme = useTheme();
 
-  const messages: string[] =
-    userState?.details?.degree_status?.overflow_msgs.filter(
-      (ovm) => ovm.match(error) || ovm.match(warning)
-    ) || [];
+  const messages: string[] = React.useMemo(
+    () =>
+      userState?.details?.degree_status?.overflow_msgs.filter(
+        (ovm) => ovm.match(error) || ovm.match(warning)
+      ) || [],
+    [userState]
+  );
 
   return messages.length > 0 ? (
     <MessagesAccordion
@@ -42,9 +45,7 @@ const WarningMessagesComp: React.FC<WarningMessagesProps> = () => {
         </>
       )}
     />
-  ) : (
-    <></>
-  );
+  ) : null;
 };
 
 export const WarningMessages = observer(WarningMessagesComp);

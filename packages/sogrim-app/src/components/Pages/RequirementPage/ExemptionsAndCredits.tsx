@@ -47,9 +47,7 @@ const ExemptionsAndCreditsComp: React.FC<ExemptionsAndCreditsProps> = () => {
         </>
       )}
     />
-  ) : (
-    <></>
-  );
+  ) : null;
 };
 
 export const ExemptionsAndCredits = observer(ExemptionsAndCreditsComp);

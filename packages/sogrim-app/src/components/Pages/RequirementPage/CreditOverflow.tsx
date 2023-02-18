@@ -12,10 +12,13 @@ const warning = "אזהרה: ";
 const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
   const { data: userState } = useUserState();
 
-  const messages: string[] =
-    userState?.details?.degree_status?.overflow_msgs.filter(
-      (ovm) => !ovm.match(error) && !ovm.match(warning)
-    ) || [];
+  const messages: string[] = React.useMemo(
+    () =>
+      userState?.details?.degree_status?.overflow_msgs.filter(
+        (ovm) => !ovm.match(error) && !ovm.match(warning)
+      ) || [],
+    [userState]
+  );
 
   return messages.length > 0 ? (
     <MessagesAccordion
@@ -33,9 +36,7 @@ const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
         </>
       )}
     />
-  ) : (
-    <></>
-  );
+  ) : null;
 };
 
 export const CreditOverflow = observer(CreditOverflowComp);
