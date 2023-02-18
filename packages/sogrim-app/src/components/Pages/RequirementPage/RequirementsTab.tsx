@@ -5,6 +5,7 @@ import { useStore } from "../../../hooks/useStore";
 import { BankRequirementsTable } from "./BankRequirementsTable/BankRequirementsTable";
 import { CreditOverflow } from "./CreditOverflow";
 import { ExemptionsAndCredits } from "./ExemptionsAndCredits";
+import { WarningMessages } from "./WarningMessages";
 
 interface RequirementsTabProps {}
 
@@ -26,6 +27,7 @@ const RequirementsPageComp: React.FC<RequirementsTabProps> = () => {
       >
         <BankRequirementsTable />
         <Box sx={{ display: "flex", gap: 4, flexDirection: "column" }}>
+          <WarningMessages />
           <CreditOverflow />
           <ExemptionsAndCredits />
         </Box>
