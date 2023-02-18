@@ -1,5 +1,6 @@
 export type Catalog = {
   name: string;
+  faculty: string;
   total_credit: number;
   description: string;
   _id: {
@@ -31,6 +32,7 @@ export type CourseStatus = {
   modified: boolean;
   specialization_group_name?: string;
   additional_msg?: string;
+  times_repeated: number;
 };
 
 export const ACCUMULATE_COURSES = "accumulate courses";

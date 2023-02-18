@@ -177,6 +177,7 @@ export class DataStore {
       grade: rowData.grade,
       semester: semester,
       modified: true,
+      times_repeated: 0,
     };
 
     const updatedCourseStatuses: CourseStatus[] = courseList.map(
@@ -230,6 +231,7 @@ export class DataStore {
       grade: rowData.grade,
       semester: semester,
       modified: true,
+      times_repeated: 0,
     };
 
     courseList.push(newCourse);
