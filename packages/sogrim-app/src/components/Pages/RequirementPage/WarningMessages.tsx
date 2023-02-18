@@ -6,8 +6,8 @@ import { MessagesAccordion } from "./MessagesAccordion";
 
 interface WarningMessagesProps {}
 
-const strikeRe = "פסילה: ";
-const warningRe = "אזהרה: ";
+const error = "פסילה: ";
+const warning = "אזהרה: ";
 
 const WarningMessagesComp: React.FC<WarningMessagesProps> = () => {
   const { data: userState } = useUserState();
@@ -15,24 +15,25 @@ const WarningMessagesComp: React.FC<WarningMessagesProps> = () => {
 
   const messages: string[] =
     userState?.details?.degree_status?.overflow_msgs.filter(
-      (ovm) => ovm.match(strikeRe) || ovm.match(warningRe)
+      (ovm) => ovm.match(error) || ovm.match(warning)
     ) || [];
 
   return messages.length > 0 ? (
     <MessagesAccordion
-      name="אזהרות"
+      name={`אזהרות - ${userState?.details.catalog?.name.replace(
+        /\d{4}-\d{4}/, // remove the year from the catalog name
+        ""
+      )}`}
       tooltipMsg="כאן מופיעות הודעות אזהרה על אי עמידה בתנאי הקטלוג האקדמי"
       Messages={() => (
         <>
           {messages.map((ovm, id) => (
             <Box key={id} sx={{ padding: 0.5 }}>
-              {ovm.match(strikeRe) ? (
-                <Typography color="error">
-                  {ovm.replace(strikeRe, "")}
-                </Typography>
+              {ovm.match(error) ? (
+                <Typography color="error">{ovm.replace(error, "")}</Typography>
               ) : (
                 <Typography color={theme.palette.warning.main}>
-                  {ovm.replace(warningRe, "")}
+                  {ovm.replace(warning, "")}
                 </Typography>
               )}
               <Divider />

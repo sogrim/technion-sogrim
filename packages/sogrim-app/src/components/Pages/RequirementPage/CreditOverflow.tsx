@@ -6,15 +6,15 @@ import { MessagesAccordion } from "./MessagesAccordion";
 
 interface CreditOverflowProps {}
 
-const strikeRe = "פסילה: ";
-const warningRe = "אזהרה: ";
+const error = "פסילה: ";
+const warning = "אזהרה: ";
 
 const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
   const { data: userState } = useUserState();
 
   const messages: string[] =
     userState?.details?.degree_status?.overflow_msgs.filter(
-      (ovm) => !ovm.match(strikeRe) && !ovm.match(warningRe)
+      (ovm) => !ovm.match(error) && !ovm.match(warning)
     ) || [];
 
   return messages.length > 0 ? (
