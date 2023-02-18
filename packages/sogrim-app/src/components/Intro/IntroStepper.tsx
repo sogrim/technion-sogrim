@@ -11,6 +11,10 @@ import React from "react";
 
 const steps = [
   {
+    label: "בחר פקולטה",
+    description: `בחר פקולטה`,
+  },
+  {
     label: "בחר קטלוג",
     description: `בחר קטלוג לימודים`,
   },
@@ -26,13 +30,11 @@ const steps = [
 
 interface IntroStepperProps {
   activeStep: number;
-  handleNext: () => void;
   handleBack: () => void;
 }
 
 export const IntroStepper: React.FC<IntroStepperProps> = ({
   activeStep,
-  handleNext,
   handleBack,
 }) => {
   return (

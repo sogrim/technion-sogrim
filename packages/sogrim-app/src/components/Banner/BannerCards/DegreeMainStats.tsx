@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { useStore } from "../../../hooks/useStore";
+import { Card, CardContent, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
-import { Typography, Card, CardContent, Button } from "@mui/material";
+import { useEffect, useState } from "react";
 import Confetti from "react-confetti";
+import { useStore } from "../../../hooks/useStore";
 
 const DegreeMainStatsComp: React.FC = () => {
   const {

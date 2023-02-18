@@ -9,3 +9,4 @@ packages/server/private/
 packages/server/target/
 packages/server/.vscode/settings.json
 packages/server/*.txt
+packages/sogrim-app/yarn.lock

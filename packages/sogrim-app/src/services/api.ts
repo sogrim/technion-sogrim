@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 import {
   UserDetails,
   UserState,
@@ -8,8 +8,15 @@ import {
 } from "../types/data-types";
 import { API_URL } from "./api-url";
 
-export const getCatalogs = async (authToken: string): Promise<Catalog[]> => {
-  return axiosGet(authToken, `${API_URL}/catalogs`);
+export const getCatalogs = async (
+  authToken: string,
+  chosenFaculty?: string
+): Promise<Catalog[]> => {
+  let params;
+  if (chosenFaculty) {
+    params = { faculty: chosenFaculty };
+  }
+  return axiosGet(authToken, `${API_URL}/catalogs`, params);
 };
 
 export const getCourseByFilter = async (
@@ -75,7 +82,11 @@ export const putUserSettings = async (
   );
 };
 
-const axiosGet = async (authToken: string, url: string): Promise<any> => {
+const axiosGet = async (
+  authToken: string,
+  url: string,
+  params?: AxiosRequestConfig["params"]
+): Promise<any> => {
   const fallback: any = {};
   let res: any;
   try {
@@ -85,6 +96,7 @@ const axiosGet = async (authToken: string, url: string): Promise<any> => {
           headers: {
             authorization: `${authToken}`,
           },
+          params,
         })
       ).data || fallback;
   } catch (e) {

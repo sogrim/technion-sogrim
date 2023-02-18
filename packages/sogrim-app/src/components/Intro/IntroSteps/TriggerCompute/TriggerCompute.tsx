@@ -10,16 +10,8 @@ import {
 import useComputeEndGame from "../../../../hooks/apiHooks/useComputeEndGame";
 import { useAuth } from "../../../../hooks/useAuth";
 import { IntroStepCard } from "../IntroStepCard";
-import { useStore } from "../../../../hooks/useStore";
-import { UserRegistrationState } from "../../../../types/ui-types";
 
-interface TriggerComputeProps {
-  handleBack: () => void;
-}
-
-export const TriggerCompute: React.FC<TriggerComputeProps> = ({
-  handleBack,
-}) => {
+export const TriggerCompute: React.FC = () => {
   const [triggerCompute, setTriggerCompute] = React.useState(false);
   const [backdropOpen, setBackdropOpen] = React.useState(false);
 
