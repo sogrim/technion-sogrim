@@ -67,6 +67,10 @@ impl Catalog {
     pub fn get_all_course_ids(&self) -> Vec<CourseId> {
         self.course_to_bank.clone().into_keys().collect()
     }
+
+    pub fn is_medicine(&self) -> bool {
+        matches!(self.faculty, Faculty::Medicine)
+    }
 }
 
 impl Resource for Catalog {

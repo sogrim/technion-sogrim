@@ -1,6 +1,8 @@
 use std::fmt::Write;
 
-use crate::resources::course::Course;
+use crate::resources::course::{Course, CourseStatus};
+
+use super::degree_status::postprocessing::MEDICINE_PRECLINICAL_MIN_AVG;
 
 const ZERO: f32 = 0.0;
 const HALF: f32 = 0.5;
@@ -104,12 +106,29 @@ pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
     "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
 }
 
-pub fn medicine_course_retake_limit_exceeded_error_message() -> String {
-    "פסילה: לא ניתן לסגור את התואר. חרגת מכמות הפעמים המותרת לחזור על כל קורס".to_string()
+pub fn medicine_preclinical_avg_error_msg(avg: f64) -> String {
+    format!("פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. ממוצע זה נמוך מ-{} ולכן לא ניתן לסגור את התואר.", avg, MEDICINE_PRECLINICAL_MIN_AVG)
 }
 
-pub fn medicine_total_retake_limit_exceeded_error_message() -> String {
-    "פסילה: לא ניתן לסגור את התואר. חרגת מכמות הפעמים המותרת לחזור על קורס".to_string()
+pub fn medicine_preclinical_avg_msg(avg: f64) -> String {
+    format!("ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}", avg)
+}
+
+pub fn medicine_preclinical_course_repetitions_error_msg(course_status: &CourseStatus) -> String {
+    match course_status.times_repeated {
+        repetitions if repetitions == 2 => format!(
+            "פסילה: חזרת על הקורס \"{}\" פעמיים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת ולכן לא ניתן לסגור את התואר",
+            course_status.course.name
+        ),
+        repetitions => format!(
+            "פסילה: חזרת על הקורס \"{}\" {} פעמים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת ולכן לא ניתן לסגור את התואר",
+            course_status.course.name, repetitions
+        )
+    }
+}
+
+pub fn medicine_preclinical_total_repetitions_error_msg(repetitions: usize) -> String {
+    format!("פסילה: כמות הפעמים הכוללת המותרת לחזור על קורס היא פעמיים. חזרת על קורס {repetitions} פעמים ולכן לא ניתן לסגור את התואר")
 }
 
 /////////////////////////////////////////////////////////////////////////////////

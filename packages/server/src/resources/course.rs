@@ -35,7 +35,7 @@ pub enum Tag {
     Sport,
     SportTeam, // TODO: check if need this
     MedicinePreclinical,
-    MedicineClinical
+    MedicineClinical,
 }
 
 impl Course {
@@ -53,6 +53,10 @@ impl Course {
 
     pub fn is_malag(&self) -> bool {
         self.is(Tag::Malag)
+    }
+
+    pub fn is_medicine_preclinical(&self) -> bool {
+        self.is(Tag::MedicinePreclinical)
     }
 }
 
@@ -203,9 +207,9 @@ pub struct CourseBank {
     pub credit: Option<f32>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Grade {
-    Numeric(u8),
+    Numeric(u32),
     Binary(bool),
     ExemptionWithoutCredit,
     ExemptionWithCredit,
@@ -246,8 +250,8 @@ impl<'de> Visitor<'de> for GradeStrVisitor {
             "פטור ללא ניקוד" => Ok(Grade::ExemptionWithoutCredit),
             "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
             "לא השלים" => Ok(Grade::NotComplete),
-            _ if v.parse::<u8>().is_ok() => Ok(Grade::Numeric(
-                v.parse::<u8>().map_err(|e| Err::custom(e.to_string()))?,
+            _ if v.parse::<u32>().is_ok() => Ok(Grade::Numeric(
+                v.parse::<u32>().map_err(|e| Err::custom(e.to_string()))?,
             )),
             _ => {
                 let err: E = Err::invalid_type(Unexpected::Str(v), &self);
