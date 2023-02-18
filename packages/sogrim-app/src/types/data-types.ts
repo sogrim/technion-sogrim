@@ -1,3 +1,10 @@
+export enum Faculty {
+  Unknown = "Unknown",
+  ComputerScience = "ComputerScience",
+  DataAndDecisionScience = "DataAndDecisionScience",
+  Medicine = "Medicine",
+}
+
 export type Catalog = {
   name: string;
   faculty: string;

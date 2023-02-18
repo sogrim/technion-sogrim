@@ -1,11 +1,8 @@
 import {
   Backdrop,
   Box,
-  Card,
   CardActions,
   CircularProgress,
-  Link,
-  Theme,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -21,12 +18,10 @@ import { HowToImport } from "./HowToImport";
 
 export interface ImportGradeSheetProps {
   handleNext: () => void;
-  handleBack: () => void;
 }
 
 export const ImportGradeSheet: React.FC<ImportGradeSheetProps> = ({
   handleNext,
-  handleBack,
 }) => {
   const [ugText, setUgText] = useState<string | null>(null);
   const [backdropOpen, setBackdropOpen] = useState(false);
@@ -39,6 +34,7 @@ export const ImportGradeSheet: React.FC<ImportGradeSheetProps> = ({
     if (isSuccess) {
       handleNext();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess]);
 
   const handleChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
