@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 pub struct Admin {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub sub: String,
-    pub institution: String,
-    pub faculty: String,
 }
 
 impl Resource for Admin {

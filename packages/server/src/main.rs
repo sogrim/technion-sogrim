@@ -51,6 +51,7 @@ async fn main() -> std::io::Result<()> {
                     .service(api::students::compute_degree_status)
                     .service(api::students::update_details)
                     .service(api::students::update_settings)
+                    .service(api::admins::parse_courses_and_compute_degree_status)
                     .service(api::bo::get_all_courses)
                     .service(api::bo::get_course_by_id)
                     .service(api::bo::create_or_update_course)

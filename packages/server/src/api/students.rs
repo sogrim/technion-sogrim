@@ -157,17 +157,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         )
         .await?;
 
-    // Fill tags for all student courses
-    user.details
-        .degree_status
-        .course_statuses
-        .iter_mut()
-        .for_each(|course_status| {
-            course_status.course.tags = courses
-                .iter()
-                .find(|course| course.id == course_status.course.id)
-                .and_then(|course| course.tags.clone());
-        });
+    user.details.degree_status.fill_tags(&courses);
 
     let mut course_list = Vec::new();
     if user.details.compute_in_progress {

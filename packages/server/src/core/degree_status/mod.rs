@@ -66,6 +66,15 @@ impl DegreeStatus {
                 course_status.state = Some(CourseState::InProgress);
             })
     }
+
+    pub fn fill_tags(&mut self, courses: &[Course]) {
+        self.course_statuses.iter_mut().for_each(|course_status| {
+            course_status.course.tags = courses
+                .iter()
+                .find(|course| course.id == course_status.course.id)
+                .and_then(|course| course.tags.clone());
+        });
+    }
 }
 
 pub struct DegreeStatusHandler<'a> {
