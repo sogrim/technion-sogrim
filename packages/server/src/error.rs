@@ -6,6 +6,7 @@ pub enum AppError {
     BadRequest(String),     // 400
     Bson(String),           // 400
     Parser(String),         // 400
+    Unauthorized(String),   // 401
     NotFound(String),       // 404
     InternalServer(String), // 500
     Middleware(String),     // 500
@@ -36,6 +37,9 @@ impl ResponseError for AppError {
             AppError::BadRequest(e) => (StatusCode::BAD_REQUEST, e.to_owned()),
             AppError::Bson(e) => (StatusCode::BAD_REQUEST, format!("Bson error: {e}")),
             AppError::Parser(e) => (StatusCode::BAD_REQUEST, format!("Parser error: {e}")),
+            AppError::Unauthorized(e) => {
+                (StatusCode::UNAUTHORIZED, format!("Permission denied: {e}"))
+            }
             AppError::NotFound(e) => (StatusCode::NOT_FOUND, format!("{e} not found")),
             AppError::InternalServer(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_owned()),
             AppError::Middleware(e) => (
@@ -50,6 +54,7 @@ impl ResponseError for AppError {
         let mut res = match status_code {
             StatusCode::BAD_REQUEST => HttpResponse::BadRequest().body(error.clone()),
             StatusCode::NOT_FOUND => HttpResponse::NotFound().body(error.clone()),
+            StatusCode::UNAUTHORIZED => HttpResponse::Unauthorized().body(error.clone()),
             StatusCode::INTERNAL_SERVER_ERROR => {
                 HttpResponse::InternalServerError().body(error.clone())
             }
