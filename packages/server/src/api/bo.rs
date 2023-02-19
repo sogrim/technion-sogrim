@@ -4,7 +4,7 @@ use crate::core::catalog_validations;
 use crate::db::Db;
 use crate::error::AppError;
 use crate::resources::catalog::Catalog;
-use crate::resources::{admin::Admin, course::Course};
+use crate::resources::{course::Course, user::User};
 use actix_web::web::{Data, Json, Path};
 use actix_web::{delete, get, put, HttpResponse};
 
@@ -13,7 +13,7 @@ use actix_web::{delete, get, put, HttpResponse};
 /////////////////////////////////////////////////////////////////////////////
 
 #[get("/courses")]
-pub async fn get_all_courses(_: Admin, db: Data<Db>) -> Result<HttpResponse, AppError> {
+pub async fn get_all_courses(_: User, db: Data<Db>) -> Result<HttpResponse, AppError> {
     db.get_all::<Course>()
         .await
         .map(|courses| HttpResponse::Ok().json(courses))
@@ -21,7 +21,7 @@ pub async fn get_all_courses(_: Admin, db: Data<Db>) -> Result<HttpResponse, App
 
 #[get("/courses/{id}")]
 pub async fn get_course_by_id(
-    _: Admin,
+    _: User,
     id: Path<String>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
@@ -32,7 +32,7 @@ pub async fn get_course_by_id(
 
 #[put("/courses/{id}")]
 pub async fn create_or_update_course(
-    _: Admin,
+    _: User,
     _id: Path<String>,
     course: Json<Course>,
     db: Data<Db>,
@@ -44,7 +44,7 @@ pub async fn create_or_update_course(
 
 #[delete("/courses/{id}")]
 pub async fn delete_course(
-    _: Admin,
+    _: User,
     id: Path<String>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
@@ -59,7 +59,7 @@ pub async fn delete_course(
 
 #[get("/catalogs/{id}")]
 pub async fn get_catalog_by_id(
-    _: Admin,
+    _: User,
     id: Path<String>,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
@@ -71,7 +71,7 @@ pub async fn get_catalog_by_id(
 
 #[put("/catalogs/{id}")]
 pub async fn create_or_update_catalog(
-    _: Admin,
+    _: User,
     _id: Path<String>,
     catalog: Json<Catalog>,
     db: Data<Db>,

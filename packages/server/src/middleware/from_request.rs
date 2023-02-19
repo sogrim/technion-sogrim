@@ -22,12 +22,30 @@ macro_rules! impl_from_request {
                     };
                     use actix_web::HttpMessage; // Required for `req.extensions()`
                     let optional_sub = req.extensions().get::<$crate::auth::Sub>().cloned();
-                    match optional_sub {
+                    let user = match optional_sub {
                         Some(key) => db.get::<$resource>(&key).await,
                         None => Err($crate::error::AppError::Middleware(
                             "Sub not found in request extensions".into(),
                         )),
+                    }?;
+                    let is_authorized = match (req.path(), user.permissions) {
+                        (path, permissions) if path.starts_with("/student") => {
+                            permissions >= Permissions::Student
+                        }
+                        (path, permissions) if path.starts_with("/admin") => {
+                            permissions >= Permissions::Admin
+                        }
+                        (path, permissions) if path.starts_with("/owner") => {
+                            permissions >= Permissions::Owner
+                        }
+                        _ => false,
+                    };
+                    if !is_authorized {
+                        return Err($crate::error::AppError::Unauthorized(
+                            "User not authorized to access this resource".into(),
+                        ));
                     }
+                    Ok(user)
                 })
             }
 
