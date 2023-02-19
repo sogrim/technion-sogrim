@@ -390,3 +390,37 @@ async fn test_admins_parse_and_compute_api() {
         .overflow_msgs
         .contains(&messages::credit_leftovers_msg(0.0)))
 }
+
+#[test]
+async fn test_unauthorized_path() {
+    dotenv().ok();
+    // Init env and app
+    let db = Db::new().await;
+    let app = test::init_service(
+        App::new()
+            .app_data(Data::new(db.clone()))
+            .service(admins::parse_courses_and_compute_degree_status),
+    )
+    .await;
+
+    // Create and send request
+    let request = test::TestRequest::post()
+        .uri("/admins/parse-compute")
+        .set_json(ComputeDegreeStatusPayload {
+            catalog_id: ObjectId::new(),
+            grade_sheet_as_string: "".to_string(),
+        })
+        .to_request();
+
+    // Manually insert a sub of a fake user with no permissions
+    request
+        .extensions_mut()
+        .insert::<auth::Sub>("bugo-the-debugo-junior".to_string());
+
+    let resp = test::call_service(&app, request).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        Bytes::from("Permission denied: User not authorized to access this resource"),
+        test::read_body(resp).await
+    );
+}

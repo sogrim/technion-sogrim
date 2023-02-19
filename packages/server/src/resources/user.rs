@@ -16,10 +16,19 @@ pub struct UserSettings {
     pub dark_mode: bool,
 }
 
+#[derive(Default, Clone, Copy, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
+pub enum Permissions {
+    #[default]
+    Student = 0,
+    Admin = 1,
+    Owner = 2,
+}
+
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct User {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub sub: String,
+    pub permissions: Permissions,
     pub details: UserDetails,
     pub settings: UserSettings,
 }
