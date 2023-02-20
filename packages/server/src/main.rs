@@ -1,8 +1,9 @@
 use crate::config::CONFIG;
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpResponse, HttpServer};
 use actix_web_lab::middleware::from_fn;
 use db::Db;
 use dotenvy::dotenv;
+use error::AppError;
 use middleware::auth;
 
 mod api;
@@ -34,6 +35,12 @@ async fn main() -> std::io::Result<()> {
             .wrap(from_fn(auth::authenticate))
             .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
+            .service(web::resource("/healthcheck").route(web::get().to(
+                |db: web::Data<Db>| async move {
+                    db.ping().await?;
+                    Result::<HttpResponse, AppError>::Ok(HttpResponse::Ok().finish())
+                },
+            )))
             .service(api::students::get_catalogs)
             .service(api::students::login)
             .service(api::students::update_catalog)
