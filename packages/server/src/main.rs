@@ -3,15 +3,13 @@ use actix_web::{web, App, HttpServer};
 use actix_web_lab::middleware::from_fn;
 use db::Db;
 use dotenvy::dotenv;
-use middleware::auth;
+use middleware::{auth, cors, logger};
 
 mod api;
 mod config;
 mod core;
-mod cors;
 mod db;
 mod error;
-mod logger;
 mod middleware;
 mod resources;
 
@@ -43,10 +41,10 @@ async fn main() -> std::io::Result<()> {
             .service(api::students::update_details)
             .service(api::students::update_settings)
             .service(api::admins::parse_courses_and_compute_degree_status)
-            .service(api::bo::get_all_courses)
-            .service(api::bo::get_course_by_id)
-            .service(api::bo::create_or_update_course)
-            .service(api::bo::delete_course)
+            .service(api::owners::get_all_courses)
+            .service(api::owners::get_course_by_id)
+            .service(api::owners::create_or_update_course)
+            .service(api::owners::delete_course)
     })
     .bind((CONFIG.ip, CONFIG.port))?
     .run()

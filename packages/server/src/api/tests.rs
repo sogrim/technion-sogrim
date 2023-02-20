@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     api::{
-        bo,
+        owners,
         students::{self, login},
     },
     core::{degree_status::DegreeStatus, messages},
@@ -218,10 +218,10 @@ async fn test_bo_api_courses() {
             .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
-            .service(bo::get_all_courses)
-            .service(bo::get_course_by_id)
-            .service(bo::create_or_update_course)
-            .service(bo::delete_course),
+            .service(owners::get_all_courses)
+            .service(owners::get_course_by_id)
+            .service(owners::create_or_update_course)
+            .service(owners::delete_course),
     )
     .await;
 
@@ -288,7 +288,7 @@ async fn test_bo_api_catalogs() {
             .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
-            .service(bo::get_catalog_by_id),
+            .service(owners::get_catalog_by_id),
     )
     .await;
 
