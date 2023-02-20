@@ -11,7 +11,7 @@ use crate::{
     resources::{
         catalog::{Catalog, DisplayCatalog},
         course::{Course, CourseStatus},
-        user::{User, UserDetails},
+        user::{Permissions, User, UserDetails},
     },
 };
 use actix_rt::test;
@@ -37,6 +37,7 @@ pub async fn test_get_all_catalogs() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Student))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(students::get_catalogs),
@@ -69,6 +70,7 @@ async fn test_students_api_full_flow() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Student))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(students::get_catalogs)
@@ -153,6 +155,7 @@ async fn test_compute_in_progress() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Student))
             .service(students::compute_degree_status)
             .service(students::update_details),
     )
@@ -206,7 +209,7 @@ async fn test_compute_in_progress() {
 }
 
 #[test]
-async fn test_bo_api_courses() {
+async fn test_owner_api_courses() {
     dotenv().ok();
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
@@ -216,6 +219,7 @@ async fn test_bo_api_courses() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Owner))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(owners::get_all_courses)
@@ -276,7 +280,7 @@ async fn test_bo_api_courses() {
 }
 
 #[test]
-async fn test_bo_api_catalogs() {
+async fn test_owner_api_catalogs() {
     dotenv().ok();
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
@@ -286,6 +290,7 @@ async fn test_bo_api_catalogs() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Owner))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(owners::get_catalog_by_id),
@@ -334,6 +339,7 @@ async fn test_students_api_no_catalog() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Student))
             .service(students::compute_degree_status),
     )
     .await;
@@ -365,6 +371,7 @@ async fn test_admins_parse_and_compute_api() {
         App::new()
             .app_data(Data::new(db.clone()))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
+            .app_data(Data::new(Permissions::Admin))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(admins::parse_courses_and_compute_degree_status),
     )
@@ -399,6 +406,7 @@ async fn test_unauthorized_path() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Admin))
             .service(admins::parse_courses_and_compute_degree_status),
     )
     .await;

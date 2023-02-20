@@ -5,7 +5,7 @@ use crate::{
     error::AppError,
     middleware::auth::Sub,
 };
-use actix_web::{dev::Payload, web::Data, FromRequest};
+use actix_web::{dev::Payload, web::Data, FromRequest, HttpMessage};
 use bson::{doc, Document};
 use serde::{Deserialize, Serialize};
 
@@ -54,35 +54,23 @@ impl FromRequest for User {
     fn from_request(req: &actix_web::HttpRequest, _: &mut Payload) -> Self::Future {
         let req = req.clone();
         Box::pin(async move {
-            let db = match req.app_data::<Data<Db>>() {
-                Some(db) => db,
-                None => {
-                    return Err(AppError::InternalServer(
-                        "Mongodb client not found in application data".into(),
-                    ))
-                }
+            let Some(db) = req.app_data::<Data<Db>>() else {
+                return Err(AppError::InternalServer(
+                    "Mongodb client not found in application data".into(),
+                ))
             };
-            use actix_web::HttpMessage;
-            let optional_sub = req.extensions().get::<Sub>().cloned();
-            let user = match optional_sub {
-                Some(key) => db.get::<User>(&key).await,
-                None => Err(AppError::Middleware(
+            let Some(permissions) = req.app_data::<Data<Permissions>>().cloned() else {
+                return Err(AppError::InternalServer(
+                    "Permissions not found in application data".into(),
+                ));
+            };
+            let Some(id) = req.extensions().get::<Sub>().cloned() else {
+                return Err(AppError::Middleware(
                     "Sub not found in request extensions".into(),
-                )),
-            }?;
-            let is_authorized = match (req.path(), user.permissions) {
-                (path, permissions) if path.starts_with("/student") => {
-                    permissions >= Permissions::Student
-                }
-                (path, permissions) if path.starts_with("/admin") => {
-                    permissions >= Permissions::Admin
-                }
-                (path, permissions) if path.starts_with("/owner") => {
-                    permissions >= Permissions::Owner
-                }
-                _ => false,
+                ));
             };
-            if !is_authorized {
+            let user = db.get::<User>(id).await?;
+            if user.permissions < **permissions {
                 return Err(AppError::Unauthorized(
                     "User not authorized to access this resource".into(),
                 ));
