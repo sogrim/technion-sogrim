@@ -1,18 +1,20 @@
 use crate::config::CONFIG;
-use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_web::{
+    web::{self, scope},
+    App, HttpResponse, HttpServer,
+};
 use actix_web_lab::middleware::from_fn;
 use db::Db;
 use dotenvy::dotenv;
 use error::AppError;
-use middleware::auth;
+use middleware::{auth, cors, logger};
+use resources::user::Permissions;
 
 mod api;
 mod config;
 mod core;
-mod cors;
 mod db;
 mod error;
-mod logger;
 mod middleware;
 mod resources;
 
@@ -41,21 +43,35 @@ async fn main() -> std::io::Result<()> {
                 },
             )))
             .service(
-                web::scope("")
+                // Global authentication scope
+                // All routes under this scope will be authenticated and authorized
+                scope("")
                     .wrap(from_fn(auth::authenticate))
-                    .service(api::students::get_catalogs)
-                    .service(api::students::login)
-                    .service(api::students::update_catalog)
-                    .service(api::students::get_courses_by_filter)
-                    .service(api::students::add_courses)
-                    .service(api::students::compute_degree_status)
-                    .service(api::students::update_details)
-                    .service(api::students::update_settings)
-                    .service(api::admins::parse_courses_and_compute_degree_status)
-                    .service(api::bo::get_all_courses)
-                    .service(api::bo::get_course_by_id)
-                    .service(api::bo::create_or_update_course)
-                    .service(api::bo::delete_course),
+                    .service(
+                        scope("")
+                            .app_data(web::Data::new(Permissions::Student))
+                            .service(api::students::get_catalogs)
+                            .service(api::students::login)
+                            .service(api::students::update_catalog)
+                            .service(api::students::get_courses_by_filter)
+                            .service(api::students::add_courses)
+                            .service(api::students::compute_degree_status)
+                            .service(api::students::update_details)
+                            .service(api::students::update_settings),
+                    )
+                    .service(
+                        scope("")
+                            .app_data(web::Data::new(Permissions::Admin))
+                            .service(api::admins::parse_courses_and_compute_degree_status),
+                    )
+                    .service(
+                        scope("")
+                            .app_data(web::Data::new(Permissions::Owner))
+                            .service(api::owners::get_all_courses)
+                            .service(api::owners::get_course_by_id)
+                            .service(api::owners::create_or_update_course)
+                            .service(api::owners::delete_course),
+                    ),
             )
     })
     .bind((CONFIG.ip, CONFIG.port))?

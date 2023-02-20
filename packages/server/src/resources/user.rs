@@ -1,5 +1,11 @@
 use super::catalog::DisplayCatalog;
-use crate::{core::degree_status::DegreeStatus, db::Resource, impl_from_request};
+use crate::{
+    core::degree_status::DegreeStatus,
+    db::{Db, Resource},
+    error::AppError,
+    middleware::auth::Sub,
+};
+use actix_web::{dev::Payload, web::Data, FromRequest, HttpMessage};
 use bson::{doc, Document};
 use serde::{Deserialize, Serialize};
 
@@ -42,4 +48,37 @@ impl Resource for User {
     }
 }
 
-impl_from_request!(for User);
+impl FromRequest for User {
+    type Error = AppError;
+    type Future = std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self, Self::Error>>>>;
+    fn from_request(req: &actix_web::HttpRequest, _: &mut Payload) -> Self::Future {
+        let req = req.clone();
+        Box::pin(async move {
+            let Some(db) = req.app_data::<Data<Db>>() else {
+                return Err(AppError::InternalServer(
+                    "Mongodb client not found in application data".into(),
+                ))
+            };
+            let Some(permissions) = req.app_data::<Data<Permissions>>().cloned() else {
+                return Err(AppError::InternalServer(
+                    "Permissions not found in application data".into(),
+                ));
+            };
+            let Some(id) = req.extensions().get::<Sub>().cloned() else {
+                return Err(AppError::Middleware(
+                    "Sub not found in request extensions".into(),
+                ));
+            };
+            let user = db.get::<User>(id).await?;
+            if user.permissions < **permissions {
+                return Err(AppError::Unauthorized(
+                    "User not authorized to access this resource".into(),
+                ));
+            }
+            Ok(user)
+        })
+    }
+    fn extract(req: &actix_web::HttpRequest) -> Self::Future {
+        Self::from_request(req, &mut Payload::None)
+    }
+}

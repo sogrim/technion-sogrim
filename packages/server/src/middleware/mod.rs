@@ -1,5 +1,6 @@
 pub mod auth;
-pub mod from_request;
+pub mod cors;
+pub mod logger;
 
 #[cfg(test)]
 pub mod tests;
