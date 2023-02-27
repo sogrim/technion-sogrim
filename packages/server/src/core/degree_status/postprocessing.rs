@@ -9,14 +9,14 @@ use crate::{
 use super::DegreeStatus;
 
 pub const TECHNICAL_ENGLISH_ADVANCED_B: &str = "324033";
-pub const MEDICINE_PRECLINICAL_MIN_AVG: f64 = 75.0;
+pub const MEDICINE_PRECLINICAL_MIN_AVG: f32 = 75.0;
 pub const MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT: usize = 2;
 pub const MEDICINE_PRECLINICAL_TOTAL_REPETITIONS_LIMIT: usize = 3;
 const EXEMPT_COURSES_COUNT_DEMAND: usize = 2;
 const ADVANCED_B_COURSES_COUNT_DEMAND: usize = 1;
 const MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT: usize = 2021;
 const SPORT_BANK_NAME: &str = "חינוך גופני";
-const MEDICINE_ACCUMULATE_CREDIT_BANK_NAME: &str = "חינוך גופני";
+const MEDICINE_ACCUMULATE_CREDIT_BANK_NAME: &str = "בחירה פקולטית";
 
 fn get_courses_of_rule_all(catalog: &Catalog) -> Vec<CourseId> {
     catalog
@@ -34,10 +34,28 @@ fn get_courses_of_rule_all(catalog: &Catalog) -> Vec<CourseId> {
 }
 
 impl DegreeStatus {
-    // Given a specific bank, the function returns a list of all courses with the highest grade which belong to this bank, up to the credit requirement.
-    // for example: given a bank with credit requirement of 6 points, and 4 courses that each one of them is 2 points with following grades:
-    // A: 100, B: 100, C: 90, D: 100.
-    // The function returns A, B, D.
+    // This function returns a list of all courses with Some(grade) that belong to bank_name, sorted by grade in descending order.
+    fn get_ordered_courses_for_bank(&self, bank_name: &str) -> Vec<&CourseStatus> {
+        let mut ordered_course_statuses = self
+            .course_statuses
+            .iter()
+            .filter(|course_status| {
+                course_status.r#type == Some(bank_name.to_string()) && course_status.grade.is_some()
+            })
+            .collect::<Vec<_>>();
+
+        ordered_course_statuses.sort_by(|c1, c2| {
+            c2.grade
+                .unwrap() // can't fail because grade is some (from condition above)
+                .partial_cmp(&c1.grade.unwrap())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        ordered_course_statuses
+    }
+
+    // The function returns a list of the highest grade courses that are needed to reach the credit requirement of the bank.
+    // for example, if the credit requirement is 10 points and the student has 3 courses that each one is 5 points with grades 90, 80 and 70, the function will return the first 2 courses.
     fn get_highest_grade_courses_up_to_credit_requirement(
         &self,
         catalog: &Catalog,
@@ -51,42 +69,15 @@ impl DegreeStatus {
             return vec![]
         };
 
-        let mut ordered_course_statuses = self
-            .course_statuses
-            .iter()
-            .filter(|course_status| course_status.r#type == Some(bank_name.to_string()))
-            .collect::<Vec<_>>();
-
-        ordered_course_statuses.sort_by(|c1, c2| {
-            // Sort grades by:
-            // Numeric grades sorted by value in ascending order
-            // Some non-numeric values
-            // None
-            if c1.grade.is_some() && c2.grade.is_some() {
-                c2.grade
-                    .unwrap()
-                    .partial_cmp(&c1.grade.unwrap())
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            } else if c2.grade.is_some() {
-                std::cmp::Ordering::Greater
-            } else {
-                std::cmp::Ordering::Less
-            }
-        });
-
-        ordered_course_statuses
+        self.get_ordered_courses_for_bank(bank_name)
             .into_iter()
             .take_while(|course_status| {
                 let Some(Grade::Numeric(_)) = course_status.grade else {
                     // The grade is none or not numeric and because the grades are ordered, it means all grades afterwards are also none or not numeric
                     return false;
                 };
-                if credit_requirement > 0.0 {
-                    credit_requirement -= course_status.course.credit;
-                    true
-                } else {
-                    false
-                }
+                credit_requirement -= course_status.course.credit;
+                credit_requirement >= 0.0
             })
             .collect::<Vec<_>>()
     }
@@ -134,7 +125,7 @@ impl DegreeStatus {
         }
     }
 
-    fn medicine_preclinical_avg(&self, catalog: &Catalog) -> f64 {
+    fn medicine_preclinical_avg(&self, catalog: &Catalog) -> f32 {
         let rule_all_courses = self.course_statuses.iter().filter(|course_status| {
             get_courses_of_rule_all(catalog)
                 .contains(&course_status.r#type.clone().unwrap_or_default())
@@ -162,10 +153,9 @@ impl DegreeStatus {
                     None
                 }
             })
-            .sum::<f32>() as f64;
+            .sum::<f32>();
 
         highest_grades
-            .clone()
             .filter_map(|course_status| {
                 if let Some(Grade::Numeric(numeric_grade)) = course_status.grade {
                     Some(numeric_grade as f32 * course_status.course.credit)
@@ -173,7 +163,7 @@ impl DegreeStatus {
                     None
                 }
             })
-            .sum::<f32>() as f64
+            .sum::<f32>()
             / sum_credit
     }
 
