@@ -1,6 +1,7 @@
 use bson::{doc, Document};
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -231,6 +232,28 @@ impl Serialize for Grade {
         }
     }
 }
+
+impl PartialOrd for Grade {
+    fn partial_cmp(&self, other: &Grade) -> Option<Ordering> {
+        match self {
+            Grade::Numeric(grade) => {
+                if let Grade::Numeric(other_grade) = other {
+                    grade.partial_cmp(other_grade)
+                } else {
+                    Some(Ordering::Greater)
+                }
+            }
+            _ => {
+                if let Grade::Numeric(_) = other {
+                    Some(Ordering::Less)
+                } else {
+                    Some(Ordering::Equal)
+                }
+            }
+        }
+    }
+}
+
 struct GradeStrVisitor;
 
 impl<'de> Visitor<'de> for GradeStrVisitor {
