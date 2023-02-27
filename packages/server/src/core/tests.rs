@@ -857,7 +857,7 @@ async fn test_postprocessing_medicine_requirement() {
     let mut degree_status =
         run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_9.txt", MEDICINE_18_19_CATALOG_ID).await;
 
-    //FOR VIEWING IN JSON FORMAT
+    // FOR VIEWING IN JSON FORMAT
     // std::fs::write(
     //     "degree_status.json",
     //     serde_json::to_string_pretty(&degree_status).expect("json serialization failed"),
@@ -880,6 +880,8 @@ async fn test_postprocessing_medicine_requirement() {
         &messages::medicine_preclinical_total_repetitions_error_msg(3)
     ));
 
+    // ------------------------------------------------------------------------------------------------
+
     for course_status in degree_status.course_statuses.iter_mut() {
         if let Some(grade) = course_status.grade.as_mut() {
             *grade = Grade::Numeric(70);
@@ -892,6 +894,36 @@ async fn test_postprocessing_medicine_requirement() {
     assert!(degree_status
         .overflow_msgs
         .contains(&messages::medicine_preclinical_avg_error_msg(70.0)));
+
+    // ------------------------------------------------------------------------------------------------
+    // verify that the algorithm takes only the highest grades
+    // All the courses have the same grade - 75, and there is one course with grade 50
+    // However, the student avg should be 75, because the algorithm takes the highest grades
+    for course_status in degree_status.course_statuses.iter_mut() {
+        if let Some(grade) = course_status.grade.as_mut() {
+            *grade = Grade::Numeric(75);
+        }
+    }
+
+    degree_status.course_statuses.push(CourseStatus {
+        course: Course {
+            credit: 1.0,
+            id: "275101".to_string(),
+            name: "".to_string(),
+            tags: None,
+        },
+        state: Some(CourseState::Complete),
+        grade: Some(Grade::Numeric(50)),
+        r#type: Some("בחירה פקולטית".to_string()),
+        ..Default::default()
+    });
+
+    degree_status =
+        run_degree_status(degree_status, get_catalog(MEDICINE_18_19_CATALOG_ID).await).await;
+
+    assert!(!degree_status
+        .overflow_msgs
+        .contains(&messages::medicine_preclinical_avg_error_msg(75.0)));
 }
 
 #[test]
