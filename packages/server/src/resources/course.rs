@@ -235,21 +235,11 @@ impl Serialize for Grade {
 
 impl PartialOrd for Grade {
     fn partial_cmp(&self, other: &Grade) -> Option<Ordering> {
-        match self {
-            Grade::Numeric(grade) => {
-                if let Grade::Numeric(other_grade) = other {
-                    grade.partial_cmp(other_grade)
-                } else {
-                    Some(Ordering::Greater)
-                }
-            }
-            _ => {
-                if let Grade::Numeric(_) = other {
-                    Some(Ordering::Less)
-                } else {
-                    Some(Ordering::Equal)
-                }
-            }
+        match (self, other) {
+            (Grade::Numeric(g1), Grade::Numeric(g2)) => g1.partial_cmp(g2),
+            (Grade::Numeric(_), _) => Some(Ordering::Greater),
+            (_, Grade::Numeric(_)) => Some(Ordering::Less),
+            (_, _) => Some(Ordering::Equal),
         }
     }
 }

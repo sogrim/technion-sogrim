@@ -45,10 +45,11 @@ impl DegreeStatus {
             .collect::<Vec<_>>();
 
         ordered_course_statuses.sort_by(|c1, c2| {
-            c2.grade
-                .unwrap() // can't fail because grade is some (from condition above)
-                .partial_cmp(&c1.grade.unwrap())
-                .unwrap_or(std::cmp::Ordering::Equal)
+            if let (Some(g1), Some(g2)) = (&c1.grade, &c2.grade) {
+                g2.partial_cmp(g1).unwrap_or(std::cmp::Ordering::Equal)
+            } else {
+                std::cmp::Ordering::Equal
+            }
         });
 
         ordered_course_statuses
@@ -140,11 +141,11 @@ impl DegreeStatus {
                 MEDICINE_ACCUMULATE_CREDIT_BANK_NAME,
             );
 
-        let highest_grades = rule_all_courses
+        let highest_grade_courses = rule_all_courses
             .chain(highest_sport_grades)
             .chain(highest_accumulated_credit_grades);
 
-        let sum_credit = highest_grades
+        let sum_credit = highest_grade_courses
             .clone()
             .filter_map(|course_status| {
                 if let Some(Grade::Numeric(_)) = course_status.grade {
@@ -155,7 +156,7 @@ impl DegreeStatus {
             })
             .sum::<f32>();
 
-        highest_grades
+        highest_grade_courses
             .filter_map(|course_status| {
                 if let Some(Grade::Numeric(numeric_grade)) = course_status.grade {
                     Some(numeric_grade as f32 * course_status.course.credit)
