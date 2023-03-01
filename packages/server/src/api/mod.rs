@@ -1,5 +1,5 @@
 pub mod admins;
-pub mod bo;
+pub mod owners;
 pub mod students;
 
 #[cfg(test)]

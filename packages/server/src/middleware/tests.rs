@@ -1,4 +1,8 @@
-use crate::{db::Db, middleware, resources::user::User};
+use crate::{
+    db::Db,
+    middleware,
+    resources::user::{Permissions, User},
+};
 use actix_rt::test;
 use actix_web::{
     http::StatusCode,
@@ -46,9 +50,14 @@ async fn test_from_request_no_auth_mw() {
     //Init env and app
     dotenv().ok();
     let db = Db::new().await;
-    let app = test::init_service(App::new().app_data(web::Data::new(db.clone())).service(
-        web::resource("/").route(web::get().to(|_: User| async { "Shouldn't get here" })),
-    ))
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(db.clone()))
+            .app_data(web::Data::new(Permissions::Student))
+            .service(
+                web::resource("/").route(web::get().to(|_: User| async { "Shouldn't get here" })),
+            ),
+    )
     .await;
 
     // Create and send request

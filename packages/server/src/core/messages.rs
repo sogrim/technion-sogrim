@@ -106,14 +106,14 @@ pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
     "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
 }
 
-pub fn medicine_preclinical_avg_error_msg(avg: f64) -> String {
+pub fn medicine_preclinical_avg_error_msg(avg: f32) -> String {
     format!(
         "פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. המשך הלימודים מותנה בשמירה על ממוצע גבוה מ-{}.",
         avg, MEDICINE_PRECLINICAL_MIN_AVG
     )
 }
 
-pub fn medicine_preclinical_avg_msg(avg: f64) -> String {
+pub fn medicine_preclinical_avg_msg(avg: f32) -> String {
     format!("ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}", avg)
 }
 

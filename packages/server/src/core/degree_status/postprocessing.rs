@@ -9,12 +9,14 @@ use crate::{
 use super::DegreeStatus;
 
 pub const TECHNICAL_ENGLISH_ADVANCED_B: &str = "324033";
-pub const MEDICINE_PRECLINICAL_MIN_AVG: f64 = 75.0;
+pub const MEDICINE_PRECLINICAL_MIN_AVG: f32 = 75.0;
 pub const MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT: usize = 2;
 pub const MEDICINE_PRECLINICAL_TOTAL_REPETITIONS_LIMIT: usize = 3;
 const EXEMPT_COURSES_COUNT_DEMAND: usize = 2;
 const ADVANCED_B_COURSES_COUNT_DEMAND: usize = 1;
 const MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT: usize = 2021;
+const SPORT_BANK_NAME: &str = "חינוך גופני";
+const MEDICINE_ACCUMULATE_CREDIT_BANK_NAME: &str = "בחירה פקולטית";
 
 fn get_courses_of_rule_all(catalog: &Catalog) -> Vec<CourseId> {
     catalog
@@ -32,6 +34,55 @@ fn get_courses_of_rule_all(catalog: &Catalog) -> Vec<CourseId> {
 }
 
 impl DegreeStatus {
+    // This function returns a list of all courses with Some(grade) that belong to bank_name, sorted by grade in descending order.
+    fn get_ordered_courses_for_bank(&self, bank_name: &str) -> Vec<&CourseStatus> {
+        let mut ordered_course_statuses = self
+            .course_statuses
+            .iter()
+            .filter(|course_status| {
+                course_status.r#type == Some(bank_name.to_string()) && course_status.grade.is_some()
+            })
+            .collect::<Vec<_>>();
+
+        ordered_course_statuses.sort_by(|c1, c2| {
+            if let (Some(g1), Some(g2)) = (&c1.grade, &c2.grade) {
+                g2.partial_cmp(g1).unwrap_or(std::cmp::Ordering::Equal)
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        });
+
+        ordered_course_statuses
+    }
+
+    // The function returns a list of the highest grade courses that are needed to reach the credit requirement of the bank.
+    // for example, if the credit requirement is 10 points and the student has 3 courses that each one is 5 points with grades 90, 80 and 70, the function will return the first 2 courses.
+    fn get_highest_grade_courses_up_to_credit_requirement(
+        &self,
+        catalog: &Catalog,
+        bank_name: &str,
+    ) -> Vec<&CourseStatus> {
+        let credit_requirement = catalog
+            .get_course_bank_by_name(bank_name)
+            .map(|course_bank| course_bank.credit.unwrap_or_default());
+        let Some(mut credit_requirement) = credit_requirement else {
+            // shouldn't get here as we send a bank with credit requirement
+            return vec![]
+        };
+
+        self.get_ordered_courses_for_bank(bank_name)
+            .into_iter()
+            .take_while(|course_status| {
+                let Some(Grade::Numeric(_)) = course_status.grade else {
+                    // The grade is none or not numeric and because the grades are ordered, it means all grades afterwards are also none or not numeric
+                    return false;
+                };
+                credit_requirement -= course_status.course.credit;
+                credit_requirement >= 0.0
+            })
+            .collect::<Vec<_>>()
+    }
+
     fn check_english_requirement(&mut self, year: usize) {
         // English requirement is not relevant for students that started their studies before 2021
         if year < MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT {
@@ -75,24 +126,46 @@ impl DegreeStatus {
         }
     }
 
-    fn medicine_preclinical_avg(&self) -> f64 {
-        let grades = self
-            .course_statuses
-            .iter()
-            .filter(|course_status| course_status.course.is_medicine_preclinical())
+    fn medicine_preclinical_avg(&self, catalog: &Catalog) -> f32 {
+        let rule_all_courses = self.course_statuses.iter().filter(|course_status| {
+            get_courses_of_rule_all(catalog)
+                .contains(&course_status.r#type.clone().unwrap_or_default())
+        });
+
+        let highest_sport_grades =
+            self.get_highest_grade_courses_up_to_credit_requirement(catalog, SPORT_BANK_NAME);
+
+        let highest_accumulated_credit_grades = self
+            .get_highest_grade_courses_up_to_credit_requirement(
+                catalog,
+                MEDICINE_ACCUMULATE_CREDIT_BANK_NAME,
+            );
+
+        let highest_grade_courses = rule_all_courses
+            .chain(highest_sport_grades)
+            .chain(highest_accumulated_credit_grades);
+
+        let sum_credit = highest_grade_courses
+            .clone()
             .filter_map(|course_status| {
-                if let Some(Grade::Numeric(grade)) = course_status.grade {
-                    Some(grade)
+                if let Some(Grade::Numeric(_)) = course_status.grade {
+                    Some(course_status.course.credit)
                 } else {
                     None
                 }
-            });
-        let avg = grades.clone().sum::<u32>() as f64 / grades.count() as f64;
-        if avg.is_nan() {
-            0.0
-        } else {
-            avg
-        }
+            })
+            .sum::<f32>();
+
+        highest_grade_courses
+            .filter_map(|course_status| {
+                if let Some(Grade::Numeric(numeric_grade)) = course_status.grade {
+                    Some(numeric_grade as f32 * course_status.course.credit)
+                } else {
+                    None
+                }
+            })
+            .sum::<f32>()
+            / sum_credit
     }
 
     fn medicine_preclinical_course_repetitions(&self, catalog: &Catalog) -> Option<&CourseStatus> {
@@ -120,7 +193,7 @@ impl DegreeStatus {
 
     fn medicine_postprocessing(&mut self, catalog: &Catalog) {
         self.overflow_msgs
-            .push(match self.medicine_preclinical_avg() {
+            .push(match self.medicine_preclinical_avg(catalog) {
                 avg if avg < MEDICINE_PRECLINICAL_MIN_AVG => {
                     messages::medicine_preclinical_avg_error_msg(avg)
                 }
