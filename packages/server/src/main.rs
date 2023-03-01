@@ -1,11 +1,12 @@
 use crate::config::CONFIG;
 use actix_web::{
     web::{self, scope},
-    App, HttpServer,
+    App, HttpResponse, HttpServer,
 };
 use actix_web_lab::middleware::from_fn;
 use db::Db;
 use dotenvy::dotenv;
+use error::AppError;
 use middleware::{auth, cors, logger};
 use resources::user::Permissions;
 
@@ -35,6 +36,12 @@ async fn main() -> std::io::Result<()> {
             .app_data(auth::JwtDecoder::new())
             .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
+            .service(web::resource("/healthcheck").route(web::get().to(
+                |db: web::Data<Db>| async move {
+                    db.ping().await?;
+                    Result::<HttpResponse, AppError>::Ok(HttpResponse::Ok().finish())
+                },
+            )))
             .service(
                 // Global authentication scope
                 // All routes under this scope will be authenticated and authorized
