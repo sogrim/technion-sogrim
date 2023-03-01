@@ -5,8 +5,6 @@ import useUserState from "../../hooks/apiHooks/useUserState";
 import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
 import { UserRegistrationState } from "../../types/ui-types";
-import { AppStepper } from "../Banner/AppStepper";
-import Disclaimer from "../Banner/Disclaimer";
 import { Intro } from "../Intro/Intro";
 import { PagesTabs } from "./PagesTabs";
 
