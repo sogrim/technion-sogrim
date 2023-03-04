@@ -118,7 +118,7 @@ pub fn medicine_preclinical_avg_msg(avg: f32) -> String {
 }
 
 pub fn medicine_preclinical_course_repetitions_error_msg(course_status: &CourseStatus) -> String {
-    if course_status.times_repeated == 2 {
+    if course_status.times_repeated == 2 || course_status.times_repeated == 1 {
         format!(
             "פסילה: חזרת על הקורס \"{}\" פעמיים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת",
             course_status.course.name
