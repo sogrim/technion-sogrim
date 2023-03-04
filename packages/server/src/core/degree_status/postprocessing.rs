@@ -35,7 +35,7 @@ fn get_courses_of_rule_all(catalog: &Catalog) -> Vec<CourseId> {
 
 impl DegreeStatus {
     // This function returns a list of all courses with Some(grade) that belong to bank_name, sorted by grade in descending order.
-    fn get_ordered_courses_for_bank(&self, bank_name: &str) -> Vec<&CourseStatus> {
+    fn get_ordered_courses_for_bank_by_grade(&self, bank_name: &str) -> Vec<&CourseStatus> {
         let mut ordered_course_statuses = self
             .course_statuses
             .iter()
@@ -70,7 +70,7 @@ impl DegreeStatus {
             return vec![]
         };
 
-        self.get_ordered_courses_for_bank(bank_name)
+        self.get_ordered_courses_for_bank_by_grade(bank_name)
             .into_iter()
             .take_while(|course_status| {
                 let Some(Grade::Numeric(_)) = course_status.grade else {
@@ -168,25 +168,42 @@ impl DegreeStatus {
             / sum_credit
     }
 
-    fn medicine_preclinical_course_repetitions(&self, catalog: &Catalog) -> Option<&CourseStatus> {
-        self.course_statuses
-            .iter()
-            .filter(|course_status| {
-                course_status.course.is_medicine_preclinical()
-                    && get_courses_of_rule_all(catalog).contains(&course_status.course.id)
-            })
-            .find(|course_status| {
-                course_status.times_repeated >= MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT
-            })
+    fn medicine_preclinical_violate_course_repetitions(
+        &self,
+        catalog: &Catalog,
+    ) -> Option<&CourseStatus> {
+        let rule_all_courses = self.course_statuses.iter().filter(|course_status| {
+            get_courses_of_rule_all(catalog)
+                .contains(&course_status.r#type.clone().unwrap_or_default())
+        });
+
+        let mut all_medicine_courses = rule_all_courses.chain(
+            self.course_statuses
+                .iter()
+                .filter(|course_status| course_status.course.is_medicine_preclinical()),
+        );
+
+        all_medicine_courses.find(|course_status| {
+            course_status.times_repeated >= MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT
+                || (course_status.times_repeated
+                    == MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT - 1
+                    && !course_status.not_completed())
+        })
     }
 
     fn medicine_preclinical_total_repetitions(&self, catalog: &Catalog) -> usize {
-        self.course_statuses
-            .iter()
-            .filter(|course_status| {
-                course_status.course.is_medicine_preclinical()
-                    && get_courses_of_rule_all(catalog).contains(&course_status.course.id)
-            })
+        let rule_all_courses = self.course_statuses.iter().filter(|course_status| {
+            get_courses_of_rule_all(catalog)
+                .contains(&course_status.r#type.clone().unwrap_or_default())
+        });
+
+        let all_medicine_courses = rule_all_courses.chain(
+            self.course_statuses
+                .iter()
+                .filter(|course_status| course_status.course.is_medicine_preclinical()),
+        );
+
+        all_medicine_courses
             .map(|course_status| course_status.times_repeated)
             .sum()
     }
@@ -201,7 +218,7 @@ impl DegreeStatus {
             });
 
         if let Some(course_status_exceeded_repetitions_limit) =
-            self.medicine_preclinical_course_repetitions(catalog)
+            self.medicine_preclinical_violate_course_repetitions(catalog)
         {
             self.overflow_msgs
                 .push(messages::medicine_preclinical_course_repetitions_error_msg(

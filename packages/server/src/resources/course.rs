@@ -149,6 +149,10 @@ impl CourseStatus {
         self.state == Some(CourseState::Complete)
     }
 
+    pub fn not_completed(&self) -> bool {
+        self.state == Some(CourseState::NotComplete)
+    }
+
     pub fn credit(&self) -> Option<f32> {
         self.completed().then_some(self.course.credit)
     }
