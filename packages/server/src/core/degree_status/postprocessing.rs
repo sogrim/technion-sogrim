@@ -128,8 +128,7 @@ impl DegreeStatus {
 
     fn medicine_preclinical_avg(&self, catalog: &Catalog) -> f32 {
         let rule_all_courses = self.course_statuses.iter().filter(|course_status| {
-            get_courses_of_rule_all(catalog)
-                .contains(&course_status.r#type.clone().unwrap_or_default())
+            get_courses_of_rule_all(catalog).contains(&course_status.course.id)
         });
 
         let highest_sport_grades =
