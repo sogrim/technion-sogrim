@@ -5,6 +5,7 @@ use actix_web::{
     web::{Data, Json, Query},
     HttpMessage, HttpRequest, HttpResponse,
 };
+use bson::DateTime;
 
 use crate::{
     core::{degree_status::DegreeStatus, parser},
@@ -46,7 +47,24 @@ pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppEr
         ..Default::default()
     };
 
-    let updated_user = db.create_or_update::<User>(user).await?;
+    let mut updated_user = db.create_or_update::<User>(user).await?;
+
+    // Asynchronously update the user's last seen time
+    let mut user = updated_user.clone();
+    tokio::spawn(async move {
+        // Don't update the user's last seen time if they've already been seen in the last hour
+        const MILLIS_IN_HOUR: i64 = 3_600_000;
+        if let Some(last_seen) = user.last_seen {
+            if last_seen.timestamp_millis() + MILLIS_IN_HOUR > DateTime::now().timestamp_millis() {
+                return Result::<(), AppError>::Ok(());
+            }
+        }
+        user.last_seen = Some(DateTime::now());
+        db.update::<User>(user).await?;
+        Result::<(), AppError>::Ok(())
+    });
+    // Don't send the user's last seen time to the client
+    updated_user.last_seen = None;
 
     Ok(HttpResponse::Ok().json(updated_user))
 }
