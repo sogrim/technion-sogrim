@@ -14,6 +14,7 @@ const UserAppComp: React.FC = () => {
   const { data, isLoading, isError, error } = useUserState(userAuthToken);
   const {
     dataStore: { updateStoreUserDetails, updateStoreUserSettings },
+    uiStore: { computeUserRegistrationState },
   } = useStore();
 
   const theme = useTheme();
@@ -23,6 +24,7 @@ const UserAppComp: React.FC = () => {
     if (!isLoading && data) {
       updateStoreUserDetails(data.details);
       updateStoreUserSettings(data.settings);
+      computeUserRegistrationState(data.details);
       if (data.settings.dark_mode && theme.palette.mode !== DARK_MODE_THEME) {
         colorMode.toggleColorMode();
       }

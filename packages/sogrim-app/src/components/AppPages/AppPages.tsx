@@ -1,8 +1,6 @@
 import { Box, CircularProgress } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React from "react";
-import useUserState from "../../hooks/apiHooks/useUserState";
-import { useAuth } from "../../hooks/useAuth";
 import { useStore } from "../../hooks/useStore";
 import { UserRegistrationState } from "../../types/ui-types";
 import { Intro } from "../Intro/Intro";
@@ -10,29 +8,8 @@ import { PagesTabs } from "./PagesTabs";
 
 const AppPagesComp: React.FC = () => {
   const {
-    uiStore: { userRegistrationState, computeUserRegistrationState },
+    uiStore: { userRegistrationState },
   } = useStore();
-
-  const { userAuthToken } = useAuth();
-  const { data, isLoading, refetch } = useUserState(userAuthToken);
-
-  React.useEffect(() => {
-    const refreshStepper = async () => {
-      if (data && !isLoading) {
-        const { data: newData } = await refetch();
-        if (newData) {
-          computeUserRegistrationState(newData.details);
-        }
-      }
-    };
-    refreshStepper();
-  }, [
-    computeUserRegistrationState,
-    data,
-    isLoading,
-    refetch,
-    userRegistrationState,
-  ]);
 
   return (
     <Box sx={sxPages}>
