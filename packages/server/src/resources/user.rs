@@ -1,6 +1,6 @@
 use super::catalog::DisplayCatalog;
 use crate::{core::degree_status::DegreeStatus, db::Resource, impl_from_request};
-use bson::{doc, Document};
+use bson::{doc, DateTime, Document};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -22,6 +22,8 @@ pub struct User {
     pub sub: String,
     pub details: UserDetails,
     pub settings: UserSettings,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_seen: Option<DateTime>,
 }
 
 impl Resource for User {
