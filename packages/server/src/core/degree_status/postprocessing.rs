@@ -186,7 +186,7 @@ impl DegreeStatus {
             course_status.times_repeated >= MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT
                 || (course_status.times_repeated
                     == MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT - 1
-                    && !course_status.not_completed())
+                    && course_status.not_completed())
         })
     }
 
