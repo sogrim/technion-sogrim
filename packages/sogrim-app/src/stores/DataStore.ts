@@ -5,7 +5,9 @@ import {
   CourseState,
   CourseStatus,
   UserDetails,
+  UserPermissions,
   UserSettings,
+  UserState,
 } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
@@ -24,10 +26,18 @@ const isCourseRowEqualToCourseStatus = (
 export class DataStore {
   public userDetails: UserDetails = {} as UserDetails;
   public userSettings: UserSettings = {} as UserSettings;
+  public userPermissions: UserPermissions = {} as UserPermissions;
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
   }
+
+  initiateUser = (userState: UserState) => {
+    this.userDetails = userState.details;
+    this.userSettings = userState.settings;
+    this.userPermissions = userState.permissions;
+    this.rootStore.uiStore.setPermissionMode(this.userPermissions);
+  };
 
   updateStoreUserDetails = (newUserDetails: UserDetails) => {
     this.userDetails = newUserDetails;

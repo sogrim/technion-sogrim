@@ -13,7 +13,7 @@ const UserAppComp: React.FC = () => {
   const { userAuthToken } = useAuth();
   const { data, isLoading, isError, error } = useUserState(userAuthToken);
   const {
-    dataStore: { updateStoreUserDetails, updateStoreUserSettings },
+    dataStore: { initiateUser },
     uiStore: { computeUserRegistrationState },
   } = useStore();
 
@@ -22,22 +22,19 @@ const UserAppComp: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && data) {
-      updateStoreUserDetails(data.details);
-      updateStoreUserSettings(data.settings);
+      initiateUser(data);
       computeUserRegistrationState(data.details);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, isLoading, isError, error]);
+
+  useEffect(() => {
+    if (!isLoading && data) {
       if (data.settings.dark_mode && theme.palette.mode !== DARK_MODE_THEME) {
         colorMode.toggleColorMode();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    data,
-    updateStoreUserDetails,
-    updateStoreUserSettings,
-    isLoading,
-    isError,
-    error,
-  ]);
+  });
 
   return (
     <>

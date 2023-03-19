@@ -16,7 +16,7 @@ const HeaderComp: React.FC<HeaderProps> = () => {
   const { isAuthenticated } = useAuth();
 
   const {
-    uiStore: { currentPage, setPage },
+    uiStore: { currentPage, setPage, permissionMode },
   } = useStore();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -38,7 +38,7 @@ const HeaderComp: React.FC<HeaderProps> = () => {
     <>
       <AppBar position="fixed" sx={sxAppBar}>
         <Toolbar variant="dense">
-          <AppTitle />
+          <AppTitle permission={permissionMode} />
           <Box sx={{ flexGrow: 1 }} />
           <Box
             sx={{
