@@ -6,7 +6,7 @@ use crate::{
     middleware::auth::Sub,
 };
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpMessage, HttpRequest};
-use bson::{doc, Document};
+use bson::{doc, DateTime, Document};
 use serde::{Deserialize, Serialize};
 use std::{future::Future, pin::Pin};
 
@@ -38,6 +38,8 @@ pub struct User {
     pub permissions: Permissions,
     pub details: UserDetails,
     pub settings: UserSettings,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_seen: Option<DateTime>,
 }
 
 impl Resource for User {
