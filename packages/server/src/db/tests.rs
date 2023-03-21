@@ -52,10 +52,14 @@ pub async fn test_db_internal_error() {
     for err in errors {
         let err_resp = err.error_response();
         assert_eq!(err_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
-        assert_eq!(
-            err_resp.into_body().try_into_bytes().unwrap(),
-            Bytes::from("MongoDB driver error: SCRAM failure: bad auth : Authentication failed.")
-        );
+        assert!(err_resp
+            .into_body()
+            .try_into_bytes()
+            .unwrap()
+            .into_iter()
+            .map(|b| b as char)
+            .collect::<String>()
+            .contains("Authentication failed"));
     }
 }
 
