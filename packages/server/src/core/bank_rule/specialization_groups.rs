@@ -212,18 +212,48 @@ impl<'a> BankRuleHandler<'a> {
 
         let credit_info = self.iterate_course_list();
         let mut completed_courses = Vec::new();
-        credit_info.handled_courses.iter().for_each(
+
+        let find_replacement =
+            |replacements: &HashMap<String, Vec<String>>, course_id: &CourseId| -> Option<String> {
+                replacements
+                    .iter()
+                    .find_map(|(course_id_in_sg, course_id_in_sg_replacements)| {
+                        if course_id_in_sg_replacements.contains(course_id) {
+                            Some(course_id_in_sg.clone())
+                        } else {
+                            None
+                        }
+                    })
+            };
+
+        // hotfix for cases where the user has a course which is a replacement for a course in the specialization group bank and in another bank.
+        // https://github.com/sogrim/technion-sogrim/issues/214#issuecomment-1478566102
+        let mut handled_courses = HashMap::new();
+        credit_info.handled_courses.into_iter().for_each(
             |(course_id_in_list, course_id_done_by_user)| {
-                if let Some(course_status) = self
-                    .degree_status
-                    .get_mut_course_status(course_id_done_by_user)
+                if course_id_in_list != course_id_done_by_user {
+                    handled_courses.insert(course_id_in_list, course_id_done_by_user);
+                } else if let Some(course_id_in_sg) =
+                    find_replacement(self.catalog_replacements, &course_id_in_list)
+                {
+                    handled_courses.insert(course_id_in_sg, course_id_in_list);
+                } else {
+                    handled_courses.insert(course_id_in_list, course_id_done_by_user);
+                }
+            },
+        );
+
+        handled_courses
+            .iter()
+            .for_each(|(course_id_in_list, course_id_done_by_user)| {
+                if let Some(course_status) =
+                    self.degree_status.get_course_status(course_id_done_by_user)
                 {
                     if course_status.completed() {
                         completed_courses.push(course_id_in_list.clone());
                     }
                 }
-            },
-        );
+            });
 
         let valid_assignment_for_courses = run_exhaustive_search(sgs, completed_courses);
         let complete_sgs_indices =
@@ -233,8 +263,8 @@ impl<'a> BankRuleHandler<'a> {
         valid_assignment_for_courses
             .into_iter()
             .for_each(|(course_id, sg_index)| {
-                // hotfix for replacements of courses in specialization groups
-                let course_id_done_by_user = credit_info.handled_courses.get(&course_id);
+                // hotfix - see comment above
+                let course_id_done_by_user = handled_courses.get(&course_id);
                 let Some(course_id_done_by_user) = course_id_done_by_user else {
                     // shouldn't get here
                     return;
