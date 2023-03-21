@@ -237,6 +237,10 @@ impl<'a> BankRuleHandler<'a> {
                     find_replacement(self.catalog_replacements, &course_id_in_list)
                 {
                     handled_courses.insert(course_id_in_sg, course_id_in_list);
+                } else if let Some(course_id_in_sg) =
+                    find_replacement(self.common_replacements, &course_id_in_list)
+                {
+                    handled_courses.insert(course_id_in_sg, course_id_in_list);
                 } else {
                     handled_courses.insert(course_id_in_list, course_id_done_by_user);
                 }
