@@ -287,7 +287,6 @@ impl<'a> BankRuleHandler<'a> {
             completed_groups.push(sg_name.clone());
         });
 
-        // credit_info.sum_credit
-        0.0
+        credit_info.sum_credit
     }
 }
