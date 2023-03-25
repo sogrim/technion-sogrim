@@ -218,11 +218,9 @@ impl<'a> BankRuleHandler<'a> {
                 replacements
                     .iter()
                     .find_map(|(course_id_in_sg, course_id_in_sg_replacements)| {
-                        if course_id_in_sg_replacements.contains(course_id) {
-                            Some(course_id_in_sg.clone())
-                        } else {
-                            None
-                        }
+                        course_id_in_sg_replacements
+                            .contains(course_id)
+                            .then(|| course_id_in_sg.clone())
                     })
             };
 
