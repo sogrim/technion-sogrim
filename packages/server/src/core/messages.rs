@@ -108,7 +108,7 @@ pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
 
 pub fn medicine_preclinical_avg_error_msg(avg: f32) -> String {
     format!(
-        "פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. המשך הלימודים מותנה בשמירה על ממוצע גבוה מ-{}.",
+        "פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. המשך הלימודים מותנה בשמירה על ממוצע גבוה מ-{}. יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.",
         avg, MEDICINE_PRECLINICAL_MIN_AVG
     )
 }
@@ -117,17 +117,28 @@ pub fn medicine_preclinical_avg_msg(avg: f32) -> String {
     format!("ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}", avg)
 }
 
-pub fn medicine_preclinical_course_repetitions_error_msg(course_status: &CourseStatus) -> String {
-    if course_status.times_repeated == 2 || course_status.times_repeated == 1 {
-        format!(
-            "פסילה: חזרת על הקורס \"{}\" פעמיים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת",
-            course_status.course.name
-        )
+pub fn medicine_preclinical_course_repetitions_error_msg(
+    course_statuses: Vec<&CourseStatus>,
+) -> String {
+    if course_statuses.len() == 1 {
+        if course_statuses[0].times_repeated == 1 {
+            format!(
+                "פסילה: חזרת על הקורס \"{}\", יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.",
+                course_statuses[0].course.name
+            )
+        } else {
+            format!(
+                "פסילה: נכשלת בקורס \"{}\", יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.",
+                course_statuses[0].course.name
+            )
+        }
     } else {
-        format!(
-            "פסילה: חזרת על הקורס \"{}\" {} פעמים. לא ניתן לחזור על קורס של הפקולטה לרפואה יותר מפעם אחת",
-            course_status.course.name, course_status.times_repeated
-        )
+        let mut msg = "פסילה: נכשלת בקורסים: ".to_string();
+        course_statuses.iter().for_each(|course_status| {
+            msg += &format!("\"{}\", ", course_status.course.name);
+        });
+        msg += " יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.";
+        msg
     }
 }
 

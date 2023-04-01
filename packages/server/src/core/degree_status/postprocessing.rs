@@ -10,7 +10,7 @@ use super::DegreeStatus;
 
 pub const TECHNICAL_ENGLISH_ADVANCED_B: &str = "324033";
 pub const MEDICINE_PRECLINICAL_MIN_AVG: f32 = 75.0;
-pub const MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT: usize = 2;
+pub const MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT: usize = 1;
 pub const MEDICINE_PRECLINICAL_TOTAL_REPETITIONS_LIMIT: usize = 3;
 const EXEMPT_COURSES_COUNT_DEMAND: usize = 2;
 const ADVANCED_B_COURSES_COUNT_DEMAND: usize = 1;
@@ -170,24 +170,28 @@ impl DegreeStatus {
     fn medicine_preclinical_violate_course_repetitions(
         &self,
         catalog: &Catalog,
-    ) -> Option<&CourseStatus> {
+    ) -> Vec<&CourseStatus> {
         let rule_all_courses = self.course_statuses.iter().filter(|course_status| {
             get_courses_of_rule_all(catalog)
                 .contains(&course_status.r#type.clone().unwrap_or_default())
         });
 
-        let mut all_medicine_courses = rule_all_courses.chain(
+        let all_medicine_courses = rule_all_courses.chain(
             self.course_statuses
                 .iter()
                 .filter(|course_status| course_status.course.is_medicine_preclinical()),
         );
 
-        all_medicine_courses.find(|course_status| {
-            course_status.times_repeated >= MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT
-                || (course_status.times_repeated
-                    == MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT - 1
-                    && course_status.not_completed())
-        })
+        all_medicine_courses
+            .filter(|course_status| {
+                course_status.times_repeated >= MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT
+                    || (course_status.times_repeated
+                        == MEDICINE_PRECLINICAL_COURSE_REPETITIONS_LIMIT - 1
+                        && course_status.not_completed()
+                        // Ignore courses that were added by the algorithm for rule all
+                        && course_status.semester.is_some())
+            })
+            .collect()
     }
 
     fn medicine_preclinical_total_repetitions(&self, catalog: &Catalog) -> usize {
@@ -216,12 +220,12 @@ impl DegreeStatus {
                 avg => messages::medicine_preclinical_avg_msg(avg),
             });
 
-        if let Some(course_status_exceeded_repetitions_limit) =
-            self.medicine_preclinical_violate_course_repetitions(catalog)
-        {
+        let preclinical_violate_course_repetitions =
+            self.medicine_preclinical_violate_course_repetitions(catalog);
+        if !preclinical_violate_course_repetitions.is_empty() {
             self.overflow_msgs
                 .push(messages::medicine_preclinical_course_repetitions_error_msg(
-                    course_status_exceeded_repetitions_limit,
+                    preclinical_violate_course_repetitions,
                 ));
         }
 
