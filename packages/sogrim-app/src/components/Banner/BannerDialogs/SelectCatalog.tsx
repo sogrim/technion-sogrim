@@ -19,6 +19,7 @@ import { Catalog, Faculty } from "../../../types/data-types";
 import useUpdateUserCatalog from "../../../hooks/apiHooks/useUpdateUserCatalog";
 import { useStore } from "../../../hooks/useStore";
 import { transalteFacultyName } from "../../Intro/IntroSteps/ChooseFaculty/faculty-content";
+import { catalogsLinks } from "../../Intro/IntroSteps/ChooseCatalog/CatalogsLinks";
 
 export interface SelectCatalogProps {
   handleClose: () => void;
@@ -82,24 +83,7 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
           קישורים לאתר לימודי הסמכה לעיון בקטלוגי הלימודים לפי שנים:
         </DialogContentText>
         <Box sx={{ display: "flex", justifyContent: "space-around" }}>
-          {[
-            {
-              link: "https://ugportal.technion.ac.il/קטלוג-לימודים-תשף-2019-20/",
-              year: "תש”ף 2019/20",
-            },
-            {
-              link: "https://ugportal.technion.ac.il/קטלוג-לימודים-שנה-נוכחית/",
-              year: "תשפ”א 2020/21",
-            },
-            {
-              link: "https://ugportal.technion.ac.il/קטלוג-לימודים-תשפב-2021-22/",
-              year: "תשפ”ב 2021/22",
-            },
-            {
-              link: "https://ugportal.technion.ac.il/קטלוג-לימודים-תשפג-2022-23/",
-              year: "תשפ”ג 2022/23",
-            },
-          ].map((catalogs) => (
+          {catalogsLinks.map((catalogs) => (
             <Link
               key={catalogs.year}
               color={(theme: Theme) => theme.palette.secondary.main}
