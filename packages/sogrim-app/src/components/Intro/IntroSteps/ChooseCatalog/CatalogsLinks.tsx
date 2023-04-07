@@ -1,13 +1,13 @@
 import React from "react";
 import { Box, Link, Theme } from "@mui/material";
 
-const catalogsLinks = [
+export const catalogsLinks = [
   {
     link: "https://ugportal.technion.ac.il/קטלוג-לימודים-תשף-2019-20/",
     year: "תש”ף 2019/20",
   },
   {
-    link: "https://ugportal.technion.ac.il/קטלוג-לימודים-שנה-נוכחית/",
+    link: "https://ugportal.technion.ac.il/קטלוג-לימודים-תשפא-2020-21/",
     year: "תשפ”א 2020/21",
   },
   {
