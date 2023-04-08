@@ -17,7 +17,7 @@ export const getCatalogs = async (
   if (chosenFaculty) {
     params = { faculty: chosenFaculty };
   }
-  return axiosGet(authToken, `${API_URL}/catalogs`, params);
+  return axiosGet(authToken, `${API_URL}/students/catalogs`, params);
 };
 
 export const getCourseByFilter = async (

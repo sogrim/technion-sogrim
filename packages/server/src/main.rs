@@ -48,7 +48,7 @@ async fn main() -> std::io::Result<()> {
                 scope("")
                     .wrap(from_fn(auth::authenticate))
                     .service(
-                        scope("")
+                        scope("/students")
                             .app_data(web::Data::new(Permissions::Student))
                             .service(api::students::get_catalogs)
                             .service(api::students::login)
@@ -60,12 +60,12 @@ async fn main() -> std::io::Result<()> {
                             .service(api::students::update_settings),
                     )
                     .service(
-                        scope("")
+                        scope("/admins")
                             .app_data(web::Data::new(Permissions::Admin))
                             .service(api::admins::parse_courses_and_compute_degree_status),
                     )
                     .service(
-                        scope("")
+                        scope("/owners")
                             .app_data(web::Data::new(Permissions::Owner))
                             .service(api::owners::get_all_courses)
                             .service(api::owners::get_course_by_id)
