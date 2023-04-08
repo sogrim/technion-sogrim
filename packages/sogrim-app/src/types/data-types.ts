@@ -88,3 +88,10 @@ export type UserState = {
   settings: UserSettings;
   permissions: UserPermissions;
 };
+
+export type ComputeDegreeStatusPayload = {
+  catalogId: {
+    $oid: string;
+  };
+  gradeSheetAsString: string;
+};
