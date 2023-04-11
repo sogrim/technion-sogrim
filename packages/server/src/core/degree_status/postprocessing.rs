@@ -214,6 +214,7 @@ impl DegreeStatus {
     fn medicine_postprocessing(&mut self, catalog: &Catalog) {
         self.overflow_msgs
             .push(match self.medicine_preclinical_avg(catalog) {
+                avg if avg.is_nan() => messages::medicine_preclinical_avg_msg(0.),
                 avg if avg < MEDICINE_PRECLINICAL_MIN_AVG => {
                     messages::medicine_preclinical_avg_error_msg(avg)
                 }
