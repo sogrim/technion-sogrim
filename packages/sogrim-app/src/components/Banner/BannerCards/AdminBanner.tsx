@@ -8,10 +8,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
   MenuItem,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { observer } from "mobx-react-lite";
 import React from "react";
 import useCatalogs from "../../../hooks/apiHooks/useCatalogs";
@@ -23,6 +26,7 @@ import {
   ComputeDegreeStatusPayload,
   Faculty,
 } from "../../../types/data-types";
+import { BrowsersSupportContent } from "../../Intro/IntroSteps/ImportGradeSheet/HowToImport";
 
 const AdminBannerComp: React.FC = () => {
   const [catalogs, setCatalogs] = React.useState<Catalog[]>([] as Catalog[]);
@@ -111,14 +115,21 @@ const AdminBannerComp: React.FC = () => {
             >
               חישוב סגירת תואר
             </Typography>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              size="small"
-            >
-              חשב
-            </Button>
+            <Box sx={{ gap: 0.5, display: "flex" }}>
+              <Tooltip title={<BrowsersSupportContent />}>
+                <IconButton size="small">
+                  <InfoOutlinedIcon />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={isLoading}
+                size="small"
+              >
+                חשב
+              </Button>
+            </Box>
           </Box>
 
           <TextField

@@ -34,6 +34,10 @@ export class UIStore {
     return this.permissionMode === UserPermissions.Student;
   }
 
+  get emptyStateAdminMode(): boolean {
+    return this.rootStore.dataStore.userDetails?.catalog === null;
+  }
+
   setPermissionMode = (userPermissions: UserPermissions) => {
     this.permissionMode = userPermissions;
   };
@@ -71,8 +75,14 @@ export class UIStore {
   };
 
   computeUserRegistrationState = (
-    userDetails: UserDetails
+    userDetails: UserDetails,
+    adminMode: boolean = false
   ): UserRegistrationState => {
+    if (adminMode) {
+      this.userRegistrationState = UserRegistrationState.Ready;
+      return UserRegistrationState.Ready;
+    }
+
     const degreeStatus = userDetails?.degree_status;
     if (
       degreeStatus?.course_bank_requirements &&
