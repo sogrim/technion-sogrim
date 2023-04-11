@@ -2,7 +2,7 @@ import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { useStore } from "../../../hooks/useStore";
-import { UserDetails } from "../../../types/data-types";
+import { UserDetails, UserPermissions } from "../../../types/data-types";
 import { FormModal } from "../../Common/FormModal";
 import { SelectCatalog } from "../BannerDialogs/SelectCatalog";
 import { ComputeInProgressToggle } from "./ComputeInProgressToggle";
@@ -21,6 +21,7 @@ const getCreditOfCompleteCourses = (userDetails: UserDetails) =>
 const DegreeMainStatusComp: React.FC = () => {
   const {
     dataStore: { userDetails },
+    uiStore: { studentMode },
   } = useStore();
 
   const [catalogName, setCatalogName] = useState<string>(
@@ -42,7 +43,6 @@ const DegreeMainStatusComp: React.FC = () => {
     userDetails ? userDetails.compute_in_progress : false
   );
 
-  // TODO: loading? or loading to all the banner!
   useEffect(() => {
     if (userDetails) {
       const studentTotal = userDetails?.degree_status?.total_credit || 0;
@@ -73,10 +73,12 @@ const DegreeMainStatusComp: React.FC = () => {
           <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
             סטטוס תואר
           </Typography>
-          <ComputeInProgressToggle
-            computeInProgress={computeInProgress}
-            setComputeInProgress={setComputeInProgress}
-          />
+          {studentMode ? (
+            <ComputeInProgressToggle
+              computeInProgress={computeInProgress}
+              setComputeInProgress={setComputeInProgress}
+            />
+          ) : null}
         </Box>
         <DegreeStatusBar
           {...{
@@ -92,6 +94,7 @@ const DegreeMainStatusComp: React.FC = () => {
           sx={{ display: "flex", justifyContent: "center" }}
           size="small"
           onClick={() => setCatalogModalOpen(true)}
+          disabled={!studentMode}
         >
           {catalogName}
         </Button>

@@ -21,6 +21,7 @@ const SemesterTabsComp = () => {
       endGameLoading,
       userRegistrationState,
       setErrorMsg,
+      studentMode,
     },
     dataStore: {
       userDetails,
@@ -156,11 +157,13 @@ const SemesterTabsComp = () => {
                 : "flex-end",
           }}
         >
-          <SemesterOptionsButton
-            allSemesters={allSemesters}
-            handleAddSemester={addNewSemester}
-            handleDeleteSemester={deleteSemester}
-          />
+          {studentMode ? (
+            <SemesterOptionsButton
+              allSemesters={allSemesters}
+              handleAddSemester={addNewSemester}
+              handleDeleteSemester={deleteSemester}
+            />
+          ) : null}
         </Box>
       </Box>
       {endGameLoading ? (

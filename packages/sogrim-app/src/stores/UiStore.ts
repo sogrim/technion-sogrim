@@ -30,6 +30,10 @@ export class UIStore {
     }
   };
 
+  get studentMode(): boolean {
+    return this.permissionMode === UserPermissions.Student;
+  }
+
   setPermissionMode = (userPermissions: UserPermissions) => {
     this.permissionMode = userPermissions;
   };
