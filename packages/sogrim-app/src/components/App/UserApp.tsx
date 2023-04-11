@@ -8,6 +8,7 @@ import { useStore } from "../../hooks/useStore";
 import { DARK_MODE_THEME } from "../../themes/constants";
 import { Layout } from "../Layout/Layout";
 import { ColorModeContext } from "./App";
+import { UserPermissions } from "../../types/data-types";
 
 const UserAppComp: React.FC = () => {
   const { userAuthToken } = useAuth();
@@ -23,7 +24,9 @@ const UserAppComp: React.FC = () => {
   useEffect(() => {
     if (!isLoading && data) {
       initiateUser(data);
-      computeUserRegistrationState(data.details);
+
+      const adminMode = data.permissions === UserPermissions.Admin;
+      computeUserRegistrationState(data.details, adminMode);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isLoading, isError, error]);

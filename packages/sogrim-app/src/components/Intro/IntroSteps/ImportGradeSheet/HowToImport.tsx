@@ -67,7 +67,7 @@ const TextWithIcon: React.FC<TextWithIconProps> = ({ text, src, alt }) => {
   );
 };
 
-const BrowsersSupportContent = () => {
+export const BrowsersSupportContent = () => {
   return (
     <Typography component={"span"}>
       <ul>
