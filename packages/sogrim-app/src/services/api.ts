@@ -5,6 +5,8 @@ import {
   Catalog,
   Course,
   UserSettings,
+  ComputeDegreeStatusPayload,
+  DegreeStatus,
 } from "../types/data-types";
 import { API_URL } from "./api-url";
 
@@ -16,7 +18,7 @@ export const getCatalogs = async (
   if (chosenFaculty) {
     params = { faculty: chosenFaculty };
   }
-  return axiosGet(authToken, `${API_URL}/catalogs`, params);
+  return axiosGet(authToken, `${API_URL}/students/catalogs`, params);
 };
 
 export const getCourseByFilter = async (
@@ -79,6 +81,17 @@ export const putUserSettings = async (
     authToken,
     `${API_URL}/students/settings`,
     updatedUserSettings
+  );
+};
+
+export const postParseCoursesAndComputeDegreeStatus = async (
+  authToken: string,
+  parseComputePayload: ComputeDegreeStatusPayload
+): Promise<DegreeStatus> => {
+  return axiosPost(
+    authToken,
+    `${API_URL}/admins/parse-compute`,
+    parseComputePayload
   );
 };
 

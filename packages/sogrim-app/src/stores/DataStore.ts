@@ -2,10 +2,14 @@ import { makeAutoObservable } from "mobx";
 import { RowData } from "../components/Pages/SemestersPage/SemesterTabsConsts";
 import {
   ALL,
+  Catalog,
   CourseState,
   CourseStatus,
+  DegreeStatus,
   UserDetails,
+  UserPermissions,
   UserSettings,
+  UserState,
 } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
@@ -24,13 +28,25 @@ const isCourseRowEqualToCourseStatus = (
 export class DataStore {
   public userDetails: UserDetails = {} as UserDetails;
   public userSettings: UserSettings = {} as UserSettings;
+  public userPermissions: UserPermissions = {} as UserPermissions;
 
   constructor(public readonly rootStore: RootStore) {
     makeAutoObservable(this, { rootStore: false });
   }
 
-  updateStoreUserDetails = (newUserDetails: UserDetails) => {
-    this.userDetails = newUserDetails;
+  initiateUser = (userState: UserState) => {
+    this.userDetails = userState.details;
+    this.userSettings = userState.settings;
+    this.userPermissions = userState.permissions;
+    this.rootStore.uiStore.setPermissionMode(this.userPermissions);
+  };
+
+  updateStoreDegreeStatus = (newDegreeStatus: DegreeStatus) => {
+    this.userDetails.degree_status = newDegreeStatus;
+  };
+
+  updateStoreCatalog = (newCatalog: Catalog) => {
+    this.userDetails.catalog = newCatalog;
   };
 
   updateStoreUserSettings = (newUserSettings: UserSettings) => {

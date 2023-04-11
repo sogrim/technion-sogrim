@@ -17,7 +17,7 @@ pub struct ComputeDegreeStatusPayload {
     pub grade_sheet_as_string: String,
 }
 
-#[post("/admins/parse-compute")]
+#[post("/parse-compute")]
 pub async fn parse_courses_and_compute_degree_status(
     _admin: User,
     payload: Json<ComputeDegreeStatusPayload>,
