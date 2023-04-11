@@ -26,7 +26,13 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       deleteCourseInUserDetails,
       insertCourseInUserDetails,
     },
-    uiStore: { errorMsg, setErrorMsg, rowToDeleteId, setRowToDelete },
+    uiStore: {
+      errorMsg,
+      setErrorMsg,
+      rowToDeleteId,
+      setRowToDelete,
+      studentMode,
+    },
   } = useStore();
 
   const { userAuthToken } = useAuth();
@@ -201,7 +207,7 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
       <Box sx={{ mb: 4, marginLeft: 4, marginRight: 4, width: "100%" }}>
         <DataGrid
           rows={tableRows}
-          columns={columns(semester === null)}
+          columns={columns(semester === null, studentMode)}
           localeText={heIL.components.MuiDataGrid.defaultProps.localeText}
           getRowId={(row) => row.courseNumber}
           autoHeight
@@ -213,22 +219,24 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
         />
       </Box>
 
-      <Box sx={{ marginBottom: 10 }}>
-        {!addRowToggle ? (
-          <Button
-            variant="outlined"
-            onClick={() => setAddRowToggle(!addRowToggle)}
-          >
-            הוסף קורס חדש
-          </Button>
-        ) : (
-          <AddNewRow
-            handleAddClicked={handleAddClicked}
-            setAddRowToggle={setAddRowToggle}
-            isSemester0={!semester}
-          />
-        )}
-      </Box>
+      {studentMode ? (
+        <Box sx={{ marginBottom: 10 }}>
+          {!addRowToggle ? (
+            <Button
+              variant="outlined"
+              onClick={() => setAddRowToggle(!addRowToggle)}
+            >
+              הוסף קורס חדש
+            </Button>
+          ) : (
+            <AddNewRow
+              handleAddClicked={handleAddClicked}
+              setAddRowToggle={setAddRowToggle}
+              isSemester0={!semester}
+            />
+          )}
+        </Box>
+      ) : null}
       <ErrorToast msg={errorMsg} />
     </Box>
   );
