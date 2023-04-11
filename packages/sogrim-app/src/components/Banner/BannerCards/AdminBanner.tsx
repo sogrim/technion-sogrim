@@ -26,10 +26,11 @@ import {
 
 const AdminBannerComp: React.FC = () => {
   const [catalogs, setCatalogs] = React.useState<Catalog[]>([] as Catalog[]);
+
   const [selectedCatalog, setSelectedCatalog] =
     React.useState<Catalog | null>();
 
-  const [ugText, setUgText] = React.useState<string | null>();
+  const [ugText, setUgText] = React.useState<string | null>("");
 
   const [errorModalOpen, setErrorModalOpen] = React.useState(false);
 
@@ -121,6 +122,7 @@ const AdminBannerComp: React.FC = () => {
           </Box>
 
           <TextField
+            value={selectedCatalog?.name || ""}
             select
             label="קטלוג לימודים"
             onChange={(e) =>
