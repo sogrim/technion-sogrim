@@ -3,6 +3,11 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   MenuItem,
   TextField,
   Typography,
@@ -26,10 +31,21 @@ const AdminBannerComp: React.FC = () => {
 
   const [ugText, setUgText] = React.useState<string | null>();
 
+  const [errorModalOpen, setErrorModalOpen] = React.useState(false);
+
+  const openErrorModal = () => {
+    setErrorModalOpen(true);
+  };
+
+  const closeErrorModal = () => {
+    setErrorModalOpen(false);
+  };
+
   const { userAuthToken } = useAuth();
 
   const {
-    dataStore: { updateStoreUserDetails },
+    dataStore: { updateStoreDegreeStatus, updateStoreCatalog },
+    uiStore: { endGameRefetch },
   } = useStore();
 
   const { data: catalogsData, isLoading: catalogsIsLoading } = useCatalogs(
@@ -48,9 +64,19 @@ const AdminBannerComp: React.FC = () => {
 
       mutate(payload, {
         onSuccess: (data) => {
-          updateStoreUserDetails(data);
+          updateStoreDegreeStatus(data);
+          updateStoreCatalog(
+            catalogsData?.find(
+              (catalog) => catalog._id.$oid === selectedCatalog?._id.$oid
+            )!
+          );
+          endGameRefetch();
+        },
+        onError: (error) => {
+          openErrorModal();
         },
       });
+      setUgText("");
     }
   };
 
@@ -65,61 +91,86 @@ const AdminBannerComp: React.FC = () => {
     }
   }, [catalogsData, catalogsIsLoading]);
 
-  console.log("ugText", ugText);
-
   return (
-    <Card sx={{ width: 375, maxHeight: 150 }}>
-      <CardContent>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 1,
-          }}
-        >
-          <Typography sx={{ fontSize: 18 }} color="text.secondary" gutterBottom>
-            חישוב סגירת תואר
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={isLoading}
+    <>
+      <Card sx={{ width: 375, maxHeight: 150 }}>
+        <CardContent>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 1,
+            }}
+          >
+            <Typography
+              sx={{ fontSize: 18 }}
+              color="text.secondary"
+              gutterBottom
+            >
+              חישוב סגירת תואר
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={isLoading}
+              size="small"
+            >
+              חשב
+            </Button>
+          </Box>
+
+          <TextField
+            select
+            label="קטלוג לימודים"
+            onChange={(e) =>
+              setSelectedCatalog(
+                catalogs.find((catalog) => catalog.name === e.target.value)
+              )
+            }
+            sx={{ width: "100%", marginBottom: 1 }}
             size="small"
           >
-            חשב
+            {catalogs.map((catalog) => (
+              <MenuItem key={catalog._id.$oid} value={catalog.name}>
+                {catalog.name}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            label="גיליון ציונים"
+            name="gradeSheetAsString"
+            multiline
+            maxRows={1}
+            sx={{ width: "100%", marginBottom: 0 }}
+            size="small"
+            onChange={handleChangeTextField}
+            value={ugText}
+          />
+        </CardContent>
+      </Card>
+      <Dialog
+        open={errorModalOpen}
+        onClose={closeErrorModal}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          שגיאה בחישוב סגירת התואר
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            לא הצלחנו לעבד את גיליון הציונים. אנא נסו שנית
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeErrorModal} color="primary" autoFocus>
+            המשך
           </Button>
-        </Box>
-
-        <TextField
-          select
-          label="קטלוג לימודים"
-          onChange={(e) =>
-            setSelectedCatalog(
-              catalogs.find((catalog) => catalog.name === e.target.value)
-            )
-          }
-          sx={{ width: "100%", marginBottom: 1 }}
-          size="small"
-        >
-          {catalogs.map((catalog) => (
-            <MenuItem key={catalog._id.$oid} value={catalog.name}>
-              {catalog.name}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          label="גיליון ציונים"
-          name="gradeSheetAsString"
-          multiline
-          maxRows={1}
-          sx={{ width: "100%", marginBottom: 0 }}
-          size="small"
-          onChange={handleChangeTextField}
-        />
-      </CardContent>
-    </Card>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

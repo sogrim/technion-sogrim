@@ -2,8 +2,10 @@ import { makeAutoObservable } from "mobx";
 import { RowData } from "../components/Pages/SemestersPage/SemesterTabsConsts";
 import {
   ALL,
+  Catalog,
   CourseState,
   CourseStatus,
+  DegreeStatus,
   UserDetails,
   UserPermissions,
   UserSettings,
@@ -39,8 +41,12 @@ export class DataStore {
     this.rootStore.uiStore.setPermissionMode(this.userPermissions);
   };
 
-  updateStoreUserDetails = (newUserDetails: UserDetails) => {
-    this.userDetails = newUserDetails;
+  updateStoreDegreeStatus = (newDegreeStatus: DegreeStatus) => {
+    this.userDetails.degree_status = newDegreeStatus;
+  };
+
+  updateStoreCatalog = (newCatalog: Catalog) => {
+    this.userDetails.catalog = newCatalog;
   };
 
   updateStoreUserSettings = (newUserSettings: UserSettings) => {

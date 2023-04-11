@@ -6,7 +6,6 @@ export function useParseCompute(authToken: any) {
   return useMutation(
     "userState",
     (parseComputePayload: ComputeDegreeStatusPayload) =>
-      postParseCoursesAndComputeDegreeStatus(authToken, parseComputePayload),
-    { useErrorBoundary: true }
+      postParseCoursesAndComputeDegreeStatus(authToken, parseComputePayload)
   );
 }

@@ -63,7 +63,6 @@ export const SelectCatalog: React.FC<SelectCatalogProps> = ({
 
   const modalTitle = React.useMemo(() => {
     const faculty = userDetails?.catalog?.faculty as unknown;
-    console.log(faculty as Faculty);
 
     const facultyName = transalteFacultyName.get(faculty as Faculty);
     return "בחר קטלוג - " + facultyName;

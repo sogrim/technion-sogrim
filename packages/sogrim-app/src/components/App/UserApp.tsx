@@ -30,7 +30,7 @@ const UserAppComp: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && data) {
-      if (data.settings.dark_mode && theme.palette.mode !== DARK_MODE_THEME) {
+      if (data.settings?.dark_mode && theme.palette.mode !== DARK_MODE_THEME) {
         colorMode.toggleColorMode();
       }
     }

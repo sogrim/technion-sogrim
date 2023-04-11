@@ -6,6 +6,7 @@ import {
   Course,
   UserSettings,
   ComputeDegreeStatusPayload,
+  DegreeStatus,
 } from "../types/data-types";
 import { API_URL } from "./api-url";
 
@@ -86,7 +87,7 @@ export const putUserSettings = async (
 export const postParseCoursesAndComputeDegreeStatus = async (
   authToken: string,
   parseComputePayload: ComputeDegreeStatusPayload
-): Promise<any> => {
+): Promise<DegreeStatus> => {
   return axiosPost(
     authToken,
     `${API_URL}/admins/parse-compute`,
