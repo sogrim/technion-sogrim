@@ -196,7 +196,7 @@ impl<'a> BankRuleHandler<'a> {
         mut self,
         sgs: &SpecializationGroups,
         completed_groups: &mut Vec<String>,
-    ) -> f32 {
+    ) {
         // All courses which might be in SOME specialization group should get its name assigned to them
         // later on, if we find a valid assignment for said courses with a DIFFERENT specialization group,
         // we will simply re-assign the specialization group name.
@@ -286,7 +286,5 @@ impl<'a> BankRuleHandler<'a> {
         sgs_names.into_iter().for_each(|sg_name| {
             completed_groups.push(sg_name.clone());
         });
-
-        credit_info.sum_credit
     }
 }

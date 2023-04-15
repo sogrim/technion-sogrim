@@ -236,7 +236,7 @@ macro_rules! create_bank_rule_handler {
     ($degree_status:expr, $bank_name:expr, $course_list:expr, $credit_overflow:expr, $courses_overflow:expr) => {
         BankRuleHandler {
             degree_status: $degree_status,
-            bank_name: $bank_name,
+            bank_name: $bank_name.clone(),
             course_list: $course_list,
             courses: &COURSES,
             credit_overflow: $credit_overflow,
@@ -419,7 +419,8 @@ async fn test_modified() {
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
     let mut completed_dummy = true;
-    let res = handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    let res = degree_status.sum_credit_for_bank(&bank_name);
 
     // check it adds the type
     assert_eq!(
@@ -453,14 +454,10 @@ async fn test_modified() {
     let bank_name = "hova".to_string();
     let course_list = vec!["104031".to_string(), "104166".to_string()]; // although 114052 is not in the list, it should be taken because the user modified its type
 
-    let handle_bank_rule_processor = create_bank_rule_handler!(
-        &mut degree_status,
-        bank_name.clone(),
-        course_list.clone(),
-        0.0,
-        0
-    );
-    let res = handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    let handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list.clone(), 0.0, 0);
+    handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    let res = degree_status.sum_credit_for_bank(&bank_name);
 
     // check it adds the type
     assert_eq!(
@@ -482,7 +479,8 @@ async fn test_modified() {
     degree_status.course_statuses[1].r#type = None;
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
-    let res = handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    let res = degree_status.sum_credit_for_bank(&bank_name);
     assert_eq!(degree_status.course_statuses.len(), 8);
 
     // check sum credit

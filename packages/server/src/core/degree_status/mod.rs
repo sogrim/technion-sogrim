@@ -75,6 +75,14 @@ impl DegreeStatus {
                 .and_then(|course| course.tags.clone());
         });
     }
+
+    pub fn sum_credit_for_bank(&self, bank_name: &str) -> f32 {
+        self.course_statuses
+            .iter()
+            .filter(|cs| cs.r#type == Some(bank_name.to_string()))
+            .filter_map(|cs| cs.credit())
+            .sum::<f32>()
+    }
 }
 
 pub struct DegreeStatusHandler<'a> {

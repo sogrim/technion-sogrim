@@ -6,7 +6,7 @@ use crate::{
 use super::BankRuleHandler;
 
 impl<'a> BankRuleHandler<'a> {
-    pub fn chain(mut self, chains: &[Chain], chain_done: &mut Vec<String>) -> f32 {
+    pub fn chain(mut self, chains: &[Chain], chain_done: &mut Vec<String>) {
         let credit_info = self.iterate_course_list();
         let map_to_actual_course = |course_id: &CourseId| -> Option<&CourseStatus> {
             credit_info
@@ -30,7 +30,5 @@ impl<'a> BankRuleHandler<'a> {
                 break;
             }
         }
-
-        credit_info.sum_credit
     }
 }

@@ -112,7 +112,8 @@ async fn test_rule_all() {
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
     let mut completed_dummy = true;
-    let res = handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    let res = degree_status.sum_credit_for_bank(&bank_name);
     // check it adds the type
     assert_eq!(
         degree_status.course_statuses[0].r#type,
@@ -158,7 +159,8 @@ async fn test_rule_accumulate_credit() {
     ];
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 5.5, 0);
-    let res = handle_bank_rule_processor.accumulate_credit();
+    handle_bank_rule_processor.accumulate_credit();
+    let res = degree_status.sum_credit_for_bank(&bank_name);
     // check it adds the type
     assert_eq!(degree_status.course_statuses[0].r#type, None);
     assert_eq!(degree_status.course_statuses[1].r#type, None);
@@ -194,7 +196,8 @@ async fn test_rule_accumulate_courses() {
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 1);
     let mut count_courses = 0;
-    let res = handle_bank_rule_processor.accumulate_courses(&mut count_courses);
+    handle_bank_rule_processor.accumulate_courses(&mut count_courses);
+    let res = degree_status.sum_credit_for_bank(&bank_name);
     // check it adds the type
     assert_eq!(degree_status.course_statuses[0].r#type, None);
     assert_eq!(degree_status.course_statuses[1].r#type, None);
@@ -239,15 +242,11 @@ async fn test_rule_chain() {
     ];
 
     let mut chain_done = Vec::new();
-    let handle_bank_rule_processor = create_bank_rule_handler!(
-        &mut degree_status,
-        bank_name.clone(),
-        course_list.clone(),
-        0.0,
-        0
-    );
+    let handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list.clone(), 0.0, 0);
     // user didn't finish a chain
-    let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
+    handle_bank_rule_processor.chain(&chains, &mut chain_done);
+    let res = degree_status.sum_credit_for_bank(&bank_name);
 
     assert!(chain_done.is_empty());
     assert_eq!(res, 7.0);
@@ -257,7 +256,8 @@ async fn test_rule_chain() {
     chains.push(vec!["114052".to_string(), "114054".to_string()]); // user finished the chain [114052, 114054]
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
-    let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
+    handle_bank_rule_processor.chain(&chains, &mut chain_done);
+    let res = degree_status.sum_credit_for_bank(&bank_name);
     assert_eq!(degree_status.course_statuses[0].r#type, None);
     assert_eq!(degree_status.course_statuses[1].r#type, None);
     assert_eq!(
@@ -290,7 +290,8 @@ async fn test_rule_malag() {
     let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
-    let res = handle_bank_rule_processor.malag();
+    handle_bank_rule_processor.malag();
+    let res = degree_status.sum_credit_for_bank(&bank_name);
 
     // check it adds the type
     assert_eq!(degree_status.course_statuses[0].r#type, None);
@@ -318,7 +319,8 @@ async fn test_rule_sport() {
     let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
-    let res = handle_bank_rule_processor.sport();
+    handle_bank_rule_processor.sport();
+    let res = degree_status.sum_credit_for_bank(&bank_name);
 
     // check it adds the type
     assert_eq!(degree_status.course_statuses[0].r#type, None);
@@ -586,13 +588,8 @@ async fn test_specialization_group() {
         groups_number: 2,
     };
 
-    let handle_bank_rule_processor = create_bank_rule_handler!(
-        &mut degree_status,
-        bank_name.clone(),
-        course_list.clone(),
-        0.0,
-        0
-    );
+    let handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, bank_name, course_list.clone(), 0.0, 0);
     let mut completed_groups = Vec::<String>::new();
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
 

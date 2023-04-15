@@ -6,7 +6,7 @@ use crate::{
 use super::BankRuleHandler;
 
 impl<'a> BankRuleHandler<'a> {
-    pub fn all(mut self, sum_credit_requirement: &mut f32, completed: &mut bool) -> f32 {
+    pub fn all(mut self, sum_credit_requirement: &mut f32, completed: &mut bool) {
         let credit_info = self.iterate_course_list();
 
         // handle courses in course list which the user didn't complete or any replacement for them
@@ -41,7 +41,5 @@ impl<'a> BankRuleHandler<'a> {
                 }
             }
         }
-
-        credit_info.sum_credit
     }
 }

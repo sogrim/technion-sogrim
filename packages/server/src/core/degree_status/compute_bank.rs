@@ -27,7 +27,6 @@ impl<'a> DegreeStatusHandler<'a> {
         };
 
         // Initialize necessary variable for rules handling
-        let mut sum_credit;
         let mut missing_credit = 0.0; // for all rule
         let mut completed = true;
 
@@ -40,7 +39,7 @@ impl<'a> DegreeStatusHandler<'a> {
         match bank.rule {
             Rule::All(ref courses) => {
                 let mut sum_credit_requirement = 0.0;
-                sum_credit = bank_rule_handler.all(&mut sum_credit_requirement, &mut completed);
+                bank_rule_handler.all(&mut sum_credit_requirement, &mut completed);
                 if let Some(credit) = bank.credit {
                     if sum_credit_requirement < credit {
                         missing_credit = credit - sum_credit_requirement;
@@ -51,24 +50,22 @@ impl<'a> DegreeStatusHandler<'a> {
                         .insert(bank.name.clone(), missing_credit);
                 }
             }
-            Rule::AccumulateCredit(ref predicates) => {
-                sum_credit = bank_rule_handler.accumulate_credit()
-            }
+            Rule::AccumulateCredit(ref predicates) => bank_rule_handler.accumulate_credit(),
             Rule::AccumulateCourses((num_courses, ref predicates)) => {
                 let mut count_courses = 0;
-                sum_credit = bank_rule_handler.accumulate_courses(&mut count_courses);
+                bank_rule_handler.accumulate_courses(&mut count_courses);
                 count_courses = self.handle_courses_overflow(&bank, num_courses, count_courses);
                 requirement
                     .course_requirement(num_courses)
                     .course_completed(count_courses);
                 completed = count_courses >= num_courses;
             }
-            Rule::Malag => sum_credit = bank_rule_handler.malag(),
-            Rule::Sport => sum_credit = bank_rule_handler.sport(),
-            Rule::Elective => sum_credit = bank_rule_handler.elective(),
+            Rule::Malag => bank_rule_handler.malag(),
+            Rule::Sport => bank_rule_handler.sport(),
+            Rule::Elective => bank_rule_handler.elective(),
             Rule::Chains(ref chains) => {
                 let mut chain_done = Vec::new();
-                sum_credit = bank_rule_handler.chain(chains, &mut chain_done);
+                bank_rule_handler.chain(chains, &mut chain_done);
                 completed = !chain_done.is_empty();
                 if completed {
                     requirement.message(messages::completed_chain_msg(chain_done));
@@ -76,7 +73,7 @@ impl<'a> DegreeStatusHandler<'a> {
             }
             Rule::SpecializationGroups(ref specialization_groups) => {
                 let mut groups_done_list = Vec::new();
-                sum_credit = bank_rule_handler
+                bank_rule_handler
                     .specialization_group(specialization_groups, &mut groups_done_list);
                 completed = groups_done_list.len() >= specialization_groups.groups_number;
                 if bank.credit.is_none() {
@@ -93,6 +90,8 @@ impl<'a> DegreeStatusHandler<'a> {
                 todo!()
             }
         }
+
+        let mut sum_credit = credit_overflow + self.degree_status.sum_credit_for_bank(&bank.name);
 
         match bank.credit {
             Some(bank_credit) => {
