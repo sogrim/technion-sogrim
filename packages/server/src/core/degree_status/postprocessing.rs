@@ -26,7 +26,7 @@ fn get_courses_of_rule_all(catalog: &Catalog) -> Vec<CourseId> {
             catalog
                 .course_banks
                 .iter()
-                .filter(|course_bank| matches!(course_bank.rule, Rule::All))
+                .filter(|course_bank| matches!(course_bank.rule, Rule::All(_)))
                 .any(|course_bank| course_bank.name == *bank_name)
         })
         .map(|(course, _)| course.clone())

@@ -1,12 +1,10 @@
-use crate::resources::catalog::OptionalReplacements;
-use crate::resources::course::CourseId;
+use crate::resources::course::{Course, CourseId};
+use crate::resources::{catalog::OptionalReplacements, course::Tag};
 use bson::doc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub type Chain = Vec<CourseId>;
-pub type NumCourses = usize;
-
 #[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
@@ -29,23 +27,54 @@ pub struct SpecializationGroups {
 }
 
 #[derive(PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
+pub enum Predicate {
+    InList(Vec<CourseId>),
+    HasTag(Tag),
+    StartsWith(String),
+    Wildcard,
+}
+
+pub trait Holds {
+    fn holds_on(&self, course: &Course) -> bool;
+}
+
+impl Holds for Predicate {
+    fn holds_on(&self, course: &Course) -> bool {
+        match self {
+            Predicate::InList(list) => list.contains(&course.id),
+            Predicate::HasTag(tag) => {
+                matches!(course.tags.as_ref(), Some(tags) if tags.contains(tag))
+            }
+            Predicate::StartsWith(prefix) => course.id.starts_with(prefix),
+            Predicate::Wildcard => true,
+        }
+    }
+}
+
+impl Holds for Vec<Predicate> {
+    fn holds_on(&self, course: &Course) -> bool {
+        self.iter().any(|predicate| predicate.holds_on(course))
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub enum Rule {
-    All,              //  כמו חובה פקולטית.
-    AccumulateCredit, // לצבור איקס נקודות מתוך הבנק. למשל, רשימה א'
-    AccumulateCourses(NumCourses),
+    All(Vec<CourseId>),
+    AccumulateCredit(Vec<Predicate>),
+    AccumulateCourses((usize, Vec<Predicate>)),
     Malag,
     Sport,
     Elective,
-    Chains(Vec<Chain>), // למשל שרשרת מדעית.
+    Chains(Vec<Chain>),
     SpecializationGroups(SpecializationGroups),
-    Wildcard(bool), // קלף משוגע עבור להתמודד עם
+    Wildcard(bool),
 }
 
 impl ToString for Rule {
     fn to_string(&self) -> String {
         match self {
-            Rule::All => "all",
-            Rule::AccumulateCredit => "accumulate credit",
+            Rule::All(_) => "all",
+            Rule::AccumulateCredit(_) => "accumulate credit",
             Rule::AccumulateCourses(_) => "accumulate courses",
             Rule::Malag => "malag",
             Rule::Sport => "sport",

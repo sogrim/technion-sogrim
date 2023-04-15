@@ -38,7 +38,7 @@ impl<'a> DegreeStatusHandler<'a> {
         };
 
         match bank.rule {
-            Rule::All => {
+            Rule::All(ref courses) => {
                 let mut sum_credit_requirement = 0.0;
                 sum_credit = bank_rule_handler.all(&mut sum_credit_requirement, &mut completed);
                 if let Some(credit) = bank.credit {
@@ -51,8 +51,10 @@ impl<'a> DegreeStatusHandler<'a> {
                         .insert(bank.name.clone(), missing_credit);
                 }
             }
-            Rule::AccumulateCredit => sum_credit = bank_rule_handler.accumulate_credit(),
-            Rule::AccumulateCourses(num_courses) => {
+            Rule::AccumulateCredit(ref predicates) => {
+                sum_credit = bank_rule_handler.accumulate_credit()
+            }
+            Rule::AccumulateCourses((num_courses, ref predicates)) => {
                 let mut count_courses = 0;
                 sum_credit = bank_rule_handler.accumulate_courses(&mut count_courses);
                 count_courses = self.handle_courses_overflow(&bank, num_courses, count_courses);
@@ -88,7 +90,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 ));
             }
             Rule::Wildcard(_) => {
-                sum_credit = 0.0; // TODO: change this
+                todo!()
             }
         }
 
