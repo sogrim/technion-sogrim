@@ -6,7 +6,8 @@ impl<'a> BankRuleHandler<'a> {
     }
 
     pub fn accumulate_courses(mut self, count_courses: &mut usize) {
-        let credit_info = self.iterate_course_list();
-        *count_courses = credit_info.count_courses;
+        self.iterate_course_list();
+        *count_courses =
+            self.courses_overflow + self.degree_status.count_courses_for_bank(&self.bank_name);
     }
 }

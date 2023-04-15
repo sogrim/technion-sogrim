@@ -137,7 +137,5 @@ impl Requirement {
     }
 }
 pub struct CreditInfo {
-    pub sum_credit: f32,
-    pub count_courses: usize,
     pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user (equal unless there was a replacement)
 }

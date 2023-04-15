@@ -76,12 +76,25 @@ impl DegreeStatus {
         });
     }
 
-    pub fn sum_credit_for_bank(&self, bank_name: &str) -> f32 {
+    fn iter_courses_for_bank<'a>(
+        &'a self,
+        bank_name: &'a str,
+    ) -> impl Iterator<Item = &'a CourseStatus> {
         self.course_statuses
             .iter()
             .filter(|cs| cs.r#type == Some(bank_name.to_string()))
+    }
+
+    pub fn sum_credit_for_bank(&self, bank_name: &str) -> f32 {
+        self.iter_courses_for_bank(bank_name)
             .filter_map(|cs| cs.credit())
             .sum::<f32>()
+    }
+
+    pub fn count_courses_for_bank(&self, bank_name: &str) -> usize {
+        self.iter_courses_for_bank(bank_name)
+            .filter(|cs| cs.completed())
+            .count()
     }
 }
 

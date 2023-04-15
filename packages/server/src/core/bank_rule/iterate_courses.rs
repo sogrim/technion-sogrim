@@ -9,8 +9,6 @@ use super::BankRuleHandler;
 impl<'a> BankRuleHandler<'a> {
     pub fn iterate_course_list(&mut self) -> CreditInfo {
         // return sum_credit, count_courses, missing_points
-        let mut sum_credit = self.credit_overflow;
-        let mut count_courses = self.courses_overflow;
         let mut handled_courses = HashMap::new(); // mapping between the course in the catalog to the course which was taken by the student (relevant for replacements)
         self.degree_status
             .course_statuses
@@ -67,16 +65,8 @@ impl<'a> BankRuleHandler<'a> {
             .for_each(|(course_id, course_status)| {
                 handled_courses.insert(course_id, course_status.course.id.clone());
                 course_status.set_type(&self.bank_name);
-                if let Some(credit) = course_status.credit() {
-                    sum_credit += credit;
-                    count_courses += 1;
-                }
             });
 
-        CreditInfo {
-            sum_credit,
-            count_courses,
-            handled_courses,
-        }
+        CreditInfo { handled_courses }
     }
 }
