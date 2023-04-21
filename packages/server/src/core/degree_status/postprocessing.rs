@@ -116,7 +116,8 @@ impl DegreeStatus {
         self.course_statuses
             .iter()
             .filter(|cs| {
-                cs.r#type != Some(medicine::ELECTIVE_BANK_NAME.into())
+                cs.r#type.is_some()
+                    && cs.r#type != Some(medicine::ELECTIVE_BANK_NAME.into())
                     && cs.r#type != Some(medicine::SPORT_BANK_NAME.into())
             })
             .collect::<Vec<_>>()
