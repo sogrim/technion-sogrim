@@ -1,8 +1,9 @@
 use std::fmt::Write;
 
-use crate::resources::course::{Course, CourseStatus};
-
-use super::degree_status::postprocessing::MEDICINE_PRECLINICAL_MIN_AVG;
+use crate::{
+    constants::medicine,
+    resources::course::{Course, CourseStatus},
+};
 
 const ZERO: f32 = 0.0;
 const HALF: f32 = 0.5;
@@ -109,7 +110,7 @@ pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
 pub fn medicine_preclinical_avg_error_msg(avg: f32) -> String {
     format!(
         "פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. המשך הלימודים מותנה בשמירה על ממוצע גבוה מ-{}. יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.",
-        avg, MEDICINE_PRECLINICAL_MIN_AVG
+        avg, medicine::PRECLINICAL_MIN_AVG
     )
 }
 

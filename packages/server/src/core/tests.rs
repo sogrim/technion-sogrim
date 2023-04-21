@@ -1,3 +1,4 @@
+use crate::constants::{computer_science, general, medicine};
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::catalog_validations::validate_catalog;
 use crate::core::degree_status::DegreeStatus;
@@ -17,17 +18,13 @@ use std::str::FromStr;
 use super::types::Requirement;
 use super::*;
 
-pub const COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID: &str = "61a102bb04c5400b98e6f401"; // catalog id from database
-pub const COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID: &str = "61ec835f015bedeab20397a4"; // catalog id from database
-pub const MEDICINE_18_19_CATALOG_ID: &str = "63efa36f9e57dc03df270751"; // catalog id from database
-
 #[test]
 async fn test_year_catalog() {
     dotenv().ok();
     let db = Db::new().await;
     let catalog = db
         .get::<Catalog>(
-            bson::oid::ObjectId::from_str(COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID)
+            bson::oid::ObjectId::from_str(computer_science::CATALOG_ID_3_YEARS_19_20)
                 .expect("failed to create oid"),
         )
         .await
@@ -365,7 +362,7 @@ async fn test_irrelevant_course() {
 async fn test_restore_irrelevant_course() {
     let mut degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v_4.txt",
-        COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID,
+        computer_science::CATALOG_ID_3_YEARS_19_20,
     )
     .await;
 
@@ -378,7 +375,7 @@ async fn test_restore_irrelevant_course() {
 
     degree_status = run_degree_status(
         degree_status,
-        get_catalog(COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID).await,
+        get_catalog(computer_science::CATALOG_ID_3_YEARS_19_20).await,
     )
     .await;
     degree_status.course_statuses.push(CourseStatus {
@@ -397,7 +394,7 @@ async fn test_restore_irrelevant_course() {
 
     degree_status = run_degree_status(
         degree_status,
-        get_catalog(COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID).await,
+        get_catalog(computer_science::CATALOG_ID_3_YEARS_19_20).await,
     )
     .await;
 
@@ -493,7 +490,7 @@ async fn test_modified() {
 async fn test_duplicated_courses() {
     let mut degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v_4.txt",
-        COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID,
+        computer_science::CATALOG_ID_3_YEARS_19_20,
     )
     .await;
 
@@ -515,7 +512,7 @@ async fn test_duplicated_courses() {
 
     degree_status = run_degree_status(
         degree_status,
-        get_catalog(COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID).await,
+        get_catalog(computer_science::CATALOG_ID_3_YEARS_19_20).await,
     )
     .await;
 
@@ -573,7 +570,7 @@ async fn run_degree_status_full_flow(file_name: &str, catalog: &str) -> DegreeSt
 async fn test_missing_credit() {
     let degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v.txt",
-        COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID,
+        computer_science::CATALOG_ID_3_YEARS_19_20,
     )
     .await;
     //FOR VIEWING IN JSON FORMAT
@@ -695,7 +692,7 @@ async fn test_missing_credit() {
 async fn test_overflow_credit() {
     let degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v_2.txt",
-        COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID,
+        computer_science::CATALOG_ID_3_YEARS_19_20,
     )
     .await;
     //FOR VIEWING IN JSON FORMAT
@@ -795,7 +792,7 @@ async fn test_overflow_credit() {
 async fn test_postprocessing_english_requirement() {
     let mut degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v_2.txt",
-        COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID,
+        computer_science::CATALOG_ID_3_YEARS_21_22,
     )
     .await;
 
@@ -816,15 +813,13 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| {
-            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
-        })
+        .find(|course_status| course_status.course.id == general::TECHNICAL_ENGLISH_ADVANCED_B)
         .unwrap()
         .grade = Some(Grade::Numeric(80));
 
     degree_status = run_degree_status(
         degree_status,
-        get_catalog(COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID).await,
+        get_catalog(computer_science::CATALOG_ID_3_YEARS_21_22).await,
     )
     .await;
 
@@ -837,15 +832,13 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| {
-            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
-        })
+        .find(|course_status| course_status.course.id == general::TECHNICAL_ENGLISH_ADVANCED_B)
         .unwrap()
         .state = Some(CourseState::NotComplete);
 
     degree_status = run_degree_status(
         degree_status,
-        get_catalog(COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID).await,
+        get_catalog(computer_science::CATALOG_ID_3_YEARS_21_22).await,
     )
     .await;
 
@@ -855,14 +848,14 @@ async fn test_postprocessing_english_requirement() {
 #[test]
 async fn test_postprocessing_medicine_requirement() {
     let mut degree_status =
-        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_9.txt", MEDICINE_18_19_CATALOG_ID).await;
+        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_9.txt", medicine::CATALOG_ID_18_19).await;
 
     // FOR VIEWING IN JSON FORMAT
-    // std::fs::write(
-    //     "degree_status.json",
-    //     serde_json::to_string_pretty(&degree_status).expect("json serialization failed"),
-    // )
-    // .expect("Unable to write file");
+    std::fs::write(
+        "degree_status.json",
+        serde_json::to_string_pretty(&degree_status).expect("json serialization failed"),
+    )
+    .expect("Unable to write file");
 
     // The student repeated a mandatory course 274109 twice
     assert!(degree_status.overflow_msgs.contains(
@@ -894,7 +887,7 @@ async fn test_postprocessing_medicine_requirement() {
     }
 
     degree_status =
-        run_degree_status(degree_status, get_catalog(MEDICINE_18_19_CATALOG_ID).await).await;
+        run_degree_status(degree_status, get_catalog(medicine::CATALOG_ID_18_19).await).await;
 
     assert!(degree_status
         .overflow_msgs
@@ -924,7 +917,7 @@ async fn test_postprocessing_medicine_requirement() {
     });
 
     degree_status =
-        run_degree_status(degree_status, get_catalog(MEDICINE_18_19_CATALOG_ID).await).await;
+        run_degree_status(degree_status, get_catalog(medicine::CATALOG_ID_18_19).await).await;
 
     assert!(!degree_status
         .overflow_msgs
@@ -1030,7 +1023,7 @@ async fn test_software_engineer_itinerary() {
 
 #[test]
 async fn test_catalog_validations() {
-    let mut catalog = get_catalog(COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID).await;
+    let mut catalog = get_catalog(computer_science::CATALOG_ID_3_YEARS_19_20).await;
     assert!(validate_catalog(&catalog).is_ok());
 
     // Add credit transfer between בחירה חופשית to רשימה א to close a cycle

@@ -12,6 +12,7 @@ use resources::user::Permissions;
 
 mod api;
 mod config;
+mod constants;
 mod core;
 mod db;
 mod error;
