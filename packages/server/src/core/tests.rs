@@ -851,11 +851,11 @@ async fn test_postprocessing_medicine_requirement() {
         run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_9.txt", medicine::CATALOG_ID_18_19).await;
 
     // FOR VIEWING IN JSON FORMAT
-    std::fs::write(
-        "degree_status.json",
-        serde_json::to_string_pretty(&degree_status).expect("json serialization failed"),
-    )
-    .expect("Unable to write file");
+    // std::fs::write(
+    //     "degree_status.json",
+    //     serde_json::to_string_pretty(&degree_status).expect("json serialization failed"),
+    // )
+    // .expect("Unable to write file");
 
     // The student repeated a mandatory course 274109 twice
     assert!(degree_status.overflow_msgs.contains(

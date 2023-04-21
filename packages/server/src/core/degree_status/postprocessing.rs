@@ -114,6 +114,21 @@ impl DegreeStatus {
             .collect::<Vec<_>>()
     }
 
+    fn get_all_medicine_courses(&self) -> Vec<&CourseStatus> {
+        let preclinical_rule_all_course_ids = self
+            .get_preclinical_rule_all_courses()
+            .into_iter()
+            .map(|course_status| course_status.course.id.as_str())
+            .collect::<Vec<_>>();
+        self.course_statuses
+            .iter()
+            .filter(|course_status| {
+                course_status.course.is_medicine_preclinical()
+                    || preclinical_rule_all_course_ids.contains(&course_status.course.id.as_str())
+            })
+            .collect::<Vec<_>>()
+    }
+
     fn medicine_preclinical_avg(&self, catalog: &Catalog) -> f32 {
         let highest_sport_grades = self
             .get_highest_grade_courses_up_to_credit_requirement(catalog, medicine::SPORT_BANK_NAME);
@@ -154,13 +169,8 @@ impl DegreeStatus {
     }
 
     fn medicine_preclinical_violate_course_repetitions(&self) -> Vec<&CourseStatus> {
-        let all_medicine_courses = self.get_preclinical_rule_all_courses().into_iter().chain(
-            self.course_statuses
-                .iter()
-                .filter(|course_status| course_status.course.is_medicine_preclinical()),
-        );
-
-        all_medicine_courses
+        self.get_all_medicine_courses()
+            .into_iter()
             .filter(|course_status| {
                 course_status.times_repeated >= medicine::PRECLINICAL_COURSE_REPETITIONS_LIMIT
                     || (course_status.times_repeated
@@ -173,13 +183,8 @@ impl DegreeStatus {
     }
 
     fn medicine_preclinical_total_repetitions(&self) -> usize {
-        let all_medicine_courses = self.get_preclinical_rule_all_courses().into_iter().chain(
-            self.course_statuses
-                .iter()
-                .filter(|course_status| course_status.course.is_medicine_preclinical()),
-        );
-
-        all_medicine_courses
+        self.get_all_medicine_courses()
+            .into_iter()
             .map(|course_status| course_status.times_repeated)
             .sum()
     }
