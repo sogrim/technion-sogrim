@@ -1,3 +1,4 @@
+use crate::consts;
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::catalog_validations::validate_catalog;
 use crate::core::degree_status::DegreeStatus;
@@ -816,9 +817,7 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| {
-            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
-        })
+        .find(|course_status| course_status.course.id == consts::TECHNICAL_ENGLISH_ADVANCED_B)
         .unwrap()
         .grade = Some(Grade::Numeric(80));
 
@@ -837,9 +836,7 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| {
-            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
-        })
+        .find(|course_status| course_status.course.id == consts::TECHNICAL_ENGLISH_ADVANCED_B)
         .unwrap()
         .state = Some(CourseState::NotComplete);
 
@@ -864,21 +861,18 @@ async fn test_postprocessing_medicine_requirement() {
     // )
     // .expect("Unable to write file");
 
+    let cs1 = degree_status.get_course_status("274109").unwrap();
+    let cs2 = degree_status.get_course_status("274143").unwrap();
+
     // The student repeated a mandatory course 274109 twice
-    assert!(degree_status.overflow_msgs.contains(
-        &messages::medicine_preclinical_course_repetitions_error_msg(vec![
-            degree_status
-                .course_statuses
-                .iter()
-                .find(|course_status| course_status.course.id == "274109")
-                .unwrap(),
-            degree_status
-                .course_statuses
-                .iter()
-                .find(|course_status| course_status.course.id == "274143")
-                .unwrap()
-        ])
-    ));
+    assert!(
+        degree_status
+            .overflow_msgs
+            .contains(&messages::medicine_preclinical_course_repetitions_error_msg(vec![cs1, cs2]))
+            || degree_status.overflow_msgs.contains(
+                &messages::medicine_preclinical_course_repetitions_error_msg(vec![cs2, cs1])
+            )
+    );
 
     // The student repeated a course 3 times
     assert!(degree_status.overflow_msgs.contains(
