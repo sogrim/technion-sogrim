@@ -55,10 +55,6 @@ impl Course {
     pub fn is_malag(&self) -> bool {
         self.is(Tag::Malag)
     }
-
-    pub fn is_medicine_preclinical(&self) -> bool {
-        self.is(Tag::MedicinePreclinical)
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

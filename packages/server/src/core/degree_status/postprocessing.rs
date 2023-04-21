@@ -114,19 +114,25 @@ impl DegreeStatus {
             .collect::<Vec<_>>()
     }
 
-    fn get_all_medicine_courses(&self) -> Vec<&CourseStatus> {
-        let preclinical_rule_all_course_ids = self
-            .get_preclinical_rule_all_courses()
-            .into_iter()
-            .map(|course_status| course_status.course.id.as_str())
-            .collect::<Vec<_>>();
-        self.course_statuses
+    // Returns a list of all courses which relevant for repetitions violation.
+    // De facto all courses but elective and sport.
+    fn get_all_medicine_courses_for_repetitions_violation(
+        &self,
+        catalog: &Catalog,
+    ) -> Vec<&CourseStatus> {
+        catalog
+            .course_banks
             .iter()
-            .filter(|course_status| {
-                course_status.course.is_medicine_preclinical()
-                    || preclinical_rule_all_course_ids.contains(&course_status.course.id.as_str())
+            .fold(vec![], |mut acc, course_bank| {
+                if course_bank.name == medicine::ELECTIVE_BANK_NAME
+                    || course_bank.name == medicine::SPORT_BANK_NAME
+                {
+                    return acc;
+                }
+
+                acc.extend(self.get_courses_for_bank(&course_bank.name));
+                acc
             })
-            .collect::<Vec<_>>()
     }
 
     fn medicine_preclinical_avg(&self, catalog: &Catalog) -> f32 {
@@ -136,7 +142,7 @@ impl DegreeStatus {
         let highest_accumulated_credit_grades = self
             .get_highest_grade_courses_up_to_credit_requirement(
                 catalog,
-                medicine::ACCUMULATE_CREDIT_BANK_NAME,
+                medicine::FACULTY_ELECTIVE_BANK_NAME,
             );
 
         let highest_grade_courses = self
@@ -168,8 +174,8 @@ impl DegreeStatus {
             / sum_credit
     }
 
-    fn medicine_preclinical_violate_course_repetitions(&self) -> Vec<&CourseStatus> {
-        self.get_all_medicine_courses()
+    fn medicine_violate_course_repetitions(&self, catalog: &Catalog) -> Vec<&CourseStatus> {
+        self.get_all_medicine_courses_for_repetitions_violation(catalog)
             .into_iter()
             .filter(|course_status| {
                 course_status.times_repeated >= medicine::PRECLINICAL_COURSE_REPETITIONS_LIMIT
@@ -182,8 +188,8 @@ impl DegreeStatus {
             .collect()
     }
 
-    fn medicine_preclinical_total_repetitions(&self) -> usize {
-        self.get_all_medicine_courses()
+    fn medicine_total_repetitions(&self, catalog: &Catalog) -> usize {
+        self.get_all_medicine_courses_for_repetitions_violation(catalog)
             .into_iter()
             .map(|course_status| course_status.times_repeated)
             .sum()
@@ -200,7 +206,7 @@ impl DegreeStatus {
             });
 
         let preclinical_violate_course_repetitions =
-            self.medicine_preclinical_violate_course_repetitions();
+            self.medicine_violate_course_repetitions(catalog);
         if !preclinical_violate_course_repetitions.is_empty() {
             self.overflow_msgs
                 .push(messages::medicine_preclinical_course_repetitions_error_msg(
@@ -208,7 +214,7 @@ impl DegreeStatus {
                 ));
         }
 
-        let repetitions = self.medicine_preclinical_total_repetitions();
+        let repetitions = self.medicine_total_repetitions(catalog);
         if repetitions >= medicine::PRECLINICAL_TOTAL_REPETITIONS_LIMIT {
             self.overflow_msgs
                 .push(messages::medicine_preclinical_total_repetitions_error_msg(
