@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use crate::{
-    constants::medicine,
+    consts::medicine,
     resources::course::{Course, CourseStatus},
 };
 

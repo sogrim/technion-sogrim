@@ -1,5 +1,5 @@
 use crate::{
-    constants::{general, medicine},
+    consts::*,
     core::messages,
     resources::{
         catalog::Catalog,
@@ -39,7 +39,7 @@ impl DegreeStatus {
 
     fn check_english_requirement(&mut self, year: usize) {
         // English requirement is not relevant for students that started their studies before 2021
-        if year < general::MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT {
+        if year < MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT {
             return;
         }
 
@@ -50,7 +50,7 @@ impl DegreeStatus {
             .count();
 
         let technical_english_advanced_b_course_status =
-            self.get_course_status(general::TECHNICAL_ENGLISH_ADVANCED_B);
+            self.get_course_status(TECHNICAL_ENGLISH_ADVANCED_B);
 
         let Some(technical_english_advanced_b_course_status) = technical_english_advanced_b_course_status else {
             // The student didn't complete technical english advanced b course so it will be marked as not complete in "hova" demand
@@ -65,15 +65,13 @@ impl DegreeStatus {
         // Determine by the technical english advanced b course grade kind the english level of the student
         match technical_english_advanced_b_course_status.grade {
             Some(Grade::ExemptionWithoutCredit | Grade::ExemptionWithCredit)
-                if completed_english_content_courses_count
-                    < general::EXEMPT_COURSES_COUNT_DEMAND =>
+                if completed_english_content_courses_count < EXEMPT_COURSES_COUNT_DEMAND =>
             {
                 self.overflow_msgs
                     .push(messages::english_requirement_for_exempt_students_msg());
             }
             Some(_)
-                if completed_english_content_courses_count
-                    < general::ADVANCED_B_COURSES_COUNT_DEMAND =>
+                if completed_english_content_courses_count < ADVANCED_B_COURSES_COUNT_DEMAND =>
             {
                 self.overflow_msgs
                     .push(messages::english_requirement_for_technical_advanced_b_students_msg());
@@ -95,7 +93,7 @@ impl DegreeStatus {
     ) -> Vec<&CourseStatus> {
         let credit_requirement = catalog
             .get_course_bank_by_name(bank_name)
-            .map(|course_bank| course_bank.credit.unwrap_or_default());
+            .and_then(|course_bank| course_bank.credit);
         let Some(mut credit_requirement) = credit_requirement else {
             // shouldn't get here as we send a bank with credit requirement
             return vec![]
@@ -114,25 +112,14 @@ impl DegreeStatus {
             .collect::<Vec<_>>()
     }
 
-    // Returns a list of all courses which relevant for repetitions violation.
-    // De facto all courses but elective and sport.
-    fn get_all_medicine_courses_for_repetitions_violation(
-        &self,
-        catalog: &Catalog,
-    ) -> Vec<&CourseStatus> {
-        catalog
-            .course_banks
+    fn get_all_medicine_courses_for_repetitions_violation(&self) -> Vec<&CourseStatus> {
+        self.course_statuses
             .iter()
-            .fold(vec![], |mut acc, course_bank| {
-                if course_bank.name == medicine::ELECTIVE_BANK_NAME
-                    || course_bank.name == medicine::SPORT_BANK_NAME
-                {
-                    return acc;
-                }
-
-                acc.extend(self.get_courses_for_bank(&course_bank.name));
-                acc
+            .filter(|cs| {
+                cs.r#type != Some(medicine::ELECTIVE_BANK_NAME.into())
+                    && cs.r#type != Some(medicine::SPORT_BANK_NAME.into())
             })
+            .collect::<Vec<_>>()
     }
 
     fn medicine_preclinical_avg(&self, catalog: &Catalog) -> f32 {
@@ -174,8 +161,8 @@ impl DegreeStatus {
             / sum_credit
     }
 
-    fn medicine_violate_course_repetitions(&self, catalog: &Catalog) -> Vec<&CourseStatus> {
-        self.get_all_medicine_courses_for_repetitions_violation(catalog)
+    fn medicine_violate_course_repetitions(&self) -> Vec<&CourseStatus> {
+        self.get_all_medicine_courses_for_repetitions_violation()
             .into_iter()
             .filter(|course_status| {
                 course_status.times_repeated >= medicine::PRECLINICAL_COURSE_REPETITIONS_LIMIT
@@ -188,8 +175,8 @@ impl DegreeStatus {
             .collect()
     }
 
-    fn medicine_total_repetitions(&self, catalog: &Catalog) -> usize {
-        self.get_all_medicine_courses_for_repetitions_violation(catalog)
+    fn medicine_total_repetitions(&self) -> usize {
+        self.get_all_medicine_courses_for_repetitions_violation()
             .into_iter()
             .map(|course_status| course_status.times_repeated)
             .sum()
@@ -205,8 +192,7 @@ impl DegreeStatus {
                 avg => messages::medicine_preclinical_avg_msg(avg),
             });
 
-        let preclinical_violate_course_repetitions =
-            self.medicine_violate_course_repetitions(catalog);
+        let preclinical_violate_course_repetitions = self.medicine_violate_course_repetitions();
         if !preclinical_violate_course_repetitions.is_empty() {
             self.overflow_msgs
                 .push(messages::medicine_preclinical_course_repetitions_error_msg(
@@ -214,7 +200,7 @@ impl DegreeStatus {
                 ));
         }
 
-        let repetitions = self.medicine_total_repetitions(catalog);
+        let repetitions = self.medicine_total_repetitions();
         if repetitions >= medicine::PRECLINICAL_TOTAL_REPETITIONS_LIMIT {
             self.overflow_msgs
                 .push(messages::medicine_preclinical_total_repetitions_error_msg(
