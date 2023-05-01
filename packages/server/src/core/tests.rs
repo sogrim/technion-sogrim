@@ -10,7 +10,6 @@ use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
 use actix_rt::test;
-use dotenvy::dotenv;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -24,7 +23,6 @@ pub const MEDICINE_18_19_CATALOG_ID: &str = "63efa36f9e57dc03df270751"; // catal
 
 #[test]
 async fn test_year_catalog() {
-    dotenv().ok();
     let db = Db::new().await;
     let catalog = db
         .get::<Catalog>(
@@ -535,7 +533,6 @@ async fn test_duplicated_courses() {
 // ------------------------------------------------------------------------------------------------------
 
 async fn get_catalog(catalog: &str) -> Catalog {
-    dotenv().ok();
     let db = Db::new().await;
     let obj_id = bson::oid::ObjectId::from_str(catalog).expect("failed to create oid");
     db.get::<Catalog>(&obj_id)
@@ -544,7 +541,6 @@ async fn get_catalog(catalog: &str) -> Catalog {
 }
 
 async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) -> DegreeStatus {
-    dotenv().ok();
     let db = Db::new().await;
     let vec_courses = db
         .get_all::<Course>()
