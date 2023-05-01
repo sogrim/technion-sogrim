@@ -2,7 +2,7 @@ const IP: &str = env!("IP");
 const PORT: &str = env!("PORT");
 const URI: &str = env!("URI");
 const CLIENT_ID: &str = env!("CLIENT_ID");
-const PROFILE: &str = env!("PROFILE");
+const PROFILE: Option<&str> = option_env!("PROFILE");
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -18,5 +18,11 @@ pub const CONFIG: Config = Config {
     port: PORT,
     uri: URI,
     client_id: CLIENT_ID,
-    profile: PROFILE,
+    profile: 
+    // TODO: use unwrap_or once it's stable in const fn
+    if let Some(profile) = PROFILE {
+        profile
+    } else {
+        "debug"
+    },
 };
