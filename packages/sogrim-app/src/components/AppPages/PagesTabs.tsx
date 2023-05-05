@@ -1,12 +1,11 @@
 import { Box, Divider, Tab, Tabs, Typography } from "@mui/material";
+import { observer } from "mobx-react-lite";
 import * as React from "react";
+import { useStore } from "../../hooks/useStore";
 import { RequirementsPage } from "../Pages/RequirementPage/RequirementsTab";
 import { Semester0Page } from "../Pages/Semester0Page/Semester0Page";
 import { SemestersPage } from "../Pages/SemestersPage/SemestersPage";
 import { TabPanel } from "./TabPanel";
-import useUserState from "../../hooks/apiHooks/useUserState";
-import { useStore } from "../../hooks/useStore";
-import { observer } from "mobx-react-lite";
 
 const PagesTabsComp: React.FC = () => {
   const [value, setValue] = React.useState(0);

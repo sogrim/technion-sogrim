@@ -1,5 +1,4 @@
 import { Theme, Typography } from "@mui/material";
-import { useStore } from "../../../hooks/useStore";
 import { LIGHT_MODE_THEME } from "../../../themes/constants";
 import { UserPermissions } from "../../../types/data-types";
 
