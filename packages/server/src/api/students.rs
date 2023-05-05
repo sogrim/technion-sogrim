@@ -5,6 +5,7 @@ use actix_web::{
     web::{Data, Json, Query},
     HttpMessage, HttpRequest, HttpResponse,
 };
+use bson::DateTime;
 
 use crate::{
     core::{degree_status::DegreeStatus, parser},
@@ -42,7 +43,7 @@ pub async fn get_catalogs(
 }
 
 //TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
-#[get("/students/login")]
+#[get("/login")]
 pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppError> {
     let user_id = req
         .extensions()
@@ -54,12 +55,29 @@ pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppEr
         ..Default::default()
     };
 
-    let updated_user = db.create_or_update::<User>(user).await?;
+    let mut updated_user = db.create_or_update::<User>(user).await?;
+
+    // Asynchronously update the user's last seen time
+    let mut user = updated_user.clone();
+    tokio::spawn(async move {
+        // Don't update the user's last seen time if they've already been seen in the last hour
+        const MILLIS_IN_HOUR: i64 = 3_600_000;
+        if let Some(last_seen) = user.last_seen {
+            if last_seen.timestamp_millis() + MILLIS_IN_HOUR > DateTime::now().timestamp_millis() {
+                return Result::<(), AppError>::Ok(());
+            }
+        }
+        user.last_seen = Some(DateTime::now());
+        db.update::<User>(user).await?;
+        Result::<(), AppError>::Ok(())
+    });
+    // Don't send the user's last seen time to the client
+    updated_user.last_seen = None;
 
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
-#[put("/students/catalog")]
+#[put("/catalog")]
 pub async fn update_catalog(
     mut user: User,
     catalog_id: String,
@@ -86,7 +104,7 @@ pub async fn update_catalog(
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
-#[get("/students/courses")]
+#[get("/courses")]
 pub async fn get_courses_by_filter(
     _: User,
     req: HttpRequest,
@@ -112,7 +130,7 @@ pub async fn get_courses_by_filter(
     }
 }
 
-#[post("/students/courses")]
+#[post("/courses")]
 pub async fn add_courses(
     mut user: User,
     data: String,
@@ -126,7 +144,7 @@ pub async fn add_courses(
 }
 
 // here "modified" becomes false
-#[get("/students/degree-status")]
+#[get("/degree-status")]
 pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpResponse, AppError> {
     let catalog_id = user
         .details
@@ -176,7 +194,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
 }
 
 // here "modified" is true
-#[put("/students/details")]
+#[put("/details")]
 pub async fn update_details(
     mut user: User,
     details: Json<UserDetails>,
@@ -187,7 +205,7 @@ pub async fn update_details(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[put("/students/settings")]
+#[put("/settings")]
 pub async fn update_settings(
     mut user: User,
     settings: Json<UserSettings>,

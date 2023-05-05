@@ -4,6 +4,7 @@ import { observer } from "mobx-react-lite";
 import { useStore } from "../../hooks/useStore";
 import { UserRegistrationState } from "../../types/ui-types";
 import { BannerCards } from "./BannerCards/BannerCards";
+import { RegistrationBanner } from "./RegistrationBanner";
 
 const BannerComp: React.FC = () => {
   const {
@@ -16,21 +17,7 @@ const BannerComp: React.FC = () => {
         {userRegistrationState === UserRegistrationState.Ready ? (
           <BannerCards />
         ) : (
-          <Box
-            sx={{
-              display: "flex",
-              textAlign: "center",
-              flexDirection: "column",
-              gap: "20px",
-            }}
-          >
-            <Typography variant="h3" color="white">
-              פה סוגרים את התואר!
-            </Typography>
-            <Typography variant="h5" color="white">
-              בחרו קטלוג, ייבאו קורסים ואז תגלו - כמה עוד?!
-            </Typography>
-          </Box>
+          <RegistrationBanner />
         )}
       </StyledBox>
     </Box>

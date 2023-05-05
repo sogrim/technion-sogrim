@@ -1,6 +1,7 @@
 use bson::{doc, Document};
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -53,10 +54,6 @@ impl Course {
 
     pub fn is_malag(&self) -> bool {
         self.is(Tag::Malag)
-    }
-
-    pub fn is_medicine_preclinical(&self) -> bool {
-        self.is(Tag::MedicinePreclinical)
     }
 }
 
@@ -148,6 +145,10 @@ impl CourseStatus {
         self.state == Some(CourseState::Complete)
     }
 
+    pub fn not_completed(&self) -> bool {
+        self.state == Some(CourseState::NotComplete)
+    }
+
     pub fn credit(&self) -> Option<f32> {
         self.completed().then_some(self.course.credit)
     }
@@ -231,6 +232,18 @@ impl Serialize for Grade {
         }
     }
 }
+
+impl PartialOrd for Grade {
+    fn partial_cmp(&self, other: &Grade) -> Option<Ordering> {
+        match (self, other) {
+            (Grade::Numeric(g1), Grade::Numeric(g2)) => g1.partial_cmp(g2),
+            (Grade::Numeric(_), _) => Some(Ordering::Greater),
+            (_, Grade::Numeric(_)) => Some(Ordering::Less),
+            (_, _) => Some(Ordering::Equal),
+        }
+    }
+}
+
 struct GradeStrVisitor;
 
 impl<'de> Visitor<'de> for GradeStrVisitor {

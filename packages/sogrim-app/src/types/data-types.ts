@@ -5,6 +5,12 @@ export enum Faculty {
   Medicine = "Medicine",
 }
 
+export enum UserPermissions {
+  Student = "Student",
+  Admin = "Admin",
+  Owner = "Owner",
+}
+
 export type Catalog = {
   name: string;
   faculty: string;
@@ -80,4 +86,12 @@ export type UserState = {
   _id: string;
   details: UserDetails;
   settings: UserSettings;
+  permissions: UserPermissions;
+};
+
+export type ComputeDegreeStatusPayload = {
+  catalogId: {
+    $oid: string;
+  };
+  gradeSheetAsString: string;
 };

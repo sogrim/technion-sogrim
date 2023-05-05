@@ -44,7 +44,7 @@ pub fn find_traversal_order(catalog: &Catalog) -> Vec<CourseBank> {
         log::error!(
             "corrupted catalog in the database - course banks will be set in an arbitrary order"
         );
-        g.node_indices().into_iter().collect::<Vec<_>>()
+        g.node_indices().collect::<Vec<_>>()
     });
     let mut ordered_course_banks = Vec::<CourseBank>::new();
     for node in order {

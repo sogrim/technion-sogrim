@@ -5,13 +5,13 @@ use actix_web::{
 };
 use actix_web_lab::middleware::from_fn;
 use db::Db;
-use dotenvy::dotenv;
 use error::AppError;
 use middleware::{auth, cors, logger};
 use resources::user::Permissions;
 
 mod api;
 mod config;
+mod consts;
 mod core;
 mod db;
 mod error;
@@ -20,9 +20,6 @@ mod resources;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Load .env (in development environment)
-    dotenv().ok();
-
     // Initialize logger
     logger::init_env_logger();
 
@@ -48,7 +45,7 @@ async fn main() -> std::io::Result<()> {
                 scope("")
                     .wrap(from_fn(auth::authenticate))
                     .service(
-                        scope("")
+                        scope("/students")
                             .app_data(web::Data::new(Permissions::Student))
                             .service(api::students::get_catalogs)
                             .service(api::students::login)
@@ -60,12 +57,12 @@ async fn main() -> std::io::Result<()> {
                             .service(api::students::update_settings),
                     )
                     .service(
-                        scope("")
+                        scope("/admins")
                             .app_data(web::Data::new(Permissions::Admin))
                             .service(api::admins::parse_courses_and_compute_degree_status),
                     )
                     .service(
-                        scope("")
+                        scope("/owners")
                             .app_data(web::Data::new(Permissions::Owner))
                             .service(api::owners::get_all_courses)
                             .service(api::owners::get_course_by_id)
@@ -74,7 +71,7 @@ async fn main() -> std::io::Result<()> {
                     ),
             )
     })
-    .bind((CONFIG.ip, CONFIG.port))?
+    .bind(format!("{}:{}", CONFIG.ip, CONFIG.port))?
     .run()
     .await
 }

@@ -1,7 +1,7 @@
 import { RootStore } from "./RootStore";
 import { makeAutoObservable } from "mobx";
 import { PageState, TabState, UserRegistrationState } from "../types/ui-types";
-import { UserDetails } from "../types/data-types";
+import { UserDetails, UserPermissions } from "../types/data-types";
 
 export class UIStore {
   public currentPage: PageState = PageState.Main;
@@ -12,6 +12,7 @@ export class UIStore {
   public endGameLoading: boolean = false;
   public userRegistrationState: UserRegistrationState =
     UserRegistrationState.Loading;
+  public permissionMode: UserPermissions = UserPermissions.Student;
 
   public errorMsg: string = "";
 
@@ -27,6 +28,18 @@ export class UIStore {
     } else if (isAuthenticated) {
       this.currentPage = PageState.Main;
     }
+  };
+
+  get studentMode(): boolean {
+    return this.permissionMode === UserPermissions.Student;
+  }
+
+  get emptyStateAdminMode(): boolean {
+    return this.rootStore.dataStore.userDetails?.catalog === null;
+  }
+
+  setPermissionMode = (userPermissions: UserPermissions) => {
+    this.permissionMode = userPermissions;
   };
 
   goToMainPage = () => {
@@ -62,8 +75,14 @@ export class UIStore {
   };
 
   computeUserRegistrationState = (
-    userDetails: UserDetails
+    userDetails: UserDetails,
+    adminMode: boolean = false
   ): UserRegistrationState => {
+    if (adminMode) {
+      this.userRegistrationState = UserRegistrationState.Ready;
+      return UserRegistrationState.Ready;
+    }
+
     const degreeStatus = userDetails?.degree_status;
     if (
       degreeStatus?.course_bank_requirements &&

@@ -5,9 +5,10 @@ use crate::{
     error::AppError,
     middleware::auth::Sub,
 };
-use actix_web::{dev::Payload, web::Data, FromRequest, HttpMessage};
-use bson::{doc, Document};
+use actix_web::{dev::Payload, web::Data, FromRequest, HttpMessage, HttpRequest};
+use bson::{doc, DateTime, Document};
 use serde::{Deserialize, Serialize};
+use std::{future::Future, pin::Pin};
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
@@ -37,6 +38,8 @@ pub struct User {
     pub permissions: Permissions,
     pub details: UserDetails,
     pub settings: UserSettings,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_seen: Option<DateTime>,
 }
 
 impl Resource for User {
@@ -50,8 +53,8 @@ impl Resource for User {
 
 impl FromRequest for User {
     type Error = AppError;
-    type Future = std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self, Self::Error>>>>;
-    fn from_request(req: &actix_web::HttpRequest, _: &mut Payload) -> Self::Future {
+    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let req = req.clone();
         Box::pin(async move {
             let Some(db) = req.app_data::<Data<Db>>() else {
@@ -78,7 +81,7 @@ impl FromRequest for User {
             Ok(user)
         })
     }
-    fn extract(req: &actix_web::HttpRequest) -> Self::Future {
+    fn extract(req: &HttpRequest) -> Self::Future {
         Self::from_request(req, &mut Payload::None)
     }
 }
