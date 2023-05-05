@@ -23,7 +23,6 @@ use actix_web::{
 };
 use actix_web_lab::middleware::from_fn;
 use bson::oid::ObjectId;
-use dotenvy::dotenv;
 
 use super::admins::{self, ComputeDegreeStatusPayload};
 
@@ -32,7 +31,6 @@ pub async fn test_get_all_catalogs() {
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
-    dotenv().ok();
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
@@ -60,7 +58,6 @@ pub async fn test_get_all_catalogs() {
 
 #[test]
 async fn test_students_api_full_flow() {
-    dotenv().ok();
     // Create authorization header
 
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
@@ -151,8 +148,6 @@ async fn test_students_api_full_flow() {
 }
 #[test]
 async fn test_compute_in_progress() {
-    dotenv().ok();
-
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
@@ -216,7 +211,6 @@ async fn test_compute_in_progress() {
 
 #[test]
 async fn test_owner_api_courses() {
-    dotenv().ok();
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
@@ -290,7 +284,6 @@ async fn test_owner_api_courses() {
 
 #[test]
 async fn test_owner_api_catalogs() {
-    dotenv().ok();
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
@@ -321,7 +314,6 @@ async fn test_owner_api_catalogs() {
 
 #[test]
 async fn test_student_login_no_sub() {
-    dotenv().ok();
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
@@ -347,7 +339,6 @@ async fn test_student_login_no_sub() {
 #[test]
 async fn test_students_api_no_catalog() {
     // *** IMPORTANT: This should NEVER happen, but the tests are added anyway for coverage
-    dotenv().ok();
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
@@ -375,7 +366,6 @@ async fn test_students_api_no_catalog() {
 
 #[test]
 async fn test_admins_parse_and_compute_api() {
-    dotenv().ok();
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
@@ -414,7 +404,6 @@ async fn test_admins_parse_and_compute_api() {
 
 #[test]
 async fn test_unauthorized_path() {
-    dotenv().ok();
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(

@@ -6,7 +6,6 @@ use crate::{
 use actix_rt::test;
 use actix_web::{body::MessageBody, http::StatusCode, ResponseError};
 
-use dotenvy::dotenv;
 use mongodb::{
     options::{ClientOptions, Credential},
     Client,
@@ -14,7 +13,6 @@ use mongodb::{
 
 #[test]
 pub async fn test_db_internal_error() {
-    dotenv().ok();
     // Create explicit client options and update it manually
     let mut client_options = ClientOptions::parse(CONFIG.uri)
         .await
@@ -65,8 +63,6 @@ pub async fn test_db_internal_error() {
 
 #[test]
 pub async fn test_get_courses_by_filters() {
-    dotenv().ok();
-
     let db = Db::new().await;
 
     let courses = db
