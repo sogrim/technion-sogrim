@@ -1,7 +1,7 @@
 import { Box, Divider, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React from "react";
-import useUserState from "../../../hooks/apiHooks/useUserState";
+import { useStore } from "../../../hooks/useStore";
 import { MessagesAccordion } from "./MessagesAccordion";
 
 interface CreditOverflowProps {}
@@ -10,14 +10,16 @@ const error = "פסילה: ";
 const warning = "אזהרה: ";
 
 const CreditOverflowComp: React.FC<CreditOverflowProps> = () => {
-  const { data: userState } = useUserState();
+  const {
+    dataStore: { userDetails },
+  } = useStore();
 
   const messages: string[] = React.useMemo(
     () =>
-      userState?.details?.degree_status?.overflow_msgs.filter(
+      userDetails?.degree_status?.overflow_msgs.filter(
         (ovm) => !ovm.match(error) && !ovm.match(warning)
       ) || [],
-    [userState]
+    [userDetails]
   );
 
   return messages.length > 0 ? (
