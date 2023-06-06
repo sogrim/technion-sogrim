@@ -1,7 +1,7 @@
 import { Box, Divider, Typography, useTheme } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React from "react";
-import useUserState from "../../../hooks/apiHooks/useUserState";
+import { useStore } from "../../../hooks/useStore";
 import { MessagesAccordion } from "./MessagesAccordion";
 
 interface WarningMessagesProps {}
@@ -10,20 +10,22 @@ const error = "פסילה: ";
 const warning = "אזהרה: ";
 
 const WarningMessagesComp: React.FC<WarningMessagesProps> = () => {
-  const { data: userState } = useUserState();
+  const {
+    dataStore: { userDetails },
+  } = useStore();
   const theme = useTheme();
 
   const messages: string[] = React.useMemo(
     () =>
-      userState?.details?.degree_status?.overflow_msgs.filter(
+      userDetails?.degree_status?.overflow_msgs.filter(
         (ovm) => ovm.match(error) || ovm.match(warning)
       ) || [],
-    [userState]
+    [userDetails]
   );
 
   return messages.length > 0 ? (
     <MessagesAccordion
-      name={`אזהרות - ${userState?.details.catalog?.name.replace(
+      name={`אזהרות - ${userDetails?.catalog?.name.replace(
         /\d{4}-\d{4}/, // remove the year from the catalog name
         ""
       )}`}
