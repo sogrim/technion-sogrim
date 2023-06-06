@@ -1,6 +1,7 @@
 use bson::{doc, Document};
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -34,6 +35,8 @@ pub enum Tag {
     Malag,
     Sport,
     SportTeam, // TODO: check if need this
+    MedicinePreclinical,
+    MedicineClinical,
 }
 
 impl Course {
@@ -121,6 +124,7 @@ pub struct CourseStatus {
     pub specialization_group_name: Option<String>,
     pub additional_msg: Option<String>,
     pub modified: bool,
+    pub times_repeated: usize,
 }
 
 impl CourseStatus {
@@ -139,6 +143,10 @@ impl CourseStatus {
 
     pub fn completed(&self) -> bool {
         self.state == Some(CourseState::Complete)
+    }
+
+    pub fn not_completed(&self) -> bool {
+        self.state == Some(CourseState::NotComplete)
     }
 
     pub fn credit(&self) -> Option<f32> {
@@ -200,9 +208,9 @@ pub struct CourseBank {
     pub credit: Option<f32>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Grade {
-    Numeric(u8),
+    Numeric(u32),
     Binary(bool),
     ExemptionWithoutCredit,
     ExemptionWithCredit,
@@ -224,6 +232,18 @@ impl Serialize for Grade {
         }
     }
 }
+
+impl PartialOrd for Grade {
+    fn partial_cmp(&self, other: &Grade) -> Option<Ordering> {
+        match (self, other) {
+            (Grade::Numeric(g1), Grade::Numeric(g2)) => g1.partial_cmp(g2),
+            (Grade::Numeric(_), _) => Some(Ordering::Greater),
+            (_, Grade::Numeric(_)) => Some(Ordering::Less),
+            (_, _) => Some(Ordering::Equal),
+        }
+    }
+}
+
 struct GradeStrVisitor;
 
 impl<'de> Visitor<'de> for GradeStrVisitor {
@@ -243,8 +263,8 @@ impl<'de> Visitor<'de> for GradeStrVisitor {
             "פטור ללא ניקוד" => Ok(Grade::ExemptionWithoutCredit),
             "פטור עם ניקוד" => Ok(Grade::ExemptionWithCredit),
             "לא השלים" => Ok(Grade::NotComplete),
-            _ if v.parse::<u8>().is_ok() => Ok(Grade::Numeric(
-                v.parse::<u8>().map_err(|e| Err::custom(e.to_string()))?,
+            _ if v.parse::<u32>().is_ok() => Ok(Grade::Numeric(
+                v.parse::<u32>().map_err(|e| Err::custom(e.to_string()))?,
             )),
             _ => {
                 let err: E = Err::invalid_type(Unexpected::Str(v), &self);

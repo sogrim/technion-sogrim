@@ -13,10 +13,20 @@ use super::course::CourseId;
 pub(crate) type OptionalReplacements = Vec<CourseId>;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub enum Faculty {
+    #[default]
+    Unknown,
+    ComputerScience,
+    DataAndDecisionScience,
+    Medicine,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Catalog {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id: bson::oid::ObjectId,
     pub name: String,
+    pub faculty: Faculty,
     pub total_credit: f64,
     pub description: String,
     pub course_banks: Vec<CourseBank>,
@@ -57,6 +67,10 @@ impl Catalog {
     pub fn get_all_course_ids(&self) -> Vec<CourseId> {
         self.course_to_bank.clone().into_keys().collect()
     }
+
+    pub fn is_medicine(&self) -> bool {
+        matches!(self.faculty, Faculty::Medicine)
+    }
 }
 
 impl Resource for Catalog {
@@ -73,6 +87,7 @@ pub struct DisplayCatalog {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub id: bson::oid::ObjectId,
     pub name: String,
+    pub faculty: Faculty,
     pub total_credit: f64,
     pub description: String,
     pub course_bank_names: Vec<String>,
@@ -83,6 +98,7 @@ impl From<Catalog> for DisplayCatalog {
         DisplayCatalog {
             id: catalog.id,
             name: catalog.name,
+            faculty: catalog.faculty,
             total_credit: catalog.total_credit,
             description: catalog.description,
             course_bank_names: catalog

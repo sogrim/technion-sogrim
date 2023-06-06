@@ -212,33 +212,80 @@ impl<'a> BankRuleHandler<'a> {
 
         let credit_info = self.iterate_course_list();
         let mut completed_courses = Vec::new();
-        for (course_id_in_list, course_id_done_by_user) in credit_info.handled_courses {
-            if let Some(course_status) = self
-                .degree_status
-                .get_course_status(&course_id_done_by_user)
-            {
-                if course_status.completed() {
-                    completed_courses.push(course_id_in_list);
+
+        let find_replacement =
+            |replacements: &HashMap<String, Vec<String>>, course_id: &CourseId| -> Option<String> {
+                replacements
+                    .iter()
+                    .find_map(|(course_id_in_sg, course_id_in_sg_replacements)| {
+                        course_id_in_sg_replacements
+                            .contains(course_id)
+                            .then(|| course_id_in_sg.clone())
+                    })
+            };
+
+        // hotfix for cases where the user has a course which is a replacement for a course in the specialization group bank and in another bank.
+        // https://github.com/sogrim/technion-sogrim/issues/214#issuecomment-1478566102
+        let mut handled_courses = HashMap::new();
+        credit_info.handled_courses.into_iter().for_each(
+            |(course_id_in_list, course_id_done_by_user)| {
+                if course_id_in_list != course_id_done_by_user {
+                    handled_courses.insert(course_id_in_list, course_id_done_by_user);
+                } else if let Some(course_id_in_sg) =
+                    find_replacement(self.catalog_replacements, &course_id_in_list)
+                {
+                    handled_courses.insert(course_id_in_sg, course_id_in_list);
+                } else if let Some(course_id_in_sg) =
+                    find_replacement(self.common_replacements, &course_id_in_list)
+                {
+                    handled_courses.insert(course_id_in_sg, course_id_in_list);
+                } else {
+                    handled_courses.insert(course_id_in_list, course_id_done_by_user);
                 }
-            }
-        }
+            },
+        );
+
+        handled_courses
+            .iter()
+            .for_each(|(course_id_in_list, course_id_done_by_user)| {
+                if let Some(course_status) =
+                    self.degree_status.get_course_status(course_id_done_by_user)
+                {
+                    if course_status.completed() {
+                        completed_courses.push(course_id_in_list.clone());
+                    }
+                }
+            });
 
         let valid_assignment_for_courses = run_exhaustive_search(sgs, completed_courses);
         let complete_sgs_indices =
             get_complete_sgs_indices(&sgs.groups_list, &valid_assignment_for_courses);
         // The set is to prevent duplications
         let mut sgs_names = HashSet::new();
-        for (course_id, sg_index) in valid_assignment_for_courses {
-            if let Some(course_status) = self.degree_status.get_mut_course_status(&course_id) {
-                if complete_sgs_indices.contains(&sg_index) {
-                    course_status.set_specialization_group_name(&sgs.groups_list[sg_index].name);
-                    sgs_names.insert(&sgs.groups_list[sg_index].name);
+        valid_assignment_for_courses
+            .into_iter()
+            .for_each(|(course_id, sg_index)| {
+                // hotfix - see comment above
+                let course_id_done_by_user = handled_courses.get(&course_id);
+                let Some(course_id_done_by_user) = course_id_done_by_user else {
+                    // shouldn't get here
+                    return;
+                };
+                if let Some(course_status) = self
+                    .degree_status
+                    .get_mut_course_status(course_id_done_by_user)
+                {
+                    if complete_sgs_indices.contains(&sg_index) {
+                        course_status
+                            .set_specialization_group_name(&sgs.groups_list[sg_index].name);
+                        sgs_names.insert(&sgs.groups_list[sg_index].name);
+                    }
                 }
-            }
-        }
-        for sg_name in sgs_names {
+            });
+
+        sgs_names.into_iter().for_each(|sg_name| {
             completed_groups.push(sg_name.clone());
-        }
+        });
 
         credit_info.sum_credit
     }

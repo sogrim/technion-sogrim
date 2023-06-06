@@ -1,5 +1,19 @@
+export enum Faculty {
+  Unknown = "Unknown",
+  ComputerScience = "ComputerScience",
+  DataAndDecisionScience = "DataAndDecisionScience",
+  Medicine = "Medicine",
+}
+
+export enum UserPermissions {
+  Student = "Student",
+  Admin = "Admin",
+  Owner = "Owner",
+}
+
 export type Catalog = {
   name: string;
+  faculty: string;
   total_credit: number;
   description: string;
   _id: {
@@ -31,6 +45,7 @@ export type CourseStatus = {
   modified: boolean;
   specialization_group_name?: string;
   additional_msg?: string;
+  times_repeated: number;
 };
 
 export const ACCUMULATE_COURSES = "accumulate courses";
@@ -71,4 +86,12 @@ export type UserState = {
   _id: string;
   details: UserDetails;
   settings: UserSettings;
+  permissions: UserPermissions;
+};
+
+export type ComputeDegreeStatusPayload = {
+  catalogId: {
+    $oid: string;
+  };
+  gradeSheetAsString: string;
 };

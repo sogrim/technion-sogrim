@@ -1,10 +1,18 @@
 import { Theme, Typography } from "@mui/material";
 import { LIGHT_MODE_THEME } from "../../../themes/constants";
+import { UserPermissions } from "../../../types/data-types";
 
-export const AppTitle: React.FC = () => {
+export const AppTitle: React.FC<{ permission: UserPermissions }> = ({
+  permission,
+}) => {
+  const content =
+    permission === UserPermissions.Admin || permission === UserPermissions.Owner
+      ? "סוגרים - ניהול מערכת"
+      : "סוגרים";
+
   return (
     <Typography variant="h4" noWrap sx={sxAppTitle}>
-      {"סוגרים"}
+      {content}
     </Typography>
   );
 };

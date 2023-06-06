@@ -1,8 +1,8 @@
-use bson::Document;
+use bson::{doc, Document};
 use mongodb::Client;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::config::CONFIG;
+use crate::{config::CONFIG, error::AppError};
 
 pub mod services;
 
@@ -20,6 +20,14 @@ impl Db {
             .await
             .expect("Failed to connect to MongoDB");
         Self { client }
+    }
+    pub async fn ping(&self) -> Result<(), AppError> {
+        self.client()
+            .database("admin")
+            .run_command(doc! {"ping": 1}, None)
+            .await
+            .map_err(|e| AppError::InternalServer(e.to_string()))
+            .map(|_| ())
     }
     pub fn client(&self) -> &Client {
         &self.client

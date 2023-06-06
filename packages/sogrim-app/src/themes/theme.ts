@@ -25,6 +25,9 @@ export const getAppTheme = (
               light: "#743ca5",
               dark: "#743ca5",
             },
+            warning: {
+              main: "#e98400",
+            },
           },
           typography: {
             fontFamily: "Assistant",
@@ -48,6 +51,9 @@ export const getAppTheme = (
               main: "#ff9e1e",
               light: "#743ca5",
               dark: "#743ca5",
+            },
+            warning: {
+              main: "#ff9e1e",
             },
           },
           typography: {

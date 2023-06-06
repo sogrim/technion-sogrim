@@ -4,9 +4,8 @@ use crate::{
     resources::course::Course,
 };
 use actix_rt::test;
-use actix_web::{body::MessageBody, http::StatusCode, web::Bytes, ResponseError};
+use actix_web::{body::MessageBody, http::StatusCode, ResponseError};
 
-use dotenvy::dotenv;
 use mongodb::{
     options::{ClientOptions, Credential},
     Client,
@@ -14,7 +13,6 @@ use mongodb::{
 
 #[test]
 pub async fn test_db_internal_error() {
-    dotenv().ok();
     // Create explicit client options and update it manually
     let mut client_options = ClientOptions::parse(CONFIG.uri)
         .await
@@ -52,17 +50,19 @@ pub async fn test_db_internal_error() {
     for err in errors {
         let err_resp = err.error_response();
         assert_eq!(err_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
-        assert_eq!(
-            err_resp.into_body().try_into_bytes().unwrap(),
-            Bytes::from("MongoDB driver error: SCRAM failure: bad auth : Authentication failed.")
-        );
+        assert!(err_resp
+            .into_body()
+            .try_into_bytes()
+            .unwrap()
+            .into_iter()
+            .map(|b| b as char)
+            .collect::<String>()
+            .contains("Authentication failed"));
     }
 }
 
 #[test]
 pub async fn test_get_courses_by_filters() {
-    dotenv().ok();
-
     let db = Db::new().await;
 
     let courses = db

@@ -20,22 +20,30 @@ use crate::{
 };
 
 #[get("/catalogs")]
-pub async fn get_all_catalogs(
+pub async fn get_catalogs(
     _: User, //TODO think about whether this is necessary
+    req: HttpRequest,
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
-    db.get_all::<Catalog>().await.map(|catalogs| {
-        HttpResponse::Ok().json(
-            catalogs
-                .into_iter()
-                .map(DisplayCatalog::from)
-                .collect::<Vec<DisplayCatalog>>(),
-        )
-    })
+    let params = Query::<HashMap<String, String>>::from_query(req.query_string())
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    let catalogs = match params.iter().last() {
+        Some((key, value)) => {
+            db.get_filtered::<Catalog>(FilterOption::Regex, key, value)
+                .await
+        }
+        None => db.get_all::<Catalog>().await,
+    }?;
+    Ok(HttpResponse::Ok().json(
+        catalogs
+            .into_iter()
+            .map(DisplayCatalog::from)
+            .collect::<Vec<DisplayCatalog>>(),
+    ))
 }
 
 //TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
-#[get("/students/login")]
+#[get("/login")]
 pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppError> {
     let user_id = req
         .extensions()
@@ -69,7 +77,7 @@ pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppEr
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
-#[put("/students/catalog")]
+#[put("/catalog")]
 pub async fn update_catalog(
     mut user: User,
     catalog_id: String,
@@ -96,7 +104,7 @@ pub async fn update_catalog(
     Ok(HttpResponse::Ok().json(updated_user))
 }
 
-#[get("/students/courses")]
+#[get("/courses")]
 pub async fn get_courses_by_filter(
     _: User,
     req: HttpRequest,
@@ -122,7 +130,7 @@ pub async fn get_courses_by_filter(
     }
 }
 
-#[post("/students/courses")]
+#[post("/courses")]
 pub async fn add_courses(
     mut user: User,
     data: String,
@@ -136,7 +144,7 @@ pub async fn add_courses(
 }
 
 // here "modified" becomes false
-#[get("/students/degree-status")]
+#[get("/degree-status")]
 pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpResponse, AppError> {
     let catalog_id = user
         .details
@@ -167,17 +175,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         )
         .await?;
 
-    // Fill tags for all student courses
-    user.details
-        .degree_status
-        .course_statuses
-        .iter_mut()
-        .for_each(|course_status| {
-            course_status.course.tags = courses
-                .iter()
-                .find(|course| course.id == course_status.course.id)
-                .and_then(|course| course.tags.clone());
-        });
+    user.details.degree_status.fill_tags(&courses);
 
     let mut course_list = Vec::new();
     if user.details.compute_in_progress {
@@ -196,7 +194,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
 }
 
 // here "modified" is true
-#[put("/students/details")]
+#[put("/details")]
 pub async fn update_details(
     mut user: User,
     details: Json<UserDetails>,
@@ -207,7 +205,7 @@ pub async fn update_details(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[put("/students/settings")]
+#[put("/settings")]
 pub async fn update_settings(
     mut user: User,
     settings: Json<UserSettings>,

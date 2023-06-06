@@ -1,11 +1,11 @@
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
-use derive_more::Display;
 
-#[derive(Debug, Display)]
+#[derive(Debug)]
 pub enum AppError {
     BadRequest(String),     // 400
     Bson(String),           // 400
     Parser(String),         // 400
+    Unauthorized(String),   // 401
     NotFound(String),       // 404
     InternalServer(String), // 500
     Middleware(String),     // 500
@@ -30,12 +30,31 @@ impl From<bson::oid::Error> for AppError {
     }
 }
 
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let error = match self {
+            AppError::BadRequest(e) => e.to_owned(),
+            AppError::Bson(e) => format!("Bson error: {e}"),
+            AppError::Parser(e) => format!("Parser error: {e}"),
+            AppError::Unauthorized(e) => format!("Permission denied: {e}"),
+            AppError::NotFound(e) => format!("{e} not found"),
+            AppError::InternalServer(e) => e.to_owned(),
+            AppError::Middleware(e) => format!("Middleware error: {e}"),
+            AppError::MongoDriver(e) => format!("MongoDB driver error: {e}"),
+        };
+        write!(f, "{}", error)
+    }
+}
+
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         let (status_code, error) = match self {
             AppError::BadRequest(e) => (StatusCode::BAD_REQUEST, e.to_owned()),
             AppError::Bson(e) => (StatusCode::BAD_REQUEST, format!("Bson error: {e}")),
             AppError::Parser(e) => (StatusCode::BAD_REQUEST, format!("Parser error: {e}")),
+            AppError::Unauthorized(e) => {
+                (StatusCode::UNAUTHORIZED, format!("Permission denied: {e}"))
+            }
             AppError::NotFound(e) => (StatusCode::NOT_FOUND, format!("{e} not found")),
             AppError::InternalServer(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_owned()),
             AppError::Middleware(e) => (
@@ -50,6 +69,7 @@ impl ResponseError for AppError {
         let mut res = match status_code {
             StatusCode::BAD_REQUEST => HttpResponse::BadRequest().body(error.clone()),
             StatusCode::NOT_FOUND => HttpResponse::NotFound().body(error.clone()),
+            StatusCode::UNAUTHORIZED => HttpResponse::Unauthorized().body(error.clone()),
             StatusCode::INTERNAL_SERVER_ERROR => {
                 HttpResponse::InternalServerError().body(error.clone())
             }

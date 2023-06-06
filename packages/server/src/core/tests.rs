@@ -1,3 +1,4 @@
+use crate::consts;
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::catalog_validations::validate_catalog;
 use crate::core::degree_status::DegreeStatus;
@@ -9,7 +10,6 @@ use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
 use actix_rt::test;
-use dotenvy::dotenv;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -19,10 +19,10 @@ use super::*;
 
 pub const COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID: &str = "61a102bb04c5400b98e6f401"; // catalog id from database
 pub const COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID: &str = "61ec835f015bedeab20397a4"; // catalog id from database
+pub const MEDICINE_18_19_CATALOG_ID: &str = "63efa36f9e57dc03df270751"; // catalog id from database
 
 #[test]
 async fn test_year_catalog() {
-    dotenv().ok();
     let db = Db::new().await;
     let catalog = db
         .get::<Catalog>(
@@ -96,6 +96,19 @@ async fn test_parser_copy_paste_from_acrobat_reader() {
     assert_eq!(course_status.course.credit, 3.0);
     assert_eq!(course_status.course.name, "גרפיקה ממוחשבת1");
     assert!(course_status.grade.is_none());
+
+    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_8.txt")
+        .expect("Something went wrong reading the file");
+
+    let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
+    let course_status = courses.iter().find(|c| c.course.id == "274400").unwrap();
+
+    assert_eq!(course_status.course.credit, 20.0);
+    assert_eq!(
+        course_status.course.name,
+        "שילוב מערכות פרה קליניקה-קליניקה"
+    );
+    assert!(course_status.grade.is_none());
 }
 
 #[test]
@@ -112,6 +125,23 @@ async fn test_parser_copy_paste_med_status() {
         "שילוב מערכות פרה קליניקה-קליניקה"
     );
     assert!(course_status.grade.is_none());
+}
+
+#[test]
+async fn test_parser_course_status_repetitions() {
+    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
+        .expect("Something went wrong reading the file");
+
+    let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
+    let course_status = courses.iter().find(|c| c.course.id == "234247").unwrap();
+    let course_status2 = courses.iter().find(|c| c.course.id == "094591").unwrap();
+    let course_status3 = courses.iter().find(|c| c.course.id == "114052").unwrap();
+
+    assert_eq!(course_status.times_repeated, 1);
+    assert_eq!(course_status2.times_repeated, 1);
+    assert_eq!(course_status3.times_repeated, 2);
+
+    dbg!(course_status3);
 }
 
 lazy_static! {
@@ -360,10 +390,8 @@ async fn test_restore_irrelevant_course() {
         state: Some(NotComplete),
         semester: Some("חורף_1".to_string()),
         grade: Some(Numeric(51)),
-        r#type: None,
-        specialization_group_name: None,
-        additional_msg: None,
         modified: true,
+        ..Default::default()
     });
 
     degree_status = run_degree_status(
@@ -480,10 +508,8 @@ async fn test_duplicated_courses() {
         state: Some(NotComplete),
         semester: Some("חורף_1".to_string()),
         grade: Some(Numeric(51)),
-        r#type: None,
-        specialization_group_name: None,
-        additional_msg: None,
         modified: true,
+        ..Default::default()
     });
 
     degree_status = run_degree_status(
@@ -507,7 +533,6 @@ async fn test_duplicated_courses() {
 // ------------------------------------------------------------------------------------------------------
 
 async fn get_catalog(catalog: &str) -> Catalog {
-    dotenv().ok();
     let db = Db::new().await;
     let obj_id = bson::oid::ObjectId::from_str(catalog).expect("failed to create oid");
     db.get::<Catalog>(&obj_id)
@@ -516,21 +541,12 @@ async fn get_catalog(catalog: &str) -> Catalog {
 }
 
 async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) -> DegreeStatus {
-    dotenv().ok();
     let db = Db::new().await;
     let vec_courses = db
         .get_all::<Course>()
         .await
         .expect("failed to get all courses");
-    degree_status
-        .course_statuses
-        .iter_mut()
-        .for_each(|course_status| {
-            course_status.course.tags = vec_courses
-                .iter()
-                .find(|course| course.id == course_status.course.id)
-                .and_then(|course| course.tags.clone());
-        });
+    degree_status.fill_tags(&vec_courses);
     degree_status.compute(catalog, course::vec_to_map(vec_courses));
     degree_status
 }
@@ -797,9 +813,7 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| {
-            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
-        })
+        .find(|course_status| course_status.course.id == consts::TECHNICAL_ENGLISH_ADVANCED_B)
         .unwrap()
         .grade = Some(Grade::Numeric(80));
 
@@ -818,9 +832,7 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| {
-            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
-        })
+        .find(|course_status| course_status.course.id == consts::TECHNICAL_ENGLISH_ADVANCED_B)
         .unwrap()
         .state = Some(CourseState::NotComplete);
 
@@ -831,6 +843,82 @@ async fn test_postprocessing_english_requirement() {
     .await;
 
     assert_eq!(degree_status.overflow_msgs.len(), 3);
+}
+
+#[test]
+async fn test_postprocessing_medicine_requirement() {
+    let mut degree_status =
+        run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_9.txt", MEDICINE_18_19_CATALOG_ID).await;
+
+    // FOR VIEWING IN JSON FORMAT
+    // std::fs::write(
+    //     "degree_status.json",
+    //     serde_json::to_string_pretty(&degree_status).expect("json serialization failed"),
+    // )
+    // .expect("Unable to write file");
+
+    let cs1 = degree_status.get_course_status("274109").unwrap();
+    let cs2 = degree_status.get_course_status("274143").unwrap();
+
+    // The student repeated a mandatory course 274109 twice
+    assert!(
+        degree_status
+            .overflow_msgs
+            .contains(&messages::medicine_preclinical_course_repetitions_error_msg(vec![cs1, cs2]))
+            || degree_status.overflow_msgs.contains(
+                &messages::medicine_preclinical_course_repetitions_error_msg(vec![cs2, cs1])
+            )
+    );
+
+    // The student repeated a course 3 times
+    assert!(degree_status.overflow_msgs.contains(
+        &messages::medicine_preclinical_total_repetitions_error_msg(3)
+    ));
+
+    // ------------------------------------------------------------------------------------------------
+
+    for course_status in degree_status.course_statuses.iter_mut() {
+        if let Some(grade) = course_status.grade.as_mut() {
+            *grade = Grade::Numeric(70);
+        }
+    }
+
+    degree_status =
+        run_degree_status(degree_status, get_catalog(MEDICINE_18_19_CATALOG_ID).await).await;
+
+    assert!(degree_status
+        .overflow_msgs
+        .contains(&messages::medicine_preclinical_avg_error_msg(70.0)));
+
+    // ------------------------------------------------------------------------------------------------
+    // verify that the algorithm takes only the highest grades
+    // All the courses have the same grade - 75, and there is one course with grade 50
+    // However, the student avg should be 75, because the algorithm takes the highest grades
+    for course_status in degree_status.course_statuses.iter_mut() {
+        if let Some(grade) = course_status.grade.as_mut() {
+            *grade = Grade::Numeric(75);
+        }
+    }
+
+    degree_status.course_statuses.push(CourseStatus {
+        course: Course {
+            credit: 1.0,
+            id: "275101".to_string(),
+            name: "".to_string(),
+            tags: None,
+        },
+        state: Some(CourseState::Complete),
+        grade: Some(Grade::Numeric(50)),
+        r#type: Some("בחירה פקולטית".to_string()),
+        ..Default::default()
+    });
+
+    degree_status =
+        run_degree_status(degree_status, get_catalog(MEDICINE_18_19_CATALOG_ID).await).await;
+
+    assert!(!degree_status
+        .overflow_msgs
+        .contains(&messages::medicine_preclinical_avg_error_msg(75.0)));
 }
 
 #[test]

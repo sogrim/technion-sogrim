@@ -1,4 +1,8 @@
-use crate::{db::Db, middleware, resources::user::User};
+use crate::{
+    db::Db,
+    middleware,
+    resources::user::{Permissions, User},
+};
 use actix_rt::test;
 use actix_web::{
     http::StatusCode,
@@ -7,15 +11,12 @@ use actix_web::{
     App,
 };
 use actix_web_lab::middleware::from_fn;
-use dotenvy::dotenv;
 
 #[test]
 async fn test_from_request_no_db_client() {
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
-    //Init env and app
-    dotenv().ok();
     let app = test::init_service(
         App::new()
             .app_data(middleware::auth::JwtDecoder::new_with_parser(parser))
@@ -43,12 +44,15 @@ async fn test_from_request_no_db_client() {
 
 #[test]
 async fn test_from_request_no_auth_mw() {
-    //Init env and app
-    dotenv().ok();
     let db = Db::new().await;
-    let app = test::init_service(App::new().app_data(web::Data::new(db.clone())).service(
-        web::resource("/").route(web::get().to(|_: User| async { "Shouldn't get here" })),
-    ))
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(db.clone()))
+            .app_data(web::Data::new(Permissions::Student))
+            .service(
+                web::resource("/").route(web::get().to(|_: User| async { "Shouldn't get here" })),
+            ),
+    )
     .await;
 
     // Create and send request
@@ -68,8 +72,6 @@ async fn test_from_request_no_auth_mw() {
 
 #[test]
 async fn test_auth_mw_no_jwt_decoder() {
-    //Init env and app
-    dotenv().ok();
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
@@ -102,8 +104,6 @@ async fn test_auth_mw_no_jwt_decoder() {
 async fn test_auth_mw_client_errors() {
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new_expired();
     let (expired_jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
-    //Init env and app
-    dotenv().ok();
     let app = test::init_service(
         App::new()
             .app_data(middleware::auth::JwtDecoder::new_with_parser(parser))

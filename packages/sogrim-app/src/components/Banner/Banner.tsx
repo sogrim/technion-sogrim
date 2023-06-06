@@ -1,9 +1,9 @@
-import { Typography } from "@mui/material";
 import { Box, styled } from "@mui/system";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../hooks/useStore";
 import { UserRegistrationState } from "../../types/ui-types";
 import { BannerCards } from "./BannerCards/BannerCards";
+import { RegistrationBanner } from "./RegistrationBanner";
 
 const BannerComp: React.FC = () => {
   const {
@@ -16,21 +16,7 @@ const BannerComp: React.FC = () => {
         {userRegistrationState === UserRegistrationState.Ready ? (
           <BannerCards />
         ) : (
-          <Box
-            sx={{
-              display: "flex",
-              textAlign: "center",
-              flexDirection: "column",
-              gap: "20px",
-            }}
-          >
-            <Typography variant="h3" color="white">
-              פה סוגרים את התואר!
-            </Typography>
-            <Typography variant="h5" color="white">
-              בחרו קטלוג, ייבאו קורסים ואז תגלו - כמה עוד?!
-            </Typography>
-          </Box>
+          <RegistrationBanner />
         )}
       </StyledBox>
     </Box>
@@ -41,15 +27,13 @@ export const Banner = observer(BannerComp);
 
 const sxBanner = {
   width: "100%",
-  height: 300,
+  height: 270,
   backgroundColor: "primary.dark",
   display: "flex",
   justifyContent: "center",
 };
 
 const StyledBox = styled(Box)(({ theme }) => ({
-  width: "60%",
-  height: 300,
   marginTop: "100px",
   display: "flex",
   justifyContent: "space-around",

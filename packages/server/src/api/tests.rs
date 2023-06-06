@@ -1,45 +1,50 @@
+use std::str::FromStr;
+
 use crate::{
     api::{
-        bo,
+        owners,
         students::{self, login},
     },
+    core::{degree_status::DegreeStatus, messages},
     db::Db,
     middleware::{self, auth},
     resources::{
         catalog::{Catalog, DisplayCatalog},
         course::{Course, CourseStatus},
-        user::{User, UserDetails},
+        user::{Permissions, User, UserDetails},
     },
 };
 use actix_rt::test;
 use actix_web::{
     http::StatusCode,
     test::{self},
-    web::{Bytes, Data},
+    web::{scope, Bytes, Data},
     App, HttpMessage,
 };
 use actix_web_lab::middleware::from_fn;
-use dotenvy::dotenv;
+use bson::oid::ObjectId;
+
+use super::admins::{self, ComputeDegreeStatusPayload};
 
 #[test]
 pub async fn test_get_all_catalogs() {
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
-    dotenv().ok();
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Student))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
-            .service(students::get_all_catalogs),
+            .service(scope("/students").service(students::get_catalogs)),
     )
     .await;
 
     // Create and send request
     let resp = test::TestRequest::get()
-        .uri("/catalogs")
+        .uri("/students/catalogs")
         .insert_header(("authorization", jwt))
         .send_request(&app)
         .await;
@@ -53,7 +58,6 @@ pub async fn test_get_all_catalogs() {
 
 #[test]
 async fn test_students_api_full_flow() {
-    dotenv().ok();
     // Create authorization header
 
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
@@ -63,14 +67,18 @@ async fn test_students_api_full_flow() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Student))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
-            .service(students::get_all_catalogs)
-            .service(students::login)
-            .service(students::update_catalog)
-            .service(students::add_courses)
-            .service(students::compute_degree_status)
-            .service(students::update_details),
+            .service(
+                scope("/students")
+                    .service(students::get_catalogs)
+                    .service(students::login)
+                    .service(students::update_catalog)
+                    .service(students::add_courses)
+                    .service(students::compute_degree_status)
+                    .service(students::update_details),
+            ),
     )
     .await;
 
@@ -87,7 +95,7 @@ async fn test_students_api_full_flow() {
 
     // get /catalogs
     res = test::TestRequest::get()
-        .uri("/catalogs")
+        .uri("/students/catalogs")
         .insert_header(("authorization", jwt.clone()))
         .send_request(&app)
         .await;
@@ -140,15 +148,17 @@ async fn test_students_api_full_flow() {
 }
 #[test]
 async fn test_compute_in_progress() {
-    dotenv().ok();
-
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
-            .service(students::compute_degree_status)
-            .service(students::update_details),
+            .app_data(Data::new(Permissions::Student))
+            .service(
+                scope("/students")
+                    .service(students::compute_degree_status)
+                    .service(students::update_details),
+            ),
     )
     .await;
 
@@ -200,8 +210,7 @@ async fn test_compute_in_progress() {
 }
 
 #[test]
-async fn test_bo_api_courses() {
-    dotenv().ok();
+async fn test_owner_api_courses() {
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
@@ -210,18 +219,22 @@ async fn test_bo_api_courses() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Owner))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
-            .service(bo::get_all_courses)
-            .service(bo::get_course_by_id)
-            .service(bo::create_or_update_course)
-            .service(bo::delete_course),
+            .service(
+                scope("owners")
+                    .service(owners::get_all_courses)
+                    .service(owners::get_course_by_id)
+                    .service(owners::create_or_update_course)
+                    .service(owners::delete_course),
+            ),
     )
     .await;
 
     // get /courses
     let res = test::TestRequest::get()
-        .uri("/courses")
+        .uri("/owners/courses")
         .insert_header(("authorization", jwt.clone()))
         .send_request(&app)
         .await;
@@ -232,7 +245,7 @@ async fn test_bo_api_courses() {
     // put /courses/{id}
     course.id = "some-id".into();
     let res = test::TestRequest::put()
-        .uri(format!("/courses/{}", course.id).as_str())
+        .uri(format!("/owners/courses/{}", course.id).as_str())
         .insert_header(("authorization", jwt.clone()))
         .insert_header(("content-type", "application/json"))
         .set_payload(serde_json::to_string(&course).expect("Fail to deserialize course"))
@@ -242,7 +255,7 @@ async fn test_bo_api_courses() {
 
     // get /courses/{id}
     let res = test::TestRequest::get()
-        .uri("/courses/some-id")
+        .uri("/owners/courses/some-id")
         .insert_header(("authorization", jwt.clone()))
         .send_request(&app)
         .await;
@@ -254,7 +267,7 @@ async fn test_bo_api_courses() {
 
     // delete /courses/{id}
     let res = test::TestRequest::delete()
-        .uri("/courses/some-id")
+        .uri("/owners/courses/some-id")
         .insert_header(("authorization", jwt.clone()))
         .send_request(&app)
         .await;
@@ -262,7 +275,7 @@ async fn test_bo_api_courses() {
 
     // get /courses with 404 error
     let res = test::TestRequest::get()
-        .uri("/courses/some-id")
+        .uri("/owners/courses/some-id")
         .insert_header(("authorization", jwt.clone()))
         .send_request(&app)
         .await;
@@ -270,8 +283,7 @@ async fn test_bo_api_courses() {
 }
 
 #[test]
-async fn test_bo_api_catalogs() {
-    dotenv().ok();
+async fn test_owner_api_catalogs() {
     // Create authorization header
     let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
     let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
@@ -280,15 +292,16 @@ async fn test_bo_api_catalogs() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Owner))
             .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
-            .service(bo::get_catalog_by_id),
+            .service(scope("/owners").service(owners::get_catalog_by_id)),
     )
     .await;
 
     // get /catalog/{id}
     let res = test::TestRequest::get()
-        .uri("/catalogs/61ddcc8a2397192f08d517d9")
+        .uri("/owners/catalogs/61ddcc8a2397192f08d517d9")
         .insert_header(("authorization", jwt.clone()))
         .send_request(&app)
         .await;
@@ -301,10 +314,14 @@ async fn test_bo_api_catalogs() {
 
 #[test]
 async fn test_student_login_no_sub() {
-    dotenv().ok();
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(App::new().app_data(Data::new(db.clone())).service(login)).await;
+    let app = test::init_service(
+        App::new()
+            .app_data(Data::new(db.clone()))
+            .service(scope("/students").service(login)),
+    )
+    .await;
 
     // Create and send request
     let resp = test::TestRequest::get()
@@ -322,13 +339,13 @@ async fn test_student_login_no_sub() {
 #[test]
 async fn test_students_api_no_catalog() {
     // *** IMPORTANT: This should NEVER happen, but the tests are added anyway for coverage
-    dotenv().ok();
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
-            .service(students::compute_degree_status),
+            .app_data(Data::new(Permissions::Student))
+            .service(scope("/students").service(students::compute_degree_status)),
     )
     .await;
     let request = test::TestRequest::get()
@@ -343,6 +360,78 @@ async fn test_students_api_no_catalog() {
     assert!(resp.status().is_server_error());
     assert_eq!(
         Bytes::from("No catalog chosen for user"),
+        test::read_body(resp).await
+    );
+}
+
+#[test]
+async fn test_admins_parse_and_compute_api() {
+    // Create authorization header
+    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
+    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
+    // Init env and app
+    let db = Db::new().await;
+    let app = test::init_service(
+        App::new()
+            .app_data(Data::new(db.clone()))
+            .app_data(auth::JwtDecoder::new_with_parser(parser))
+            .app_data(Data::new(Permissions::Admin))
+            .wrap(from_fn(middleware::auth::authenticate))
+            .service(scope("/admins").service(admins::parse_courses_and_compute_degree_status)),
+    )
+    .await;
+
+    let copy_paste_data = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
+        .expect("Something went wrong reading the file");
+
+    let post_admins_compute = test::TestRequest::post()
+        .uri("/admins/parse-compute")
+        .insert_header(("authorization", jwt.clone()))
+        .set_json(ComputeDegreeStatusPayload {
+            catalog_id: ObjectId::from_str("61a102bb04c5400b98e6f401").unwrap(),
+            grade_sheet_as_string: copy_paste_data,
+        })
+        .to_request();
+
+    let resp = test::call_service(&app, post_admins_compute).await;
+
+    let degree_status: DegreeStatus = test::read_body_json(resp).await;
+    assert_eq!(degree_status.total_credit, 106.5);
+    assert!(degree_status
+        .overflow_msgs
+        .contains(&messages::credit_leftovers_msg(0.0)))
+}
+
+#[test]
+async fn test_unauthorized_path() {
+    // Init env and app
+    let db = Db::new().await;
+    let app = test::init_service(
+        App::new()
+            .app_data(Data::new(db.clone()))
+            .app_data(Data::new(Permissions::Admin))
+            .service(scope("/admins").service(admins::parse_courses_and_compute_degree_status)),
+    )
+    .await;
+
+    // Create and send request
+    let request = test::TestRequest::post()
+        .uri("/admins/parse-compute")
+        .set_json(ComputeDegreeStatusPayload {
+            catalog_id: ObjectId::new(),
+            grade_sheet_as_string: "".to_string(),
+        })
+        .to_request();
+
+    // Manually insert a sub of a fake user with no permissions
+    request
+        .extensions_mut()
+        .insert::<auth::Sub>("bugo-the-debugo-junior".to_string());
+
+    let resp = test::call_service(&app, request).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        Bytes::from("Permission denied: User not authorized to access this resource"),
         test::read_body(resp).await
     );
 }

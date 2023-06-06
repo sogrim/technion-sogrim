@@ -16,11 +16,36 @@ lazy_static! {
     .unwrap();
 }
 
+enum Format {
+    Default,
+    MedicineFirefox,
+    MedicineAcrobatReader,
+}
+
+impl Format {
+    fn validate(&self, data: &str) -> bool {
+        match self {
+            Format::Default => {
+                data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים")
+            }
+            Format::MedicineFirefox => {
+                data.contains("ציונים גליון") && data.contains("ציונים גליון סוף")
+            }
+            Format::MedicineAcrobatReader => {
+                data.contains("גליון ציונים") && data.contains("סוף גליון ציונים")
+            }
+        }
+    }
+    fn is_one_of_valid_formats(data: &str) -> bool {
+        Self::Default.validate(data)
+            || Self::MedicineFirefox.validate(data)
+            || Self::MedicineAcrobatReader.validate(data)
+    }
+}
+
 pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> {
     // Sanity validation
-    if !((data.starts_with("גיליון ציונים") && data.contains("סוף גיליון ציונים"))
-        || (data.contains("ציונים גליון") && data.contains("ציונים גליון סוף")))
-    {
+    if !(Format::is_one_of_valid_formats(data)) {
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
 
@@ -79,7 +104,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         let mut course_status = CourseStatus {
             course,
             semester: (!semester.is_empty()).then(|| semester.clone()),
-            grade: grade.clone(),
+            grade,
             ..Default::default()
         };
         course_status.set_state();
@@ -104,24 +129,42 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     let mut vec_courses = courses.into_values().collect::<Vec<_>>();
 
     // Fix the grades for said courses
-    set_grades_for_uncompleted_courses(&mut vec_courses, asterisk_courses);
+    set_grades_for_uncompleted_courses(&mut vec_courses, &asterisk_courses);
 
     vec_courses.append(&mut sport_courses);
 
     if vec_courses.is_empty() {
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
+
+    for course_status in vec_courses.iter_mut() {
+        // Use asterisk courses to look for repetitions of the current course
+        let mut course_repetitions = asterisk_courses
+            .iter()
+            .filter(|cs| course_status.course.id == cs.course.id)
+            .collect::<Vec<_>>();
+
+        // Deduplicate the list of repetitions by semester
+        course_repetitions.dedup_by_key(|cs| cs.semester.clone());
+
+        // Remove the current course status from the list of repetitions
+        course_repetitions.retain(|cs| cs.semester != course_status.semester);
+
+        // Set the number of repetitions
+        course_status.times_repeated = course_repetitions.len();
+    }
+
     Ok(vec_courses)
 }
 
 fn set_grades_for_uncompleted_courses(
     courses: &mut [CourseStatus],
-    asterisk_courses: Vec<CourseStatus>,
+    asterisk_courses: &[CourseStatus],
 ) {
     // The candidate course statuses are those with uncompleted (לא השלים) grades.
     // For each uncompleted course status, we iterate the asterisk list in reverse to find
     // the closest (most chronologically advanced) course status with a grade (anything other than NotComplete (לא השלים)).
-    // This course status will replace the old one.
+    // If we find a course with such grade, then this course status will replace the old one.
     let uncompleted_courses = courses
         .iter_mut()
         .filter(|c| c.grade == Some(Grade::NotComplete))
@@ -191,7 +234,7 @@ fn parse_course_status_pdf_format(
         "נכשל" => Some(Grade::Binary(false)), //TODO כתוב נכשל או שכתוב לא עבר?
         "לא השלים" => Some(Grade::NotComplete),
         "לא השלים(מ)" => Some(Grade::NotComplete),
-        _ => grade.parse::<u8>().ok().map(Grade::Numeric),
+        _ => grade.parse::<u32>().ok().map(Grade::Numeric),
     };
     Ok((
         Course {

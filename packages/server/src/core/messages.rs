@@ -1,6 +1,9 @@
 use std::fmt::Write;
 
-use crate::resources::course::Course;
+use crate::{
+    consts::medicine,
+    resources::course::{Course, CourseStatus},
+};
 
 const ZERO: f32 = 0.0;
 const HALF: f32 = 0.5;
@@ -96,16 +99,52 @@ pub fn credit_leftovers_msg(credit: f32) -> String {
     }
 }
 
-pub fn cannot_find_course() -> String {
-    "שגיאה - קורס לא נמצא".to_string()
-}
-
 pub fn english_requirement_for_exempt_students_msg() -> String {
-    "לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים שני קורסי תוכן באנגלית.".to_string()
+    "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים שני קורסי תוכן באנגלית.".to_string()
 }
 
 pub fn english_requirement_for_technical_advanced_b_students_msg() -> String {
-    "לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
+    "אזהרה: לא השלמת את דרישת האנגלית לסיום התואר. סטודנטים שהתחילו את לימודיהם החל מתשפ\"ב נדרשים להשלים קורס תוכן באנגלית בנוסף לקורס אנגלית טכנית מתקדמים ב ".to_string()
+}
+
+pub fn medicine_preclinical_avg_error_msg(avg: f32) -> String {
+    format!(
+        "פסילה: ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}. המשך הלימודים מותנה בשמירה על ממוצע גבוה מ-{}. יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.",
+        avg, medicine::PRECLINICAL_MIN_AVG
+    )
+}
+
+pub fn medicine_preclinical_avg_msg(avg: f32) -> String {
+    format!("ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}", avg)
+}
+
+pub fn medicine_preclinical_course_repetitions_error_msg(
+    course_statuses: Vec<&CourseStatus>,
+) -> String {
+    if course_statuses.len() == 1 {
+        if course_statuses[0].times_repeated == 1 {
+            format!(
+                "פסילה: חזרת על הקורס \"{}\", יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.",
+                course_statuses[0].course.name
+            )
+        } else {
+            format!(
+                "פסילה: נכשלת בקורס \"{}\", יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.",
+                course_statuses[0].course.name
+            )
+        }
+    } else {
+        let mut msg = "פסילה: נכשלת בקורסים: ".to_string();
+        course_statuses.iter().for_each(|course_status| {
+            msg += &format!("\"{}\", ", course_status.course.name);
+        });
+        msg += " יש ליצור קשר בדחיפות עם יועץ השנה ורכזת הסטודנטים.";
+        msg
+    }
+}
+
+pub fn medicine_preclinical_total_repetitions_error_msg(repetitions: usize) -> String {
+    format!("פסילה: סך הכל, חזרת על קורסים {repetitions} פעמים. לא ניתן לחזור על יותר משני קורסים, או לחזור על קורס אחד יותר מפעמיים")
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -118,4 +157,8 @@ pub fn cyclic_credit_transfer_graph(bank_in_cycle: &str) -> String {
 
 pub fn build_credit_transfer_graph_failed() -> String {
     "בניית הגרף נכשלה".to_string()
+}
+
+pub fn cannot_find_course() -> String {
+    "שגיאה - קורס לא נמצא".to_string()
 }

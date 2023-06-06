@@ -1,19 +1,9 @@
-import { ExpandMore } from "@mui/icons-material";
-import InfoTwoToneIcon from "@mui/icons-material/InfoTwoTone";
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Divider,
-  IconButton,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, Divider, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
 import { useStore } from "../../../hooks/useStore";
 import { RowData } from "../SemestersPage/SemesterTabsConsts";
+import { MessagesAccordion } from "./MessagesAccordion";
 
 interface ExemptionsAndCreditsProps {}
 
@@ -42,54 +32,22 @@ const ExemptionsAndCreditsComp: React.FC<ExemptionsAndCreditsProps> = () => {
     }
   }, [userDetails, generateRowsForSemester]);
 
-  return (
-    <div>
-      <Accordion
-        defaultExpanded
-        sx={{
-          minWidth: 400,
-          p: 1,
-          borderRadius: 2,
-          border: "2px solid #d1d1d1",
-          boxShadow: 0,
-        }}
-      >
-        <AccordionSummary
-          expandIcon={<ExpandMore />}
-          aria-controls="overflow-collapse"
-          id="overflow-collapse"
-        >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="h6" fontWeight={"bold"}>
-              פטורים וזיכויים
-            </Typography>
-            <Tooltip
-              title={
-                <Typography>
-                  פטור מאנגלית? נקודות על פעילות חברתית? כל הזיכויים והפטורים
-                  שעשיתם (וגם שלא ידעתם שעשיתם) יופיעו כאן
-                </Typography>
-              }
-              placement="bottom"
-              arrow
-            >
-              <IconButton>
-                <InfoTwoToneIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </AccordionSummary>
-        <AccordionDetails>
+  return semester0Courses.length > 0 ? (
+    <MessagesAccordion
+      name="פטורים וזיכויים"
+      tooltipMsg="פטור מאנגלית? נקודות על פעילות חברתית? כל הזיכויים והפטורים שעשיתם (וגם שלא ידעתם שעשיתם) יופיעו כאן"
+      Messages={() => (
+        <>
           {semester0Courses.map((course, id) => (
             <Box key={id} sx={{ padding: 0.5 }}>
               <Typography> {course.name} </Typography>
               <Divider />
             </Box>
           ))}
-        </AccordionDetails>
-      </Accordion>
-    </div>
-  );
+        </>
+      )}
+    />
+  ) : null;
 };
 
 export const ExemptionsAndCredits = observer(ExemptionsAndCreditsComp);

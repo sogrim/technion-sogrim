@@ -19,12 +19,15 @@ const gradeComparator: GridComparatorFn = (v1: any, v2: any) => {
 
 export const MAX_GRID_WIDTH = 1100;
 
-export const columns = (isSemester0: boolean): GridColumns => [
+export const columns = (
+  isSemester0: boolean,
+  editable: boolean = true
+): GridColumns => [
   {
     field: "name",
     headerName: "קורס",
     flex: 250 / MAX_GRID_WIDTH,
-    editable: true,
+    editable: editable,
     headerAlign: "center",
     align: "center",
   },
@@ -32,7 +35,7 @@ export const columns = (isSemester0: boolean): GridColumns => [
     field: "courseNumber",
     headerName: "מס׳ קורס",
     flex: 125 / MAX_GRID_WIDTH,
-    editable: false,
+    editable: editable,
     headerAlign: "center",
     align: "center",
     description:
@@ -43,7 +46,7 @@ export const columns = (isSemester0: boolean): GridColumns => [
     headerName: "נק״ז",
     type: "number",
     flex: 95 / MAX_GRID_WIDTH,
-    editable: true,
+    editable: editable,
     headerAlign: "center",
     align: "center",
   },
@@ -51,7 +54,7 @@ export const columns = (isSemester0: boolean): GridColumns => [
     field: "grade",
     headerName: "ציון",
     flex: 200 / MAX_GRID_WIDTH,
-    editable: true,
+    editable: editable,
     headerAlign: "center",
     align: "center",
     sortComparator: gradeComparator,
@@ -62,7 +65,7 @@ export const columns = (isSemester0: boolean): GridColumns => [
     field: "type",
     headerName: "קטגוריה",
     flex: 210 / MAX_GRID_WIDTH,
-    editable: !isSemester0,
+    editable: !isSemester0 && editable,
     headerAlign: "center",
     align: "center",
     renderEditCell: renderCategoryEditInputCell,
@@ -71,7 +74,6 @@ export const columns = (isSemester0: boolean): GridColumns => [
     field: "state",
     headerName: "סטטוס",
     width: 125,
-    editable: false,
     headerAlign: "center",
     align: "center",
     description: "לא ניתן לערוך שדה זה. הוא מתעדכן בהתאם לציון",
