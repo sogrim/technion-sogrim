@@ -12,9 +12,89 @@ jobs:
       - uses: actions/github-script@v6
         with:
           script: |
+            // First, remove the current release label
+            const labels = await github.rest.issues.listLabelsOnIssue({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            })
+            const releaseLabels = labels.data.filter(label => label.name.startsWith('release:'))
+            if (releaseLabels.length > 1) {
+              core.setFailed('More than one release label found')
+              return
+            }
+            if (releaseLabels.length === 1) {
+              console.log(`Removing label: ${releaseLabels[0].name}`)
+              await github.rest.issues.removeLabel({
+                issue_number: context.issue.number,
+                name: releaseLabels[0].name,
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              })
+            }
+            // Get release version from PR title
+            const title = context.payload.pull_request.title
+            const regex = /Release v(\d+\.\d+\.\d+)/
+            const match = title.match(regex)
+            if (!match) {
+              console.log('No release version found in PR title')
+              return
+            }
+            const newRelease = match[1]
+            // Get the latest release version from the repo
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            })
+            const latestRelease = releases.data[0].tag_name.replace('v', '')
+            // Compare the two versions. 
+            // If they differ by the major number, add the label release:major
+            // If they differ by the minor number, add the label release:minor
+            // If they differ by the patch number, add the label release:patch
+            // If the major version changed, make sure the minor and patch versions are 0, or else fail the build
+            // If the minor version changed, make sure the patch version is 0, or else fail the build
+            console.log(`Latest release: ${latestRelease}`)
+            console.log(`New release: ${newRelease}`)
+            const newReleaseVersion = newRelease.split('.')
+            const latestReleaseVersion = latestRelease.split('.')
+            let label = 'release:'
+            if (newReleaseVersion[0] !== latestReleaseVersion[0]) {
+              label += 'major'
+              if (newReleaseVersion[1] !== '0' || newReleaseVersion[2] !== '0') {
+                core.setFailed('Major version changed, but minor or patch version is not 0')
+              }
+              // Make sure the new major version is greater than the latest major version
+              if (newReleaseVersion[0] < latestReleaseVersion[0]) {
+                core.setFailed('Major version decreased')
+              }
+            } else if (newReleaseVersion[1] !== latestReleaseVersion[1]) {
+              label += 'minor'
+              if (newReleaseVersion[2] !== '0') {
+                core.setFailed('Minor version changed, but patch version is not 0')
+              }
+              // Make sure the new minor version is greater than the latest minor version
+              if (newReleaseVersion[1] < latestReleaseVersion[1]) {
+                core.setFailed('Minor version decreased')
+              }
+            } else if (newReleaseVersion[2] !== latestReleaseVersion[2]) {
+              label += 'patch'
+              // Make sure the new patch version is greater than the latest patch version
+              if (newReleaseVersion[2] < latestReleaseVersion[2]) {
+                core.setFailed('Patch version decreased')
+              }
+            } else {
+              core.setFailed('v${newRelease} is already the latest release')
+              return
+            }
+            // if core was set to fail, we don't want to apply the label
+            if (core.failed) {
+              return
+            }
+            console.log(`Applying label: ${label}`)
+            // Add the label to the PR
             github.rest.issues.addLabels({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: ['release:patch']
+              labels: [label]
             })
