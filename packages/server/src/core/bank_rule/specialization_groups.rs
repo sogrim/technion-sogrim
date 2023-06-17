@@ -205,6 +205,16 @@ impl<'a> BankRuleHandler<'a> {
                 if let Some(course_status) =
                     self.degree_status.get_mut_course_status(course_id.as_str())
                 {
+                    // TODO: We have a problem here.
+                    // Courses which are tagged in multiple categories (one of them being a specialization group)
+                    // will get the name of the specialization group, even if they are not in it.
+
+                    // Thought this was a possible fix, didn't actually work (probably since some courses get tagged only after this function is called):
+
+                    // if course_status.r#type.is_none() {
+                    //     course_status.set_specialization_group_name(&sg.name);
+                    // }
+
                     course_status.set_specialization_group_name(&sg.name);
                 }
             }

@@ -6,8 +6,10 @@ use lazy_static::lazy_static;
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::degree_status::DegreeStatus;
 use crate::core::tests::create_degree_status;
-use crate::core::types::{Requirement, SpecializationGroup, SpecializationGroups};
+use crate::core::types::{Requirement, Rule};
 use crate::create_bank_rule_handler;
+use crate::db::{Db, FilterOption};
+use crate::resources::catalog::Catalog;
 use crate::resources::course::{Course, CourseState, CourseStatus, Grade};
 
 lazy_static! {
@@ -340,7 +342,7 @@ async fn test_rule_sport() {
 #[test]
 async fn test_specialization_group() {
     // Simulate specialization groups behavior from catalog 2018 computer engineering
-    let bank_name = "specialization group".to_string();
+    let bank_name = "קבוצות התמחות".to_string();
     let mut degree_status = DegreeStatus {
         course_statuses: vec![
             CourseStatus {
@@ -458,132 +460,20 @@ async fn test_specialization_group() {
         "234325".to_string(),
         "044191".to_string(),
     ];
-    let sgs = SpecializationGroups {
-        groups_list: vec![
-            SpecializationGroup {
-                name: "רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "236334", "236341", "236357", "046237", "236351", "046272", "046273", "236370",
-                    "236376", "236350", "046853", "046925", "046993", "236268", "046275", "236278",
-                    "046336", "046265",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["236334".to_string(), "236357".to_string()]]),
-            },
-            SpecializationGroup {
-                name: "תורת התקשורת".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "236334", "236341", "044202", "046204", "046206", "046208", "044148", "044198",
-                    "046201", "046205", "046868", "046743", "046733", "046993", "236309", "236525",
-                    "236520",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: Some(vec![
-                    vec!["044202".to_string()],
-                    vec!["046206".to_string(), "046204".to_string()],
-                ]),
-            },
-            SpecializationGroup {
-                name: "אלגוריתמים, צפינה, קריפטוגרפיה וסיבוכיות".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "046205", "234129", "236309", "236313", "236343", "236359", "236374", "236500",
-                    "236506", "236525", "236520", "236522", "236719", "236760", "236990",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["236343".to_string()]]),
-            },
-            SpecializationGroup {
-                name: "עיבוד אותות ותמונות".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "044198", "044202", "236860", "234325", "236330", "046201", "046332", "046745",
-                    "236873", "236373", "236861", "046733", "046831", "236756", "234125", "236329",
-                    "236862",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: Some(vec![
-                    vec!["044198".to_string()],
-                    vec!["044202".to_string(), "236860".to_string()],
-                ]),
-            },
-            SpecializationGroup {
-                name: "מערכות נבונות".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "234325", "236501", "236927", "234293", "236372", "236373", "236716", "236756",
-                    "236760", "046194", "236329", "236861", "236873", "236941", "236860", "236862",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec![
-                    "234325".to_string(),
-                    "236501".to_string(),
-                    "236927".to_string(),
-                ]]),
-            },
-            SpecializationGroup {
-                name: "מעגלים אלקטרוניים משולבים".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "044231", "046235", "046237", "046903", "046265", "046129", "044140", "044148",
-                    "046187", "046189", "046773", "046851", "046880",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["044231".to_string()], vec!["046237".to_string()]]),
-            },
-            SpecializationGroup {
-                name: "מערכות תוכנה ותכנות מתקדם".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "236319", "236322", "236321", "236350", "236360", "236363", "236370", "236376",
-                    "236703", "236351", "236501", "236700", "236780", "236790", "046272", "046273",
-                    "046275", "236278",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: None,
-            },
-            SpecializationGroup {
-                name: "בקרה ורובוטיקה".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "044191", "044192", "044193", "046194", "044198", "044202", "046189", "046196",
-                    "236330", "236756", "236927",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["044191".to_string()]]),
-            },
-            SpecializationGroup {
-                name: "שפות תכנות, שפות פורמליות וטבעיות".to_string(),
-                courses_sum: 3,
-                course_list: vec![
-                    "234129", "234293", "236319", "236299", "236342", "236345", "236360", "236368",
-                    "236780",
-                ]
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["234129".to_string()]]),
-            },
-        ],
-        groups_number: 2,
+    let db = Db::new().await;
+    let catalog = &db
+        .get_filtered::<Catalog>(FilterOption::Regex, "name", "הנדסת מחשבים")
+        .await
+        .unwrap()[0];
+
+    let rule = &catalog
+        .course_banks
+        .iter()
+        .find(|bank| bank.name == bank_name)
+        .unwrap()
+        .rule;
+    let Rule::SpecializationGroups(sgs) = rule else {
+        panic!("Expected specialization groups rule")
     };
 
     let handle_bank_rule_processor = create_bank_rule_handler!(
@@ -594,7 +484,7 @@ async fn test_specialization_group() {
         0
     );
     let mut completed_groups = Vec::<String>::new();
-    handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
+    handle_bank_rule_processor.specialization_group(sgs, &mut completed_groups);
 
     assert_eq!(completed_groups.len(), 2);
     assert!(completed_groups.contains(&"תורת התקשורת".to_string()));
@@ -613,7 +503,112 @@ async fn test_specialization_group() {
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut completed_groups = Vec::<String>::new();
-    handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
+    handle_bank_rule_processor.specialization_group(sgs, &mut completed_groups);
     assert_eq!(completed_groups.len(), 1);
     assert!(completed_groups.contains(&"מערכות נבונות".to_string()));
+}
+
+#[test]
+async fn test_sg_replacement_edge_case() {
+    let bank_name = "קבוצות התמחות".to_string();
+    let db = Db::new().await;
+    let catalog = &db
+        .get_filtered::<Catalog>(FilterOption::Regex, "name", "הנדסת מחשבים")
+        .await
+        .unwrap()[0];
+
+    let rule = &catalog
+        .course_banks
+        .iter()
+        .find(|bank| bank.name == bank_name)
+        .unwrap()
+        .rule;
+    let Rule::SpecializationGroups(sgs) = rule else {
+        panic!("Expected specialization groups rule")
+    };
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![
+            CourseStatus {
+                course: Course {
+                    id: "044334".to_string(),
+                    credit: 3.0,
+                    name: "רשתות מחשבים ואינטרנט 1".to_string(),
+                    tags: None,
+                },
+                // this is a simulated run after a first degree-status call, where 044334 is already tagged as "מקצועות ליבה"
+                r#type: Some("מקצועות ליבה".to_string()),
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "236351".to_string(),
+                    credit: 3.0,
+                    name: "מערכות מבוזרות".to_string(),
+                    tags: None,
+                },
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "236376".to_string(),
+                    credit: 4.0,
+                    name: "הנדסת מערכות הפעלה".to_string(),
+                    tags: None,
+                },
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+        ],
+        course_bank_requirements: Vec::new(),
+        overflow_msgs: Vec::new(),
+        total_credit: 0.0,
+    };
+    let mut handle_bank_rule_processor = create_bank_rule_handler!(
+        &mut degree_status,
+        bank_name.clone(),
+        catalog.get_course_list("קבוצות התמחות"),
+        0.0,
+        0
+    );
+    handle_bank_rule_processor.common_replacements = &catalog.common_replacements;
+    handle_bank_rule_processor.catalog_replacements = &catalog.catalog_replacements;
+    let mut completed_groups = Vec::new();
+    handle_bank_rule_processor.specialization_group(sgs, &mut completed_groups);
+
+    // 044334 is a replacement for 236334, and 236334 is "מקצועות ליבה", this makes 044334 "מקצועות ליבה" as well.
+    assert_eq!(completed_groups.len(), 0);
+    assert_eq!(
+        degree_status.course_statuses[0].specialization_group_name,
+        None
+    );
+
+    // now the user manually modifies the type of 044334 to be "קבוצות התמחות", and the user completes the requirement
+    degree_status.course_statuses[0].r#type = Some("קבוצות התמחות".to_string());
+    degree_status.course_statuses[0].modified = true;
+
+    // reset types to let the rule handler do its job
+    degree_status.course_statuses[1].r#type = None;
+    degree_status.course_statuses[2].r#type = None;
+
+    let mut handle_bank_rule_processor = create_bank_rule_handler!(
+        &mut degree_status,
+        bank_name.clone(),
+        catalog.get_course_list("קבוצות התמחות"),
+        0.0,
+        0
+    );
+    handle_bank_rule_processor.common_replacements = &catalog.common_replacements;
+    handle_bank_rule_processor.catalog_replacements = &catalog.catalog_replacements;
+    let mut completed_groups = Vec::new();
+    handle_bank_rule_processor.specialization_group(sgs, &mut completed_groups);
+    assert_eq!(completed_groups.len(), 1);
+    assert_eq!(
+        degree_status.course_statuses[0].specialization_group_name,
+        Some("רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים".to_string())
+    );
 }

@@ -47,13 +47,11 @@ impl Catalog {
     }
 
     pub fn get_course_list(&self, name: &str) -> Vec<CourseId> {
-        let mut course_list_for_bank = Vec::new();
-        for (course_id, bank_name) in &self.course_to_bank {
-            if *bank_name == name {
-                course_list_for_bank.push(course_id.to_string());
-            }
-        }
-        course_list_for_bank
+        self.course_to_bank
+            .iter()
+            .filter(|(_, bank_name)| *bank_name == name)
+            .map(|(course_id, _)| course_id.to_string())
+            .collect()
     }
 
     pub fn get_course_bank_by_name(&self, name: &str) -> Option<&CourseBank> {
