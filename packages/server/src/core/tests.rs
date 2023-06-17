@@ -1,3 +1,4 @@
+use crate::consts;
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::catalog_validations::validate_catalog;
 use crate::core::degree_status::DegreeStatus;
@@ -9,7 +10,6 @@ use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
 use actix_rt::test;
-use dotenvy::dotenv;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -23,7 +23,6 @@ pub const MEDICINE_18_19_CATALOG_ID: &str = "63efa36f9e57dc03df270751"; // catal
 
 #[test]
 async fn test_year_catalog() {
-    dotenv().ok();
     let db = Db::new().await;
     let catalog = db
         .get::<Catalog>(
@@ -532,7 +531,6 @@ async fn test_duplicated_courses() {
 // ------------------------------------------------------------------------------------------------------
 
 async fn get_catalog(catalog: &str) -> Catalog {
-    dotenv().ok();
     let db = Db::new().await;
     let obj_id = bson::oid::ObjectId::from_str(catalog).expect("failed to create oid");
     db.get::<Catalog>(&obj_id)
@@ -541,7 +539,6 @@ async fn get_catalog(catalog: &str) -> Catalog {
 }
 
 async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) -> DegreeStatus {
-    dotenv().ok();
     let db = Db::new().await;
     let vec_courses = db
         .get_all::<Course>()
@@ -814,9 +811,7 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| {
-            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
-        })
+        .find(|course_status| course_status.course.id == consts::TECHNICAL_ENGLISH_ADVANCED_B)
         .unwrap()
         .grade = Some(Grade::Numeric(80));
 
@@ -835,9 +830,7 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| {
-            course_status.course.id == degree_status::postprocessing::TECHNICAL_ENGLISH_ADVANCED_B
-        })
+        .find(|course_status| course_status.course.id == consts::TECHNICAL_ENGLISH_ADVANCED_B)
         .unwrap()
         .state = Some(CourseState::NotComplete);
 
@@ -862,21 +855,18 @@ async fn test_postprocessing_medicine_requirement() {
     // )
     // .expect("Unable to write file");
 
+    let cs1 = degree_status.get_course_status("274109").unwrap();
+    let cs2 = degree_status.get_course_status("274143").unwrap();
+
     // The student repeated a mandatory course 274109 twice
-    assert!(degree_status.overflow_msgs.contains(
-        &messages::medicine_preclinical_course_repetitions_error_msg(vec![
-            degree_status
-                .course_statuses
-                .iter()
-                .find(|course_status| course_status.course.id == "274109")
-                .unwrap(),
-            degree_status
-                .course_statuses
-                .iter()
-                .find(|course_status| course_status.course.id == "274143")
-                .unwrap()
-        ])
-    ));
+    assert!(
+        degree_status
+            .overflow_msgs
+            .contains(&messages::medicine_preclinical_course_repetitions_error_msg(vec![cs1, cs2]))
+            || degree_status.overflow_msgs.contains(
+                &messages::medicine_preclinical_course_repetitions_error_msg(vec![cs2, cs1])
+            )
+    );
 
     // The student repeated a course 3 times
     assert!(degree_status.overflow_msgs.contains(

@@ -5,13 +5,13 @@ use actix_web::{
 };
 use actix_web_lab::middleware::from_fn;
 use db::Db;
-use dotenvy::dotenv;
 use error::AppError;
 use middleware::{auth, cors, logger};
 use resources::user::Permissions;
 
 mod api;
 mod config;
+mod consts;
 mod core;
 mod db;
 mod error;
@@ -20,9 +20,6 @@ mod resources;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Load .env (in development environment)
-    dotenv().ok();
-
     // Initialize logger
     logger::init_env_logger();
 
@@ -74,7 +71,7 @@ async fn main() -> std::io::Result<()> {
                     ),
             )
     })
-    .bind((CONFIG.ip, CONFIG.port))?
+    .bind(format!("{}:{}", CONFIG.ip, CONFIG.port))?
     .run()
     .await
 }

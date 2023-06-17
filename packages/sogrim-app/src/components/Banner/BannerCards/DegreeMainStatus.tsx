@@ -2,7 +2,7 @@ import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { useStore } from "../../../hooks/useStore";
-import { UserDetails, UserPermissions } from "../../../types/data-types";
+import { UserDetails } from "../../../types/data-types";
 import { FormModal } from "../../Common/FormModal";
 import { SelectCatalog } from "../BannerDialogs/SelectCatalog";
 import { ComputeInProgressToggle } from "./ComputeInProgressToggle";

@@ -1,7 +1,6 @@
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
-use derive_more::Display;
 
-#[derive(Debug, Display)]
+#[derive(Debug)]
 pub enum AppError {
     BadRequest(String),     // 400
     Bson(String),           // 400
@@ -28,6 +27,22 @@ impl From<bson::ser::Error> for AppError {
 impl From<bson::oid::Error> for AppError {
     fn from(err: bson::oid::Error) -> Self {
         AppError::Bson(err.to_string())
+    }
+}
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let error = match self {
+            AppError::BadRequest(e) => e.to_owned(),
+            AppError::Bson(e) => format!("Bson error: {e}"),
+            AppError::Parser(e) => format!("Parser error: {e}"),
+            AppError::Unauthorized(e) => format!("Permission denied: {e}"),
+            AppError::NotFound(e) => format!("{e} not found"),
+            AppError::InternalServer(e) => e.to_owned(),
+            AppError::Middleware(e) => format!("Middleware error: {e}"),
+            AppError::MongoDriver(e) => format!("MongoDB driver error: {e}"),
+        };
+        write!(f, "{}", error)
     }
 }
 
