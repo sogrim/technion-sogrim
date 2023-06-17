@@ -18,9 +18,8 @@ pub const CONFIG: Config = Config {
     port: PORT,
     uri: URI,
     client_id: CLIENT_ID,
-    profile:
     // TODO: use unwrap_or once it's stable in const fn
-    if let Some(profile) = PROFILE {
+    profile: if let Some(profile) = PROFILE {
         profile
     } else {
         "debug"

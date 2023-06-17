@@ -15,9 +15,9 @@ const DURATION_TO_DETAILS_OFFSET: usize = 7;
 fn log_header_once() {
     static ONCE: tokio::sync::OnceCell<()> = tokio::sync::OnceCell::const_new();
     tokio::spawn(ONCE.get_or_init(|| async {
-        log::info!(target: "sogrim_server", "+ ------------------------------------------------------ + -------- + ---------- + --------------------- +");
-        log::info!(target: "sogrim_server", "|                       REQUEST                          |  STATUS  |  DURATION  |       DETAILS         |");
-        log::info!(target: "sogrim_server", "+ ------------------------------------------------------ + -------- + ---------- + --------------------- +");
+        log::info!(target: "", "+ ------------------------------------------------------ + -------- + ---------- + --------------------- +");
+        log::info!(target: "", "|                       REQUEST                          |  STATUS  |  DURATION  |       DETAILS         |");
+        log::info!(target: "", "+ ------------------------------------------------------ + -------- + ---------- + --------------------- +");
     }));
 }
 
@@ -43,7 +43,7 @@ pub fn init_actix_logger() -> Logger {
     .custom_response_replace("STATUS", format_status)
     .custom_response_replace("DURATION", format_duration)
     .custom_response_replace("REASON", format_reason)
-    .log_target("sogrim_server")
+    .log_target("")
 }
 
 fn format_request(req: &ServiceRequest) -> String {
