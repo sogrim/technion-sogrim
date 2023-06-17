@@ -10,7 +10,6 @@ use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
 use actix_rt::test;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -144,92 +143,6 @@ async fn test_parser_course_status_repetitions() {
     dbg!(course_status3);
 }
 
-lazy_static! {
-    static ref COURSES: HashMap<String, Course> = HashMap::from([
-        (
-            "104031".to_string(),
-            Course {
-                id: "104031".to_string(),
-                credit: 5.5,
-                name: "infi1m".to_string(),
-                tags: None,
-            },
-        ),
-        (
-            "104166".to_string(),
-            Course {
-                id: "104166".to_string(),
-                credit: 5.5,
-                name: "Algebra alef".to_string(),
-                tags: None,
-            },
-        ),
-        (
-            "114052".to_string(),
-            Course {
-                id: "114052".to_string(),
-                credit: 3.5,
-                name: "פיסיקה 2".to_string(),
-                tags: None,
-            },
-        ),
-        (
-            "114054".to_string(),
-            Course {
-                id: "114054".to_string(),
-                credit: 3.5,
-                name: "פיסיקה 3".to_string(),
-                tags: None,
-            },
-        ),
-        (
-            "236303".to_string(),
-            Course {
-                id: "236303".to_string(),
-                credit: 3.0,
-                name: "project1".to_string(),
-                tags: None,
-            },
-        ),
-        (
-            "236512".to_string(),
-            Course {
-                id: "236512".to_string(),
-                credit: 3.0,
-                name: "project2".to_string(),
-                tags: None,
-            },
-        ),
-        (
-            "1".to_string(),
-            Course {
-                id: "1".to_string(),
-                credit: 1.0,
-                name: "".to_string(),
-                tags: None,
-            },
-        ),
-        (
-            "2".to_string(),
-            Course {
-                id: "2".to_string(),
-                credit: 2.0,
-                name: "".to_string(),
-                tags: None,
-            },
-        ),
-        (
-            "3".to_string(),
-            Course {
-                id: "3".to_string(),
-                credit: 3.0,
-                name: "".to_string(),
-                tags: None,
-            },
-        ),
-    ]);
-}
-
 #[macro_export]
 macro_rules! create_bank_rule_handler {
     ($degree_status:expr, $bank_name:expr, $course_list:expr, $credit_overflow:expr, $courses_overflow:expr) => {
@@ -237,7 +150,89 @@ macro_rules! create_bank_rule_handler {
             degree_status: $degree_status,
             bank_name: $bank_name,
             course_list: $course_list,
-            courses: &COURSES,
+            courses: &HashMap::from([
+                (
+                    "104031".to_string(),
+                    Course {
+                        id: "104031".to_string(),
+                        credit: 5.5,
+                        name: "infi1m".to_string(),
+                        tags: None,
+                    },
+                ),
+                (
+                    "104166".to_string(),
+                    Course {
+                        id: "104166".to_string(),
+                        credit: 5.5,
+                        name: "Algebra alef".to_string(),
+                        tags: None,
+                    },
+                ),
+                (
+                    "114052".to_string(),
+                    Course {
+                        id: "114052".to_string(),
+                        credit: 3.5,
+                        name: "פיסיקה 2".to_string(),
+                        tags: None,
+                    },
+                ),
+                (
+                    "114054".to_string(),
+                    Course {
+                        id: "114054".to_string(),
+                        credit: 3.5,
+                        name: "פיסיקה 3".to_string(),
+                        tags: None,
+                    },
+                ),
+                (
+                    "236303".to_string(),
+                    Course {
+                        id: "236303".to_string(),
+                        credit: 3.0,
+                        name: "project1".to_string(),
+                        tags: None,
+                    },
+                ),
+                (
+                    "236512".to_string(),
+                    Course {
+                        id: "236512".to_string(),
+                        credit: 3.0,
+                        name: "project2".to_string(),
+                        tags: None,
+                    },
+                ),
+                (
+                    "1".to_string(),
+                    Course {
+                        id: "1".to_string(),
+                        credit: 1.0,
+                        name: "".to_string(),
+                        tags: None,
+                    },
+                ),
+                (
+                    "2".to_string(),
+                    Course {
+                        id: "2".to_string(),
+                        credit: 2.0,
+                        name: "".to_string(),
+                        tags: None,
+                    },
+                ),
+                (
+                    "3".to_string(),
+                    Course {
+                        id: "3".to_string(),
+                        credit: 3.0,
+                        name: "".to_string(),
+                        tags: None,
+                    },
+                ),
+            ]),
             credit_overflow: $credit_overflow,
             courses_overflow: $courses_overflow,
             catalog_replacements: &HashMap::new(),

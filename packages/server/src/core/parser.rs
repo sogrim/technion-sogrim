@@ -1,5 +1,5 @@
-use lazy_static::lazy_static;
 use regex::Regex;
+use std::sync::OnceLock;
 
 use crate::{
     error::AppError,
@@ -7,14 +7,13 @@ use crate::{
 };
 use std::collections::HashMap;
 
-lazy_static! {
-    static ref CREDIT_RE: Regex = Regex::new(r"(?P<credit>(([1-9][0-9]|[0-9])\.[0-9]))").unwrap();
-    static ref COURSE_ID_RE: Regex = Regex::new(r"(?P<course_id>[0-9]{6})").unwrap();
-    static ref GRADE_RE: Regex = Regex::new(
-        r"(?P<grade>(100|([1-9][0-9])|[0-9]$)|פטור ללא ניקוד|פטור עם ניקוד|עבר|נכשל|לא השלים|לא השלים(מ)|-$|^--| -  )"
-    )
-    .unwrap();
-}
+const CREDIT_RE_STR: &str = r"(?P<credit>(([1-9][0-9]|[0-9])\.[0-9]))";
+const COURSE_ID_RE_STR: &str = r"(?P<course_id>[0-9]{6})";
+const GRADE_RE_STR: &str = r"(?P<grade>(100|([1-9][0-9])|[0-9]$)|פטור ללא ניקוד|פטור עם ניקוד|עבר|נכשל|לא השלים|לא השלים(מ)|-$|^--| -  )";
+
+static CREDIT_RE: OnceLock<Regex> = OnceLock::new();
+static COURSE_ID_RE: OnceLock<Regex> = OnceLock::new();
+static GRADE_RE: OnceLock<Regex> = OnceLock::new();
 
 enum Format {
     Default,
@@ -48,16 +47,19 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     if !(Format::is_one_of_valid_formats(data)) {
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
+    let credit_re = CREDIT_RE.get_or_init(|| Regex::new(CREDIT_RE_STR).unwrap());
+    let course_id_re = COURSE_ID_RE.get_or_init(|| Regex::new(COURSE_ID_RE_STR).unwrap());
+    let _ = GRADE_RE.get_or_init(|| Regex::new(GRADE_RE_STR).unwrap());
 
     let mut courses = HashMap::<String, CourseStatus>::new();
     let mut asterisk_courses = Vec::<CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
     let mut semester_counter: f32 = 0.0;
-    let should_reverse_credit = CREDIT_RE
+    let should_reverse_credit = credit_re
         .captures_iter(
             data.split_terminator('\n')
-                .filter(|line| COURSE_ID_RE.is_match(line) && !line.contains("ת.ז"))
+                .filter(|line| course_id_re.is_match(line) && !line.contains("ת.ז"))
                 .collect::<Vec<_>>()
                 .join("\n")
                 .as_str(),
@@ -94,7 +96,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
             semester
         };
 
-        if !COURSE_ID_RE.is_match(&line) || line.contains("ת.ז") {
+        if !course_id_re.is_match(&line) || line.contains("ת.ז") {
             continue;
         }
 
@@ -185,9 +187,12 @@ fn set_grades_for_uncompleted_courses(
 
 fn extract_str_by_regex(
     line: &str,
-    regex: &Regex,
+    regex_once: &OnceLock<Regex>,
     regex_name: &str,
 ) -> Result<(String, String), AppError> {
+    let Some(regex) = regex_once.get() else {
+        return Err(AppError::InternalServer("`extract_str_by_regex` failed".into()));
+    };
     let extracted = regex
         .captures(line)
         .ok_or_else(|| AppError::Parser("Bad Format".into()))?[regex_name]

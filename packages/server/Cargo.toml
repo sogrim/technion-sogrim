@@ -21,7 +21,6 @@ futures-util = "0.3"
 jsonwebtoken = "8.0"
 jsonwebtoken-google = "0.1"
 env_logger = "0.9"
-lazy_static = "1.4"
 petgraph = "0.6"
 regex = "1.7.1"
 

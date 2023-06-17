@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use actix_rt::test;
-use lazy_static::lazy_static;
 
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::degree_status::DegreeStatus;
@@ -11,92 +10,6 @@ use crate::create_bank_rule_handler;
 use crate::db::{Db, FilterOption};
 use crate::resources::catalog::Catalog;
 use crate::resources::course::{Course, CourseState, CourseStatus, Grade};
-
-lazy_static! {
-    static ref COURSES: HashMap<String, Course> = HashMap::from([
-        (
-            "104031".to_string(),
-            Course {
-                id: "104031".to_string(),
-                credit: 5.5,
-                name: "infi1m".to_string(),
-                tags: None
-            },
-        ),
-        (
-            "104166".to_string(),
-            Course {
-                id: "104166".to_string(),
-                credit: 5.5,
-                name: "Algebra alef".to_string(),
-                tags: None
-            },
-        ),
-        (
-            "114052".to_string(),
-            Course {
-                id: "114052".to_string(),
-                credit: 3.5,
-                name: "פיסיקה 2".to_string(),
-                tags: None
-            },
-        ),
-        (
-            "114054".to_string(),
-            Course {
-                id: "114054".to_string(),
-                credit: 3.5,
-                name: "פיסיקה 3".to_string(),
-                tags: None
-            },
-        ),
-        (
-            "236303".to_string(),
-            Course {
-                id: "236303".to_string(),
-                credit: 3.0,
-                name: "project1".to_string(),
-                tags: None
-            },
-        ),
-        (
-            "236512".to_string(),
-            Course {
-                id: "236512".to_string(),
-                credit: 3.0,
-                name: "project2".to_string(),
-                tags: None
-            },
-        ),
-        (
-            "1".to_string(),
-            Course {
-                id: "1".to_string(),
-                credit: 1.0,
-                name: "".to_string(),
-                tags: None
-            },
-        ),
-        (
-            "2".to_string(),
-            Course {
-                id: "2".to_string(),
-                credit: 2.0,
-                name: "".to_string(),
-                tags: None
-            },
-        ),
-        (
-            "3".to_string(),
-            Course {
-                id: "3".to_string(),
-                credit: 3.0,
-                name: "".to_string(),
-                tags: None
-            },
-        ),
-    ]);
-}
 
 #[test]
 async fn test_rule_all() {

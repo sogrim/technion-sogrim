@@ -41,8 +41,7 @@ pub enum Tag {
 
 impl Course {
     fn is(&self, tag: Tag) -> bool {
-        // TODO: change it to "is_some_and()" when become stable
-        self.tags.clone().unwrap_or_default().contains(&tag)
+        self.tags.as_ref().is_some_and(|tags| tags.contains(&tag))
     }
     pub fn is_english(&self) -> bool {
         self.is(Tag::English)
