@@ -2,7 +2,6 @@ use crate::resources::course::{Course, CourseId};
 use crate::resources::{catalog::OptionalReplacements, course::Tag};
 use bson::doc;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 pub type Chain = Vec<CourseId>;
 #[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
@@ -42,9 +41,7 @@ impl Holds for Predicate {
     fn holds_on(&self, course: &Course) -> bool {
         match self {
             Predicate::InList(list) => list.contains(&course.id),
-            Predicate::HasTag(tag) => {
-                matches!(course.tags.as_ref(), Some(tags) if tags.contains(tag))
-            }
+            Predicate::HasTag(tag) => course.tags.as_ref().is_some_and(|tags| tags.contains(tag)),
             Predicate::StartsWith(prefix) => course.id.starts_with(prefix),
             Predicate::Wildcard => true,
         }
@@ -135,7 +132,4 @@ impl Requirement {
         self.message = Some(message);
         self
     }
-}
-pub struct CreditInfo {
-    pub handled_courses: HashMap<CourseId, CourseId>, // A mapping between course in bank course list, to the course which was done by the user (equal unless there was a replacement)
 }

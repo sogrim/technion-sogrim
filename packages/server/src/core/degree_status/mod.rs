@@ -29,7 +29,7 @@ impl DegreeStatus {
             .find(|&course_status| course_status.course.id == id)
     }
 
-    pub fn get_mut_course_status(&mut self, id: &str) -> Option<&mut CourseStatus> {
+    pub fn get_course_status_mut(&mut self, id: &str) -> Option<&mut CourseStatus> {
         // returns the first course_status with the given id
         self.course_statuses
             .iter_mut()
@@ -76,7 +76,7 @@ impl DegreeStatus {
         });
     }
 
-    fn iter_courses_for_bank<'a>(
+    pub fn iter_courses_for_bank<'a>(
         &'a self,
         bank_name: &'a str,
     ) -> impl Iterator<Item = &'a CourseStatus> {

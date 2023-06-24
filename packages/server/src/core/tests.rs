@@ -3,12 +3,12 @@ use crate::core::bank_rule::BankRuleHandler;
 use crate::core::catalog_validations::validate_catalog;
 use crate::core::degree_status::DegreeStatus;
 use crate::core::parser;
-use crate::core::types::CreditOverflow;
+use crate::core::types::{CreditOverflow, Rule};
 use crate::db::Db;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
-use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
+use crate::resources::course::{self, Course, CourseBank, CourseState, CourseStatus, Grade, Tag};
 use actix_rt::test;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
@@ -232,16 +232,14 @@ lazy_static! {
 
 #[macro_export]
 macro_rules! create_bank_rule_handler {
-    ($degree_status:expr, $bank_name:expr, $course_list:expr, $credit_overflow:expr, $courses_overflow:expr) => {
+    ($degree_status:expr, $bank:expr, $course_list:expr, $credit_overflow:expr, $courses_overflow:expr) => {
         BankRuleHandler {
             degree_status: $degree_status,
-            bank_name: $bank_name.clone(),
-            course_list: $course_list,
+            bank: $bank,
+            replaced_courses: HashMap::new(),
             courses: &COURSES,
             credit_overflow: $credit_overflow,
             courses_overflow: $courses_overflow,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
         }
     };
 }
@@ -351,11 +349,16 @@ async fn test_irrelevant_course() {
     degree_status.course_statuses[2].state = Some(CourseState::Irrelevant); // change 114052 to be irrelevant
     let bank_name = "hova".to_string();
     let course_list = vec!["104031".to_string(), "114052".to_string()];
-    let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
+    let mut bank = CourseBank::new(bank_name, Rule::All(course_list.clone()), None);
+    let mut handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, &mut bank, course_list, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
     let mut completed_dummy = true;
-    handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    handle_bank_rule_processor.all(
+        &course_list,
+        &mut missing_credit_dummy,
+        &mut completed_dummy,
+    );
 
     assert_eq!(degree_status.course_statuses[2].r#type, None);
 }
@@ -414,11 +417,16 @@ async fn test_modified() {
     degree_status.course_statuses[0].modified = true;
     let bank_name = "hova".to_string();
     let course_list = vec!["104031".to_string(), "104166".to_string()]; // although 104031 is in the list, it shouldn't be taken because the user modified its type
-    let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
+    let mut bank = CourseBank::new(bank_name.clone(), Rule::All(course_list.clone()), None);
+    let mut handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, &mut bank, course_list, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
     let mut completed_dummy = true;
-    handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    handle_bank_rule_processor.all(
+        &course_list,
+        &mut missing_credit_dummy,
+        &mut completed_dummy,
+    );
     let res = degree_status.sum_credit_for_bank(&bank_name);
 
     // check it adds the type
@@ -452,10 +460,14 @@ async fn test_modified() {
     degree_status.course_statuses[3].modified = true;
     let bank_name = "hova".to_string();
     let course_list = vec!["104031".to_string(), "104166".to_string()]; // although 114052 is not in the list, it should be taken because the user modified its type
-
-    let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, bank_name, course_list.clone(), 0.0, 0);
-    handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    let mut bank = CourseBank::new(bank_name.clone(), Rule::All(course_list.clone()), None);
+    let mut handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, &mut bank, course_list.clone(), 0.0, 0);
+    handle_bank_rule_processor.all(
+        &course_list,
+        &mut missing_credit_dummy,
+        &mut completed_dummy,
+    );
     let res = degree_status.sum_credit_for_bank(&bank_name);
 
     // check it adds the type
@@ -476,9 +488,14 @@ async fn test_modified() {
     // check that in a second run nothing changed
     degree_status.course_statuses[0].r#type = None;
     degree_status.course_statuses[1].r#type = None;
-    let handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
-    handle_bank_rule_processor.all(&mut missing_credit_dummy, &mut completed_dummy);
+    let mut bank = CourseBank::new(bank_name.clone(), Rule::All(course_list.clone()), None);
+    let mut handle_bank_rule_processor =
+        create_bank_rule_handler!(&mut degree_status, &mut bank, course_list, 0.0, 0);
+    handle_bank_rule_processor.all(
+        &course_list,
+        &mut missing_credit_dummy,
+        &mut completed_dummy,
+    );
     let res = degree_status.sum_credit_for_bank(&bank_name);
     assert_eq!(degree_status.course_statuses.len(), 8);
 

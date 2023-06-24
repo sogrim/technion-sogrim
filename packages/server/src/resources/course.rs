@@ -5,8 +5,10 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use crate::core::types::Rule;
+use crate::core::types::{Holds, Rule};
 use crate::db::Resource;
+
+use super::catalog::Replacements;
 
 pub type CourseId = String;
 
@@ -167,6 +169,7 @@ impl CourseStatus {
             .unwrap_or(0.0)
     }
 
+    // TODO: better name?
     pub fn valid_for_bank(&self, bank_name: &str) -> bool {
         if self.state == Some(CourseState::Irrelevant) {
             false
@@ -206,6 +209,66 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Reshima A.
     pub rule: Rule,
     pub credit: Option<f32>,
+    #[serde(skip_serializing)]
+    catalog_replacements: Replacements,
+    common_replacements: Replacements,
+}
+
+impl CourseBank {
+    fn has_course(&self, course: &Course) -> bool {
+        match &self.rule {
+            Rule::All(courses) => courses.contains(&course.id),
+            Rule::AccumulateCredit(predicates) => predicates.holds_on(course),
+            Rule::AccumulateCourses((_, predicates)) => predicates.holds_on(course),
+            Rule::Malag => course.is_malag(),
+            Rule::Sport => course.is_sport(),
+            Rule::Elective => true,
+            Rule::Chains(chains) => chains.iter().any(|chain| chain.contains(&course.id)),
+            Rule::SpecializationGroups(sgs) => sgs
+                .groups_list
+                .iter()
+                .any(|sg| sg.course_list.contains(&course.id)),
+            Rule::Wildcard(_) => true,
+        }
+    }
+    fn find_replacement<'a, 'b>(&'a self, course: &'b Course) -> Option<&CourseId> {
+        let find_replacement =
+            |replacement: &'a HashMap<CourseId, Vec<CourseId>>| -> Option<&'a CourseId> {
+                replacement.get(&course.id).and_then(|replacement| {
+                    replacement.iter().find(|&course_id| {
+                        self.has_course(&Course {
+                            id: course_id.clone(),
+                            // we assume that a replacement course has the same tags as the original course
+                            ..course.clone()
+                        })
+                    })
+                })
+            };
+
+        find_replacement(&self.catalog_replacements)
+            .or_else(|| find_replacement(&self.common_replacements))
+    }
+    pub fn find_course_or_replacement(&self, course: &Course) -> Option<CourseId> {
+        self.has_course(course)
+            .then_some(&course.id)
+            .or_else(|| self.find_replacement(course))
+            .cloned()
+    }
+    pub fn is_catalog_replacement(&self, from: &CourseId, to: &CourseId) -> bool {
+        self.catalog_replacements
+            .get(from)
+            .is_some_and(|replacement| replacement.contains(to))
+    }
+    #[cfg(test)]
+    pub fn new(name: impl AsRef<str>, rule: Rule, credit: Option<f32>) -> Self {
+        Self {
+            name: name.as_ref().to_owned(),
+            rule,
+            credit,
+            catalog_replacements: HashMap::new(),
+            common_replacements: HashMap::new(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

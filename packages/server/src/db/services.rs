@@ -58,7 +58,7 @@ impl Db {
             .await?)
     }
 
-    async fn _update<R>(&self, resource: R, insert_option: InsertOption) -> Result<R, AppError>
+    async fn __update<R>(&self, resource: R, insert_option: InsertOption) -> Result<R, AppError>
     where
         R: Resource + Send + Sync + Unpin,
     {
@@ -86,14 +86,15 @@ impl Db {
     where
         R: Resource + Send + Sync + Unpin,
     {
-        self._update::<R>(resource, InsertOption::Set).await
+        self.__update::<R>(resource, InsertOption::Set).await
     }
 
     pub async fn create_or_update<R>(&self, resource: R) -> Result<R, AppError>
     where
         R: Resource + Send + Sync + Unpin,
     {
-        self._update::<R>(resource, InsertOption::SetOnInsert).await
+        self.__update::<R>(resource, InsertOption::SetOnInsert)
+            .await
     }
 
     pub async fn delete<R>(&self, id: impl Serialize) -> Result<(), AppError>

@@ -5,8 +5,6 @@ use crate::{
     resources::course::CourseId,
 };
 
-use super::BankRuleHandler;
-
 // General comment for the whole file
 // sg = specialization_group
 // sgs = specialization_groups
@@ -21,7 +19,7 @@ fn get_groups_indices(course_id_to_sg_index: &HashMap<CourseId, usize>) -> Vec<u
     indices
 }
 
-fn get_complete_sgs_indices(
+pub fn get_complete_sgs_indices(
     sgs: &[SpecializationGroup],
     course_id_to_sg_index: &HashMap<CourseId, usize>,
 ) -> Vec<usize> {
@@ -110,7 +108,7 @@ fn get_sgs_courses_assignment(
 ) -> Option<HashMap<CourseId, usize>> {
     let mut optional_sgs_for_course = HashMap::<CourseId, Vec<usize>>::new();
     for course_id in courses {
-        let mut relevant_groups_for_course = Vec::new();
+        let mut relevant_groups_for_course: Vec<usize> = Vec::new();
         for sg_index in groups_indices {
             if sgs[*sg_index].course_list.contains(course_id) {
                 relevant_groups_for_course.push(*sg_index);
@@ -175,7 +173,7 @@ fn generate_sgs_subsets(
     )
 }
 
-fn run_exhaustive_search(
+pub fn run_exhaustive_search(
     sgs: &SpecializationGroups,
     courses: Vec<CourseId>, // list of all courses the user completed in specialization groups bank
 ) -> HashMap<CourseId, usize> {
@@ -189,102 +187,4 @@ fn run_exhaustive_search(
         &mut best_match,
     )
     .unwrap_or(best_match)
-}
-
-impl<'a> BankRuleHandler<'a> {
-    pub fn specialization_group(
-        mut self,
-        sgs: &SpecializationGroups,
-        completed_groups: &mut Vec<String>,
-    ) {
-        // All courses which might be in SOME specialization group should get its name assigned to them
-        // later on, if we find a valid assignment for said courses with a DIFFERENT specialization group,
-        // we will simply re-assign the specialization group name.
-        for sg in sgs.groups_list.iter() {
-            for course_id in sg.course_list.iter() {
-                if let Some(course_status) =
-                    self.degree_status.get_mut_course_status(course_id.as_str())
-                {
-                    course_status.set_specialization_group_name(&sg.name);
-                }
-            }
-        }
-
-        let credit_info = self.iterate_course_list();
-        let mut completed_courses = Vec::new();
-
-        let find_replacement =
-            |replacements: &HashMap<String, Vec<String>>, course_id: &CourseId| -> Option<String> {
-                replacements
-                    .iter()
-                    .find_map(|(course_id_in_sg, course_id_in_sg_replacements)| {
-                        course_id_in_sg_replacements
-                            .contains(course_id)
-                            .then(|| course_id_in_sg.clone())
-                    })
-            };
-
-        // hotfix for cases where the user has a course which is a replacement for a course in the specialization group bank and in another bank.
-        // https://github.com/sogrim/technion-sogrim/issues/214#issuecomment-1478566102
-        let mut handled_courses = HashMap::new();
-        credit_info.handled_courses.into_iter().for_each(
-            |(course_id_in_list, course_id_done_by_user)| {
-                if course_id_in_list != course_id_done_by_user {
-                    handled_courses.insert(course_id_in_list, course_id_done_by_user);
-                } else if let Some(course_id_in_sg) =
-                    find_replacement(self.catalog_replacements, &course_id_in_list)
-                {
-                    handled_courses.insert(course_id_in_sg, course_id_in_list);
-                } else if let Some(course_id_in_sg) =
-                    find_replacement(self.common_replacements, &course_id_in_list)
-                {
-                    handled_courses.insert(course_id_in_sg, course_id_in_list);
-                } else {
-                    handled_courses.insert(course_id_in_list, course_id_done_by_user);
-                }
-            },
-        );
-
-        handled_courses
-            .iter()
-            .for_each(|(course_id_in_list, course_id_done_by_user)| {
-                if let Some(course_status) =
-                    self.degree_status.get_course_status(course_id_done_by_user)
-                {
-                    if course_status.completed() {
-                        completed_courses.push(course_id_in_list.clone());
-                    }
-                }
-            });
-
-        let valid_assignment_for_courses = run_exhaustive_search(sgs, completed_courses);
-        let complete_sgs_indices =
-            get_complete_sgs_indices(&sgs.groups_list, &valid_assignment_for_courses);
-        // The set is to prevent duplications
-        let mut sgs_names = HashSet::new();
-        valid_assignment_for_courses
-            .into_iter()
-            .for_each(|(course_id, sg_index)| {
-                // hotfix - see comment above
-                let course_id_done_by_user = handled_courses.get(&course_id);
-                let Some(course_id_done_by_user) = course_id_done_by_user else {
-                    // shouldn't get here
-                    return;
-                };
-                if let Some(course_status) = self
-                    .degree_status
-                    .get_mut_course_status(course_id_done_by_user)
-                {
-                    if complete_sgs_indices.contains(&sg_index) {
-                        course_status
-                            .set_specialization_group_name(&sgs.groups_list[sg_index].name);
-                        sgs_names.insert(&sgs.groups_list[sg_index].name);
-                    }
-                }
-            });
-
-        sgs_names.into_iter().for_each(|sg_name| {
-            completed_groups.push(sg_name.clone());
-        });
-    }
 }

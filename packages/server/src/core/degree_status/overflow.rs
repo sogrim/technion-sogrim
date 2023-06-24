@@ -29,21 +29,6 @@ impl<'a> DegreeStatusHandler<'a> {
         }
     }
 
-    pub fn handle_courses_overflow(
-        &mut self,
-        bank: &CourseBank,
-        num_courses: usize,
-        count_courses: usize,
-    ) -> usize {
-        if count_courses <= num_courses {
-            count_courses
-        } else {
-            self.courses_overflow_map
-                .insert(bank.name.clone(), (count_courses - num_courses) as f32);
-            num_courses
-        }
-    }
-
     pub fn calculate_overflows(&mut self, bank_name: &str, transfer: Transfer) -> f32 {
         let mut sum = 0.0;
         let map = match transfer {

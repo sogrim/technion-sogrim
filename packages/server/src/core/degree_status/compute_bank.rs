@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use crate::core::types::Requirement;
 use crate::{
     core::{bank_rule::BankRuleHandler, messages, types::Rule},
-    resources::course::{CourseBank, CourseId},
+    resources::course::CourseBank,
 };
 
 use super::DegreeStatusHandler;
@@ -10,20 +12,17 @@ impl<'a> DegreeStatusHandler<'a> {
     pub fn compute_bank(
         &mut self,
         bank: CourseBank,
-        course_list_for_bank: Vec<CourseId>,
         credit_overflow: f32,
         missing_credit_from_prev_banks: f32,
         courses_overflow: usize,
     ) {
-        let bank_rule_handler = BankRuleHandler {
+        let mut bank_rule_handler = BankRuleHandler {
             degree_status: self.degree_status,
-            bank_name: bank.name.clone(),
-            course_list: course_list_for_bank,
+            bank: &bank,
+            replaced_courses: HashMap::new(),
             courses: &self.courses,
             credit_overflow,
             courses_overflow,
-            catalog_replacements: &self.catalog.catalog_replacements,
-            common_replacements: &self.catalog.common_replacements,
         };
 
         // Initialize necessary variable for rules handling
@@ -39,7 +38,7 @@ impl<'a> DegreeStatusHandler<'a> {
         match bank.rule {
             Rule::All(ref courses) => {
                 let mut sum_credit_requirement = 0.0;
-                bank_rule_handler.all(&mut sum_credit_requirement, &mut completed);
+                bank_rule_handler.all(courses, &mut sum_credit_requirement, &mut completed);
                 if let Some(credit) = bank.credit {
                     if sum_credit_requirement < credit {
                         missing_credit = credit - sum_credit_requirement;
@@ -50,11 +49,17 @@ impl<'a> DegreeStatusHandler<'a> {
                         .insert(bank.name.clone(), missing_credit);
                 }
             }
-            Rule::AccumulateCredit(ref predicates) => bank_rule_handler.accumulate_credit(),
-            Rule::AccumulateCourses((num_courses, ref predicates)) => {
+            Rule::AccumulateCredit(_) => bank_rule_handler.accumulate_credit(),
+            Rule::AccumulateCourses((num_courses, _)) => {
                 let mut count_courses = 0;
                 bank_rule_handler.accumulate_courses(&mut count_courses);
-                count_courses = self.handle_courses_overflow(&bank, num_courses, count_courses);
+                count_courses = if count_courses <= num_courses {
+                    count_courses
+                } else {
+                    self.courses_overflow_map
+                        .insert(bank.name.clone(), (count_courses - num_courses) as f32);
+                    num_courses
+                };
                 requirement
                     .course_requirement(num_courses)
                     .course_completed(count_courses);
@@ -90,6 +95,8 @@ impl<'a> DegreeStatusHandler<'a> {
                 todo!()
             }
         }
+
+        bank_rule_handler.add_replacement_messages();
 
         let mut sum_credit = credit_overflow + self.degree_status.sum_credit_for_bank(&bank.name);
 

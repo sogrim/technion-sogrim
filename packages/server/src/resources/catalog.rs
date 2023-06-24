@@ -10,7 +10,8 @@ use std::collections::HashMap;
 
 use super::course::CourseId;
 
-pub(crate) type OptionalReplacements = Vec<CourseId>;
+pub type OptionalReplacements = Vec<CourseId>;
+pub type Replacements = HashMap<CourseId, OptionalReplacements>;
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub enum Faculty {
@@ -32,8 +33,8 @@ pub struct Catalog {
     pub course_banks: Vec<CourseBank>,
     pub credit_overflows: Vec<CreditOverflow>,
     pub course_to_bank: HashMap<CourseId, String>,
-    pub catalog_replacements: HashMap<CourseId, OptionalReplacements>, // All replacements which are mentioned in the catalog
-    pub common_replacements: HashMap<CourseId, OptionalReplacements>, // Common replacement which usually approved by the coordinators
+    pub catalog_replacements: Replacements, // All replacements which are mentioned in the catalog
+    pub common_replacements: Replacements, // Common replacement which usually approved by the coordinators
 }
 
 impl Catalog {
@@ -44,16 +45,6 @@ impl Catalog {
             .captures(&self.name)
             .map(|cap| cap["year"].parse::<usize>().unwrap_or(default_year))
             .unwrap_or(default_year)
-    }
-
-    pub fn get_course_list(&self, name: &str) -> Vec<CourseId> {
-        let mut course_list_for_bank = Vec::new();
-        for (course_id, bank_name) in &self.course_to_bank {
-            if *bank_name == name {
-                course_list_for_bank.push(course_id.to_string());
-            }
-        }
-        course_list_for_bank
     }
 
     pub fn get_course_bank_by_name(&self, name: &str) -> Option<&CourseBank> {
