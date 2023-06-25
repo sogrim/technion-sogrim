@@ -209,8 +209,9 @@ pub struct CourseBank {
     pub name: String, // for example, Hova, Reshima A.
     pub rule: Rule,
     pub credit: Option<f32>,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     catalog_replacements: Replacements,
+    #[serde(skip)]
     common_replacements: Replacements,
 }
 
