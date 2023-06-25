@@ -231,19 +231,18 @@ impl CourseBank {
             Rule::Wildcard(_) => true,
         }
     }
-    fn find_replacement<'a, 'b>(&'a self, course: &'b Course) -> Option<&CourseId> {
-        let find_replacement =
-            |replacement: &'a HashMap<CourseId, Vec<CourseId>>| -> Option<&'a CourseId> {
-                replacement.get(&course.id).and_then(|replacement| {
-                    replacement.iter().find(|&course_id| {
-                        self.has_course(&Course {
-                            id: course_id.clone(),
-                            // we assume that a replacement course has the same tags as the original course
-                            ..course.clone()
-                        })
+    fn find_replacement<'a>(&'a self, course: &Course) -> Option<&CourseId> {
+        let find_replacement = |replacement: &'a HashMap<CourseId, Vec<CourseId>>| {
+            replacement.get(&course.id).and_then(|replacement| {
+                replacement.iter().find(|&course_id| {
+                    self.has_course(&Course {
+                        id: course_id.clone(),
+                        // we assume that a replacement course has the same tags as the original course
+                        ..course.clone()
                     })
                 })
-            };
+            })
+        };
 
         find_replacement(&self.catalog_replacements)
             .or_else(|| find_replacement(&self.common_replacements))

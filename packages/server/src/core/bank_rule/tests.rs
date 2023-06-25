@@ -3,11 +3,9 @@ use std::collections::HashMap;
 use actix_rt::test;
 use lazy_static::lazy_static;
 
-use crate::core::bank_rule::BankRuleHandler;
 use crate::core::degree_status::DegreeStatus;
-use crate::core::tests::create_degree_status;
+use crate::core::tests::{create_bank_rule_handler, create_degree_status};
 use crate::core::types::{Predicate, Requirement, Rule, SpecializationGroup, SpecializationGroups};
-use crate::create_bank_rule_handler;
 use crate::resources::course::{Course, CourseBank, CourseState, CourseStatus, Grade};
 
 lazy_static! {
@@ -110,7 +108,7 @@ async fn test_rule_all() {
     ];
     let bank = CourseBank::new(bank_name.clone(), Rule::All(course_list.clone()), None);
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list, 0.0, 0);
+        create_bank_rule_handler(&mut degree_status, &bank, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
     let mut completed_dummy = true;
     handle_bank_rule_processor.all(
@@ -165,10 +163,10 @@ async fn test_rule_accumulate_credit() {
     let bank = CourseBank::new(
         bank_name.clone(),
         Rule::AccumulateCredit(vec![Predicate::InList(course_list)]),
-        Some(11.5),
+        None,
     );
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list, 5.5, 0);
+        create_bank_rule_handler(&mut degree_status, &bank, 5.5, 0);
     handle_bank_rule_processor.accumulate_credit();
     let res = degree_status.sum_credit_for_bank(&bank_name);
     // check it adds the type
@@ -189,7 +187,7 @@ async fn test_rule_accumulate_credit() {
     assert_eq!(degree_status.course_statuses.len(), 8);
 
     // check sum credit
-    assert_eq!(res, 11.5);
+    assert_eq!(res, 6.0);
 }
 
 #[test]
@@ -209,7 +207,7 @@ async fn test_rule_accumulate_courses() {
         None,
     );
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list, 0.0, 1);
+        create_bank_rule_handler(&mut degree_status, &bank, 0.0, 1);
     let mut count_courses = 0;
     handle_bank_rule_processor.accumulate_courses(&mut count_courses);
     let res = degree_status.sum_credit_for_bank(&bank_name);
@@ -251,7 +249,7 @@ async fn test_rule_chain() {
     let mut chain_done = Vec::new();
     let bank = CourseBank::new(bank_name.clone(), Rule::Chains(chains.clone()), None);
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list.clone(), 0.0, 0);
+        create_bank_rule_handler(&mut degree_status, &bank, 0.0, 0);
     // user didn't finish a chain
     handle_bank_rule_processor.chain(&chains, &mut chain_done);
     let res = degree_status.sum_credit_for_bank(&bank_name);
@@ -264,7 +262,7 @@ async fn test_rule_chain() {
     chains.push(vec!["114052".to_string(), "114054".to_string()]); // user finished the chain [114052, 114054]
     let bank = CourseBank::new(bank_name.clone(), Rule::Chains(chains.clone()), None);
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list, 0.0, 0);
+        create_bank_rule_handler(&mut degree_status, &bank, 0.0, 0);
     handle_bank_rule_processor.chain(&chains, &mut chain_done);
     let res = degree_status.sum_credit_for_bank(&bank_name);
     assert_eq!(degree_status.course_statuses[0].r#type, None);
@@ -298,7 +296,7 @@ async fn test_rule_malag() {
     let bank_name = "MALAG".to_string();
     let bank = CourseBank::new(bank_name.clone(), Rule::Malag, None);
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list, 0.0, 0);
+        create_bank_rule_handler(&mut degree_status, &bank, 0.0, 0);
     handle_bank_rule_processor.malag();
     let res = degree_status.sum_credit_for_bank(&bank_name);
 
@@ -327,7 +325,7 @@ async fn test_rule_sport() {
     let bank_name = "SPORT".to_string();
     let bank = CourseBank::new(bank_name.clone(), Rule::Sport, None);
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list, 0.0, 0);
+        create_bank_rule_handler(&mut degree_status, &bank, 0.0, 0);
     handle_bank_rule_processor.sport();
     let res = degree_status.sum_credit_for_bank(&bank_name);
 
@@ -592,7 +590,7 @@ async fn test_specialization_group() {
         None,
     );
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list.clone(), 0.0, 0);
+        create_bank_rule_handler(&mut degree_status, &bank, 0.0, 0);
     let mut completed_groups = Vec::<String>::new();
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
 
@@ -612,7 +610,7 @@ async fn test_specialization_group() {
     }
     let bank = CourseBank::new(bank_name, Rule::SpecializationGroups(sgs.clone()), None);
     let mut handle_bank_rule_processor =
-        create_bank_rule_handler!(&mut degree_status, &bank, course_list, 0.0, 0);
+        create_bank_rule_handler(&mut degree_status, &bank, 0.0, 0);
     let mut completed_groups = Vec::<String>::new();
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
     assert_eq!(completed_groups.len(), 1);
