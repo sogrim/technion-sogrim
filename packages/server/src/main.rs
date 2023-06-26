@@ -6,7 +6,8 @@ use actix_web::{
 use actix_web_lab::middleware::from_fn;
 use db::Db;
 use error::AppError;
-use middleware::{auth, cors, logger};
+use log::info;
+use middleware::{auth, cors, jwt_decoder::JwtDecoder, logger};
 use resources::user::Permissions;
 
 mod api;
@@ -20,17 +21,24 @@ mod resources;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let now = std::time::Instant::now();
     // Initialize logger
     logger::init_env_logger();
+    info!(target: "server", "Initialized logger in {}μs", now.elapsed().as_micros());
 
     // Initialize DB client
     let db = Db::new().await;
+    info!(target: "server", "Initialized DB client in {}ms", now.elapsed().as_millis());
+
+    // Initialize JWT decoder
+    let jwt_decoder = JwtDecoder::new().await;
+    info!(target: "server", "Initialized JWT decoder in {}ms", now.elapsed().as_millis());
 
     // Start the server
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
-            .app_data(auth::JwtDecoder::new())
+            .app_data(web::Data::new(jwt_decoder.clone()))
             .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
             .service(web::resource("/healthcheck").route(web::get().to(

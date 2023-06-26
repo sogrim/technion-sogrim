@@ -2,14 +2,15 @@ use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 
 #[derive(Debug)]
 pub enum AppError {
-    BadRequest(String),     // 400
-    Bson(String),           // 400
-    Parser(String),         // 400
-    Unauthorized(String),   // 401
-    NotFound(String),       // 404
-    InternalServer(String), // 500
-    Middleware(String),     // 500
-    MongoDriver(String),    // 500
+    BadRequest(String),        // 400
+    Bson(String),              // 400
+    Parser(String),            // 400
+    Unauthorized(String),      // 401
+    NotFound(String),          // 404
+    InternalServer(String),    // 500
+    Middleware(String),        // 500
+    MongoDriver(String),       // 500
+    GoogleKeyProvider(String), // 500
 }
 
 impl From<mongodb::error::Error> for AppError {
@@ -30,6 +31,23 @@ impl From<bson::oid::Error> for AppError {
     }
 }
 
+impl From<reqwest::Error> for AppError {
+    fn from(err: reqwest::Error) -> Self {
+        AppError::GoogleKeyProvider(err.to_string())
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for AppError {
+    fn from(err: jsonwebtoken::errors::Error) -> Self {
+        match err.kind() {
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                AppError::Unauthorized(err.to_string())
+            }
+            _ => AppError::InternalServer(err.to_string()),
+        }
+    }
+}
+
 impl std::fmt::Display for AppError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let error = match self {
@@ -41,6 +59,7 @@ impl std::fmt::Display for AppError {
             AppError::InternalServer(e) => e.to_owned(),
             AppError::Middleware(e) => format!("Middleware error: {e}"),
             AppError::MongoDriver(e) => format!("MongoDB driver error: {e}"),
+            AppError::GoogleKeyProvider(e) => format!("Google key provider error: {e}"),
         };
         write!(f, "{}", error)
     }
@@ -64,6 +83,10 @@ impl ResponseError for AppError {
             AppError::MongoDriver(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("MongoDB driver error: {e}"),
+            ),
+            AppError::GoogleKeyProvider(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Google key provider error: {e}"),
             ),
         };
         let mut res = match status_code {

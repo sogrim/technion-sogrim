@@ -19,15 +19,12 @@ actix-web-lab = "0.9"
 actix-cors = "0.6"
 futures-util = "0.3"
 jsonwebtoken = "8.0"
-jsonwebtoken-google = "0.1"
 env_logger = "0.9"
 lazy_static = "1.4"
 petgraph = "0.6"
 regex = "1.7.1"
+reqwest = { version = "0.11.18", features = ["json"] }
+async-trait = "0.1.68"
 
 [build-dependencies]
 dotenvy = "0.15"
-
-[dev-dependencies.jsonwebtoken-google]
-version = "0.1" 
-features = ["test-helper"]
