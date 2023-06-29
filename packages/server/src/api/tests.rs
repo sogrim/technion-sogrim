@@ -35,7 +35,7 @@ pub async fn test_get_all_catalogs() {
         App::new()
             .app_data(Data::new(db.clone()))
             .app_data(Data::new(Permissions::Student))
-            .app_data(jwt_decoder::JwtDecoder::mock(jwt))
+            .app_data(jwt_decoder::JwtDecoder::new())
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/students").service(students::get_catalogs)),
     )
@@ -66,7 +66,7 @@ async fn test_students_api_full_flow() {
         App::new()
             .app_data(Data::new(db.clone()))
             .app_data(Data::new(Permissions::Student))
-            .app_data(jwt_decoder::JwtDecoder::mock(jwt))
+            .app_data(jwt_decoder::JwtDecoder::new())
             .wrap(from_fn(middleware::auth::authenticate))
             .service(
                 scope("/students")
@@ -217,7 +217,7 @@ async fn test_owner_api_courses() {
         App::new()
             .app_data(Data::new(db.clone()))
             .app_data(Data::new(Permissions::Owner))
-            .app_data(jwt_decoder::JwtDecoder::mock(jwt))
+            .app_data(jwt_decoder::JwtDecoder::new())
             .wrap(from_fn(middleware::auth::authenticate))
             .service(
                 scope("owners")
@@ -289,7 +289,7 @@ async fn test_owner_api_catalogs() {
         App::new()
             .app_data(Data::new(db.clone()))
             .app_data(Data::new(Permissions::Owner))
-            .app_data(jwt_decoder::JwtDecoder::mock(jwt))
+            .app_data(jwt_decoder::JwtDecoder::new())
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/owners").service(owners::get_catalog_by_id)),
     )
@@ -369,7 +369,7 @@ async fn test_admins_parse_and_compute_api() {
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
-            .app_data(jwt_decoder::JwtDecoder::mock(jwt))
+            .app_data(jwt_decoder::JwtDecoder::new())
             .app_data(Data::new(Permissions::Admin))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/admins").service(admins::parse_courses_and_compute_degree_status)),

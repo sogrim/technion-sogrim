@@ -1,6 +1,9 @@
+use std::{sync::OnceLock, time::SystemTime};
+
 use crate::{
+    config::CONFIG,
     db::Db,
-    middleware,
+    middleware::{self, jwt_decoder::JwtDecoder},
     resources::user::{Permissions, User},
 };
 use actix_rt::test;
@@ -11,14 +14,80 @@ use actix_web::{
     App,
 };
 use actix_web_lab::middleware::from_fn;
+use base64::Engine;
+use jsonwebtoken::{Algorithm, EncodingKey, Header};
+use rand::thread_rng;
+use rsa::{pkcs1::EncodeRsaPrivateKey, traits::PublicKeyParts, RsaPrivateKey};
+use serde_json::json;
+
+use super::key_provider::RsaKey;
+
+/// Generate a fake RSA keypair for testing.
+/// Well.. it's not really fake, it's just randomly generated and not stored anywhere.
+/// Also, the key id is always "test".
+static STATIC_KEYPAIR: OnceLock<(EncodingKey, RsaKey)> = OnceLock::new();
+pub(crate) fn fake_rsa_keypair() -> &'static (EncodingKey, RsaKey) {
+    if let Some(keypair) = STATIC_KEYPAIR.get() {
+        return keypair;
+    }
+    let bits = 2048;
+    let private_key = RsaPrivateKey::new(&mut thread_rng(), bits).unwrap();
+    let key = EncodingKey::from_rsa_der(private_key.to_pkcs1_der().unwrap().as_bytes());
+    let n = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(private_key.n().to_bytes_be());
+    let e = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(private_key.e().to_bytes_be());
+    STATIC_KEYPAIR.get_or_init(|| {
+        (
+            key,
+            RsaKey {
+                kid: String::from("test"),
+                n,
+                e,
+            },
+        )
+    })
+}
+
+fn __fake_jwt(is_expired: bool) -> String {
+    let (encoding_key, public_key) = fake_rsa_keypair();
+    let exp = if is_expired {
+        0
+    } else {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + 3600
+    };
+    let json = json!({
+        "sub": "test",
+        "aud": CONFIG.client_id,
+        "iss": [
+            "https://accounts.google.com",
+            "accounts.google.com",
+        ],
+        "iat": 0,
+        "exp": exp,
+    });
+    let mut header = Header::new(Algorithm::RS256);
+    header.kid = Some(public_key.kid.clone());
+    jsonwebtoken::encode(&header, &json, encoding_key).unwrap()
+}
+
+pub(crate) fn fake_jwt() -> String {
+    __fake_jwt(false)
+}
+pub(crate) fn fake_jwt_expired() -> String {
+    __fake_jwt(true)
+}
 
 #[test]
 async fn test_from_request_no_db_client() {
     // Create authorization header
-    let jwt = "fake_jwt";
+    let jwt = fake_jwt();
+    let (_, public_key) = fake_rsa_keypair();
     let app = test::init_service(
         App::new()
-            .app_data(middleware::jwt_decoder::JwtDecoder::mock(jwt))
+            .app_data(web::Data::new(JwtDecoder::mock(public_key, &None)))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(
                 web::resource("/").route(web::get().to(|_: User| async { "Shouldn't get here" })),
@@ -101,10 +170,11 @@ async fn test_auth_mw_no_jwt_decoder() {
 
 #[test]
 async fn test_auth_mw_client_errors() {
-    let jwt = "fake_jwt";
+    let expired_jwt = fake_jwt_expired();
+    let (_, public_key) = fake_rsa_keypair();
     let app = test::init_service(
         App::new()
-            .app_data(middleware::jwt_decoder::JwtDecoder::mock(jwt))
+            .app_data(web::Data::new(JwtDecoder::mock(public_key, &None)))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(web::resource("/").route(web::get().to(|| async { "Shouldn't get here" }))),
     )
@@ -135,7 +205,7 @@ async fn test_auth_mw_client_errors() {
     // Check for correct response (401 in this case)
     assert_eq!(resp_bad_jwt.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(
-        String::from("Invalid JWT: Wrong header."),
+        String::from("Invalid JWT: InvalidToken"),
         resp_bad_jwt
             .response()
             .extensions()
@@ -145,21 +215,21 @@ async fn test_auth_mw_client_errors() {
     );
 
     // INVALID JWT - EXPIRED
-    // let resp_jwt_expired = test::TestRequest::get()
-    //     .uri("/")
-    //     .insert_header(("authorization", expired_jwt))
-    //     .send_request(&app)
-    //     .await;
+    let resp_jwt_expired = test::TestRequest::get()
+        .uri("/")
+        .insert_header(("authorization", expired_jwt))
+        .send_request(&app)
+        .await;
 
-    // // Check for correct response (401 in this case)
-    // assert_eq!(resp_jwt_expired.status(), StatusCode::UNAUTHORIZED);
-    // assert_eq!(
-    //     String::from("Invalid JWT: Wrong token format - ExpiredSignature."),
-    //     resp_jwt_expired
-    //         .response()
-    //         .extensions()
-    //         .get::<String>()
-    //         .unwrap()
-    //         .clone()
-    // );
+    // Check for correct response (401 in this case)
+    assert_eq!(resp_jwt_expired.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        String::from("Permission denied: Invalid JWT: ExpiredSignature"),
+        resp_jwt_expired
+            .response()
+            .extensions()
+            .get::<String>()
+            .unwrap()
+            .clone()
+    );
 }

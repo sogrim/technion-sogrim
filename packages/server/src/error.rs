@@ -39,11 +39,10 @@ impl From<reqwest::Error> for AppError {
 
 impl From<jsonwebtoken::errors::Error> for AppError {
     fn from(err: jsonwebtoken::errors::Error) -> Self {
+        let err_msg = format!("Invalid JWT: {err}");
         match err.kind() {
-            jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                AppError::Unauthorized(err.to_string())
-            }
-            _ => AppError::InternalServer(err.to_string()),
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => AppError::Unauthorized(err_msg),
+            _ => AppError::InternalServer(err_msg),
         }
     }
 }
@@ -72,6 +71,7 @@ impl ResponseError for AppError {
             AppError::Bson(e) => (StatusCode::BAD_REQUEST, format!("Bson error: {e}")),
             AppError::Parser(e) => (StatusCode::BAD_REQUEST, format!("Parser error: {e}")),
             AppError::Unauthorized(e) => {
+                println!("Unauthorized: {}", e);
                 (StatusCode::UNAUTHORIZED, format!("Permission denied: {e}"))
             }
             AppError::NotFound(e) => (StatusCode::NOT_FOUND, format!("{e} not found")),

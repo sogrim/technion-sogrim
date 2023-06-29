@@ -7,7 +7,7 @@ use actix_web::{
 };
 use actix_web_lab::middleware::Next;
 
-use super::jwt_decoder::{Decoder, JwtDecoder};
+use super::jwt_decoder::JwtDecoder;
 
 // use `pub` to re-export the `Sub` type from the `jwt_decoder` module
 pub use super::jwt_decoder::Sub;
@@ -41,7 +41,7 @@ pub async fn authenticate(
             let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
             resp.response_mut()
                 .extensions_mut()
-                .insert::<String>(format!("Invalid JWT: {err}"));
+                .insert::<String>(err.to_string());
             return Ok(resp);
         }
     };
