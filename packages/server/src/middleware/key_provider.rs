@@ -1,5 +1,8 @@
 use std::{
     collections::HashMap,
+    future::Future,
+    pin::Pin,
+    sync::OnceLock,
     time::{Duration, Instant},
 };
 
@@ -9,6 +12,9 @@ use serde::Deserialize;
 
 use crate::error::AppError;
 
+const GOOGLE_CERT_URL: &str = "https://www.googleapis.com/oauth2/v3/certs";
+
+/// Returns the maximum age of the cache control header in the response.
 fn get_max_age(res: &Response) -> Option<Duration> {
     res.headers()
         .get(header::CACHE_CONTROL)?
@@ -22,55 +28,75 @@ fn get_max_age(res: &Response) -> Option<Duration> {
 type KeyId = String;
 type RsaModulus = String;
 type RsaExponent = String;
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct RsaKey {
-    kid: KeyId,
-    n: RsaModulus,
-    e: RsaExponent,
+    pub(super) kid: KeyId,
+    pub(super) n: RsaModulus,
+    pub(super) e: RsaExponent,
 }
 impl RsaKey {
+    /// Returns the components of the RSA key.
     pub fn components(&self) -> (&RsaModulus, &RsaExponent) {
         (&self.n, &self.e)
     }
 }
-#[derive(Debug)]
+
+/// The output type of a future that returns the RSA keys and the expiration time of the cache.
+type FutureOutput = Result<(Vec<RsaKey>, Option<Duration>), AppError>;
+/// The type above, as the output of a boxed future.
+type BoxedResultFuture = Box<dyn Future<Output = FutureOutput>>;
+/// The type of a function pointer that returns the a thread-safe, pinned, version of the boxed future above. Full type: <br>
+/// `Box<dyn FnMut() -> Pin<Box<dyn Future<Output = Result<(Vec<RsaKey>, Option<Duration>), AppError>>>> + Send>`
+pub(super) type AsyncThreadSafeFnPtr = Box<dyn Fn() -> Pin<BoxedResultFuture> + Send>;
+/// Just for the kick of it, here is the type with no type aliases:
+
+/// The type representing a key provider that fetches keys from Google.
 pub struct GoogleKeyProvider {
-    client: reqwest::Client,
-    keys: HashMap<KeyId, RsaKey>,
-    expires_at: Option<Instant>,
+    /// The map of RSA keys.
+    pub(super) keys: HashMap<KeyId, RsaKey>,
+    /// The instant when the keys expire.
+    pub(super) expires_at: Option<Instant>,
+    /// The function pointer to fetch the keys.
+    pub(super) fetch: AsyncThreadSafeFnPtr,
 }
 
+/// The static HTTP client.
+pub static HTTP_CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+
 impl GoogleKeyProvider {
-    const GOOGLE_CERT_URL: &'static str = "https://www.googleapis.com/oauth2/v3/certs";
     pub async fn new() -> Self {
-        let mut provider = GoogleKeyProvider {
-            client: reqwest::Client::default(),
+        let mut manager = GoogleKeyProvider {
             keys: HashMap::new(),
             expires_at: None,
+            fetch: Box::new(|| {
+                Box::pin(async {
+                    let resp = HTTP_CLIENT
+                        .get_or_init(reqwest::Client::new)
+                        .get(GOOGLE_CERT_URL)
+                        .send()
+                        .await
+                        .map_err(AppError::from)?;
+                    let max_age = get_max_age(&resp);
+                    Ok((resp.json::<Vec<RsaKey>>().await?, max_age))
+                })
+            }),
         };
-        provider
+        manager
             .refetch()
             .await
             .expect("Failed to fetch public keys from Google");
-        provider
+        manager
     }
 
+    /// Refetches the keys from Google.
     async fn refetch(&mut self) -> Result<(), AppError> {
-        let res = self.client.get(Self::GOOGLE_CERT_URL).send().await?;
-        self.expires_at = get_max_age(&res).map(|max_age| Instant::now() + max_age);
-        #[derive(Deserialize)]
-        struct RsaKeys {
-            keys: Vec<RsaKey>,
-        }
-        let keys_json: RsaKeys = res.json().await?;
-        self.keys = keys_json
-            .keys
-            .into_iter()
-            .map(|key| (key.kid.clone(), key))
-            .collect();
+        let (keys, expires_at) = (self.fetch)().await?;
+        self.expires_at = expires_at.map(|at| Instant::now() + at);
+        self.keys = keys.into_iter().map(|key| (key.kid.clone(), key)).collect();
         Ok(())
     }
 
+    /// Gets the RSA key with the specified key ID (kid).
     pub async fn get_key(&mut self, kid: impl AsRef<str>) -> Result<&RsaKey, AppError> {
         if self.keys.is_empty() || self.expires_at.is_some_and(|at| at < Instant::now()) {
             self.refetch().await?;
@@ -78,5 +104,14 @@ impl GoogleKeyProvider {
         self.keys
             .get(kid.as_ref())
             .ok_or_else(|| AppError::InternalServer(format!("Unknown key id: {}", kid.as_ref())))
+    }
+
+    #[cfg(test)]
+    pub fn mock<'a: 'static>(rsa_key: &'a RsaKey, expires_at: &'a Option<Duration>) -> Self {
+        GoogleKeyProvider {
+            keys: HashMap::new(),
+            expires_at: None,
+            fetch: Box::new(|| Box::pin(async { Ok((vec![rsa_key.clone()], *expires_at)) })),
+        }
     }
 }
