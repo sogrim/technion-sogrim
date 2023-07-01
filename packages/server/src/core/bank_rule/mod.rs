@@ -25,6 +25,14 @@ pub struct BankRuleHandler<'a> {
 }
 
 impl<'a> BankRuleHandler<'a> {
+    pub fn is_course_irrelevant(&self, course_id: &CourseId) -> bool {
+        self.degree_status
+            .get_course_status(course_id)
+            .is_some_and(|cs| cs.state == Some(CourseState::Irrelevant))
+    }
+    pub fn is_course_relevant(&self, course_id: &CourseId) -> bool {
+        !self.is_course_irrelevant(course_id)
+    }
     pub fn course_or_replacement(&self, course_id: &CourseId) -> Option<&CourseStatus> {
         self.degree_status.get_course_status(
             self.replaced_courses
@@ -54,24 +62,22 @@ impl<'a> BankRuleHandler<'a> {
             if let Some(student_course_status) =
                 self.degree_status.get_course_status_mut(student_course_id)
             {
+                let course = self
+                    .courses
+                    .get(catalog_course_id)
+                    .cloned()
+                    .unwrap_or(Course {
+                        id: catalog_course_id.clone(),
+                        ..Default::default()
+                    });
                 // check whether the replacement is a catalog replacement or a common replacement
                 if self
                     .bank
                     .is_catalog_replacement(catalog_course_id, student_course_id)
                 {
-                    student_course_status.set_msg(messages::catalog_replacements_msg(
-                        self.courses.get(catalog_course_id).unwrap_or(&Course {
-                            id: catalog_course_id.clone(),
-                            ..Default::default()
-                        }),
-                    ));
+                    student_course_status.set_msg(messages::catalog_replacements_msg(&course));
                 } else {
-                    student_course_status.set_msg(messages::common_replacements_msg(
-                        self.courses.get(catalog_course_id).unwrap_or(&Course {
-                            id: catalog_course_id.clone(),
-                            ..Default::default()
-                        }),
-                    ));
+                    student_course_status.set_msg(messages::common_replacements_msg(&course));
                 }
             }
         }

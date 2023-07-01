@@ -1,5 +1,6 @@
 use crate::resources::course::{Course, CourseId};
 use crate::resources::{catalog::OptionalReplacements, course::Tag};
+use actix_rt::test;
 use bson::doc;
 use serde::{Deserialize, Serialize};
 
@@ -31,6 +32,21 @@ pub enum Predicate {
     HasTag(Tag),
     StartsWith(String),
     Wildcard,
+}
+
+impl Predicate {
+    pub fn into_courses(self) -> Vec<CourseId> {
+        match self {
+            Predicate::InList(list) => list,
+            _ => vec![],
+        }
+    }
+    pub fn starts_with_or_none(self) -> Option<String> {
+        match self {
+            Predicate::StartsWith(prefix) => Some(prefix),
+            _ => None,
+        }
+    }
 }
 
 pub trait Holds {
@@ -65,6 +81,16 @@ pub enum Rule {
     Chains(Vec<Chain>),
     SpecializationGroups(SpecializationGroups),
     Wildcard(bool),
+}
+
+#[test]
+async fn modify_catalog() {
+    use crate::resources::catalog::Catalog;
+    use std::str::FromStr;
+    let db = crate::Db::new().await;
+    let obj_id =
+        bson::oid::ObjectId::from_str("61a102bb04c5400b98e6f401").expect("failed to create oid");
+    let catalog = db.get::<Catalog>(obj_id).await.unwrap();
 }
 
 impl ToString for Rule {

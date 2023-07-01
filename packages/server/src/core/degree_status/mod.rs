@@ -109,6 +109,52 @@ pub struct DegreeStatusHandler<'a> {
 }
 
 impl<'a> DegreeStatusHandler<'a> {
+    pub fn new(
+        degree_status: &'a mut DegreeStatus,
+        course_banks: Vec<CourseBank>,
+        courses: HashMap<CourseId, Course>,
+        catalog: &'a Catalog,
+    ) -> Self {
+        let course_banks = course_banks
+            .into_iter()
+            .map(|bank| {
+                let replacements = [
+                    // TODO: assign with a better way
+                    catalog.catalog_replacements.clone(),
+                    catalog.common_replacements.clone(),
+                ]
+                .into_iter()
+                .map(|replacements| {
+                    replacements
+                        .into_iter()
+                        .filter(|(course_id, _)| {
+                            let course = courses.get(course_id).cloned().unwrap_or_else(|| {
+                                log::error!("course {} not found in catalog", course_id);
+                                Course {
+                                    id: course_id.clone(),
+                                    ..Default::default()
+                                }
+                            });
+                            bank.has_course(&course)
+                        })
+                        .map(|(course_id, replacemens)| (course_id, replacemens))
+                        .collect::<HashMap<_, _>>()
+                })
+                .collect::<Vec<_>>();
+                bank.catalog_replacements(replacements[0].clone())
+                    .common_replacements(replacements[1].clone())
+            })
+            .collect();
+        Self {
+            degree_status,
+            course_banks,
+            catalog,
+            courses,
+            credit_overflow_map: HashMap::new(),
+            missing_credit_map: HashMap::new(),
+            courses_overflow_map: HashMap::new(),
+        }
+    }
     fn find_next_bank_with_credit_requirement(&self, bank_name: &str) -> Option<String> {
         let find_next_bank = |bank_name: &str| {
             self.catalog
@@ -136,16 +182,7 @@ impl DegreeStatus {
         // prepare the data for degree status computation
         self.preprocess(&mut catalog);
 
-        DegreeStatusHandler {
-            degree_status: self,
-            course_banks,
-            catalog: &catalog,
-            courses,
-            credit_overflow_map: HashMap::new(),
-            missing_credit_map: HashMap::new(),
-            courses_overflow_map: HashMap::new(),
-        }
-        .compute_status();
+        DegreeStatusHandler::new(self, course_banks, courses, &catalog).compute_status();
 
         // process the data after degree status computation
         self.postprocess(&catalog);

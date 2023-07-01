@@ -6,7 +6,7 @@ use crate::{
 use bson::{doc, Document};
 use regex::Regex;
 use serde::{self, Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::course::CourseId;
 
@@ -32,7 +32,6 @@ pub struct Catalog {
     pub description: String,
     pub course_banks: Vec<CourseBank>,
     pub credit_overflows: Vec<CreditOverflow>,
-    pub course_to_bank: HashMap<CourseId, String>,
     pub catalog_replacements: Replacements, // All replacements which are mentioned in the catalog
     pub common_replacements: Replacements, // Common replacement which usually approved by the coordinators
 }
@@ -55,8 +54,26 @@ impl Catalog {
         find_traversal_order(self)
     }
 
-    pub fn get_all_course_ids(&self) -> Vec<CourseId> {
-        self.course_to_bank.clone().into_keys().collect()
+    pub fn get_all_course_ids(&self) -> HashSet<CourseId> {
+        self.course_banks
+            .iter()
+            .fold(vec![], |mut acc, bank| {
+                acc.extend(bank.courses());
+                acc
+            })
+            .into_iter()
+            .collect::<HashSet<_>>()
+    }
+
+    pub fn get_all_starts_with_predicates(&self) -> Vec<String> {
+        self.course_banks.iter().fold(vec![], |mut acc, bank| {
+            acc.extend(
+                bank.predicates()
+                    .into_iter()
+                    .filter_map(|pred| pred.starts_with_or_none()),
+            );
+            acc
+        })
     }
 
     pub fn is_medicine(&self) -> bool {

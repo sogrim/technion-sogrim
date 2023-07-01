@@ -42,11 +42,9 @@ impl<'a> DegreeStatusHandler<'a> {
                 if let Some(credit) = bank.credit {
                     if sum_credit_requirement < credit {
                         missing_credit = credit - sum_credit_requirement;
+                        self.missing_credit_map
+                            .insert(bank.name.clone(), missing_credit);
                     }
-                }
-                if missing_credit > 0.0 {
-                    self.missing_credit_map
-                        .insert(bank.name.clone(), missing_credit);
                 }
             }
             Rule::AccumulateCredit(_) => bank_rule_handler.accumulate_credit(),

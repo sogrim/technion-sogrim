@@ -52,15 +52,15 @@ impl DegreeStatus {
         }
     }
 
-    fn remove_irrelevant_courses_from_catalog(&mut self, catalog: &mut Catalog) {
-        for course_status in self.course_statuses.iter() {
-            if let Some(state) = &course_status.state {
-                if *state == CourseState::Irrelevant {
-                    catalog.course_to_bank.remove(&course_status.course.id);
-                }
-            }
-        }
-    }
+    // fn remove_irrelevant_courses_from_catalog(&mut self, catalog: &mut Catalog) {
+    //     for course_status in self.course_statuses.iter() {
+    //         if let Some(state) = &course_status.state {
+    //             if *state == CourseState::Irrelevant {
+    //                 todo!();
+    //             }
+    //         }
+    //     }
+    // }
 
     fn reset(&mut self, catalog: &mut Catalog) {
         self.course_bank_requirements.clear();
@@ -70,7 +70,7 @@ impl DegreeStatus {
         self.remove_courses_added_by_algorithm();
         self.remove_irrelevant_courses_added_by_user();
         self.clear_type_for_unmodified_and_irrelevant_courses();
-        self.remove_irrelevant_courses_from_catalog(catalog);
+        // self.remove_irrelevant_courses_from_catalog(catalog);
     }
 
     pub fn preprocess(&mut self, catalog: &mut Catalog) {

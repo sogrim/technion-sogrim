@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use crate::core::types::{Holds, Rule};
+use crate::core::types::{Holds, Predicate, Rule};
 use crate::db::Resource;
 
 use super::catalog::Replacements;
@@ -36,7 +36,7 @@ pub enum Tag {
     English,
     Malag,
     Sport,
-    SportTeam, // TODO: check if need this
+    SportsTeam, // TODO: check if need this
     MedicinePreclinical,
     MedicineClinical,
 }
@@ -216,7 +216,19 @@ pub struct CourseBank {
 }
 
 impl CourseBank {
-    fn has_course(&self, course: &Course) -> bool {
+    pub fn catalog_replacements(self, replacements: Replacements) -> Self {
+        Self {
+            catalog_replacements: replacements,
+            ..self
+        }
+    }
+    pub fn common_replacements(self, replacements: Replacements) -> Self {
+        Self {
+            common_replacements: replacements,
+            ..self
+        }
+    }
+    pub fn has_course(&self, course: &Course) -> bool {
         match &self.rule {
             Rule::All(courses) => courses.contains(&course.id),
             Rule::AccumulateCredit(predicates) => predicates.holds_on(course),
@@ -230,6 +242,43 @@ impl CourseBank {
                 .iter()
                 .any(|sg| sg.course_list.contains(&course.id)),
             Rule::Wildcard(_) => true,
+        }
+    }
+    pub fn courses(&self) -> Vec<CourseId> {
+        // TODO: optimize this
+        match self.rule.clone() {
+            Rule::All(courses) => courses,
+            Rule::AccumulateCredit(predicates) | Rule::AccumulateCourses((_, predicates)) => {
+                predicates
+                    .into_iter()
+                    .fold(vec![], |mut acc: Vec<CourseId>, predicate| {
+                        acc.extend(predicate.into_courses());
+                        acc
+                    })
+            }
+            Rule::Chains(chains) => {
+                chains
+                    .into_iter()
+                    .fold(vec![], |mut acc: Vec<CourseId>, chain| {
+                        acc.extend(chain);
+                        acc
+                    })
+            }
+            Rule::SpecializationGroups(sgs) => {
+                sgs.groups_list.into_iter().fold(vec![], |mut acc, sg| {
+                    acc.extend(sg.course_list);
+                    acc
+                })
+            }
+            _ => vec![],
+        }
+    }
+    pub fn predicates(&self) -> Vec<Predicate> {
+        match self.rule.clone() {
+            Rule::AccumulateCredit(predicates) | Rule::AccumulateCourses((_, predicates)) => {
+                predicates
+            }
+            _ => vec![],
         }
     }
     fn find_replacement<'a>(&'a self, course: &Course) -> Option<&CourseId> {

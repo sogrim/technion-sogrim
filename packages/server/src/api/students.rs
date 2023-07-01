@@ -175,6 +175,7 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         )
         .await?;
 
+    // We have to fill the tags here, since tags are not filled when students add courses via copy-paste (or manually)
     user.details.degree_status.fill_tags(&courses);
 
     let mut course_list = Vec::new();
