@@ -30,9 +30,9 @@ type RsaModulus = String;
 type RsaExponent = String;
 #[derive(Debug, Clone, Deserialize)]
 pub struct RsaKey {
-    pub(super) kid: KeyId,
-    pub(super) n: RsaModulus,
-    pub(super) e: RsaExponent,
+    pub kid: KeyId,
+    pub n: RsaModulus,
+    pub e: RsaExponent,
 }
 impl RsaKey {
     /// Returns the components of the RSA key.
@@ -47,17 +47,17 @@ type FutureOutput = Result<(Vec<RsaKey>, Option<Duration>), AppError>;
 type BoxedResultFuture = Box<dyn Future<Output = FutureOutput>>;
 /// The type of a function pointer that returns the a thread-safe, pinned, version of the boxed future above. Full type: <br>
 /// `Box<dyn FnMut() -> Pin<Box<dyn Future<Output = Result<(Vec<RsaKey>, Option<Duration>), AppError>>>> + Send>`
-pub(super) type AsyncThreadSafeFnPtr = Box<dyn Fn() -> Pin<BoxedResultFuture> + Send>;
+pub type AsyncThreadSafeFnPtr = Box<dyn Fn() -> Pin<BoxedResultFuture> + Send>;
 /// Just for the kick of it, here is the type with no type aliases:
 
 /// The type representing a key provider that fetches keys from Google.
 pub struct GoogleKeyProvider {
     /// The map of RSA keys.
-    pub(super) keys: HashMap<KeyId, RsaKey>,
+    pub keys: HashMap<KeyId, RsaKey>,
     /// The instant when the keys expire.
-    pub(super) expires_at: Option<Instant>,
+    pub expires_at: Option<Instant>,
     /// The function pointer to fetch the keys.
-    pub(super) fetch: AsyncThreadSafeFnPtr,
+    pub fetch: AsyncThreadSafeFnPtr,
 }
 
 /// The static HTTP client.
@@ -77,7 +77,11 @@ impl GoogleKeyProvider {
                         .await
                         .map_err(AppError::from)?;
                     let max_age = get_max_age(&resp);
-                    Ok((resp.json::<Vec<RsaKey>>().await?, max_age))
+                    #[derive(Deserialize)]
+                    struct Response {
+                        keys: Vec<RsaKey>,
+                    }
+                    Ok((resp.json::<Response>().await?.keys, max_age))
                 })
             }),
         };
