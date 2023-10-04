@@ -289,6 +289,6 @@ pub fn vec_to_map(vec: Vec<Course>) -> HashMap<CourseId, Course> {
         vec.clone()
             .iter()
             .map(|course| course.id.clone())
-            .zip(vec.into_iter()),
+            .zip(vec),
     )
 }

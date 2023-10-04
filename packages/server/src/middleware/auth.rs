@@ -47,19 +47,25 @@ pub async fn authenticate(
     let (request, payload) = req.into_parts();
     let Some(header) = request.headers().get(header::AUTHORIZATION) else {
         let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
-        resp.response_mut().extensions_mut().insert::<String>(String::from("No authorization header"));
+        resp.response_mut()
+            .extensions_mut()
+            .insert::<String>(String::from("No authorization header"));
         return Ok(resp);
     };
 
     let Ok(jwt) = header.to_str() else {
         let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
-        resp.response_mut().extensions_mut().insert::<String>(String::from("Invalid authorization header"));
+        resp.response_mut()
+            .extensions_mut()
+            .insert::<String>(String::from("Invalid authorization header"));
         return Ok(resp);
     };
 
     let Some(decoder) = request.app_data::<JwtDecoder>() else {
         let mut resp = ServiceResponse::new(request, HttpResponse::InternalServerError().finish());
-        resp.response_mut().extensions_mut().insert::<String>(String::from("JwtDecoder not initialized"));
+        resp.response_mut()
+            .extensions_mut()
+            .insert::<String>(String::from("JwtDecoder not initialized"));
         return Ok(resp);
     };
 
