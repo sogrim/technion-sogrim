@@ -285,10 +285,5 @@ impl<'de> Deserialize<'de> for Grade {
 }
 
 pub fn vec_to_map(vec: Vec<Course>) -> HashMap<CourseId, Course> {
-    HashMap::from_iter(
-        vec.clone()
-            .iter()
-            .map(|course| course.id.clone())
-            .zip(vec),
-    )
+    HashMap::from_iter(vec.clone().iter().map(|course| course.id.clone()).zip(vec))
 }
