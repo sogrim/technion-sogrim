@@ -129,7 +129,7 @@ impl<'a> DegreeStatusHandler<'a> {
 impl DegreeStatus {
     pub fn compute(&mut self, mut catalog: Catalog, courses: HashMap<CourseId, Course>) {
         // prepare the data for degree status computation
-        self.preprocess(&mut catalog);
+        self.preprocess(&mut catalog, &courses);
 
         let course_banks = catalog.get_bank_traversal_order();
 

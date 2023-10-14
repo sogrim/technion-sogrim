@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
-use crate::resources::{
-    catalog::Catalog,
-    course::{CourseId, CourseState},
+use crate::{
+    core::messages,
+    resources::{
+        catalog::Catalog,
+        course::{Course, CourseId, CourseState},
+    },
 };
 
 use super::DegreeStatus;
@@ -75,30 +78,41 @@ impl DegreeStatus {
         self.remove_irrelevant_courses_from_catalog(catalog);
     }
 
-    fn get_all_student_replacements(&mut self, catalog: &Catalog) -> HashMap<CourseId, CourseId> {
+    fn get_all_student_replacements(
+        &mut self,
+        catalog: &Catalog,
+        courses: &HashMap<CourseId, Course>,
+    ) -> HashMap<CourseId, CourseId> {
         let mut student_replacements = HashMap::new();
         self.course_statuses.iter_mut().for_each(|course| {
-            catalog
-                .catalog_replacements
-                .iter()
-                .for_each(|(course_id, replacements)| {
-                    if replacements.contains(&course.course.id) {
-                        student_replacements.insert(course_id.clone(), course.course.id.clone());
+            let mut find_replacement =
+                |replacements: &HashMap<String, Vec<String>>,
+                 replacements_msg: fn(&Course) -> String| {
+                    replacements
+                        .iter()
+                        .for_each(|(course_id, optional_replacements)| {
+                            optional_replacements.contains(course_id).then(|| {
+                                student_replacements
+                                    .insert(course_id.clone(), course.course.id.clone());
 
-                        // course.set_msg(messages::catalog_replacements_msg(self.courses.get(course_id).unwrap_or(&Course { // TODO: use courses here? consult with Benny.
-                        //     id: course_id.clone(),
-                        //     ..Default::default()
-                        // }));
-                    }
-                });
-            catalog
-                .common_replacements
-                .iter()
-                .for_each(|(course_id, replacements)| {
-                    if replacements.contains(&course.course.id) {
-                        student_replacements.insert(course_id.clone(), course.course.id.clone());
-                    }
-                });
+                                course.set_msg(replacements_msg(courses.get(course_id).unwrap_or(
+                                    &Course {
+                                        id: course_id.clone(),
+                                        ..Default::default()
+                                    },
+                                )));
+                            });
+                        })
+                };
+
+            find_replacement(
+                &catalog.catalog_replacements,
+                messages::catalog_replacement_msg,
+            );
+            find_replacement(
+                &catalog.common_replacements,
+                messages::common_replacement_msg,
+            );
         });
 
         println!("student_replacements: {:#?}", student_replacements);
@@ -108,8 +122,12 @@ impl DegreeStatus {
 
     // This function iterates over the course statuses and if it finds a course a student took which is a replacement for a course in the catalog
     // it replaces the course in the catalog with the course the student took
-    fn replace_student_course_with_courses_in_catalog(&mut self, catalog: &mut Catalog) {
-        let student_replacements = self.get_all_student_replacements(catalog);
+    fn replace_student_course_with_courses_in_catalog(
+        &mut self,
+        catalog: &mut Catalog,
+        courses: &HashMap<CourseId, Course>,
+    ) {
+        let student_replacements = self.get_all_student_replacements(catalog, courses);
         student_replacements
             .iter()
             .for_each(|(course_id, replacement)| {
@@ -117,7 +135,7 @@ impl DegreeStatus {
             });
     }
 
-    pub fn preprocess(&mut self, catalog: &mut Catalog) {
+    pub fn preprocess(&mut self, catalog: &mut Catalog, courses: &HashMap<CourseId, Course>) {
         self.reset(catalog);
 
         self.course_statuses.sort_by(|c1, c2| {
@@ -128,6 +146,6 @@ impl DegreeStatus {
             // still, to be on the safe side, we use Ordering::Equal in that case instead of unwrapping
         });
 
-        self.replace_student_course_with_courses_in_catalog(catalog);
+        self.replace_student_course_with_courses_in_catalog(catalog, courses);
     }
 }
