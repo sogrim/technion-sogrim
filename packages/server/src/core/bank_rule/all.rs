@@ -9,13 +9,13 @@ impl<'a> BankRuleHandler<'a> {
     pub fn all(mut self, sum_credit_requirement: &mut f32, completed: &mut bool) -> f32 {
         let credit_info = self.iterate_course_list();
 
-        let completed_courses = self
+        let taken_courses = self
             .degree_status
-            .get_all_student_courses_for_bank(&self.bank_name);
+            .get_all_taken_courses_for_bank(&self.bank_name);
 
         self.course_list
             .iter()
-            .filter(|&course_id| !completed_courses.contains(course_id))
+            .filter(|&course_id| !taken_courses.contains(course_id))
             .for_each(|course_id| {
                 let course = self
                     .courses

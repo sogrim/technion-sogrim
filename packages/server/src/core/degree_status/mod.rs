@@ -76,7 +76,7 @@ impl DegreeStatus {
         });
     }
 
-    pub fn get_all_student_courses_for_bank(&self, bank_name: &str) -> Vec<CourseId> {
+    pub fn get_all_taken_courses_for_bank(&self, bank_name: &str) -> Vec<CourseId> {
         self.course_statuses
             .iter()
             .filter(|course_status| course_status.r#type == Some(bank_name.to_string()))
