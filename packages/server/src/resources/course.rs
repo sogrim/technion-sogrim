@@ -208,6 +208,32 @@ pub struct CourseBank {
     pub credit: Option<f32>,
 }
 
+fn replace_occurrences(vec: &mut [CourseId], course: &CourseId, replacement: &CourseId) {
+    vec.iter_mut().for_each(|course_id| {
+        if course_id == course {
+            *course_id = replacement.clone();
+        }
+    })
+}
+
+impl CourseBank {
+    pub fn replace_course(&mut self, course: CourseId, replacement: CourseId) {
+        match self.rule {
+            Rule::Chains(ref mut chains) => {
+                chains.iter_mut().for_each(|chain| {
+                    replace_occurrences(chain, &course, &replacement);
+                })
+            },
+            Rule::SpecializationGroups(ref mut specialization_groups) => {
+                specialization_groups.groups_list.iter_mut().for_each(|specialization_group| {
+                    replace_occurrences(&mut specialization_group.course_list, &course, &replacement);
+                })
+            },
+            _ => {}
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Grade {
     Numeric(u32),
