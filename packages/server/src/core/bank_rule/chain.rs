@@ -9,9 +9,6 @@ impl<'a> BankRuleHandler<'a> {
             .degree_status
             .get_all_completed_courses_for_bank(&self.bank_name);
 
-        println!("completed_courses: {:#?}", completed_courses);
-        println!("chains: {:#?}", chains);
-
         for chain in chains {
             let chain_complete = chain
                 .iter()

@@ -78,7 +78,7 @@ impl DegreeStatus {
         self.remove_irrelevant_courses_from_catalog(catalog);
     }
 
-    fn get_all_student_replacements(
+    fn get_all_student_replacements_and_set_msg(
         &mut self,
         catalog: &Catalog,
         courses: &HashMap<CourseId, Course>,
@@ -115,8 +115,6 @@ impl DegreeStatus {
             );
         });
 
-        println!("student_replacements: {:#?}", student_replacements);
-
         student_replacements
     }
 
@@ -127,7 +125,7 @@ impl DegreeStatus {
         catalog: &mut Catalog,
         courses: &HashMap<CourseId, Course>,
     ) {
-        let student_replacements = self.get_all_student_replacements(catalog, courses);
+        let student_replacements = self.get_all_student_replacements_and_set_msg(catalog, courses);
         student_replacements
             .iter()
             .for_each(|(course_id, replacement)| {
