@@ -23,7 +23,7 @@ impl<'a> BankRuleHandler<'a> {
             if chain_complete {
                 *chain_done = chain
                     .iter()
-                    .filter_map(|course_id| map_to_actual_course(course_id))
+                    .filter_map(map_to_actual_course)
                     .map(|course_status| course_status.course.name.clone())
                     .collect();
 

@@ -56,7 +56,7 @@ impl<'a> DegreeStatusHandler<'a> {
                 continue;
             }
             let Some(overflow) = map.get_mut(&rule.from) else {
-                continue
+                continue;
             };
             if *overflow <= 0.0 {
                 continue;

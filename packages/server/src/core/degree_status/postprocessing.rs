@@ -52,7 +52,9 @@ impl DegreeStatus {
         let technical_english_advanced_b_course_status =
             self.get_course_status(TECHNICAL_ENGLISH_ADVANCED_B);
 
-        let Some(technical_english_advanced_b_course_status) = technical_english_advanced_b_course_status else {
+        let Some(technical_english_advanced_b_course_status) =
+            technical_english_advanced_b_course_status
+        else {
             // The student didn't complete technical english advanced b course so it will be marked as not complete in "hova" demand
             // Thus, it is not necessary to add it to the important messages.
             return;
@@ -96,7 +98,7 @@ impl DegreeStatus {
             .and_then(|course_bank| course_bank.credit);
         let Some(mut credit_requirement) = credit_requirement else {
             // shouldn't get here as we send a bank with credit requirement
-            return vec![]
+            return vec![];
         };
 
         self.get_courses_for_bank_ordered_by_grade(bank_name)
