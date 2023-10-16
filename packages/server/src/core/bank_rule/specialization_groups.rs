@@ -38,9 +38,10 @@ fn get_complete_sgs_indices(
             // There are not enough courses in this sg to complete the requirement
             continue;
         }
+
         // check if the user completed the mandatory courses in sg
+        let mut complete_mandatory = true;
         if let Some(mandatory) = &sgs[sg_index].mandatory {
-            let mut complete_mandatory = true;
             for courses in mandatory {
                 let mut completed_current_demand = false;
                 for (course_id, group) in course_id_to_sg_index {
@@ -54,9 +55,9 @@ fn get_complete_sgs_indices(
                     complete_mandatory = false;
                 }
             }
-            if complete_mandatory {
-                complete_sgs_indices.push(sg_index);
-            }
+        }
+        if complete_mandatory {
+            complete_sgs_indices.push(sg_index);
         }
     }
     complete_sgs_indices
@@ -216,6 +217,12 @@ impl<'a> BankRuleHandler<'a> {
             .get_all_completed_courses_for_bank(&self.bank_name);
 
         let valid_assignment_for_courses = run_exhaustive_search(sgs, completed_courses);
+
+        println!(
+            "valid_assignment_for_courses: {:#?}",
+            valid_assignment_for_courses
+        );
+
         let complete_sgs_indices =
             get_complete_sgs_indices(&sgs.groups_list, &valid_assignment_for_courses);
         // The set is to prevent duplications
