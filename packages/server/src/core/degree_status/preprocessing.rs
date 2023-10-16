@@ -84,24 +84,26 @@ impl DegreeStatus {
         courses: &HashMap<CourseId, Course>,
     ) -> HashMap<CourseId, CourseId> {
         let mut student_replacements = HashMap::new();
-        self.course_statuses.iter_mut().for_each(|course| {
+        self.course_statuses.iter_mut().for_each(|course_status| {
             let mut find_replacement =
                 |replacements: &HashMap<String, Vec<String>>,
                  replacements_msg: fn(&Course) -> String| {
                     replacements
                         .iter()
                         .for_each(|(course_id, optional_replacements)| {
-                            optional_replacements.contains(course_id).then(|| {
-                                student_replacements
-                                    .insert(course_id.clone(), course.course.id.clone());
+                            optional_replacements
+                                .contains(&course_status.course.id)
+                                .then(|| {
+                                    student_replacements
+                                        .insert(course_id.clone(), course_status.course.id.clone());
 
-                                course.set_msg(replacements_msg(courses.get(course_id).unwrap_or(
-                                    &Course {
-                                        id: course_id.clone(),
-                                        ..Default::default()
-                                    },
-                                )));
-                            });
+                                    course_status.set_msg(replacements_msg(
+                                        courses.get(course_id).unwrap_or(&Course {
+                                            id: course_id.clone(),
+                                            ..Default::default()
+                                        }),
+                                    ));
+                                });
                         })
                 };
 
