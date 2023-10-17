@@ -218,11 +218,6 @@ impl<'a> BankRuleHandler<'a> {
 
         let valid_assignment_for_courses = run_exhaustive_search(sgs, completed_courses);
 
-        println!(
-            "valid_assignment_for_courses: {:#?}",
-            valid_assignment_for_courses
-        );
-
         let complete_sgs_indices =
             get_complete_sgs_indices(&sgs.groups_list, &valid_assignment_for_courses);
         // The set is to prevent duplications

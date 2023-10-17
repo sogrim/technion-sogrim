@@ -442,6 +442,39 @@ async fn test_specialization_group() {
                 grade: Some(Grade::Numeric(85)),
                 ..Default::default()
             },
+            CourseStatus {
+                course: Course {
+                    id: "236319".to_string(),
+                    credit: 3.5,
+                    name: "".to_string(),
+                    tags: None,
+                },
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "236321".to_string(),
+                    credit: 3.5,
+                    name: "".to_string(),
+                    tags: None,
+                },
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
+            CourseStatus {
+                course: Course {
+                    id: "236322".to_string(),
+                    credit: 3.5,
+                    name: "".to_string(),
+                    tags: None,
+                },
+                state: Some(CourseState::Complete),
+                grade: Some(Grade::Numeric(85)),
+                ..Default::default()
+            },
         ],
         course_bank_requirements: Vec::<Requirement>::new(),
         overflow_msgs: Vec::<String>::new(),
@@ -457,6 +490,9 @@ async fn test_specialization_group() {
         "236329".to_string(),
         "234325".to_string(),
         "044191".to_string(),
+        "236319".to_string(),
+        "236321".to_string(),
+        "236322".to_string(),
     ];
     let sgs = SpecializationGroups {
         groups_list: vec![
@@ -583,7 +619,7 @@ async fn test_specialization_group() {
                 mandatory: Some(vec![vec!["234129".to_string()]]),
             },
         ],
-        groups_number: 2,
+        groups_number: 3,
     };
 
     let handle_bank_rule_processor = create_bank_rule_handler!(
@@ -596,9 +632,10 @@ async fn test_specialization_group() {
     let mut completed_groups = Vec::<String>::new();
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
 
-    assert_eq!(completed_groups.len(), 2);
+    assert_eq!(completed_groups.len(), 3);
     assert!(completed_groups.contains(&"תורת התקשורת".to_string()));
     assert!(completed_groups.contains(&"מערכות נבונות".to_string()));
+    assert!(completed_groups.contains(&"מערכות תוכנה ותכנות מתקדם".to_string()));
 
     // ---------------------------------------------------------------------------
     // change the state of 044202, which is a mandatory course in "תורת התקשורת", to notComplete,
@@ -614,6 +651,6 @@ async fn test_specialization_group() {
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut completed_groups = Vec::<String>::new();
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
-    assert_eq!(completed_groups.len(), 1);
+    assert_eq!(completed_groups.len(), 2);
     assert!(completed_groups.contains(&"מערכות נבונות".to_string()));
 }
