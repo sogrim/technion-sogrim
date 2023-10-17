@@ -208,27 +208,41 @@ pub struct CourseBank {
     pub credit: Option<f32>,
 }
 
-fn replace_occurrences(vec: &mut [CourseId], course: &CourseId, replacement: &CourseId) {
-    vec.iter_mut().for_each(|course_id| {
-        if course_id == course {
-            *course_id = replacement.clone();
-        }
-    })
-}
-
 impl CourseBank {
     pub fn replace_course(&mut self, course: CourseId, replacement: CourseId) {
+        fn replace_occurrences(
+            courses: &mut [CourseId],
+            course: &CourseId,
+            replacement: &CourseId,
+        ) {
+            courses.iter_mut().for_each(|course_id| {
+                if course_id == course {
+                    *course_id = replacement.clone();
+                }
+            })
+        }
+
         match self.rule {
-            Rule::Chains(ref mut chains) => {
-                chains.iter_mut().for_each(|chain| {
-                    replace_occurrences(chain, &course, &replacement);
-                })
-            },
+            Rule::Chains(ref mut chains) => chains.iter_mut().for_each(|chain| {
+                replace_occurrences(chain, &course, &replacement);
+            }),
             Rule::SpecializationGroups(ref mut specialization_groups) => {
-                specialization_groups.groups_list.iter_mut().for_each(|specialization_group| {
-                    replace_occurrences(&mut specialization_group.course_list, &course, &replacement);
-                })
-            },
+                specialization_groups
+                    .groups_list
+                    .iter_mut()
+                    .for_each(|specialization_group| {
+                        replace_occurrences(
+                            &mut specialization_group.course_list,
+                            &course,
+                            &replacement,
+                        );
+                        if let Some(mandatory) = &mut specialization_group.mandatory {
+                            mandatory.iter_mut().for_each(|courses| {
+                                replace_occurrences(courses, &course, &replacement)
+                            });
+                        }
+                    });
+            }
             _ => {}
         }
     }
