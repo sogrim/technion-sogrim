@@ -653,4 +653,5 @@ async fn test_specialization_group() {
     handle_bank_rule_processor.specialization_group(&sgs, &mut completed_groups);
     assert_eq!(completed_groups.len(), 2);
     assert!(completed_groups.contains(&"מערכות נבונות".to_string()));
+    assert!(completed_groups.contains(&"מערכות תוכנה ותכנות מתקדם".to_string()));
 }
