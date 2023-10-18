@@ -71,6 +71,19 @@ impl Catalog {
     pub fn is_medicine(&self) -> bool {
         matches!(self.faculty, Faculty::Medicine)
     }
+
+    // Iterate over all banks and replace the course with the replacement
+    pub fn replace_courses(&mut self, course: &CourseId, replacement: &CourseId) {
+        if let Some(bank_name) = self.course_to_bank.get(course) {
+            self.course_to_bank
+                .insert(replacement.clone(), bank_name.clone());
+            self.course_to_bank.remove(course);
+        }
+
+        for bank in self.course_banks.iter_mut() {
+            bank.replace_course(course.clone(), replacement.clone());
+        }
+    }
 }
 
 impl Resource for Catalog {

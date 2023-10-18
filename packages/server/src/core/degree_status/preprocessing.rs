@@ -1,6 +1,11 @@
-use crate::resources::{
-    catalog::Catalog,
-    course::{CourseId, CourseState},
+use std::collections::HashMap;
+
+use crate::{
+    core::messages,
+    resources::{
+        catalog::Catalog,
+        course::{Course, CourseId, CourseState},
+    },
 };
 
 use super::DegreeStatus;
@@ -73,7 +78,64 @@ impl DegreeStatus {
         self.remove_irrelevant_courses_from_catalog(catalog);
     }
 
-    pub fn preprocess(&mut self, catalog: &mut Catalog) {
+    fn get_all_student_replacements_and_set_msg(
+        &mut self,
+        catalog: &Catalog,
+        courses: &HashMap<CourseId, Course>,
+    ) -> HashMap<CourseId, CourseId> {
+        let mut student_replacements = HashMap::new();
+        self.course_statuses.iter_mut().for_each(|course_status| {
+            let mut find_replacement =
+                |replacements: &HashMap<String, Vec<String>>,
+                 replacements_msg: fn(&Course) -> String| {
+                    replacements
+                        .iter()
+                        .for_each(|(course_id, optional_replacements)| {
+                            optional_replacements
+                                .contains(&course_status.course.id)
+                                .then(|| {
+                                    student_replacements
+                                        .insert(course_id.clone(), course_status.course.id.clone());
+
+                                    course_status.set_msg(replacements_msg(
+                                        courses.get(course_id).unwrap_or(&Course {
+                                            id: course_id.clone(),
+                                            ..Default::default()
+                                        }),
+                                    ));
+                                });
+                        })
+                };
+
+            find_replacement(
+                &catalog.catalog_replacements,
+                messages::catalog_replacement_msg,
+            );
+            find_replacement(
+                &catalog.common_replacements,
+                messages::common_replacement_msg,
+            );
+        });
+
+        student_replacements
+    }
+
+    // This function iterates over the course statuses and if it finds a course a student took which is a replacement for a course in the catalog
+    // it replaces the course in the catalog with the course the student took
+    fn replace_student_course_with_courses_in_catalog(
+        &mut self,
+        catalog: &mut Catalog,
+        courses: &HashMap<CourseId, Course>,
+    ) {
+        let student_replacements = self.get_all_student_replacements_and_set_msg(catalog, courses);
+        student_replacements
+            .iter()
+            .for_each(|(course_id, replacement)| {
+                catalog.replace_courses(course_id, replacement);
+            });
+    }
+
+    pub fn preprocess(&mut self, catalog: &mut Catalog, courses: &HashMap<CourseId, Course>) {
         self.reset(catalog);
 
         self.course_statuses.sort_by(|c1, c2| {
@@ -83,5 +145,7 @@ impl DegreeStatus {
             // partial_cmp returns None if one of the two values are NaN, which should never happen
             // still, to be on the safe side, we use Ordering::Equal in that case instead of unwrapping
         });
+
+        self.replace_student_course_with_courses_in_catalog(catalog, courses);
     }
 }
