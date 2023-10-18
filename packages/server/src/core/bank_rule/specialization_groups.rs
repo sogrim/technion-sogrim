@@ -38,9 +38,10 @@ fn get_complete_sgs_indices(
             // There are not enough courses in this sg to complete the requirement
             continue;
         }
+
         // check if the user completed the mandatory courses in sg
+        let mut complete_mandatory = true;
         if let Some(mandatory) = &sgs[sg_index].mandatory {
-            let mut complete_mandatory = true;
             for courses in mandatory {
                 let mut completed_current_demand = false;
                 for (course_id, group) in course_id_to_sg_index {
@@ -54,9 +55,9 @@ fn get_complete_sgs_indices(
                     complete_mandatory = false;
                 }
             }
-            if complete_mandatory {
-                complete_sgs_indices.push(sg_index);
-            }
+        }
+        if complete_mandatory {
+            complete_sgs_indices.push(sg_index);
         }
     }
     complete_sgs_indices
@@ -211,53 +212,12 @@ impl<'a> BankRuleHandler<'a> {
         }
 
         let credit_info = self.iterate_course_list();
-        let mut completed_courses = Vec::new();
-
-        let find_replacement =
-            |replacements: &HashMap<String, Vec<String>>, course_id: &CourseId| -> Option<String> {
-                replacements
-                    .iter()
-                    .find_map(|(course_id_in_sg, course_id_in_sg_replacements)| {
-                        course_id_in_sg_replacements
-                            .contains(course_id)
-                            .then(|| course_id_in_sg.clone())
-                    })
-            };
-
-        // hotfix for cases where the user has a course which is a replacement for a course in the specialization group bank and in another bank.
-        // https://github.com/sogrim/technion-sogrim/issues/214#issuecomment-1478566102
-        let mut handled_courses = HashMap::new();
-        credit_info.handled_courses.into_iter().for_each(
-            |(course_id_in_list, course_id_done_by_user)| {
-                if course_id_in_list != course_id_done_by_user {
-                    handled_courses.insert(course_id_in_list, course_id_done_by_user);
-                } else if let Some(course_id_in_sg) =
-                    find_replacement(self.catalog_replacements, &course_id_in_list)
-                {
-                    handled_courses.insert(course_id_in_sg, course_id_in_list);
-                } else if let Some(course_id_in_sg) =
-                    find_replacement(self.common_replacements, &course_id_in_list)
-                {
-                    handled_courses.insert(course_id_in_sg, course_id_in_list);
-                } else {
-                    handled_courses.insert(course_id_in_list, course_id_done_by_user);
-                }
-            },
-        );
-
-        handled_courses
-            .iter()
-            .for_each(|(course_id_in_list, course_id_done_by_user)| {
-                if let Some(course_status) =
-                    self.degree_status.get_course_status(course_id_done_by_user)
-                {
-                    if course_status.completed() {
-                        completed_courses.push(course_id_in_list.clone());
-                    }
-                }
-            });
+        let completed_courses = self
+            .degree_status
+            .get_all_completed_courses_for_bank(&self.bank_name);
 
         let valid_assignment_for_courses = run_exhaustive_search(sgs, completed_courses);
+
         let complete_sgs_indices =
             get_complete_sgs_indices(&sgs.groups_list, &valid_assignment_for_courses);
         // The set is to prevent duplications
@@ -265,16 +225,7 @@ impl<'a> BankRuleHandler<'a> {
         valid_assignment_for_courses
             .into_iter()
             .for_each(|(course_id, sg_index)| {
-                // hotfix - see comment above
-                let course_id_done_by_user = handled_courses.get(&course_id);
-                let Some(course_id_done_by_user) = course_id_done_by_user else {
-                    // shouldn't get here
-                    return;
-                };
-                if let Some(course_status) = self
-                    .degree_status
-                    .get_mut_course_status(course_id_done_by_user)
-                {
+                if let Some(course_status) = self.degree_status.get_mut_course_status(&course_id) {
                     if complete_sgs_indices.contains(&sg_index) {
                         course_status
                             .set_specialization_group_name(&sgs.groups_list[sg_index].name);
