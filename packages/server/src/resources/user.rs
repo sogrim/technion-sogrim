@@ -60,7 +60,7 @@ impl FromRequest for User {
             let Some(db) = req.app_data::<Data<Db>>() else {
                 return Err(AppError::InternalServer(
                     "Mongodb client not found in application data".into(),
-                ))
+                ));
             };
             let Some(permissions) = req.app_data::<Data<Permissions>>().cloned() else {
                 return Err(AppError::InternalServer(

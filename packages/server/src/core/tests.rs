@@ -19,6 +19,7 @@ use super::*;
 
 pub const COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID: &str = "61a102bb04c5400b98e6f401"; // catalog id from database
 pub const COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID: &str = "61ec835f015bedeab20397a4"; // catalog id from database
+pub const COMPUTER_ENGINEER_18_19_CATALOG_ID: &str = "61ddcc8a2397192f08d517d9"; // catalog id from database
 pub const MEDICINE_18_19_CATALOG_ID: &str = "63efa36f9e57dc03df270751"; // catalog id from database
 
 #[test]
@@ -528,6 +529,42 @@ async fn test_duplicated_courses() {
     }
 }
 
+#[test]
+async fn test_course_replacement() {
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![CourseStatus {
+            course: Course {
+                id: "104195".to_string(),
+                credit: 5.5,
+                name: "אינפי 1".to_string(),
+                tags: None,
+            },
+            state: Some(CourseState::Complete),
+            grade: Some(Grade::Numeric(85)),
+            ..Default::default()
+        }],
+        course_bank_requirements: Vec::<Requirement>::new(),
+        overflow_msgs: Vec::<String>::new(),
+        total_credit: 0.0,
+    };
+
+    let catalog = get_catalog(COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID).await;
+    degree_status = run_degree_status(degree_status, catalog).await;
+
+    assert_eq!(
+        degree_status
+            .get_course_status("104195")
+            .unwrap()
+            .additional_msg,
+        Some(messages::common_replacement_msg(&Course {
+            id: "104031".to_string(),
+            credit: 5.5,
+            name: "חשבון אינפיניטסימלי 1מ'".to_string(),
+            tags: None,
+        }))
+    );
+}
+
 // ------------------------------------------------------------------------------------------------------
 // Test core function in a full flow
 // ------------------------------------------------------------------------------------------------------
@@ -685,6 +722,77 @@ async fn test_missing_credit() {
     assert_eq!(
         degree_status.overflow_msgs[3],
         messages::credit_leftovers_msg(5.5)
+    );
+}
+
+#[test]
+async fn test_computer_engineer_itinerary() {
+    // Testing the edge case when a course belongs to two banks and the student completed a replacement for this course.
+    // https://github.com/sogrim/technion-sogrim/issues/214#issuecomment-1478566102
+
+    let test_bank_name = "קבוצות התמחות";
+    let mut degree_status = create_degree_status();
+
+    // Replacement for 236334 that is part of "רשימות ליבה" and "קבוצות התמחות"
+    degree_status.course_statuses.push(CourseStatus {
+        course: Course {
+            id: "044334".to_string(),
+            credit: 3.0,
+            name: "רשתות מחשבים ואינטרנט 1".to_string(),
+            tags: None,
+        },
+        state: Some(CourseState::Complete),
+        grade: Some(Grade::Numeric(85)),
+        r#type: Some(test_bank_name.to_string()),
+        modified: true,
+        ..Default::default()
+    });
+
+    // Replacement for 236341 that is part of "קבוצות התמחות"
+    degree_status.course_statuses.push(CourseStatus {
+        course: Course {
+            id: "046005".to_string(),
+            credit: 3.0,
+            name: "רשתות מחשבים ואינטרנט 2".to_string(),
+            tags: None,
+        },
+        state: Some(CourseState::Complete),
+        grade: Some(Grade::Numeric(85)),
+        r#type: Some(test_bank_name.to_string()),
+        modified: true,
+        ..Default::default()
+    });
+
+    // This course is part of "קבוצות התמחות" in the catalog
+    degree_status.course_statuses.push(CourseStatus {
+        course: Course {
+            id: "236357".to_string(),
+            credit: 3.0,
+            name: "אלגוריתמים מובזרים א'".to_string(),
+            tags: None,
+        },
+        state: Some(CourseState::Complete),
+        grade: Some(Grade::Numeric(85)),
+        r#type: Some(test_bank_name.to_string()),
+        modified: true,
+        ..Default::default()
+    });
+
+    let catalog = get_catalog(COMPUTER_ENGINEER_18_19_CATALOG_ID).await;
+    degree_status = run_degree_status(degree_status, catalog).await;
+
+    // Verify the student completed the specialization group - "רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים"
+    assert_eq!(
+        degree_status
+            .course_bank_requirements
+            .iter()
+            .find(|bank_requirement| { bank_requirement.course_bank_name == test_bank_name })
+            .unwrap()
+            .message,
+        Some(messages::completed_specialization_groups_msg(
+            vec!["רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים".to_string()],
+            2
+        ))
     );
 }
 

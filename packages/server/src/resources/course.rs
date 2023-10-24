@@ -208,6 +208,46 @@ pub struct CourseBank {
     pub credit: Option<f32>,
 }
 
+impl CourseBank {
+    pub fn replace_course(&mut self, course: CourseId, replacement: CourseId) {
+        fn replace_occurrences(
+            courses: &mut [CourseId],
+            course: &CourseId,
+            replacement: &CourseId,
+        ) {
+            courses.iter_mut().for_each(|course_id| {
+                if course_id == course {
+                    *course_id = replacement.clone();
+                }
+            })
+        }
+
+        match self.rule {
+            Rule::Chains(ref mut chains) => chains.iter_mut().for_each(|chain| {
+                replace_occurrences(chain, &course, &replacement);
+            }),
+            Rule::SpecializationGroups(ref mut specialization_groups) => {
+                specialization_groups
+                    .groups_list
+                    .iter_mut()
+                    .for_each(|specialization_group| {
+                        replace_occurrences(
+                            &mut specialization_group.course_list,
+                            &course,
+                            &replacement,
+                        );
+                        if let Some(mandatory) = &mut specialization_group.mandatory {
+                            mandatory.iter_mut().for_each(|courses| {
+                                replace_occurrences(courses, &course, &replacement)
+                            });
+                        }
+                    });
+            }
+            _ => {}
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Grade {
     Numeric(u32),
@@ -285,10 +325,5 @@ impl<'de> Deserialize<'de> for Grade {
 }
 
 pub fn vec_to_map(vec: Vec<Course>) -> HashMap<CourseId, Course> {
-    HashMap::from_iter(
-        vec.clone()
-            .iter()
-            .map(|course| course.id.clone())
-            .zip(vec.into_iter()),
-    )
+    HashMap::from_iter(vec.clone().iter().map(|course| course.id.clone()).zip(vec))
 }

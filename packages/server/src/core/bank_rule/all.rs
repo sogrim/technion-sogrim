@@ -9,11 +9,13 @@ impl<'a> BankRuleHandler<'a> {
     pub fn all(mut self, sum_credit_requirement: &mut f32, completed: &mut bool) -> f32 {
         let credit_info = self.iterate_course_list();
 
-        // handle courses in course list which the user didn't complete or any replacement for them
-        // If the user didn't complete one of the courses requirements the bank is not completed
+        let taken_courses = self
+            .degree_status
+            .get_all_taken_courses_for_bank(&self.bank_name);
+
         self.course_list
             .iter()
-            .filter(|&course_id| !credit_info.handled_courses.contains_key(course_id))
+            .filter(|&course_id| !taken_courses.contains(course_id))
             .for_each(|course_id| {
                 let course = self
                     .courses
