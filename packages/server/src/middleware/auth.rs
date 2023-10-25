@@ -2,7 +2,6 @@ use actix_web::{
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
     http::header,
-    web::Data,
     Error, HttpMessage, HttpResponse,
 };
 use actix_web_lab::middleware::Next;
@@ -33,7 +32,7 @@ pub async fn authenticate(
         return Ok(resp);
     };
 
-    let Some(decoder) = request.app_data::<Data<JwtDecoder>>() else {
+    let Some(decoder) = request.app_data::<JwtDecoder>() else {
         let mut resp = ServiceResponse::new(request, HttpResponse::InternalServerError().finish());
         resp.response_mut()
             .extensions_mut()

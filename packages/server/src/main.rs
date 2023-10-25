@@ -38,7 +38,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
-            .app_data(web::Data::new(jwt_decoder.clone()))
+            .app_data(jwt_decoder.clone())
             .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
             .service(web::resource("/healthcheck").route(web::get().to(

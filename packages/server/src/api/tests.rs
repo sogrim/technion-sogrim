@@ -34,12 +34,11 @@ use super::admins::{self, ComputeDegreeStatusPayload};
 pub async fn test_get_all_catalogs() {
     // Create authorization header
     let jwt = fake_jwt();
-    let jwt_decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
-            .app_data(Data::new(jwt_decoder.clone()))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .app_data(Data::new(Permissions::Student))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/students").service(students::get_catalogs)),
@@ -65,13 +64,12 @@ async fn test_students_api_full_flow() {
     // Create authorization header
 
     let jwt = fake_jwt();
-    let jwt_decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
-            .app_data(Data::new(jwt_decoder.clone()))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .app_data(Data::new(Permissions::Student))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(
@@ -217,13 +215,12 @@ async fn test_compute_in_progress() {
 async fn test_owner_api_courses() {
     // Create authorization header
     let jwt = fake_jwt();
-    let jwt_decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
-            .app_data(Data::new(jwt_decoder.clone()))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .app_data(Data::new(Permissions::Owner))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(
@@ -290,14 +287,13 @@ async fn test_owner_api_courses() {
 async fn test_owner_api_catalogs() {
     // Create authorization header
     let jwt = fake_jwt();
-    let jwt_decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
             .app_data(Data::new(Permissions::Owner))
-            .app_data(Data::new(jwt_decoder.clone()))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/owners").service(owners::get_catalog_by_id)),
     )
@@ -372,13 +368,12 @@ async fn test_students_api_no_catalog() {
 async fn test_admins_parse_and_compute_api() {
     // Create authorization header
     let jwt = fake_jwt();
-    let jwt_decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
-            .app_data(Data::new(jwt_decoder.clone()))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .app_data(Data::new(Permissions::Admin))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/admins").service(admins::parse_courses_and_compute_degree_status)),

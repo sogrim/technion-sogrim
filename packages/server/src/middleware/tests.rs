@@ -87,7 +87,7 @@ async fn test_from_request_no_db_client() {
     let (_, public_key) = fake_rsa_keypair();
     let app = test::init_service(
         App::new()
-            .app_data(web::Data::new(JwtDecoder::mock(public_key)))
+            .app_data(JwtDecoder::mock(public_key))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(
                 web::resource("/").route(web::get().to(|_: User| async { "Shouldn't get here" })),
@@ -174,7 +174,7 @@ async fn test_auth_mw_client_errors() {
     let (_, public_key) = fake_rsa_keypair();
     let app = test::init_service(
         App::new()
-            .app_data(web::Data::new(JwtDecoder::mock(public_key)))
+            .app_data(JwtDecoder::mock(public_key))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(web::resource("/").route(web::get().to(|| async { "Shouldn't get here" }))),
     )
