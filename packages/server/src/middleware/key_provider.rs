@@ -68,9 +68,7 @@ async fn fetch_keys_from_google() -> FetchResult {
     let max_age = resp
         .headers()
         .get(header::CACHE_CONTROL)
-        .ok_or(AppError::GoogleKeyProvider(
-            "Missing cache control header".into(),
-        ))?
+        .ok_or_else(|| AppError::GoogleKeyProvider("Missing cache control header".into()))?
         .to_str()
         .map_err(|e| AppError::GoogleKeyProvider(e.to_string()))?
         .split_terminator(',')
@@ -88,7 +86,7 @@ impl GoogleKeyProvider {
         let mut provider = GoogleKeyProvider {
             keys: HashMap::new(),
             expires_at: None,
-            fetch_fn_ptr: Box::new(|| Box::pin(async { fetch_keys_from_google().await })),
+            fetch_fn_ptr: Box::new(|| Box::pin(fetch_keys_from_google())),
         };
         provider
             .fetch()
