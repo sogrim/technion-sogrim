@@ -10,8 +10,6 @@ use super::key_provider::GoogleKeyProvider;
 
 #[cfg(test)]
 use super::key_provider::RsaKey;
-#[cfg(test)]
-use std::time::Duration;
 
 pub type Sub = String;
 #[derive(Default, Debug, Deserialize)]
@@ -56,9 +54,9 @@ impl JwtDecoder {
     }
 
     #[cfg(test)]
-    pub fn mock<'a: 'static>(rsa_key: &'a RsaKey, expires_at: &'a Option<Duration>) -> Self {
+    pub fn mock(rsa_key: &'static RsaKey) -> Self {
         JwtDecoder {
-            key_provider: Arc::new(Mutex::new(GoogleKeyProvider::mock(rsa_key, expires_at))),
+            key_provider: Arc::new(Mutex::new(GoogleKeyProvider::mock(rsa_key))),
         }
     }
 }

@@ -71,7 +71,6 @@ impl ResponseError for AppError {
             AppError::Bson(e) => (StatusCode::BAD_REQUEST, format!("Bson error: {e}")),
             AppError::Parser(e) => (StatusCode::BAD_REQUEST, format!("Parser error: {e}")),
             AppError::Unauthorized(e) => {
-                println!("Unauthorized: {}", e);
                 (StatusCode::UNAUTHORIZED, format!("Permission denied: {e}"))
             }
             AppError::NotFound(e) => (StatusCode::NOT_FOUND, format!("{e} not found")),
