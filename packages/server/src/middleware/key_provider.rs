@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     future::Future,
     pin::Pin,
     sync::OnceLock,
@@ -38,8 +37,8 @@ pub type FetchFnPtr = Box<dyn Fn() -> Pin<FetchResultBoxedFuture> + Send>;
 
 /// The type representing a key provider that fetches keys from Google.
 pub struct GoogleKeyProvider {
-    /// The map of RSA keys.
-    pub keys: HashMap<KeyId, RsaKey>,
+    /// The RSA keys (usually 1 to 3 keys).
+    pub keys: Vec<RsaKey>,
     /// The instant when the keys expire.
     pub expires_at: Option<Instant>,
     /// The function pointer to fetch the keys.
@@ -84,7 +83,7 @@ impl GoogleKeyProvider {
     /// Creates a new instance of the key provider.
     pub async fn new() -> Self {
         let mut provider = GoogleKeyProvider {
-            keys: HashMap::new(),
+            keys: Vec::new(),
             expires_at: None,
             fetch_fn_ptr: Box::new(|| Box::pin(fetch_keys_from_google())),
         };
@@ -97,9 +96,9 @@ impl GoogleKeyProvider {
 
     /// Uses the function pointer to fetch the keys.
     async fn fetch(&mut self) -> Result<(), AppError> {
-        let (keys, expires_at) = (self.fetch_fn_ptr)().await?;
-        self.expires_at = expires_at.map(|at| Instant::now() + at);
-        self.keys = keys.into_iter().map(|key| (key.kid.clone(), key)).collect();
+        let (keys, expiry_seconds) = (self.fetch_fn_ptr)().await?;
+        self.keys = keys;
+        self.expires_at = expiry_seconds.map(|secs| Instant::now() + secs);
         Ok(())
     }
 
@@ -109,7 +108,8 @@ impl GoogleKeyProvider {
             self.fetch().await?;
         }
         self.keys
-            .get(kid.as_ref())
+            .iter()
+            .find(|key| key.kid == kid.as_ref())
             .ok_or_else(|| AppError::InternalServer(format!("Unknown key id: {}", kid.as_ref())))
     }
 
@@ -118,7 +118,7 @@ impl GoogleKeyProvider {
     /// Instead of performing an HTTP request to Google, it returns the specified key.
     pub fn mock(rsa_key: &'static RsaKey) -> Self {
         GoogleKeyProvider {
-            keys: HashMap::new(),
+            keys: Vec::new(),
             expires_at: None,
             fetch_fn_ptr: Box::new(|| Box::pin(async { Ok((vec![rsa_key.clone()], None)) })),
         }

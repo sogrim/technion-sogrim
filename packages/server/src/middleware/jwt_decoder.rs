@@ -13,7 +13,7 @@ use super::key_provider::RsaKey;
 
 pub type Sub = String;
 #[derive(Default, Debug, Deserialize)]
-pub struct Claims {
+pub struct Jwt {
     // Identifier of the user, guaranteed to be unique by Google.
     pub sub: Sub,
 }
@@ -49,7 +49,7 @@ impl JwtDecoder {
             "https://accounts.google.com".to_string(),
             "accounts.google.com".to_string(),
         ]);
-        let data = jsonwebtoken::decode::<Claims>(jwt, &decoding_key, &validation)?;
+        let data = jsonwebtoken::decode::<Jwt>(jwt, &decoding_key, &validation)?;
         Ok(data.claims.sub)
     }
 
