@@ -7,7 +7,11 @@ use crate::{
     },
     core::{degree_status::DegreeStatus, messages},
     db::Db,
-    middleware::{self, auth},
+    middleware::{
+        self, auth,
+        jwt_decoder::JwtDecoder,
+        tests::{fake_jwt, fake_rsa_keypair},
+    },
     resources::{
         catalog::{Catalog, DisplayCatalog},
         course::{Course, CourseStatus},
@@ -29,14 +33,13 @@ use super::admins::{self, ComputeDegreeStatusPayload};
 #[test]
 pub async fn test_get_all_catalogs() {
     // Create authorization header
-    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
-    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
+    let jwt = fake_jwt();
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .app_data(Data::new(Permissions::Student))
-            .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/students").service(students::get_catalogs)),
     )
@@ -45,7 +48,7 @@ pub async fn test_get_all_catalogs() {
     // Create and send request
     let resp = test::TestRequest::get()
         .uri("/students/catalogs")
-        .insert_header(("authorization", jwt))
+        .insert_header(("authorization", jwt.clone()))
         .send_request(&app)
         .await;
 
@@ -60,15 +63,14 @@ pub async fn test_get_all_catalogs() {
 async fn test_students_api_full_flow() {
     // Create authorization header
 
-    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
-    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
+    let jwt = fake_jwt();
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .app_data(Data::new(Permissions::Student))
-            .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(
                 scope("/students")
@@ -212,15 +214,14 @@ async fn test_compute_in_progress() {
 #[test]
 async fn test_owner_api_courses() {
     // Create authorization header
-    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
-    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
+    let jwt = fake_jwt();
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .app_data(Data::new(Permissions::Owner))
-            .app_data(auth::JwtDecoder::new_with_parser(parser))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(
                 scope("owners")
@@ -285,15 +286,14 @@ async fn test_owner_api_courses() {
 #[test]
 async fn test_owner_api_catalogs() {
     // Create authorization header
-    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
-    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
+    let jwt = fake_jwt();
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
             .app_data(Data::new(Permissions::Owner))
-            .app_data(auth::JwtDecoder::new_with_parser(parser))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/owners").service(owners::get_catalog_by_id)),
     )
@@ -367,14 +367,13 @@ async fn test_students_api_no_catalog() {
 #[test]
 async fn test_admins_parse_and_compute_api() {
     // Create authorization header
-    let token_claims = jsonwebtoken_google::test_helper::TokenClaims::new();
-    let (jwt, parser, _server) = jsonwebtoken_google::test_helper::setup(&token_claims);
+    let jwt = fake_jwt();
     // Init env and app
     let db = Db::new().await;
     let app = test::init_service(
         App::new()
             .app_data(Data::new(db.clone()))
-            .app_data(auth::JwtDecoder::new_with_parser(parser))
+            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
             .app_data(Data::new(Permissions::Admin))
             .wrap(from_fn(middleware::auth::authenticate))
             .service(scope("/admins").service(admins::parse_courses_and_compute_degree_status)),
