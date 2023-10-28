@@ -1,6 +1,3 @@
-extern crate jsonwebtoken_google;
-
-use crate::config::CONFIG;
 use actix_web::{
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
@@ -8,37 +5,11 @@ use actix_web::{
     Error, HttpMessage, HttpResponse,
 };
 use actix_web_lab::middleware::Next;
-use jsonwebtoken_google::{Parser, ParserError};
-use serde::Deserialize;
 
-pub type Sub = String;
-#[derive(Default, Debug, Deserialize)]
-pub struct IdInfo {
-    // Identifier of the user, guaranteed to be unique by Google.
-    pub sub: Sub,
-}
+use super::jwt_decoder::JwtDecoder;
 
-pub struct JwtDecoder {
-    parser: Parser,
-}
-
-impl JwtDecoder {
-    // Set up a jwt parser with actual google client id
-    pub fn new() -> Self {
-        JwtDecoder {
-            parser: Parser::new(CONFIG.client_id),
-        }
-    }
-    // Decode the jwt and return id info (sub wrapper)
-    pub async fn decode(&self, token: &str) -> Result<IdInfo, ParserError> {
-        self.parser.parse::<IdInfo>(token).await
-    }
-    // Set up a debug jwt parser for testing
-    #[cfg(test)]
-    pub fn new_with_parser(parser: Parser) -> Self {
-        JwtDecoder { parser }
-    }
-}
+// use `pub` to re-export the `Sub` type from the `jwt_decoder` module
+pub use super::jwt_decoder::Sub;
 
 pub async fn authenticate(
     req: ServiceRequest,
@@ -70,12 +41,12 @@ pub async fn authenticate(
     };
 
     let sub = match decoder.decode(jwt).await {
-        Ok(id_info) => id_info.sub,
+        Ok(sub) => sub,
         Err(err) => {
             let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
             resp.response_mut()
                 .extensions_mut()
-                .insert::<String>(format!("Invalid JWT: {err}"));
+                .insert::<String>(err.to_string());
             return Ok(resp);
         }
     };

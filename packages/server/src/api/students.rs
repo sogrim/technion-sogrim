@@ -11,7 +11,7 @@ use crate::{
     core::{degree_status::DegreeStatus, parser},
     db::{Db, FilterOption},
     error::AppError,
-    middleware::auth::Sub,
+    middleware::jwt_decoder::Sub,
     resources::{
         catalog::{Catalog, DisplayCatalog},
         course::{self, Course, CourseId},

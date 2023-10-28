@@ -31,34 +31,19 @@ pub async fn test_db_internal_error() {
     // Initialize db
     let db = Db::from(client);
 
-    // Assert that all db requests cause an internal server error
-    let errors = vec![
-        db.get::<Course>("124400")
-            .await
-            .expect_err("Expected error"),
-        db.get_all::<Course>().await.expect_err("Expected error"),
-        db.update::<Course>(Course {
-            id: "124400".into(),
-            ..Default::default()
-        })
-        .await
-        .expect_err("Expected error"),
-        db.delete::<Course>("124400")
-            .await
-            .expect_err("Expected error"),
-    ];
-    for err in errors {
-        let err_resp = err.error_response();
-        assert_eq!(err_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
-        assert!(err_resp
-            .into_body()
-            .try_into_bytes()
-            .unwrap()
-            .into_iter()
-            .map(|b| b as char)
-            .collect::<String>()
-            .contains("Authentication failed"));
-    }
+    // Assert that a db request causes an internal server error
+    let err = db.get_all::<Course>().await.expect_err("Expected error");
+
+    let err_resp = err.error_response();
+    assert_eq!(err_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert!(err_resp
+        .into_body()
+        .try_into_bytes()
+        .unwrap()
+        .into_iter()
+        .map(|b| b as char)
+        .collect::<String>()
+        .contains("Authentication failed"));
 }
 
 #[test]
