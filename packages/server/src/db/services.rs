@@ -1,7 +1,7 @@
 use crate::config::CONFIG;
 use crate::error::AppError;
 use bson::to_bson;
-pub use bson::{doc, Bson, Document};
+pub use bson::{doc, Bson};
 use futures_util::TryStreamExt;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications};
 use serde::{de::DeserializeOwned, Serialize};
