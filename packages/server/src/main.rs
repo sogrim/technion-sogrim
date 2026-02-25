@@ -67,7 +67,9 @@ async fn main() -> std::io::Result<()> {
                             .service(api::owners::get_all_courses)
                             .service(api::owners::get_course_by_id)
                             .service(api::owners::create_or_update_course)
-                            .service(api::owners::delete_course),
+                            .service(api::owners::delete_course)
+                            .service(api::owners::get_catalog_by_id)
+                            .service(api::owners::create_or_update_catalog),
                     ),
             )
     })
