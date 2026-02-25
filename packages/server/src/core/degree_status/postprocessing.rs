@@ -219,3 +219,7 @@ impl DegreeStatus {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "postprocessing_tests.rs"]
+mod postprocessing_tests;

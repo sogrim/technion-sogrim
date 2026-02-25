@@ -246,3 +246,7 @@ fn parse_course_status_pdf_format(
         grade,
     ))
 }
+
+#[cfg(test)]
+#[path = "parser_tests.rs"]
+mod parser_tests;

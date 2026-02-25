@@ -86,3 +86,7 @@ impl<'a> DegreeStatusHandler<'a> {
         sum
     }
 }
+
+#[cfg(test)]
+#[path = "overflow_tests.rs"]
+mod overflow_tests;

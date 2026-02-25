@@ -40,3 +40,7 @@ impl<'a> DegreeStatusHandler<'a> {
             .push(messages::credit_leftovers_msg(credit_leftovers));
     }
 }
+
+#[cfg(test)]
+#[path = "compute_status_tests.rs"]
+mod compute_status_tests;

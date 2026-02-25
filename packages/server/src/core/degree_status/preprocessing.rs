@@ -85,3 +85,7 @@ impl DegreeStatus {
         });
     }
 }
+
+#[cfg(test)]
+#[path = "preprocessing_tests.rs"]
+mod preprocessing_tests;

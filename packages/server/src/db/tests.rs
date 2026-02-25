@@ -37,6 +37,12 @@ pub async fn test_db_internal_error() {
             .await
             .expect_err("Expected error"),
         db.get_all::<Course>().await.expect_err("Expected error"),
+        db.create_or_update::<Course>(Course {
+            id: "124400".into(),
+            ..Default::default()
+        })
+        .await
+        .expect_err("Expected error"),
         db.update::<Course>(Course {
             id: "124400".into(),
             ..Default::default()
@@ -59,6 +65,18 @@ pub async fn test_db_internal_error() {
             .collect::<String>()
             .contains("Authentication failed"));
     }
+
+    let ping_err = db.ping().await.expect_err("Expected ping error");
+    let ping_resp = ping_err.error_response();
+    assert_eq!(ping_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert!(ping_resp
+        .into_body()
+        .try_into_bytes()
+        .unwrap()
+        .iter()
+        .map(|b| *b as char)
+        .collect::<String>()
+        .contains("Authentication failed"));
 }
 
 #[test]

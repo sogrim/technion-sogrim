@@ -16,3 +16,7 @@ pub fn cors() -> actix_cors::Cors {
             .allowed_origin("https://sogrim.onrender.com")
     }
 }
+
+#[cfg(test)]
+#[path = "cors_tests.rs"]
+mod cors_tests;
