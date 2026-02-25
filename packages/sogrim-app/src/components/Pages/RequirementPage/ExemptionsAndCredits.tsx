@@ -20,6 +20,22 @@ const ExemptionsAndCreditsComp: React.FC<ExemptionsAndCreditsProps> = () => {
     )
   );
 
+  const customExemptions = semester0Courses.filter(
+    (course) => course.courseNumber?.startsWith("EXEMPTION-") && !!course.type
+  );
+  const totalCustomExemptionsCredit = customExemptions.reduce(
+    (sum, course) => sum + Number(course.credit || 0),
+    0
+  );
+  const customDistribution = customExemptions.reduce<Record<string, number>>(
+    (acc, course) => {
+      const category = course.type || "ללא קטגוריה";
+      acc[category] = (acc[category] || 0) + Number(course.credit || 0);
+      return acc;
+    },
+    {}
+  );
+
   useEffect(() => {
     if (userDetails) {
       setSemester0Courses(
@@ -32,15 +48,30 @@ const ExemptionsAndCreditsComp: React.FC<ExemptionsAndCreditsProps> = () => {
     }
   }, [userDetails, generateRowsForSemester]);
 
-  return semester0Courses.length > 0 ? (
+  return customExemptions.length > 0 ? (
     <MessagesAccordion
       name="פטורים וזיכויים"
       tooltipMsg="פטור מאנגלית? נקודות על פעילות חברתית? כל הזיכויים והפטורים שעשיתם (וגם שלא ידעתם שעשיתם) יופיעו כאן"
       Messages={() => (
         <>
-          {semester0Courses.map((course, id) => (
+          {customExemptions.length > 0 && (
+            <Box sx={{ padding: 0.5 }}>
+              <Typography fontWeight={700}>
+                סך נק״ז פטורים מותאמים אישית: {totalCustomExemptionsCredit}
+              </Typography>
+              {Object.entries(customDistribution).map(([category, credit]) => (
+                <Typography key={category}>
+                  {category}: {credit} נק״ז
+                </Typography>
+              ))}
+              <Divider sx={{ mt: 0.5 }} />
+            </Box>
+          )}
+          {customExemptions.map((course, id) => (
             <Box key={id} sx={{ padding: 0.5 }}>
-              <Typography> {course.name} </Typography>
+              <Typography>
+                {course.name} ({course.type}) - {course.credit} נק״ז
+              </Typography>
               <Divider />
             </Box>
           ))}

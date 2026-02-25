@@ -59,16 +59,20 @@ export interface courseFromUserValidationsValue {
 export const courseFromUserValidations = (
   course: RowData,
   semesterRows: RowData[],
-  newFlag: boolean = false
+  newFlag: boolean = false,
+  allowCustomCourseNumber: boolean = false
 ): courseFromUserValidationsValue => {
-  if (!validCourseNumber(course.courseNumber)) {
+  if (!allowCustomCourseNumber && !validCourseNumber(course.courseNumber)) {
     return {
       error: true,
       newRowData: emptyRow,
       msg: "מספר הקורס שהוזן אינו תקין. מס׳ קורס חייב להכיל 6 ספרות בלבד.",
     };
   }
-  if (!uniqueCourseNumber(course.courseNumber, semesterRows, newFlag)) {
+  if (
+    course.courseNumber &&
+    !uniqueCourseNumber(course.courseNumber, semesterRows, newFlag)
+  ) {
     return {
       error: true,
       newRowData: emptyRow,
@@ -80,6 +84,20 @@ export const courseFromUserValidations = (
       error: true,
       newRowData: emptyRow,
       msg: "נק״ז חייב להיות מספר גדול שווה מאפס, ובקפיצות של 0.5",
+    };
+  }
+  if (!course.name?.trim()) {
+    return {
+      error: true,
+      newRowData: emptyRow,
+      msg: "יש להזין שם פטור/קורס.",
+    };
+  }
+  if (allowCustomCourseNumber && !course.type) {
+    return {
+      error: true,
+      newRowData: emptyRow,
+      msg: "יש לבחור קטגוריה עבור הפטור.",
     };
   }
   if (!validGrade(course.grade)) {

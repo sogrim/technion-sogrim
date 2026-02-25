@@ -65,7 +65,7 @@ export const columns = (
     field: "type",
     headerName: "קטגוריה",
     flex: 210 / MAX_GRID_WIDTH,
-    editable: !isSemester0 && editable,
+    editable: editable,
     headerAlign: "center",
     align: "center",
     renderEditCell: renderCategoryEditInputCell,
