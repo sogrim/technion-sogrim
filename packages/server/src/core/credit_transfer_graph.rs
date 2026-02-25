@@ -64,3 +64,7 @@ pub fn validate_acyclic_credit_transfer_graph(catalog: &Catalog) -> Result<(), A
         )),
     }
 }
+
+#[cfg(test)]
+#[path = "credit_transfer_graph_tests.rs"]
+mod credit_transfer_graph_tests;

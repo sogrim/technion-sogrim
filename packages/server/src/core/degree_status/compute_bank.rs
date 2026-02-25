@@ -111,3 +111,7 @@ impl<'a> DegreeStatusHandler<'a> {
             .push(requirement);
     }
 }
+
+#[cfg(test)]
+#[path = "compute_bank_tests.rs"]
+mod compute_bank_tests;

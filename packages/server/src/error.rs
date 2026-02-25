@@ -79,3 +79,7 @@ impl ResponseError for AppError {
         res
     }
 }
+
+#[cfg(test)]
+#[path = "error_tests.rs"]
+mod error_tests;
