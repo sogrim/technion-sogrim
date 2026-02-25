@@ -3,6 +3,7 @@ use crate::resources::course::CourseId;
 use bson::doc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt;
 
 pub type Chain = Vec<CourseId>;
 pub type NumCourses = usize;
@@ -41,9 +42,9 @@ pub enum Rule {
     Wildcard(bool), // קלף משוגע עבור להתמודד עם
 }
 
-impl ToString for Rule {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Rule {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = match self {
             Rule::All => "all",
             Rule::AccumulateCredit => "accumulate credit",
             Rule::AccumulateCourses(_) => "accumulate courses",
@@ -53,8 +54,8 @@ impl ToString for Rule {
             Rule::Chains(_) => "chains",
             Rule::SpecializationGroups(_) => "specialization groups",
             Rule::Wildcard(_) => "wildcard",
-        }
-        .into()
+        };
+        write!(f, "{name}")
     }
 }
 

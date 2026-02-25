@@ -159,7 +159,7 @@ impl CourseStatus {
             .map(|semester| {
                 semester
                     .split('_')
-                    .last()
+                    .next_back()
                     .unwrap_or("0.0")
                     .parse::<f32>()
                     .unwrap_or(0.0)

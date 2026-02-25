@@ -148,9 +148,8 @@ pub fn medicine_preclinical_total_repetitions_error_msg(repetitions: usize) -> S
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/// Error messages
+// Error messages
 /////////////////////////////////////////////////////////////////////////////////
-
 pub fn cyclic_credit_transfer_graph(bank_in_cycle: &str) -> String {
     format!("קיימת תלות מעגלית במעברי הנקודות שנקבעו. התלות המעגלית מתחילה ונגמרת ב{bank_in_cycle}")
 }
