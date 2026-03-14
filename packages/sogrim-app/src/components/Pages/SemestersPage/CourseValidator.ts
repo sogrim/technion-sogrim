@@ -1,7 +1,10 @@
 import { courseGradeOptions, emptyRow, RowData } from "./SemesterTabsConsts";
 
 export const validCourseNumber = (courseNumber: string) => {
-  return /^\d+$/.test(courseNumber) && (courseNumber.length === 6 || courseNumber.length === 8);
+  return (
+    /^\d+$/.test(courseNumber) &&
+    (courseNumber.length === 6 || courseNumber.length === 8)
+  );
 };
 
 export const uniqueCourseNumber = (
