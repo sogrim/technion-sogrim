@@ -24,6 +24,8 @@ env_logger = "0.10"
 lazy_static = "1.4"
 petgraph = "0.6"
 regex = "1.9"
+tempfile = "3"
+actix-multipart = "0.7"
 
 [build-dependencies]
 dotenvy = "0.15"

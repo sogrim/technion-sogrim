@@ -1,14 +1,16 @@
 use std::{collections::HashMap, str::FromStr};
 
+use actix_multipart::Multipart;
 use actix_web::{
     get, post, put,
     web::{Data, Json, Query},
     HttpMessage, HttpRequest, HttpResponse,
 };
 use bson::DateTime;
+use futures_util::StreamExt;
 
 use crate::{
-    core::{degree_status::DegreeStatus, parser},
+    core::{degree_status::DegreeStatus, ocr_parser, parser},
     db::{Db, FilterOption},
     error::AppError,
     middleware::auth::Sub,
@@ -138,6 +140,39 @@ pub async fn add_courses(
 ) -> Result<HttpResponse, AppError> {
     user.details.degree_status = DegreeStatus::default();
     user.details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
+    user.details.modified = true;
+    let updated_user = db.update::<User>(user).await?;
+    Ok(HttpResponse::Ok().json(updated_user))
+}
+
+#[post("/courses/pdf")]
+pub async fn add_courses_pdf(
+    mut user: User,
+    mut payload: Multipart,
+    db: Data<Db>,
+) -> Result<HttpResponse, AppError> {
+    // Read the uploaded PDF file from multipart form data
+    let mut pdf_bytes = Vec::new();
+    while let Some(item) = payload.next().await {
+        let mut field = item.map_err(|e| AppError::BadRequest(format!("Multipart error: {e}")))?;
+        while let Some(chunk) = field.next().await {
+            let data = chunk.map_err(|e| AppError::BadRequest(format!("Read error: {e}")))?;
+            pdf_bytes.extend_from_slice(&data);
+        }
+    }
+
+    if pdf_bytes.is_empty() {
+        return Err(AppError::BadRequest("No PDF file uploaded".into()));
+    }
+
+    // OCR involves CPU-heavy work; run it on a blocking thread
+    let course_statuses = actix_web::web::block(move || ocr_parser::parse_pdf_ocr(&pdf_bytes))
+        .await
+        .map_err(|e| AppError::InternalServer(format!("Blocking error: {e}")))?
+        ?;
+
+    user.details.degree_status = DegreeStatus::default();
+    user.details.degree_status.course_statuses = course_statuses;
     user.details.modified = true;
     let updated_user = db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().json(updated_user))
