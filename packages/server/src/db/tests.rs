@@ -88,9 +88,9 @@ pub async fn test_get_courses_by_filters() {
         .await
         .expect("Failed to get courses by name");
 
-    assert_eq!(courses.len(), 1);
-    assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
-    assert_eq!(courses[0].id, "104031");
+    assert_eq!(courses.len(), 2); // Since 2024 there are 2 formats for the course id: 6 digit and 8 digit
+    assert!(courses.iter().any(|c| c.id == "104031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
+    assert!(courses.iter().any(|c| c.id == "01040031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
 
     let courses = db
         .get_filtered::<Course>(FilterOption::Regex, "_id", "104031")
@@ -102,13 +102,12 @@ pub async fn test_get_courses_by_filters() {
     assert_eq!(courses[0].id, "104031");
 
     let courses = db
-        .get_filtered::<Course>(FilterOption::In, "_id", vec!["104031", "104166"])
+        .get_filtered::<Course>(FilterOption::In, "_id", vec!["104031", "01040031", "104166"])
         .await
         .expect("Failed to get courses by number");
 
-    assert_eq!(courses.len(), 2);
-    assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
-    assert_eq!(courses[0].id, "104031");
-    assert_eq!(courses[1].name, "אלגברה אמ'");
-    assert_eq!(courses[1].id, "104166");
+    assert_eq!(courses.len(), 3);
+    assert!(courses.iter().any(|c| c.id == "104031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
+    assert!(courses.iter().any(|c| c.id == "01040031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
+    assert!(courses.iter().any(|c| c.id == "104166" && c.name == "אלגברה אמ'"));
 }
