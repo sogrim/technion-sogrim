@@ -1,7 +1,7 @@
 import { courseGradeOptions, emptyRow, RowData } from "./SemesterTabsConsts";
 
 export const validCourseNumber = (courseNumber: string) => {
-  return /^\d+$/.test(courseNumber) && courseNumber.length === 6;
+  return /^\d+$/.test(courseNumber) && (courseNumber.length === 6 || courseNumber.length === 8);
 };
 
 export const uniqueCourseNumber = (
@@ -65,7 +65,7 @@ export const courseFromUserValidations = (
     return {
       error: true,
       newRowData: emptyRow,
-      msg: "מספר הקורס שהוזן אינו תקין. מס׳ קורס חייב להכיל 6 ספרות בלבד.",
+      msg: "מספר הקורס שהוזן אינו תקין. מס׳ קורס חייב להכיל 6 או 8 ספרות בלבד.",
     };
   }
   if (!uniqueCourseNumber(course.courseNumber, semesterRows, newFlag)) {
