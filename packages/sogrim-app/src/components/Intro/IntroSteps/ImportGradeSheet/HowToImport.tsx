@@ -18,12 +18,12 @@ export const HowToImport = () => {
   return (
     <React.Fragment>
       <Typography>
-        נכנסים למערכת student ומגישים בקשה לגיליון ציונים. לאחר שהבקשה אושרה, יש
-        לפתוח את גיליון הציונים{" "}
-        <span style={{ color: "red" }}>(ולא תעודת ציונים!)</span> בדפדפן,
-        ולהעתיק באמצעות Ctrl-A+Ctrl-C את כל התוכן לתיבה מתחת.
-        <br /> אם תרצו להזין את הקורסים שלכם ידנית, ניתן לדלג על שלב זה בעזרת
-        הכפתור למטה.
+        נכנסים למערכת SAP ולוחצים על "בקשות שלי והפקת תדפיסים ואישורים". לאחר
+        מכן לוחצים על "צור בקשה". בוחרים "בקשות לאישורים ותדפיס ציונים", ממלאים
+        את הפרטים בהתאם למסלול הלימודים שלכם ולוחצים "הגש". <br />
+        פותחים את גיליון הציונים באמצעות דפדפן Edge או Chrome, ומעתיקים באמצעות
+        Ctrl-A+Ctrl-C את כל התוכן של הגיליון.
+        <br />
       </Typography>
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <Typography sx={{ marginTop: 1 }}>מסתבכים?</Typography>
@@ -33,15 +33,9 @@ export const HowToImport = () => {
           </IconButton>
         </Tooltip>
       </Box>
-      <Link
-        color={(theme: Theme) => theme.palette.secondary.main}
-        href="https://students.technion.ac.il/local/docsgenerator/"
-        underline="hover"
-        target="_blank"
-        rel="noopener"
-      >
-        {"עבור למערכת הנפקת הבקשות עבור גיליון הציונים"}
-      </Link>
+      <Typography>
+        <br /> אם תרצו להזין את הקורסים שלכם ידנית, ניתן לדלג על שלב זה.
+      </Typography>
     </React.Fragment>
   );
 };
