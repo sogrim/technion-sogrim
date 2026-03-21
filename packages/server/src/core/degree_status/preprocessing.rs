@@ -73,7 +73,25 @@ impl DegreeStatus {
         self.remove_irrelevant_courses_from_catalog(catalog);
     }
 
+    /// Convert a 6-digit course ID to 8-digit format by prepending "0" to each 3-digit half.
+    /// e.g. "114075" -> "01140075", "234114" -> "02340114"
+    fn to_8digit(id: &str) -> String {
+        format!("0{}0{}", &id[..3], &id[3..])
+    }
+
+    /// Normalize all 6-digit course IDs to 8-digit format in course_statuses.
+    fn normalize_course_ids(&mut self) {
+        for cs in self.course_statuses.iter_mut() {
+            if cs.course.id.len() == 6 && cs.course.id.chars().all(|c| c.is_ascii_digit()) {
+                cs.course.id = Self::to_8digit(&cs.course.id);
+            }
+        }
+    }
+
     pub fn preprocess(&mut self, catalog: &mut Catalog) {
+        if catalog.year() >= 2024 {
+            self.normalize_course_ids();
+        }
         self.reset(catalog);
 
         self.course_statuses.sort_by(|c1, c2| {
