@@ -249,7 +249,7 @@ export function PlannerPage() {
               "pb-3 text-xl font-medium transition-colors relative",
               activeTab === tab.key
                 ? "text-[#d66563]"
-                : "text-gray-400 hover:text-gray-600"
+                : "text-muted-foreground hover:text-foreground"
             )}
             style={{ fontSize: "22px" }}
           >

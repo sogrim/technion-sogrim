@@ -40,14 +40,14 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <h3 className="text-xl font-medium text-[#24333c] mb-6">
+      <h3 className="text-xl font-medium text-foreground mb-6">
         {"באיזה סמסטר התחלתם את התואר? חורף או אביב?"}
       </h3>
       <div className="flex gap-4">
         <Button
           variant="outline"
           size="lg"
-          className="px-8 py-4 text-base border-[#24333c] text-[#24333c] hover:bg-[#24333c] hover:text-white gap-2"
+          className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
           onClick={() => onAddSemester("חורף_1")}
         >
           <Snowflake className="h-5 w-5" />
@@ -56,7 +56,7 @@ function EmptyState({
         <Button
           variant="outline"
           size="lg"
-          className="px-8 py-4 text-base border-[#24333c] text-[#24333c] hover:bg-[#24333c] hover:text-white gap-2"
+          className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
           onClick={() => onAddSemester("אביב_1")}
         >
           <Sun className="h-5 w-5" />
@@ -151,7 +151,7 @@ export function SemestersTab({
                 "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border",
                 idx === currentSemesterIdx
                   ? "text-white border-transparent shadow-sm"
-                  : "bg-white text-[#24333c] border-[#24333c]/30 hover:bg-gray-50"
+                  : "bg-card text-foreground border-foreground/30 hover:bg-muted"
               )}
               style={
                 idx === currentSemesterIdx
@@ -171,18 +171,18 @@ export function SemestersTab({
           <div className="relative" ref={addMenuRef}>
             <button
               onClick={() => setShowAddMenu(!showAddMenu)}
-              className="flex items-center justify-center h-8 w-8 rounded-full border border-[#24333c]/30 text-[#24333c] hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-center h-8 w-8 rounded-full border border-foreground/30 text-foreground hover:bg-muted transition-colors"
               title="הוסף סמסטר"
             >
               <Plus className="h-4 w-4" />
             </button>
             {showAddMenu && (
-              <div className="absolute top-full start-0 z-10 mt-1 rounded-md border bg-white shadow-md min-w-[120px]">
+              <div className="absolute top-full start-0 z-10 mt-1 rounded-md border bg-card shadow-md min-w-[120px]">
                 {SEASON_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => handleAdd(opt.value)}
-                    className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-50 transition-colors"
+                    className="block w-full px-4 py-2 text-start text-sm hover:bg-muted transition-colors"
                   >
                     {opt.label}
                   </button>
@@ -196,14 +196,14 @@ export function SemestersTab({
               {!showDeleteConfirm ? (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center justify-center h-8 w-8 rounded-full border border-destructive/30 text-destructive hover:bg-red-50 transition-colors"
+                  className="flex items-center justify-center h-8 w-8 rounded-full border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                   title="מחק סמסטר נוכחי"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               ) : (
                 <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-xs text-gray-400 whitespace-nowrap">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {"למחוק?"}
                   </span>
                   <Button

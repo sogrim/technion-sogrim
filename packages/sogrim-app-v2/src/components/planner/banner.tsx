@@ -121,19 +121,19 @@ export function Banner({ degreeStatus, catalog, hasModifiedToast }: BannerProps)
       {/* ===== DESKTOP: Two cards ===== */}
       <div className="hidden md:flex mx-auto max-w-4xl gap-6">
         {/* Status card */}
-        <div className="flex-1 rounded-xl bg-white border border-gray-200 px-5 py-4 flex flex-col">
+        <div className="flex-1 rounded-xl bg-card border border-border px-5 py-4 flex flex-col">
           <div className="flex items-start justify-between mb-1">
-            <h3 className="text-sm font-bold text-[#24333c]">סטטוס תואר</h3>
+            <h3 className="text-sm font-bold text-foreground">סטטוס תואר</h3>
           </div>
           <div className="flex items-center justify-end gap-2 mb-3">
-            <span className="text-[10px] text-gray-400">כולל קורסים בתהליך</span>
+            <span className="text-[10px] text-muted-foreground">כולל קורסים בתהליך</span>
             <button
               role="switch"
               aria-checked={includeInProgress}
               onClick={() => setIncludeInProgress(!includeInProgress)}
               className={cn(
                 "relative inline-flex h-4 w-8 shrink-0 rounded-full border-2 border-transparent transition-colors",
-                includeInProgress ? "bg-blue-500" : "bg-gray-300"
+                includeInProgress ? "bg-blue-500" : "bg-muted"
               )}
             >
               <span className={cn(
@@ -143,30 +143,30 @@ export function Banner({ degreeStatus, catalog, hasModifiedToast }: BannerProps)
             </button>
           </div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-bold text-[#24333c] min-w-[40px]" dir="ltr">{pct}%</span>
-            <div className="flex-1 h-2.5 rounded-full bg-gray-200 overflow-hidden">
+            <span className="text-sm font-bold text-foreground min-w-[40px]" dir="ltr">{pct}%</span>
+            <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "#4ade80" : "#d66563" }}
               />
             </div>
           </div>
-          <p className="text-lg font-semibold text-[#24333c] text-center flex-1 flex items-center justify-center">
+          <p className="text-lg font-semibold text-foreground text-center flex-1 flex items-center justify-center">
             השלמת {displayedCredit} מתוך {totalRequired} נקודות
           </p>
-          {catalog && <p className="text-xs text-gray-400 text-center mt-2">{catalog.name}</p>}
+          {catalog && <p className="text-xs text-muted-foreground text-center mt-2">{catalog.name}</p>}
           <div className="mt-3 flex justify-center">
             <ComputeButton />
           </div>
         </div>
 
         {/* Stats card */}
-        <div className="flex-1 rounded-xl bg-white border border-gray-200 px-5 py-4 flex flex-col">
-          <h3 className="text-sm font-bold text-[#24333c] mb-4">סטטיסטיקות תואר</h3>
-          <p className="text-lg text-[#24333c] text-center mb-2">
+        <div className="flex-1 rounded-xl bg-card border border-border px-5 py-4 flex flex-col">
+          <h3 className="text-sm font-bold text-foreground mb-4">סטטיסטיקות תואר</h3>
+          <p className="text-lg text-foreground text-center mb-2">
             ממוצע כללי: <span className="font-bold">{gpa}</span>
           </p>
-          <p className="text-sm text-[#24333c] text-center flex-1 flex items-center justify-center">
+          <p className="text-sm text-foreground text-center flex-1 flex items-center justify-center">
             השלמת {completedBanks} מתוך {totalBanks > 0 ? totalBanks : "..."} דרישות בתואר
           </p>
         </div>

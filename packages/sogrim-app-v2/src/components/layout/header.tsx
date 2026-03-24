@@ -20,10 +20,10 @@ export function Header() {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between bg-white px-3 shadow-sm md:h-[60px] md:px-6 shrink-0">
+    <header className="flex h-14 items-center justify-between bg-card px-3 shadow-sm md:h-[60px] md:px-6 shrink-0">
       {/* Right side: Logo (mobile only) */}
       <div className="flex items-center gap-2 shrink-0">
-        <h1 className="text-lg font-bold md:hidden" style={{ color: "#24333c" }}>
+        <h1 className="text-lg font-bold md:hidden text-foreground">
           סוגרים
         </h1>
       </div>
@@ -33,7 +33,7 @@ export function Header() {
         <Button
           variant="ghost"
           size="sm"
-          className="hidden md:inline-flex text-gray-500 hover:text-gray-700"
+          className="hidden md:inline-flex text-muted-foreground hover:text-foreground"
           onClick={handleExport}
           disabled={!courseStatuses || courseStatuses.length === 0}
         >
@@ -45,7 +45,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            className="hidden md:inline-flex text-gray-500 hover:text-gray-700"
+            className="hidden md:inline-flex text-muted-foreground hover:text-foreground"
           >
             <HelpCircle className="h-4 w-4" />
             <span className="text-xs">שאלות ותשובות</span>
@@ -54,7 +54,7 @@ export function Header() {
 
         <button
           onClick={toggleTheme}
-          className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           aria-label="Toggle theme"
         >
           {theme === "dark" ? (
@@ -74,7 +74,7 @@ export function Header() {
                 referrerPolicy="no-referrer"
               />
             )}
-            <span className="hidden text-sm text-[#24333c] md:inline">
+            <span className="hidden text-sm text-foreground md:inline">
               {userInfo.name}
             </span>
           </div>
@@ -82,7 +82,7 @@ export function Header() {
 
         <button
           onClick={logout}
-          className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           aria-label="Logout"
         >
           <LogOut className="h-4 w-4" />

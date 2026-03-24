@@ -109,7 +109,7 @@ export function AddCourseForm({
         variant="outline"
         size="sm"
         onClick={() => setExpanded(true)}
-        className="border-[#24333c]/30 text-[#24333c] hover:bg-[#24333c] hover:text-white"
+        className="border-foreground/30 text-foreground hover:bg-foreground hover:text-background"
       >
         <Plus className="h-4 w-4" />
         הוסף קורס חדש
@@ -120,14 +120,14 @@ export function AddCourseForm({
   return (
     <div className="w-full max-w-5xl">
       {/* Compact inline row form */}
-      <div className="flex items-end gap-1.5 flex-wrap rounded-lg border bg-gray-50/50 p-3">
+      <div className="flex items-end gap-1.5 flex-wrap rounded-lg border bg-muted/50 p-3">
         {/* Course name with autocomplete */}
         <div className="relative flex-[2] min-w-[160px]">
-          <label className="text-[11px] text-gray-500 mb-0.5 block">
+          <label className="text-[11px] text-muted-foreground mb-0.5 block">
             שם הקורס
           </label>
           <div className="relative">
-            <Search className="absolute start-2 top-2 h-3.5 w-3.5 text-gray-400" />
+            <Search className="absolute start-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               value={searchTerm}
               onChange={(e) => {
@@ -136,22 +136,22 @@ export function AddCourseForm({
               }}
               onFocus={() => setShowSuggestions(true)}
               placeholder="חיפוש..."
-              className="w-full h-8 rounded border border-gray-200 bg-white ps-7 pe-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#24333c]/30"
+              className="w-full h-8 rounded border border-border bg-card ps-7 pe-2 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
             />
           </div>
           {showSuggestions && courses && courses.length > 0 && (
             <div
               ref={suggestionsRef}
-              className="absolute z-20 top-full start-0 end-0 mt-1 max-h-48 overflow-y-auto rounded-md border bg-white shadow-lg"
+              className="absolute z-20 top-full start-0 end-0 mt-1 max-h-48 overflow-y-auto rounded-md border bg-card shadow-lg"
             >
               {courses.map((course) => (
                 <button
                   key={course._id}
                   onClick={() => handleSelectCourse(course)}
-                  className="block w-full px-3 py-2 text-start text-sm hover:bg-gray-50 transition-colors"
+                  className="block w-full px-3 py-2 text-start text-sm hover:bg-muted transition-colors"
                 >
                   <span className="font-medium">{course._id}</span>
-                  <span className="text-gray-500 ms-1">- {course.name}</span>
+                  <span className="text-muted-foreground ms-1">- {course.name}</span>
                 </button>
               ))}
             </div>
@@ -160,7 +160,7 @@ export function AddCourseForm({
 
         {/* Course number */}
         <div className="min-w-[100px] flex-1">
-          <label className="text-[11px] text-gray-500 mb-0.5 block">
+          <label className="text-[11px] text-muted-foreground mb-0.5 block">
             מס׳ הקורס
           </label>
           <input
@@ -168,13 +168,13 @@ export function AddCourseForm({
             onChange={(e) => setCourseNumber(e.target.value)}
             placeholder="123456"
             dir="ltr"
-            className="w-full h-8 rounded border border-gray-200 bg-white px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-[#24333c]/30"
+            className="w-full h-8 rounded border border-border bg-card px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-foreground/30"
           />
         </div>
 
         {/* Credits */}
         <div className="min-w-[60px] w-[70px]">
-          <label className="text-[11px] text-gray-500 mb-0.5 block">
+          <label className="text-[11px] text-muted-foreground mb-0.5 block">
             נק״ז
           </label>
           <input
@@ -184,20 +184,20 @@ export function AddCourseForm({
             type="number"
             step="0.5"
             min="0"
-            className="w-full h-8 rounded border border-gray-200 bg-white px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-[#24333c]/30"
+            className="w-full h-8 rounded border border-border bg-card px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-foreground/30"
           />
         </div>
 
         {/* Grade */}
         <div className="min-w-[100px] w-[120px]">
-          <label className="text-[11px] text-gray-500 mb-0.5 block">
+          <label className="text-[11px] text-muted-foreground mb-0.5 block">
             ציון
           </label>
           {isSemester0 ? (
             <select
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
-              className="w-full h-8 rounded border border-gray-200 bg-white px-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#24333c]/30"
+              className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
             >
               <option value="">--</option>
               {COURSE_GRADE_OPTIONS.filter((opt) =>
@@ -217,7 +217,7 @@ export function AddCourseForm({
                 type="number"
                 min="0"
                 max="100"
-                className="w-full h-8 rounded border border-gray-200 bg-white px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-[#24333c]/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full h-8 rounded border border-border bg-card px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-foreground/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 type="button"
@@ -232,7 +232,7 @@ export function AddCourseForm({
               <select
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
-                className="w-full h-8 rounded border border-gray-200 bg-white px-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#24333c]/30"
+                className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
               >
                 <option value="">--</option>
                 {COURSE_GRADE_OPTIONS.map((opt) => (
@@ -255,13 +255,13 @@ export function AddCourseForm({
         {/* Category */}
         {!isSemester0 && (
           <div className="min-w-[120px] flex-1">
-            <label className="text-[11px] text-gray-500 mb-0.5 block">
+            <label className="text-[11px] text-muted-foreground mb-0.5 block">
               קטגוריה
             </label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full h-8 rounded border border-gray-200 bg-white px-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#24333c]/30"
+              className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
             >
               <option value="">--</option>
               {bankNames.map((name) => (
@@ -277,7 +277,7 @@ export function AddCourseForm({
         <div className="flex items-center gap-1">
           <button
             onClick={handleSubmit}
-            className="flex items-center justify-center h-8 w-8 rounded-full bg-[#24333c] text-white hover:bg-[#24333c]/80 transition-colors"
+            className="flex items-center justify-center h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/80 transition-colors"
             title="הוסף"
           >
             <Plus className="h-4 w-4" />
@@ -287,7 +287,7 @@ export function AddCourseForm({
               resetForm();
               setExpanded(false);
             }}
-            className="flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors"
+            className="flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
             title="ביטול"
           >
             <X className="h-4 w-4" />
