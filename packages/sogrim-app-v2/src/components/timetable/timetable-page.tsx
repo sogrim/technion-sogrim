@@ -1,9 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useTimetableStore, resolveEvents } from "@/stores/timetable-store";
-import { StaticProvider } from "@/data/static-provider";
-import { setProvider, getProvider } from "@/data/course-schedule-provider";
-import { courseSchedules } from "@/data/courses/course-data";
-import { availableSemesters } from "@/data/courses/semesters";
+import { useApiProvider, useProviderUpdates } from "@/hooks/use-api-provider";
+import { Loader2 } from "lucide-react";
 import { TimetableToolbar } from "./timetable-toolbar";
 import { WeekGrid } from "./week-grid";
 import { DayView } from "./day-view";
@@ -12,14 +10,36 @@ import { SelectedCoursesPanel } from "./selected-courses-panel";
 import { ExamTimeline } from "./exam-timeline";
 import { CourseDetailModal } from "./course-detail-modal";
 
-// Initialize the data provider
-try {
-  getProvider();
-} catch {
-  setProvider(new StaticProvider(courseSchedules, availableSemesters));
+export function TimetablePage() {
+  const { ready, error } = useApiProvider();
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4" dir="rtl">
+        <div className="text-destructive text-lg font-medium">{error}</div>
+        <p className="text-muted-foreground text-sm">
+          נסה לרענן את הדף. אם הבעיה נמשכת, ייתכן שהשרת לא זמין.
+        </p>
+      </div>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4" dir="rtl">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground text-sm">טוען נתוני קורסים...</p>
+      </div>
+    );
+  }
+
+  return <TimetableContent />;
 }
 
-export function TimetablePage() {
+function TimetableContent() {
+  // Subscribe to provider updates so search results refresh as courses load
+  useProviderUpdates();
+
   const viewMode = useTimetableStore((s) => s.viewMode);
   const drafts = useTimetableStore((s) => s.drafts);
   const activeDraftId = useTimetableStore((s) => s.activeDraftId);

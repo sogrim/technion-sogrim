@@ -120,6 +120,13 @@ export function CourseDetailModal() {
             </DetailSection>
           )}
 
+          {/* Lecturer in charge */}
+          {course.lecturerInCharge && (
+            <DetailSection icon={User} title="אחראי/ת הקורס">
+              <p className="text-sm font-medium">{course.lecturerInCharge}</p>
+            </DetailSection>
+          )}
+
           {/* Prerequisites */}
           {course.prerequisites && (
             <DetailSection icon={Link2} title="מקצועות קדם">
@@ -127,10 +134,17 @@ export function CourseDetailModal() {
             </DetailSection>
           )}
 
+          {/* Linked / corequisite courses */}
+          {course.linkedCourses && (
+            <DetailSection icon={Link2} title="מקצועות צמודים">
+              <p className="text-sm text-muted-foreground font-mono">{course.linkedCourses}</p>
+            </DetailSection>
+          )}
+
           {/* No extra credit */}
           {course.noExtraCreditCourses && (
             <DetailSection icon={Link2} title="מקצועות ללא זיכוי נוסף">
-              <p className="text-sm text-muted-foreground">{course.noExtraCreditCourses}</p>
+              <p className="text-sm text-muted-foreground font-mono">{course.noExtraCreditCourses}</p>
             </DetailSection>
           )}
 
@@ -295,7 +309,7 @@ function ScheduleSection({
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
                     style={{ backgroundColor: accentBg }}
                   >
-                    {group.id}
+                    {group.id.split("-")[0]}
                   </div>
                   <div className="flex-1 min-w-0">
                     {group.lessons.map((lesson, li) => (
