@@ -22,14 +22,14 @@ function AccordionSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-lg border bg-white shadow-sm">
+    <div className="rounded-lg border bg-card shadow-sm">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between p-4 text-right"
       >
         <div className="flex items-center gap-2">
           {icon}
-          <span className="font-medium text-[#24333c]">{title}</span>
+          <span className="font-medium text-foreground">{title}</span>
           {count !== undefined && count > 0 && (
             <span className="rounded-full bg-[#d66563] px-2 py-0.5 text-xs text-white">
               {count}
@@ -37,9 +37,9 @@ function AccordionSection({
           )}
         </div>
         {open ? (
-          <ChevronUp className="h-4 w-4 text-gray-400" />
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-gray-400" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
       {open && <div className="border-t px-4 pb-4 pt-3">{children}</div>}
@@ -88,7 +88,7 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
             {overflow_msgs.map((msg, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2 text-sm text-gray-600"
+                className="flex items-start gap-2 text-sm text-foreground"
               >
                 <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
                 {msg}
@@ -107,10 +107,10 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
           <ul className="space-y-2">
             {bankMessages.map((item, i) => (
               <li key={i} className="text-sm">
-                <span className="font-medium text-[#24333c]">
+                <span className="font-medium text-foreground">
                   {item.bankName}:
                 </span>{" "}
-                <span className="text-gray-600">{item.message}</span>
+                <span className="text-foreground">{item.message}</span>
               </li>
             ))}
           </ul>
@@ -129,8 +129,8 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
                 key={bank.course_bank_name}
                 className="flex items-center justify-between text-sm"
               >
-                <span className="text-gray-600">{bank.course_bank_name}</span>
-                <span className="text-xs text-gray-400">
+                <span className="text-foreground">{bank.course_bank_name}</span>
+                <span className="text-xs text-muted-foreground">
                   {bank.credit_completed}/{bank.credit_requirement}{" "}
                   {"\u05E0\u05E7\u05F4\u05D6"}
                 </span>

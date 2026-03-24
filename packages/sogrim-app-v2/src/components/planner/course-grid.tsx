@@ -16,11 +16,12 @@ import {
 } from "@/lib/course-validator";
 import type { RowData } from "@/types/domain";
 import type { CourseStatus } from "@/types/api";
+import { useUiStore } from "@/stores/ui-store";
 
 /* ------------------------------------------------------------------ */
-/* Custom AG Grid theme to match old app: clean borders, light header */
+/* Custom AG Grid theme — adapts to light/dark via CSS color-scheme   */
 /* ------------------------------------------------------------------ */
-const sogrimGridTheme = themeQuartz.withParams({
+const sogrimGridThemeLight = themeQuartz.withParams({
   headerBackgroundColor: "#f8f9fa",
   headerTextColor: "#24333c",
   headerFontWeight: 600,
@@ -30,6 +31,22 @@ const sogrimGridTheme = themeQuartz.withParams({
   borderColor: "#dee2e6",
   borderRadius: 0,
   rowHoverColor: "#f8f9fa",
+  cellHorizontalPaddingScale: 0.8,
+  headerColumnResizeHandleColor: "transparent",
+  spacing: 6,
+});
+const sogrimGridThemeDark = themeQuartz.withParams({
+  backgroundColor: "hsl(224 71% 4%)",
+  foregroundColor: "hsl(213 31% 91%)",
+  headerBackgroundColor: "hsl(223 47% 11%)",
+  headerTextColor: "hsl(213 31% 91%)",
+  headerFontWeight: 600,
+  headerFontSize: 13,
+  fontSize: 13,
+  rowBorder: { color: "hsl(216 34% 17%)", width: 1, style: "solid" },
+  borderColor: "hsl(216 34% 17%)",
+  borderRadius: 0,
+  rowHoverColor: "hsl(217 33% 17%)",
   cellHorizontalPaddingScale: 0.8,
   headerColumnResizeHandleColor: "transparent",
   spacing: 6,
@@ -80,6 +97,7 @@ export function CourseGrid({
   onUpdate,
   onDelete,
 }: CourseGridProps) {
+  const isDark = useUiStore((s) => s.theme) === "dark";
   const gridRef = useRef<AgGridReact>(null);
   const [toast, setToast] = useState<{
     message: string;
@@ -200,7 +218,7 @@ export function CourseGrid({
           return (
             <button
               onClick={() => onDelete(courseNumber)}
-              className="flex items-center justify-center h-full w-full text-gray-400 hover:text-destructive transition-colors"
+              className="flex items-center justify-center h-full w-full text-muted-foreground hover:text-destructive transition-colors"
               title="מחק קורס"
             >
               <Trash2 className="h-4 w-4" />
@@ -277,7 +295,7 @@ export function CourseGrid({
       >
         <AgGridReact<RowData>
           ref={gridRef}
-          theme={sogrimGridTheme}
+          theme={isDark ? sogrimGridThemeDark : sogrimGridThemeLight}
           modules={[AllCommunityModule]}
           rowData={rowData}
           columnDefs={columnDefs}
@@ -292,7 +310,7 @@ export function CourseGrid({
           rowHeight={40}
           getRowId={(params) => params.data.courseNumber}
           noRowsOverlayComponent={() => (
-            <span className="text-gray-400 text-sm">
+            <span className="text-muted-foreground text-sm">
               אין קורסים בסמסטר זה
             </span>
           )}

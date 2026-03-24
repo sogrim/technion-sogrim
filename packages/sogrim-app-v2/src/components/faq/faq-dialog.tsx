@@ -88,23 +88,23 @@ function FaqItem({ faq }: { faq: FAQ }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="border-b border-gray-100 last:border-b-0">
+    <div className="border-b border-border last:border-b-0">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between px-4 py-3 text-right hover:bg-gray-50 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-3 text-right hover:bg-muted transition-colors"
       >
-        <span className="font-semibold text-sm text-[#24333c]">
+        <span className="font-semibold text-sm text-foreground">
           {faq.title}
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200",
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
             expanded && "rotate-180"
           )}
         />
       </button>
       {expanded && (
-        <div className="px-4 pb-3 text-sm text-gray-600 leading-relaxed">
+        <div className="px-4 pb-3 text-sm text-foreground leading-relaxed">
           {faq.content}
         </div>
       )}
@@ -124,15 +124,15 @@ export function FaqDialog({ open, onClose }: FaqDialogProps) {
       />
 
       {/* Dialog */}
-      <div className="relative z-10 bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
+      <div className="relative z-10 bg-card rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-bold text-[#24333c]">
+          <h2 className="text-lg font-bold text-foreground">
             שאלות ותשובות
           </h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
           </button>

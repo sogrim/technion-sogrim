@@ -88,7 +88,7 @@ function FaqAccordionItem({ item }: { item: FaqItem }) {
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between py-4 text-right text-sm font-medium hover:text-primary transition-colors"
       >
-        <span className="font-semibold text-[#24333c]">{item.title}</span>
+        <span className="font-semibold text-foreground">{item.title}</span>
         <ChevronDown
           className={cn(
             "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
@@ -114,7 +114,7 @@ export function FaqPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#24333c]">
+        <h1 className="text-2xl font-bold text-foreground">
           שאלות ותשובות
         </h1>
         <p className="text-sm text-muted-foreground mt-1">

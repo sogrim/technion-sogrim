@@ -16,10 +16,10 @@ export function ExemptionsTab({ courseStatuses }: ExemptionsTabProps) {
         <div className="text-5xl mb-4 opacity-30">
           {"\u2714\uFE0F"}
         </div>
-        <h3 className="text-lg font-medium text-gray-500">
+        <h3 className="text-lg font-medium text-muted-foreground">
           {"\u05D0\u05D9\u05DF \u05E4\u05D8\u05D5\u05E8\u05D9\u05DD \u05D5\u05D6\u05D9\u05DB\u05D5\u05D9\u05D9\u05DD"}
         </h3>
-        <p className="text-sm text-gray-400 mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           {"\u05E7\u05D5\u05E8\u05E1\u05D9\u05DD \u05DC\u05DC\u05D0 \u05E1\u05DE\u05E1\u05D8\u05E8 \u05DE\u05E9\u05D5\u05D9\u05DB\u05D9\u05DD \u05D9\u05D5\u05E4\u05D9\u05E2\u05D5 \u05DB\u05D0\u05DF"}
         </p>
       </div>
@@ -28,9 +28,9 @@ export function ExemptionsTab({ courseStatuses }: ExemptionsTabProps) {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
         {/* Table header */}
-        <div className="grid grid-cols-12 gap-2 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500 border-b">
+        <div className="grid grid-cols-12 gap-2 bg-muted px-4 py-3 text-sm font-medium text-muted-foreground border-b">
           <div className="col-span-4 text-right">
             {"\u05E9\u05DD \u05D4\u05E7\u05D5\u05E8\u05E1"}
           </div>
@@ -52,18 +52,18 @@ export function ExemptionsTab({ courseStatuses }: ExemptionsTabProps) {
         {exemptionCourses.map((cs) => (
           <div
             key={cs.course._id}
-            className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b last:border-b-0 hover:bg-gray-50 transition-colors"
+            className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b last:border-b-0 hover:bg-muted transition-colors"
           >
-            <div className="col-span-4 text-right font-medium text-[#24333c] truncate">
+            <div className="col-span-4 text-right font-medium text-foreground truncate">
               {cs.course.name}
             </div>
-            <div className="col-span-2 text-right text-gray-500" dir="ltr">
+            <div className="col-span-2 text-right text-muted-foreground" dir="ltr">
               {cs.course._id}
             </div>
-            <div className="col-span-2 text-center text-gray-600">
+            <div className="col-span-2 text-center text-foreground">
               {cs.course.credit}
             </div>
-            <div className="col-span-2 text-center text-gray-600">
+            <div className="col-span-2 text-center text-foreground">
               {cs.grade ?? "-"}
             </div>
             <div className="col-span-2 text-center">
@@ -86,7 +86,7 @@ export function ExemptionsTab({ courseStatuses }: ExemptionsTabProps) {
         ))}
       </div>
 
-      <div className="mt-3 text-sm text-gray-400 text-center">
+      <div className="mt-3 text-sm text-muted-foreground text-center">
         {"\u05E1\u05D4\u05F4\u05DB"} {exemptionCourses.length}{" "}
         {"\u05E7\u05D5\u05E8\u05E1\u05D9\u05DD"} |{" "}
         {exemptionCourses

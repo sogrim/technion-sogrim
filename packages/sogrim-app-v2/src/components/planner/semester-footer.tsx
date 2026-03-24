@@ -43,11 +43,11 @@ export function SemesterFooter({ rows }: SemesterFooterProps) {
   }, [rows]);
 
   return (
-    <div className="flex items-center justify-center gap-2 py-3 px-4 bg-gray-50 border border-t-0 rounded-b-lg text-sm text-gray-500">
+    <div className="flex items-center justify-center gap-2 py-3 px-4 bg-muted border border-t-0 rounded-b-lg text-sm text-muted-foreground">
       <span>ממוצע סמסטר: {avg}</span>
-      <span className="text-gray-300">{"•"}</span>
+      <span className="text-border">{"•"}</span>
       <span>נק״ז ששובצו: {totalCredit}</span>
-      <span className="text-gray-300">{"•"}</span>
+      <span className="text-border">{"•"}</span>
       <span>נק״ז שבוצעו: {doneCredit}</span>
     </div>
   );

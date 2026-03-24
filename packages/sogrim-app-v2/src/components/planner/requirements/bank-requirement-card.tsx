@@ -31,29 +31,29 @@ export function BankRequirementCard({
   );
 
   return (
-    <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
+    <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
       {/* Accordion header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-right transition-colors hover:bg-gray-50"
+        className="flex w-full items-center gap-3 px-4 py-3 text-right transition-colors hover:bg-muted"
       >
         {/* Chevron */}
         {expanded ? (
-          <ChevronUp className="h-4 w-4 shrink-0 text-gray-400" />
+          <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         )}
 
         {/* Main content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-[#24333c] text-sm">
+              <span className="font-bold text-foreground text-sm">
                 {bank.course_bank_name}
               </span>
               {bank.message && (
                 <span title={bank.message}>
-                  <Info className="h-3.5 w-3.5 text-gray-400" />
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
                 </span>
               )}
             </div>
@@ -68,7 +68,7 @@ export function BankRequirementCard({
           {/* Progress bar */}
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
@@ -77,11 +77,11 @@ export function BankRequirementCard({
                   }}
                 />
               </div>
-              <span className="text-xs font-medium text-gray-500 shrink-0 w-8 text-left">
+              <span className="text-xs font-medium text-muted-foreground shrink-0 w-8 text-left">
                 {percentage}%
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs text-gray-400">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
                 {"השלמת"} {bank.credit_completed}{" "}
                 {"מתוך"} {bank.credit_requirement}{" "}
@@ -100,7 +100,7 @@ export function BankRequirementCard({
 
       {/* Expanded: course list */}
       {expanded && bankCourses.length > 0 && (
-        <div className="border-t bg-gray-50 px-4 py-3">
+        <div className="border-t bg-muted px-4 py-3">
           <div className="space-y-1.5">
             {bankCourses.map((cs) => (
               <div
@@ -108,15 +108,15 @@ export function BankRequirementCard({
                 className="flex items-center justify-between text-sm py-1"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-[#24333c] truncate">
+                  <span className="text-foreground truncate">
                     {cs.course.name}
                   </span>
-                  <span className="text-xs text-gray-400 shrink-0">
+                  <span className="text-xs text-muted-foreground shrink-0">
                     ({cs.course.credit} {"נק״ז"})
                   </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-gray-500 text-xs">
+                  <span className="text-muted-foreground text-xs">
                     {cs.grade ?? "-"}
                   </span>
                   <Badge
@@ -141,7 +141,7 @@ export function BankRequirementCard({
       )}
 
       {expanded && bankCourses.length === 0 && (
-        <div className="border-t bg-gray-50 px-4 py-4 text-center text-sm text-gray-400">
+        <div className="border-t bg-muted px-4 py-4 text-center text-sm text-muted-foreground">
           {"אין קורסים בקטגוריה זו"}
         </div>
       )}

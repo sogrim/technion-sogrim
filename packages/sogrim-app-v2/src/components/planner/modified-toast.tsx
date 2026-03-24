@@ -9,7 +9,7 @@ export function ModifiedToast() {
 
   return (
     <div
-      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm text-[#24333c] rounded-lg mb-2 md:rounded-none md:-mx-6 md:-mt-6 md:px-6 md:mb-0"
+      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm text-foreground rounded-lg mb-2 md:rounded-none md:-mx-6 md:-mt-6 md:px-6 md:mb-0"
       style={{ backgroundColor: "#e8dff5" }}
     >
       <span className="text-center font-medium text-xs md:text-sm">
@@ -42,7 +42,7 @@ export function ModifiedToast() {
           {"למידע נוסף"}
         </button>
         {showInfo && (
-          <div className="absolute top-full start-0 z-10 mt-1 w-56 rounded-md border bg-white p-3 text-xs text-gray-600 shadow-lg">
+          <div className="absolute top-full start-0 z-10 mt-1 w-56 rounded-md border bg-card p-3 text-xs text-foreground shadow-lg">
             {"כאשר מבוצע שינוי בקורסים (הוספה, עריכה או מחיקה), יש להריץ מחדש את חישוב סגירת התואר כדי לעדכן את הסטטוס."}
             <button
               onClick={() => setShowInfo(false)}
