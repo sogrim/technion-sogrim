@@ -42,7 +42,7 @@ impl std::fmt::Display for AppError {
             AppError::Middleware(e) => format!("Middleware error: {e}"),
             AppError::MongoDriver(e) => format!("MongoDB driver error: {e}"),
         };
-        write!(f, "{}", error)
+        write!(f, "{error}")
     }
 }
 

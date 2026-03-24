@@ -8,6 +8,8 @@ use db::Db;
 use error::AppError;
 use middleware::{auth, cors, logger};
 use resources::user::Permissions;
+use sap::CachedSapClient;
+use std::sync::Arc;
 
 mod api;
 mod config;
@@ -17,6 +19,7 @@ mod db;
 mod error;
 mod middleware;
 mod resources;
+mod sap;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -26,19 +29,42 @@ async fn main() -> std::io::Result<()> {
     // Initialize DB client
     let db = Db::new().await;
 
+    // Initialize SAP client (shared across all workers + prewarm thread)
+    let sap_inner = Arc::new(CachedSapClient::new());
+
+    // Phase 1: prewarm semesters + course IDs (fast, <2s)
+    if let Err(e) = sap_inner.prewarm_essential().await {
+        log::warn!(target: "sogrim_server", "SAP prewarm phase 1 failed: {e}");
+    }
+
+    // Phase 2: background prewarm all courses (slow, ~10-20 min)
+    let sap_bg = Arc::clone(&sap_inner);
+    tokio::spawn(async move {
+        sap_bg.prewarm_courses().await;
+    });
+
+    let sap = web::Data::from(sap_inner);
+
     // Start the server
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
+            .app_data(sap.clone())
             .app_data(auth::JwtDecoder::new())
             .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
             .service(web::resource("/healthcheck").route(web::get().to(
-                |db: web::Data<Db>| async move {
+                |db: web::Data<Db>, sap: web::Data<CachedSapClient>| async move {
                     db.ping().await?;
-                    Result::<HttpResponse, AppError>::Ok(HttpResponse::Ok().finish())
+                    Result::<HttpResponse, AppError>::Ok(
+                        HttpResponse::Ok().json(sap.warmup_stats()),
+                    )
                 },
             )))
+            .service(api::courses::get_semesters)
+            .service(api::courses::get_course_ids)
+            .service(api::courses::get_course_index)
+            .service(api::courses::get_course)
             .service(
                 // Global authentication scope
                 // All routes under this scope will be authenticated and authorized

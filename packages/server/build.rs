@@ -12,6 +12,6 @@ fn main() {
 
     // Set the environment variables
     while let Some(Ok((key, value))) = dotenv_iter.next() {
-        println!("cargo:rustc-env={}={}", key, value);
+        println!("cargo:rustc-env={key}={value}");
     }
 }
