@@ -1,0 +1,72 @@
+name: Deploy to Oracle Cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (commit SHA, branch, or tag). Defaults to latest master."
+        required: false
+        default: "master"
+
+env:
+  VM_USER: opc
+
+jobs:
+  deploy:
+    name: Deploy Server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.ORACLE_VM_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VM
+        run: |
+          REF="${{ github.event.inputs.ref || 'master' }}"
+          ssh ${{ env.VM_USER }}@${{ secrets.ORACLE_VM_IP }} bash -s "$REF" << 'DEPLOY'
+          set -euxo pipefail
+          REF="$1"
+
+          cd ~/sogrim
+
+          # Fetch and checkout the requested ref
+          git fetch origin
+          git checkout "$REF" 2>/dev/null || git checkout "origin/$REF"
+          git pull origin "$REF" 2>/dev/null || true
+
+          echo "Deploying $(git log --oneline -1)"
+
+          # Rebuild the server
+          source ~/.cargo/env
+          cd packages/server
+          IP=0.0.0.0 PORT=5545 \
+            URI="${{ secrets.MONGO_URI_DEV }}" \
+            CLIENT_ID="${{ secrets.CLIENT_ID }}" \
+            PROFILE=release \
+            cargo build --release
+
+          # Restart the service
+          sudo systemctl restart sogrim
+
+          # Wait for healthcheck
+          for i in 1 2 3 4 5 6; do
+            if curl -sf http://localhost:5545/healthcheck; then
+              echo ""
+              echo "Deploy successful!"
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "Healthcheck failed after deploy"
+          sudo journalctl -u sogrim --no-pager -n 20
+          exit 1
+          DEPLOY
+
+      - name: Verify HTTPS endpoint
+        run: |
+          curl -sf https://sogrim.duckdns.org/healthcheck
+          echo "HTTPS endpoint healthy"

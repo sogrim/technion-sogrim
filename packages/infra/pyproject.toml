@@ -1,0 +1,27 @@
+[project]
+name = "infra"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "pulumi>=3.0.0,<4.0.0",
+    "pulumi-oci==4.3.1",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "S", "B", "A", "C4", "SIM", "TCH"]
+
+[tool.ty.environment]
+python-version = "3.14"
+
+[tool.ty.rules]
+# pulumi_oci re-exports data-source functions as both a module and a callable,
+# which ty resolves as a union `<module> | <function>` and then rejects.
+# This cascades into Output.apply() calls that ty cannot resolve.
+# All false positives -- the functions are callable at runtime.
+call-non-callable = "ignore"
+missing-argument = "ignore"
+invalid-argument-type = "ignore"
