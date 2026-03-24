@@ -1,9 +1,6 @@
 name: Deploy to Oracle Cloud
 
 on:
-  push:
-    branches:
-      - feature/oracle-infra-and-deploy # TEMP: remove after testing
   workflow_dispatch:
     inputs:
       ref:
