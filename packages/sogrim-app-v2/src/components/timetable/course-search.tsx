@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
+import { useProviderUpdates } from "@/hooks/use-api-provider";
 import { LESSON_TYPE_NAMES, DAY_LABELS } from "@/lib/timetable-utils";
 import type { CourseSchedule, Day } from "@/types/timetable";
 import { Search, X, Plus, Clock, MapPin, SlidersHorizontal, RotateCcw } from "lucide-react";
@@ -39,6 +40,9 @@ export function CourseSearch() {
   const drafts = useTimetableStore((s) => s.drafts);
   const activeDraftId = useTimetableStore((s) => s.activeDraftId);
 
+  // Re-render when API provider fetches new course data
+  const _providerVersion = useProviderUpdates();
+
   const [query, setQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, faculties: new Set(), days: new Set() });
@@ -69,6 +73,8 @@ export function CourseSearch() {
 
       if (query.trim()) {
         courses = provider.searchCourses(query);
+        const all = provider.getAllCourses();
+        console.log("[CourseSearch] query:", query, "results:", courses.length, "totalCourses:", all.length, "first5:", all.slice(0, 5).map(c => c.id));
       } else if (hasActiveFilters(filters)) {
         // Show filtered results even without text query
         courses = provider.getAllCourses();
@@ -93,7 +99,7 @@ export function CourseSearch() {
     } catch {
       return [];
     }
-  }, [query, filters]);
+  }, [query, filters, _providerVersion]);
 
   useEffect(() => {
     if (searchOpen) {

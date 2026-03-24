@@ -90,7 +90,7 @@ export function SelectedCoursesPanel() {
                     </div>
                     <button
                       onClick={() => removeCourse(selection.courseId)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
+                      className="p-1 hover:bg-destructive/10 rounded opacity-60 hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
                     </button>

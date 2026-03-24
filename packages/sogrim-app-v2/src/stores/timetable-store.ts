@@ -161,26 +161,17 @@ export const useTimetableStore = create<TimetableState>()(
         // Don't add duplicates
         if (draft.courses.some((c) => c.courseId === courseId)) return;
 
-        // Auto-select first group of each lesson type
-        const course = getProvider().getCourse(courseId);
-        if (!course) return;
-
-        const selectedGroups: Partial<Record<LessonType, string>> = {};
-        const seenTypes = new Set<LessonType>();
-        for (const group of course.groups) {
-          if (!seenTypes.has(group.type)) {
-            seenTypes.add(group.type);
-            selectedGroups[group.type] = group.id;
-          }
-        }
-
-        const selection: CourseSelection = { courseId, selectedGroups };
+        // Add immediately — groups show as previews once data loads from API
+        const selection: CourseSelection = { courseId, selectedGroups: {} };
         set({
           drafts: updateDraft(state.drafts, draft.id, (d) => ({
             courses: [...d.courses, selection],
             isPublished: false,
           })),
         });
+
+        // Trigger fetch so provider cache fills and events resolve
+        getProvider().getCourse(courseId);
       },
 
       removeCourse: (courseId) => {
@@ -203,14 +194,16 @@ export const useTimetableStore = create<TimetableState>()(
 
         set({
           drafts: updateDraft(state.drafts, draft.id, (d) => ({
-            courses: d.courses.map((c) =>
-              c.courseId === courseId
-                ? {
-                    ...c,
-                    selectedGroups: { ...c.selectedGroups, [type]: groupId },
-                  }
-                : c,
-            ),
+            courses: d.courses.map((c) => {
+              if (c.courseId !== courseId) return c;
+              const updated = { ...c.selectedGroups };
+              if (groupId) {
+                updated[type] = groupId;
+              } else {
+                delete updated[type];
+              }
+              return { ...c, selectedGroups: updated };
+            }),
             isPublished: false,
           })),
           // Clear preview after selection
@@ -292,37 +285,17 @@ export function resolveEvents(
     const isPreviewTarget =
       previewingCourse === course.id && previewingType != null;
 
-    // For each selected group, get all its lessons
-    for (const [, groupId] of Object.entries(selection.selectedGroups)) {
-      const group = course.groups.find((g) => g.id === groupId);
-      if (!group) continue;
+    // Collect all lesson types this course offers
+    const typeSet = new Set(course.groups.map((g) => g.type));
 
-      for (const lesson of group.lessons) {
-        events.push({
-          courseId: course.id,
-          courseName: course.name,
-          type: group.type,
-          groupId: group.id,
-          day: lesson.day,
-          startTime: lesson.startTime,
-          endTime: lesson.endTime,
-          building: lesson.building,
-          room: lesson.room,
-          instructor: lesson.instructor,
-          colorIndex,
-          hasConflict: false,
-        });
-      }
-    }
+    for (const type of typeSet) {
+      const selectedGroupId = selection.selectedGroups[type];
+      const typeGroups = course.groups.filter((g) => g.type === type);
 
-    // Add ghost preview events for ALL alternative groups of the previewing type
-    if (isPreviewTarget) {
-      const altGroups = course.groups.filter(
-        (g) =>
-          g.type === previewingType &&
-          g.id !== selection.selectedGroups[previewingType!],
-      );
-      for (const group of altGroups) {
+      if (selectedGroupId) {
+        // User has chosen a group for this type — show only that one (solid)
+        const group = typeGroups.find((g) => g.id === selectedGroupId);
+        if (!group) continue;
         for (const lesson of group.lessons) {
           events.push({
             courseId: course.id,
@@ -337,8 +310,51 @@ export function resolveEvents(
             instructor: lesson.instructor,
             colorIndex,
             hasConflict: false,
-            isPreview: true,
           });
+        }
+
+        // If eye-preview is active for this type, also show alternatives as ghosts
+        if (isPreviewTarget && previewingType === type) {
+          for (const altGroup of typeGroups.filter((g) => g.id !== selectedGroupId)) {
+            for (const lesson of altGroup.lessons) {
+              events.push({
+                courseId: course.id,
+                courseName: course.name,
+                type: altGroup.type,
+                groupId: altGroup.id,
+                day: lesson.day,
+                startTime: lesson.startTime,
+                endTime: lesson.endTime,
+                building: lesson.building,
+                room: lesson.room,
+                instructor: lesson.instructor,
+                colorIndex,
+                hasConflict: false,
+                isPreview: true,
+              });
+            }
+          }
+        }
+      } else {
+        // No group selected yet — show ALL alternatives as previews
+        for (const group of typeGroups) {
+          for (const lesson of group.lessons) {
+            events.push({
+              courseId: course.id,
+              courseName: course.name,
+              type: group.type,
+              groupId: group.id,
+              day: lesson.day,
+              startTime: lesson.startTime,
+              endTime: lesson.endTime,
+              building: lesson.building,
+              room: lesson.room,
+              instructor: lesson.instructor,
+              colorIndex,
+              hasConflict: false,
+              isPreview: true,
+            });
+          }
         }
       }
     }

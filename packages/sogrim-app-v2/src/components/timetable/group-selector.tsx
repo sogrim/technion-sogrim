@@ -62,7 +62,7 @@ export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
                         : "bg-secondary text-secondary-foreground hover:bg-accent",
                   )}
                 >
-                  {g.id}
+                  {g.id.split("-")[0]}
                 </button>
               ))}
             </div>
