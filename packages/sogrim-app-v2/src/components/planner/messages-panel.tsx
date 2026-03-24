@@ -1,0 +1,144 @@
+import { useState } from "react";
+import { ChevronDown, ChevronUp, AlertTriangle, Info } from "lucide-react";
+import type { DegreeStatus, CourseBankReq } from "@/types/api";
+
+interface MessagesPanelProps {
+  degreeStatus: DegreeStatus;
+}
+
+function AccordionSection({
+  title,
+  icon,
+  children,
+  defaultOpen = false,
+  count,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  count?: number;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="rounded-lg border bg-white shadow-sm">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between p-4 text-right"
+      >
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className="font-medium text-[#24333c]">{title}</span>
+          {count !== undefined && count > 0 && (
+            <span className="rounded-full bg-[#d66563] px-2 py-0.5 text-xs text-white">
+              {count}
+            </span>
+          )}
+        </div>
+        {open ? (
+          <ChevronUp className="h-4 w-4 text-gray-400" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-gray-400" />
+        )}
+      </button>
+      {open && <div className="border-t px-4 pb-4 pt-3">{children}</div>}
+    </div>
+  );
+}
+
+export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
+  const { overflow_msgs, course_bank_requirements } = degreeStatus;
+
+  // Collect bank messages (warnings)
+  const bankMessages: { bankName: string; message: string }[] = [];
+  course_bank_requirements.forEach((bank: CourseBankReq) => {
+    if (bank.message) {
+      bankMessages.push({
+        bankName: bank.course_bank_name,
+        message: bank.message,
+      });
+    }
+  });
+
+  // Find incomplete banks
+  const incompleteBanks = course_bank_requirements.filter(
+    (bank) =>
+      !(bank.completed ?? bank.credit_completed >= bank.credit_requirement)
+  );
+
+  const hasOverflow = overflow_msgs.length > 0;
+  const hasWarnings = bankMessages.length > 0;
+  const hasIncomplete = incompleteBanks.length > 0;
+
+  if (!hasOverflow && !hasWarnings && !hasIncomplete) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3">
+      {hasOverflow && (
+        <AccordionSection
+          title={"\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05D7\u05E9\u05D5\u05D1\u05D5\u05EA"}
+          icon={<Info className="h-4 w-4 text-blue-500" />}
+          defaultOpen={true}
+          count={overflow_msgs.length}
+        >
+          <ul className="space-y-2">
+            {overflow_msgs.map((msg, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm text-gray-600"
+              >
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                {msg}
+              </li>
+            ))}
+          </ul>
+        </AccordionSection>
+      )}
+
+      {hasWarnings && (
+        <AccordionSection
+          title={"\u05D0\u05D6\u05D4\u05E8\u05D5\u05EA"}
+          icon={<AlertTriangle className="h-4 w-4 text-amber-500" />}
+          count={bankMessages.length}
+        >
+          <ul className="space-y-2">
+            {bankMessages.map((item, i) => (
+              <li key={i} className="text-sm">
+                <span className="font-medium text-[#24333c]">
+                  {item.bankName}:
+                </span>{" "}
+                <span className="text-gray-600">{item.message}</span>
+              </li>
+            ))}
+          </ul>
+        </AccordionSection>
+      )}
+
+      {hasIncomplete && (
+        <AccordionSection
+          title={"\u05D3\u05E8\u05D9\u05E9\u05D5\u05EA \u05DC\u05D4\u05E9\u05DC\u05DE\u05D4"}
+          icon={<AlertTriangle className="h-4 w-4 text-[#d66563]" />}
+          count={incompleteBanks.length}
+        >
+          <ul className="space-y-2">
+            {incompleteBanks.map((bank) => (
+              <li
+                key={bank.course_bank_name}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="text-gray-600">{bank.course_bank_name}</span>
+                <span className="text-xs text-gray-400">
+                  {bank.credit_completed}/{bank.credit_requirement}{" "}
+                  {"\u05E0\u05E7\u05F4\u05D6"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </AccordionSection>
+      )}
+    </div>
+  );
+}
