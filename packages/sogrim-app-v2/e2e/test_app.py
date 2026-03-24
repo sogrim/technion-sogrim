@@ -2,8 +2,8 @@
 E2E tests for Sogrim V2 using browser-use.
 
 Prerequisites:
-  1. Start the old app:  cd packages/sogrim-app && npm start  (port 3000)
-  2. Start the new app:  cd packages/sogrim-app-v2 && npm run dev  (port 3001)
+  1. Start the old app:  cd packages/sogrim-app && bun start  (port 3000)
+  2. Start the new app:  cd packages/sogrim-app-v2 && bun run dev  (port 3001)
   3. Start the backend:  cargo run --manifest-path packages/server/Cargo.toml
   4. Set ANTHROPIC_API_KEY environment variable
 
