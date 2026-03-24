@@ -37,7 +37,6 @@ function getRegistrationState(details: UserDetails | undefined): number {
     return UserRegistrationState.NoCourses;
   }
   if (
-    details.compute_in_progress ||
     !details.degree_status.course_bank_requirements ||
     details.degree_status.course_bank_requirements.length === 0
   ) {
