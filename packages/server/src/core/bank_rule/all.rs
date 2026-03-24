@@ -5,7 +5,7 @@ use crate::{
 
 use super::BankRuleHandler;
 
-impl<'a> BankRuleHandler<'a> {
+impl BankRuleHandler<'_> {
     pub fn all(mut self, sum_credit_requirement: &mut f32, completed: &mut bool) -> f32 {
         let credit_info = self.iterate_course_list();
 

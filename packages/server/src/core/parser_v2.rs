@@ -102,8 +102,8 @@ fn parse_chrome_fields(data: &str) -> (String, f32, Option<Grade>) {
     }
     // Try Hebrew grade at end
     for &term in HEBREW_GRADES {
-        if data.ends_with(term) {
-            let rest = data[..data.len() - term.len()].trim();
+        if let Some(rest) = data.strip_suffix(term) {
+            let rest = rest.trim();
             let grade = to_grade(term);
             if matches!(grade, Some(Grade::ExemptionWithoutCredit)) {
                 return (rest.to_string(), 0.0, grade);
@@ -128,8 +128,8 @@ fn parse_edge_fields(data: &str) -> (String, f32, Option<Grade>) {
     }
     // Try Hebrew grade at start
     for &term in HEBREW_GRADES {
-        if data.starts_with(term) {
-            let rest = data[term.len()..].trim();
+        if let Some(rest) = data.strip_prefix(term) {
+            let rest = rest.trim();
             let grade = to_grade(term);
             if matches!(grade, Some(Grade::ExemptionWithoutCredit)) {
                 return (rest.to_string(), 0.0, grade);
