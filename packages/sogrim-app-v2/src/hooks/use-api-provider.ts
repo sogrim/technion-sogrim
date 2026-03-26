@@ -1,7 +1,7 @@
 import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 import { ApiProvider } from "@/data/api-provider";
 import { setProvider, getProvider } from "@/data/course-schedule-provider";
-import { useTimetableStore } from "@/stores/timetable-store";
+import { useTimetableStore, loadTimetableFromBackend } from "@/stores/timetable-store";
 
 let _apiProvider: ApiProvider | null = null;
 let _initPromise: Promise<void> | null = null;
@@ -27,14 +27,20 @@ export function useApiProvider(): { ready: boolean; error: string | null } {
       const provider = new ApiProvider();
       _initPromise = provider
         .init()
-        .then(() => {
+        .then(async () => {
           _apiProvider = provider;
           setProvider(provider);
-          // Sync timetable store with provider's latest semester
-          const semesters = provider.getSemesters();
-          if (semesters.length > 0) {
-            useTimetableStore.getState().setSemester(semesters[0].id);
+
+          // Load saved timetable from backend, then fall back to latest semester
+          await loadTimetableFromBackend();
+          const state = useTimetableStore.getState();
+          if (!state.currentSemester) {
+            const semesters = provider.getSemesters();
+            if (semesters.length > 0) {
+              useTimetableStore.getState().setSemester(semesters[0].id);
+            }
           }
+
           setReady(true);
         })
         .catch((err) => {
