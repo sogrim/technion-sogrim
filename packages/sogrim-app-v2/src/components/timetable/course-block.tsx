@@ -19,7 +19,6 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
   const setGroup = useTimetableStore((s) => s.setGroup);
 
   const style = useMemo(() => {
-    // Custom events may have a user-picked color
     if (event.isCustom && event.customColor) {
       return {
         "--course-bg": event.customColor,
@@ -31,71 +30,73 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
   }, [event.colorIndex, event.isCustom, event.customColor, isDark]);
 
   const typeLabel = LESSON_TYPE_NAMES[event.type];
+  const groupNum = event.groupId.split("-")[0];
   const location =
     [event.building, event.room].filter(Boolean).join(" ") || undefined;
 
   const handleClick = () => {
     if (event.isPreview) {
-      // Ghost block → select this group
       setGroup(event.courseId, event.type, event.groupId);
     } else if (event.isCustom && event.customEventId && onCustomEventClick) {
       onCustomEventClick(event.customEventId);
     } else if (!event.isCustom) {
-      // Solid block → unschedule (deselect this group, back to ghost state)
       setGroup(event.courseId, event.type, "");
     }
   };
+
+  const isPreview = !!event.isPreview;
 
   return (
     <div
       onClick={handleClick}
       className={cn(
-        "relative rounded-md px-1.5 py-1 overflow-hidden cursor-pointer h-full",
-        "transition-all duration-150",
-        event.isPreview
-          ? "opacity-40 border-2 border-dashed hover:opacity-70"
-          : "border-r-[3px] hover:brightness-95 dark:hover:brightness-110",
+        "rounded-md cursor-pointer h-full",
+        "flex flex-col items-center justify-center text-center",
+        "transition-all duration-150 px-1 py-0.5",
+        isPreview
+          ? "border-2 hover:border-[3px]"
+          : "border-2 hover:brightness-95 dark:hover:brightness-110",
         event.isCustom && "border-dashed",
         event.hasConflict && "ring-2 ring-destructive ring-offset-1 dark:ring-offset-background",
-        compact ? "text-[0.6rem] leading-tight" : "text-xs leading-snug",
       )}
       style={{
         ...style,
-        backgroundColor: event.isPreview ? "transparent" : "var(--course-bg)",
-        color: "var(--course-text)",
-        borderColor: event.isPreview ? "var(--course-bg)" : undefined,
-        borderRightColor: event.isPreview ? undefined : "var(--course-border)",
+        backgroundColor: isPreview
+          ? (isDark ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.85)")
+          : "var(--course-bg)",
+        color: isPreview ? "var(--course-bg)" : "var(--course-text)",
+        borderColor: "var(--course-border)",
       }}
       title={
-        event.isPreview
-          ? `לחצו לבחור קבוצה ${event.groupId}`
+        isPreview
+          ? `${typeLabel} ${groupNum}${location ? ` | ${location}` : ""}${event.instructor ? ` | ${event.instructor}` : ""} — לחצו לבחור`
           : event.isCustom
             ? event.courseName
-            : `${event.courseName} - ${typeLabel}${location ? ` | ${location}` : ""}`
+            : `${event.courseName} - ${typeLabel} ${groupNum}${location ? ` | ${location}` : ""}`
       }
     >
-      {event.isPreview && (
-        <div className={cn(
-          "absolute top-0.5 left-0.5 px-1 py-0 rounded text-[0.55rem] font-bold",
-          "bg-white/30 dark:bg-black/30",
-        )}>
-          {event.groupId.split("-")[0]}
-        </div>
-      )}
       {event.isCustom && !compact && (
         <Star className="absolute top-1 left-1 h-2.5 w-2.5 opacity-60" />
       )}
-      <div className={cn("font-semibold", compact && "text-[0.55rem]")}>
+
+      {/* Course name — always visible, scales down for narrow blocks */}
+      <div className={cn(
+        "font-bold leading-tight w-full break-words hyphens-auto",
+        compact ? "text-[0.55rem]" : "text-[0.65rem]",
+      )}>
         {event.courseName}
       </div>
+
+      {/* Metadata block: type+group, building, instructor */}
       {!event.isCustom && (
         <div className={cn(
-          "opacity-80 leading-snug",
-          compact ? "text-[0.5rem]" : "text-[0.6rem] mt-0.5",
+          "leading-tight w-full",
+          isPreview ? "font-medium" : "opacity-90",
+          compact ? "text-[0.5rem]" : "text-[0.58rem]",
         )}>
-          <div>{typeLabel} {event.groupId.split("-")[0]}</div>
+          <div>{typeLabel} {groupNum}</div>
           {location && <div>{location}</div>}
-          {!compact && event.instructor && <div className="opacity-85">{event.instructor}</div>}
+          {!compact && event.instructor && <div>{event.instructor}</div>}
         </div>
       )}
     </div>
