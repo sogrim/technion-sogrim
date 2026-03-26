@@ -68,8 +68,7 @@ export function useProviderUpdates(): number {
 
   const getSnapshot = useCallback(() => {
     if (!_apiProvider) return 0;
-    // Return cache size as a "version" — changes when new courses load
-    return _apiProvider.getAllCourses().filter((c) => c.name !== "").length;
+    return _apiProvider.version;
   }, []);
 
   return useSyncExternalStore(subscribe, getSnapshot);

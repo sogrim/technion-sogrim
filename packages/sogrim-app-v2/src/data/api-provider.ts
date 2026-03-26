@@ -245,6 +245,7 @@ export class ApiProvider implements CourseScheduleProvider {
   private year = "";
   private semesterCode = "";
   private indexLoading = false;
+  private _version = 0;
 
   /** Subscribe to data changes (triggers React re-renders). */
   onChange(listener: Listener): () => void {
@@ -254,7 +255,13 @@ export class ApiProvider implements CourseScheduleProvider {
     };
   }
 
+  /** Monotonically increasing version — changes on every notify. */
+  get version(): number {
+    return this._version;
+  }
+
   private notify() {
+    this._version++;
     for (const l of this.listeners) l();
   }
 
