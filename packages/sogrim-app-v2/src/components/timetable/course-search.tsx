@@ -4,7 +4,7 @@ import { getProvider } from "@/data/course-schedule-provider";
 import { useProviderUpdates, isProviderLoading } from "@/hooks/use-api-provider";
 import { LESSON_TYPE_NAMES, DAY_LABELS } from "@/lib/timetable-utils";
 import type { CourseSchedule, Day } from "@/types/timetable";
-import { Search, X, Plus, Clock, MapPin, SlidersHorizontal, RotateCcw, Loader2 } from "lucide-react";
+import { Search, X, Plus, Check, Clock, MapPin, SlidersHorizontal, RotateCcw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Filters {
@@ -37,6 +37,7 @@ export function CourseSearch() {
   const searchOpen = useTimetableStore((s) => s.searchOpen);
   const setSearchOpen = useTimetableStore((s) => s.setSearchOpen);
   const addCourse = useTimetableStore((s) => s.addCourse);
+  const removeCourse = useTimetableStore((s) => s.removeCourse);
   const drafts = useTimetableStore((s) => s.drafts);
   const activeDraftId = useTimetableStore((s) => s.activeDraftId);
 
@@ -323,7 +324,13 @@ export function CourseSearch() {
               key={course.id}
               course={course}
               isSelected={selectedIds.has(course.id)}
-              onAdd={() => addCourse(course.id)}
+              onToggle={() => {
+                if (selectedIds.has(course.id)) {
+                  removeCourse(course.id);
+                } else {
+                  addCourse(course.id);
+                }
+              }}
             />
           ))}
 
@@ -341,11 +348,11 @@ export function CourseSearch() {
 function CourseSearchResult({
   course,
   isSelected,
-  onAdd,
+  onToggle,
 }: {
   course: CourseSchedule;
   isSelected: boolean;
-  onAdd: () => void;
+  onToggle: () => void;
 }) {
   const scheduleSummary = useMemo(() => {
     const types = new Set(course.groups.map((g) => g.type));
@@ -360,42 +367,50 @@ function CourseSearchResult({
   return (
     <button
       type="button"
-      onClick={isSelected ? undefined : onAdd}
-      disabled={isSelected}
+      onClick={onToggle}
       className={cn(
         "w-full flex items-center gap-3 px-4 py-3 border-b border-border/50 text-start",
-        "hover:bg-accent/50 transition-colors cursor-pointer",
-        isSelected && "opacity-50 cursor-not-allowed",
+        "transition-colors cursor-pointer",
+        isSelected
+          ? "bg-primary/5 hover:bg-primary/10"
+          : "hover:bg-accent/50",
       )}
     >
+      {/* Toggle icon */}
+      <div
+        className={cn(
+          "shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all",
+          isSelected
+            ? "bg-primary text-primary-foreground"
+            : "border-2 border-border text-muted-foreground hover:border-primary hover:text-primary",
+        )}
+      >
+        {isSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+      </div>
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium truncate">{course.name}</span>
+          <span className={cn("text-sm font-medium truncate", isSelected && "text-primary")}>
+            {course.name}
+          </span>
           <span className="text-xs text-muted-foreground shrink-0">{course.id}</span>
         </div>
         <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
           <span>{course.credit} נק״ז</span>
-          <span className="flex items-center gap-0.5">
-            <Clock className="h-3 w-3" />
-            {scheduleSummary}
-          </span>
+          {scheduleSummary && (
+            <span className="flex items-center gap-0.5">
+              <Clock className="h-3 w-3" />
+              {scheduleSummary}
+            </span>
+          )}
           {firstLesson?.building && (
             <span className="flex items-center gap-0.5">
               <MapPin className="h-3 w-3" />
               {firstLesson.building}
             </span>
           )}
-          <span>{groupCount} קבוצות</span>
+          {groupCount > 0 && <span>{groupCount} קבוצות</span>}
         </div>
-      </div>
-
-      <div
-        className={cn(
-          "shrink-0 p-1.5 rounded-lg transition-colors",
-          isSelected ? "text-muted-foreground" : "text-primary",
-        )}
-      >
-        <Plus className="h-5 w-5" />
       </div>
     </button>
   );

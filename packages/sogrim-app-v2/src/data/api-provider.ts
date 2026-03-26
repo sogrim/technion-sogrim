@@ -372,10 +372,10 @@ export class ApiProvider implements CourseScheduleProvider {
 
   getCourse(courseId: string): CourseSchedule | undefined {
     if (this.cache.has(courseId)) return this.cache.get(courseId);
-    this.fetchAndCache(courseId);
-    // Return skeleton from index if available
+    // Only fetch if the course exists in the current semester's index
     const entry = this.index.find((c) => c.id === courseId);
     if (entry) {
+      this.fetchAndCache(courseId);
       return { id: entry.id, name: entry.name, credit: entry.credits, faculty: entry.faculty, groups: [] };
     }
     return undefined;
