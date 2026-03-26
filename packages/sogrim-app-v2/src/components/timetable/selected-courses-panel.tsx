@@ -22,12 +22,16 @@ export function SelectedCoursesPanel() {
 
   const coursesWithData = useMemo(() => {
     if (!draft) return [];
-    const provider = getProvider();
-    return draft.courses.map((sel, index) => ({
-      selection: sel,
-      course: provider.getCourse(sel.courseId),
-      colorIndex: index,
-    }));
+    try {
+      const provider = getProvider();
+      return draft.courses.map((sel, index) => ({
+        selection: sel,
+        course: provider.getCourse(sel.courseId),
+        colorIndex: index,
+      }));
+    } catch {
+      return [];
+    }
   }, [draft]);
 
   const totalCredits = coursesWithData.reduce(
