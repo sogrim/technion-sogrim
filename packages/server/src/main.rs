@@ -5,21 +5,24 @@ use actix_web::{
 };
 use actix_web_lab::middleware::from_fn;
 use db::Db;
+use disk_cache::DiskCourseCache;
 use error::AppError;
 use middleware::{auth, cors, logger};
 use resources::user::Permissions;
-use sap::CachedSapClient;
-use std::sync::Arc;
+use std::path::PathBuf;
 
 mod api;
 mod config;
 mod consts;
 mod core;
 mod db;
+mod disk_cache;
 mod error;
 mod middleware;
 mod resources;
-mod sap;
+
+const CACHE_DIR_ENV: &str = "SOGRIM_CACHE_DIR";
+const DEFAULT_CACHE_DIR: &str = "/home/opc/cache";
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -29,45 +32,32 @@ async fn main() -> std::io::Result<()> {
     // Initialize DB client
     let db = Db::new().await;
 
-    // Initialize SAP client (shared across all workers + prewarm thread)
-    let sap_inner = Arc::new(CachedSapClient::new());
+    // Initialize disk-backed course cache
+    let cache_dir = std::env::var(CACHE_DIR_ENV).unwrap_or_else(|_| DEFAULT_CACHE_DIR.to_string());
+    let course_cache = web::Data::new(DiskCourseCache::new(PathBuf::from(&cache_dir)));
 
-    // Phase 1: prewarm semesters + course IDs (fast, <2s)
-    if let Err(e) = sap_inner.prewarm_essential().await {
-        log::warn!(target: "sogrim_server", "SAP prewarm phase 1 failed: {e}");
-    }
-
-    // Phase 2: background prewarm all courses (slow, ~10-20 min)
-    let sap_bg = Arc::clone(&sap_inner);
-    tokio::spawn(async move {
-        sap_bg.prewarm_courses().await;
-    });
-
-    let sap = web::Data::from(sap_inner);
+    // Load all disk cache into memory on startup
+    course_cache.load_all().await;
 
     // Start the server
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
-            .app_data(sap.clone())
+            .app_data(course_cache.clone())
             .app_data(auth::JwtDecoder::new())
             .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
             .service(web::resource("/healthcheck").route(web::get().to(
-                |db: web::Data<Db>, sap: web::Data<CachedSapClient>| async move {
+                |db: web::Data<Db>| async move {
                     db.ping().await?;
-                    Result::<HttpResponse, AppError>::Ok(
-                        HttpResponse::Ok().json(sap.warmup_stats()),
-                    )
+                    Result::<HttpResponse, AppError>::Ok(HttpResponse::Ok().finish())
                 },
             )))
             .service(api::courses::get_semesters)
-            .service(api::courses::get_course_ids)
             .service(api::courses::get_course_index)
             .service(api::courses::get_course)
             .service(
                 // Global authentication scope
-                // All routes under this scope will be authenticated and authorized
                 scope("")
                     .wrap(from_fn(auth::authenticate))
                     .service(

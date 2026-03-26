@@ -16,7 +16,8 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-const BASE_URL: &str = "https://portalex.technion.ac.il/sap/opu/odata/sap/Z_CM_EV_CDIR_DATA_SRV";
+const SAP_BASE_URL: &str =
+    "https://portalex.technion.ac.il/sap/opu/odata/sap/Z_CM_EV_CDIR_DATA_SRV";
 const BATCH_BOUNDARY: &str = "batch_1d12-afbf-e3c7";
 const CACHE_TTL_HOURS: u64 = 24;
 const BATCH_SIZE: usize = 30;
@@ -90,7 +91,7 @@ pub struct Semester {
     pub end_date: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CourseDetails {
     pub id: String,
     pub name: String,
@@ -108,7 +109,7 @@ pub struct CourseDetails {
     pub schedule: Vec<ScheduleGroup>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Exam {
     pub category: String,
     pub category_code: String,
@@ -117,14 +118,14 @@ pub struct Exam {
     pub end_time: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Relation {
     pub course_id: String,
     #[serde(rename = "type")]
     pub relation_type: RelationType,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum RelationType {
     NoAdditionalCredit,
@@ -142,7 +143,7 @@ pub struct PrereqToken {
     pub bracket: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Person {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -157,13 +158,13 @@ pub struct OfferedPeriod {
     pub year_name: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduleGroup {
     pub group: String,
     pub events: Vec<ScheduleEvent>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduleEvent {
     /// e.g. "הרצאה", "תרגול", "מעבדה"
     pub kind: String,
@@ -298,7 +299,7 @@ struct RawPerson {
 // ---------------------------------------------------------------------------
 
 /// Lightweight course entry for the search index.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CourseIndexEntry {
     pub id: String,
     pub name: String,
@@ -306,9 +307,9 @@ pub struct CourseIndexEntry {
     pub credits: f32,
 }
 
-/// Prewarm progress, exposed via healthcheck.
+/// Fetch progress, exposed via healthcheck.
 #[derive(Debug, Clone, Serialize)]
-pub struct WarmupStats {
+pub struct FetchStats {
     pub total_courses: usize,
     pub warmed_courses: usize,
     pub percent: f32,
@@ -318,22 +319,38 @@ pub struct WarmupStats {
 /// SAP client with in-memory caching at every level.
 pub struct CachedSapClient {
     http: Client,
+    proxy_url: Option<String>,
     courses: Cache<String, Arc<CourseDetails>>,
     semesters: Cache<String, Arc<Vec<Semester>>>,
     course_ids: Cache<String, Arc<Vec<String>>>,
     course_index: Cache<String, Arc<Vec<CourseIndexEntry>>>,
-    warmup_total: AtomicUsize,
-    warmup_done: AtomicUsize,
+    fetch_total: AtomicUsize,
+    fetch_done: AtomicUsize,
+    /// Total bytes sent to SAP (request bodies)
+    bytes_sent: AtomicUsize,
+    /// Total bytes received from SAP (response bodies)
+    bytes_received: AtomicUsize,
+}
+
+impl Default for CachedSapClient {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CachedSapClient {
     pub fn new() -> Self {
+        Self::with_proxy_url(None)
+    }
+
+    pub fn with_proxy_url(proxy_url: Option<String>) -> Self {
         let ttl = Duration::from_secs(CACHE_TTL_HOURS * 3600);
         Self {
             http: Client::builder()
-                .timeout(Duration::from_secs(30))
+                .timeout(Duration::from_secs(60))
                 .build()
                 .expect("failed to build HTTP client"),
+            proxy_url,
             courses: Cache::builder()
                 .time_to_live(ttl)
                 .max_capacity(5000)
@@ -341,20 +358,38 @@ impl CachedSapClient {
             semesters: Cache::builder().time_to_live(ttl).max_capacity(1).build(),
             course_ids: Cache::builder().time_to_live(ttl).max_capacity(20).build(),
             course_index: Cache::builder().time_to_live(ttl).max_capacity(20).build(),
-            warmup_total: AtomicUsize::new(0),
-            warmup_done: AtomicUsize::new(0),
+            fetch_total: AtomicUsize::new(0),
+            fetch_done: AtomicUsize::new(0),
+            bytes_sent: AtomicUsize::new(0),
+            bytes_received: AtomicUsize::new(0),
         }
     }
 
-    pub fn warmup_stats(&self) -> WarmupStats {
-        let total = self.warmup_total.load(Ordering::Relaxed);
-        let done = self.warmup_done.load(Ordering::Relaxed);
+    /// (total, done) course counts from the current prewarm operation.
+    pub fn fetch_progress_counts(&self) -> (usize, usize) {
+        (
+            self.fetch_total.load(Ordering::Relaxed),
+            self.fetch_done.load(Ordering::Relaxed),
+        )
+    }
+
+    /// Total bytes transferred to/from SAP.
+    pub fn transfer_stats(&self) -> (usize, usize) {
+        (
+            self.bytes_sent.load(Ordering::Relaxed),
+            self.bytes_received.load(Ordering::Relaxed),
+        )
+    }
+
+    pub fn fetch_stats(&self) -> FetchStats {
+        let total = self.fetch_total.load(Ordering::Relaxed);
+        let done = self.fetch_done.load(Ordering::Relaxed);
         let percent = if total == 0 {
             0.0
         } else {
             (done as f32 / total as f32) * 100.0
         };
-        WarmupStats {
+        FetchStats {
             total_courses: total,
             warmed_courses: done,
             percent,
@@ -426,16 +461,16 @@ impl CachedSapClient {
 
     /// Phase 1: fetch semesters + course IDs for the current semester.
     /// Call this before the server starts accepting requests.
-    pub async fn prewarm_essential(&self) -> Result<(), SapError> {
+    pub async fn fetch_essential(&self) -> Result<(), SapError> {
         let semesters = self.get_semesters().await?;
         if let Some(current) = semesters.first() {
             let ids = self
                 .get_course_ids(&current.year, &current.semester)
                 .await?;
-            self.warmup_total.store(ids.len(), Ordering::Relaxed);
+            self.fetch_total.store(ids.len(), Ordering::Relaxed);
             log::info!(
                 target: "sogrim_server",
-                "Prewarmed semesters + {} course IDs for {}/{}",
+                "Fetched semesters + {} course IDs for {}/{}",
                 ids.len(),
                 current.year,
                 current.semester
@@ -448,11 +483,11 @@ impl CachedSapClient {
     /// Packs ~30 course detail queries into a single HTTP request,
     /// then ~30 schedule queries into another. ~40 HTTP requests total
     /// instead of ~2400.
-    pub async fn prewarm_courses(self: &Arc<Self>) {
+    pub async fn fetch_all_courses(self: &Arc<Self>) {
         let semesters = match self.get_semesters().await {
             Ok(s) => s,
             Err(e) => {
-                log::error!(target: "sogrim_server", "Prewarm: failed to get semesters: {e}");
+                log::error!(target: "sogrim_server", "Fetch: failed to get semesters: {e}");
                 return;
             }
         };
@@ -462,7 +497,7 @@ impl CachedSapClient {
         let ids = match self.get_course_ids(&current.year, &current.semester).await {
             Ok(ids) => ids,
             Err(e) => {
-                log::error!(target: "sogrim_server", "Prewarm: failed to get course IDs: {e}");
+                log::error!(target: "sogrim_server", "Fetch: failed to get course IDs: {e}");
                 return;
             }
         };
@@ -515,7 +550,7 @@ impl CachedSapClient {
                             Err(e) => {
                                 if attempt == MAX_RETRIES {
                                     log::warn!(target: "sogrim_server",
-                                        "Prewarm: batch failed after {} retries: {e}", MAX_RETRIES
+                                        "Fetch: batch failed after {} retries: {e}", MAX_RETRIES
                                     );
                                 } else {
                                     sleep(backoff).await;
@@ -540,11 +575,11 @@ impl CachedSapClient {
                             Ok(details) => {
                                 let key = format!("{year}/{semester}/{course_number}");
                                 client.courses.insert(key, Arc::new(details)).await;
-                                client.warmup_done.fetch_add(1, Ordering::Relaxed);
+                                client.fetch_done.fetch_add(1, Ordering::Relaxed);
                             }
                             Err(e) => {
                                 log::warn!(target: "sogrim_server",
-                                    "Prewarm: failed to parse {course_number}: {e}"
+                                    "Fetch: failed to parse {course_number}: {e}"
                                 );
                             }
                         }
@@ -556,10 +591,128 @@ impl CachedSapClient {
         for handle in handles {
             let _ = handle.await;
         }
-        log::info!(target: "sogrim_server", "Prewarm complete: all courses cached");
+        log::info!(target: "sogrim_server", "Fetch complete: all courses cached");
     }
 
-    /// Get course details, serving from cache if available.
+    /// Batch-fetch all courses for a specific year/semester into the cache.
+    /// Unlike `fetch_all_courses` (which always targets the first/current semester),
+    /// this method fetches the exact semester requested. Used by the fetcher CLI.
+    pub async fn fetch_semester(self: &Arc<Self>, year: &str, semester: &str) {
+        self.fetch_semester_with_concurrency(year, semester, PREWARM_CONCURRENCY)
+            .await;
+    }
+
+    pub async fn fetch_semester_with_concurrency(
+        self: &Arc<Self>,
+        year: &str,
+        semester: &str,
+        concurrency: usize,
+    ) {
+        let ids = match self.get_course_ids(year, semester).await {
+            Ok(ids) => ids,
+            Err(e) => {
+                log::error!(target: "sogrim_server", "fetch_semester: failed to get course IDs: {e}");
+                return;
+            }
+        };
+
+        self.fetch_total.fetch_add(ids.len(), Ordering::Relaxed);
+
+        let semaphore = Arc::new(Semaphore::new(concurrency));
+        let chunks: Vec<Vec<String>> = ids.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
+
+        let handles: Vec<_> = chunks
+            .into_iter()
+            .map(|chunk| {
+                let client = Arc::clone(self);
+                let sem = Arc::clone(&semaphore);
+                let year = year.to_string();
+                let semester = semester.to_string();
+                tokio::spawn(async move {
+                    let _permit = sem.acquire().await.unwrap();
+
+                    let sap_ids: Vec<String> =
+                        chunk.iter().map(|id| course_number_to_sap_id(id)).collect();
+
+                    let detail_queries: Vec<String> = sap_ids
+                        .iter()
+                        .map(|sap_id| Self::detail_query(&year, &semester, sap_id))
+                        .collect();
+                    let sched_persons_queries: Vec<String> = sap_ids
+                        .iter()
+                        .map(|sap_id| Self::schedule_query_persons(&year, &semester, sap_id))
+                        .collect();
+                    let sched_times_queries: Vec<String> = sap_ids
+                        .iter()
+                        .map(|sap_id| Self::schedule_query_times(&year, &semester, sap_id))
+                        .collect();
+
+                    let mut backoff = Duration::from_millis(INITIAL_BACKOFF_MS);
+                    let mut results = None;
+                    for attempt in 0..=MAX_RETRIES {
+                        match tokio::try_join!(
+                            client.batch_get_multi(&detail_queries),
+                            client.batch_get_multi(&sched_persons_queries),
+                            client.batch_get_multi(&sched_times_queries),
+                        ) {
+                            Ok(r) => {
+                                results = Some(r);
+                                break;
+                            }
+                            Err(e) => {
+                                if attempt == MAX_RETRIES {
+                                    log::warn!(target: "sogrim_server",
+                                        "fetch_semester: batch failed after {} retries: {e}", MAX_RETRIES
+                                    );
+                                } else {
+                                    sleep(backoff).await;
+                                    backoff *= 2;
+                                }
+                            }
+                        }
+                    }
+
+                    let Some((detail_results, sched_persons_results, sched_times_results)) =
+                        results
+                    else {
+                        return;
+                    };
+
+                    for (i, course_number) in chunk.iter().enumerate() {
+                        match client.assemble_course(
+                            &detail_results[i],
+                            &sched_persons_results[i],
+                            &sched_times_results[i],
+                        ) {
+                            Ok(details) => {
+                                let key = format!("{year}/{semester}/{course_number}");
+                                client.courses.insert(key, Arc::new(details)).await;
+                                client.fetch_done.fetch_add(1, Ordering::Relaxed);
+                            }
+                            Err(e) => {
+                                log::warn!(target: "sogrim_server",
+                                    "fetch_semester: failed to parse {course_number}: {e}"
+                                );
+                            }
+                        }
+                    }
+                })
+            })
+            .collect();
+
+        for handle in handles {
+            let _ = handle.await;
+        }
+
+        let stats = self.fetch_stats();
+        log::info!(
+            target: "sogrim_server",
+            "fetch_semester {year}/{semester} complete: {}/{} courses cached",
+            stats.warmed_courses,
+            stats.total_courses,
+        );
+    }
+
     pub async fn get_course_details(
         &self,
         year: &str,
@@ -844,7 +997,7 @@ impl CachedSapClient {
     /// Send a single GET query via the OData $batch endpoint.
     /// This is the proven format that SAP accepts.
     async fn batch_get(&self, query: &str) -> Result<Value, SapError> {
-        let url = format!("{BASE_URL}/$batch?sap-client=700");
+        let url = format!("{SAP_BASE_URL}/$batch?sap-client=700");
         let body = format!(
             "\r\n--{BATCH_BOUNDARY}\r\n\
              Content-Type: application/http\r\n\
@@ -863,8 +1016,11 @@ impl CachedSapClient {
              --{BATCH_BOUNDARY}--\r\n"
         );
 
+        let body_len = body.len();
         let resp = self.send_batch_post(&url, body).await?;
         let text = resp.text().await?;
+        self.bytes_sent.fetch_add(body_len, Ordering::Relaxed);
+        self.bytes_received.fetch_add(text.len(), Ordering::Relaxed);
 
         // Single-GET response: split on double newline, 3rd chunk, first line = JSON
         let normalized = text.replace("\r\n", "\n");
@@ -885,7 +1041,7 @@ impl CachedSapClient {
     /// Send multiple GET queries packed into a single OData $batch POST.
     /// Returns one `Value` per query, in the same order.
     async fn batch_get_multi(&self, queries: &[String]) -> Result<Vec<Value>, SapError> {
-        let url = format!("{BASE_URL}/$batch?sap-client=700");
+        let url = format!("{SAP_BASE_URL}/$batch?sap-client=700");
 
         // Build body using the same indented format that works for single GETs
         let mut body = String::new();
@@ -909,8 +1065,11 @@ impl CachedSapClient {
         }
         body.push_str(&format!("--{BATCH_BOUNDARY}--\r\n"));
 
+        let body_len = body.len();
         let resp = self.send_batch_post(&url, body).await?;
         let text = resp.text().await?;
+        self.bytes_sent.fetch_add(body_len, Ordering::Relaxed);
+        self.bytes_received.fetch_add(text.len(), Ordering::Relaxed);
         Self::parse_multi_batch_response(&text, queries.len())
     }
 
@@ -919,27 +1078,38 @@ impl CachedSapClient {
         url: &str,
         body: String,
     ) -> Result<reqwest::Response, SapError> {
-        let resp = self
+        let target_url = if let Some(ref proxy) = self.proxy_url {
+            format!("{proxy}/?url={}", urlencoding::encode(url))
+        } else {
+            url.to_string()
+        };
+
+        let mut req = self
             .http
-            .post(url)
+            .post(&target_url)
             .header(
                 "Content-Type",
                 format!("multipart/mixed;boundary={BATCH_BOUNDARY}"),
             )
-            .header("Accept", "multipart/mixed")
-            .header("Origin", "https://portalex.technion.ac.il")
-            .header("Referer", "https://portalex.technion.ac.il/ovv/")
-            .header(
-                "User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            )
-            .header("X-Requested-With", "X")
-            .header("DataServiceVersion", "2.0")
-            .header("MaxDataServiceVersion", "2.0")
-            .header("Accept-Language", "he")
-            .body(body)
-            .send()
-            .await?;
+            .header("Accept", "multipart/mixed");
+
+        // When going direct (no proxy), we need SAP-specific headers.
+        // The Worker adds these itself.
+        if self.proxy_url.is_none() {
+            req = req
+                .header("Origin", "https://portalex.technion.ac.il")
+                .header("Referer", "https://portalex.technion.ac.il/ovv/")
+                .header(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                )
+                .header("X-Requested-With", "X")
+                .header("DataServiceVersion", "2.0")
+                .header("MaxDataServiceVersion", "2.0")
+                .header("Accept-Language", "he");
+        }
+
+        let resp = req.body(body).send().await?;
 
         let status = resp.status().as_u16();
         if status != 202 {
@@ -1339,5 +1509,135 @@ mod tests {
         assert!(json.contains("234114"));
         assert!(json.contains("מבוא למדעי המחשב"));
         println!("{json}");
+    }
+
+    #[actix_rt::test]
+    #[ignore]
+    async fn test_investigate_all_semesters_with_dates() {
+        let c = client();
+        // Fetch ALL semesters with full date info
+        let query = "SemesterSet?sap-client=700&$select=PiqYear,PiqSession,Begda,Endda".to_string();
+        let value = c.batch_get(&query).await.unwrap();
+        let results = CachedSapClient::extract_results(value).unwrap();
+
+        println!(
+            "\n{:<6} {:<10} {:<14} {:<14} Analysis",
+            "Year", "Code", "Start", "End"
+        );
+        println!("{}", "-".repeat(70));
+
+        for v in &results {
+            let year = v["PiqYear"].as_str().unwrap_or("?");
+            let code = v["PiqSession"].as_str().unwrap_or("?");
+            let begda = v["Begda"].as_str().unwrap_or("?");
+            let endda = v["Endda"].as_str().unwrap_or("?");
+
+            let start = parse_sap_date_str(begda).unwrap_or_else(|| begda.to_string());
+            let end = parse_sap_date_str(endda).unwrap_or_else(|| endda.to_string());
+
+            // Analyze: what month does it start?
+            let analysis = match code {
+                "200" => "winter".to_string(),
+                "201" => "spring".to_string(),
+                "202" => "summer".to_string(),
+                _ => {
+                    // Parse start month to guess what this is
+                    if let Some(month_str) = start.split('-').nth(1) {
+                        let month: u32 = month_str.parse().unwrap_or(0);
+                        match month {
+                            10 | 11 => "??? (starts Oct/Nov = winter-like)".to_string(),
+                            3 | 4 => "??? (starts Mar/Apr = spring-like)".to_string(),
+                            7..=9 => "??? (starts Jul/Aug/Sep = SUMMER-LIKE!)".to_string(),
+                            _ => format!("??? (starts month {month})"),
+                        }
+                    } else {
+                        "???".to_string()
+                    }
+                }
+            };
+
+            println!("{year:<6} {code:<10} {start:<14} {end:<14} {analysis}");
+        }
+
+        // Also count courses in each non-standard semester
+        println!("\n--- Course counts for non-200/201/202 semesters ---");
+        for v in &results {
+            let year = v["PiqYear"].as_str().unwrap_or("?");
+            let code = v["PiqSession"].as_str().unwrap_or("?");
+            if matches!(code, "200" | "201" | "202") {
+                continue;
+            }
+            match c.get_course_ids(year, code).await {
+                Ok(ids) => println!("  {year}/{code}: {} courses", ids.len()),
+                Err(e) => println!("  {year}/{code}: error: {e}"),
+            }
+        }
+    }
+
+    #[actix_rt::test]
+    #[ignore]
+    async fn test_measure_bandwidth_full_semester() {
+        let c = Arc::new(CachedSapClient::new());
+
+        // Phase 1: semesters + course index
+        let semesters = c.get_semesters().await.unwrap();
+        let latest = &semesters[0];
+        let index = c
+            .get_course_index(&latest.year, &latest.semester)
+            .await
+            .unwrap();
+
+        let (sent1, recv1) = c.transfer_stats();
+        println!("=== After semesters + index ===");
+        println!("  Courses in semester: {}", index.len());
+        println!(
+            "  Bytes sent:     {:>10} ({:.1} KB)",
+            sent1,
+            sent1 as f64 / 1024.0
+        );
+        println!(
+            "  Bytes received: {:>10} ({:.1} KB)",
+            recv1,
+            recv1 as f64 / 1024.0
+        );
+        println!(
+            "  Total:          {:>10} ({:.1} KB)",
+            sent1 + recv1,
+            (sent1 + recv1) as f64 / 1024.0
+        );
+
+        // Phase 2: prewarm ALL courses
+        c.fetch_total.store(index.len(), Ordering::Relaxed);
+        c.fetch_all_courses().await;
+
+        let (sent2, recv2) = c.transfer_stats();
+        let warm = c.fetch_done.load(Ordering::Relaxed);
+        println!("\n=== After full prewarm ===");
+        println!("  Courses warmed:  {}/{}", warm, index.len());
+        println!(
+            "  Bytes sent:     {:>10} ({:.2} MB)",
+            sent2,
+            sent2 as f64 / 1_048_576.0
+        );
+        println!(
+            "  Bytes received: {:>10} ({:.2} MB)",
+            recv2,
+            recv2 as f64 / 1_048_576.0
+        );
+        println!(
+            "  Total transfer: {:>10} ({:.2} MB)",
+            sent2 + recv2,
+            (sent2 + recv2) as f64 / 1_048_576.0
+        );
+        println!("\n=== Cost estimate (DataImpulse $1/GB) ===");
+        let total_gb = (sent2 + recv2) as f64 / 1_073_741_824.0;
+        println!(
+            "  Per prewarm:  ${:.4} ({:.2} MB)",
+            total_gb,
+            (sent2 + recv2) as f64 / 1_048_576.0
+        );
+        println!("  Daily (1x):   ${total_gb:.4}/day");
+        println!("  Monthly (30x): ${:.2}/month", total_gb * 30.0);
+        println!("  Yearly (365x): ${:.2}/year", total_gb * 365.0);
     }
 }
