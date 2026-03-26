@@ -4,7 +4,8 @@ import {
   DAY_NAMES,
   DAYS,
   getTimeLabels,
-  TOTAL_SLOTS,
+  totalSlots,
+  computeVisibleRange,
   timeToRow,
   timeSpanRows,
 } from "@/lib/timetable-utils";
@@ -18,7 +19,9 @@ interface WeekGridProps {
 }
 
 export function WeekGrid({ events, compact = false }: WeekGridProps) {
-  const timeLabels = useMemo(() => getTimeLabels(), []);
+  const { startHour, endHour } = useMemo(() => computeVisibleRange(events), [events]);
+  const slotCount = totalSlots(startHour, endHour);
+  const timeLabels = useMemo(() => getTimeLabels(startHour, endHour), [startHour, endHour]);
   const [customDialog, setCustomDialog] = useState<{
     open: boolean;
     day: Day;
@@ -63,7 +66,7 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
       open: true,
       day: dragState.day,
       startRow,
-      endRow: Math.min(endRow, TOTAL_SLOTS),
+      endRow: Math.min(endRow, slotCount),
     });
     setDragState(null);
   }, [dragState]);
@@ -71,7 +74,7 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
   const handleCustomEventClick = useCallback((eventId: string) => {
     const evt = events.find((e) => e.customEventId === eventId);
     if (!evt) return;
-    const row = timeToRow(evt.startTime);
+    const row = timeToRow(evt.startTime, startHour);
     setCustomDialog({
       open: true,
       day: evt.day,
@@ -95,7 +98,7 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
             gridTemplateColumns: compact
               ? "36px repeat(5, 1fr)"
               : "56px repeat(5, 1fr)",
-            gridTemplateRows: `auto repeat(${TOTAL_SLOTS}, minmax(${compact ? "16px" : "3.1vh"}, 1fr))`,
+            gridTemplateRows: `auto repeat(${slotCount}, minmax(${compact ? "2.5vh" : "4.2vh"}, 1fr))`,
           }}
           dir="rtl"
         >
@@ -139,6 +142,8 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
               day={day}
               events={eventsByDay.get(day) ?? []}
               compact={compact}
+              slotCount={slotCount}
+              startHour={startHour}
               onDragStart={handleDragStart}
               onDragMove={handleDragMove}
               onDragEnd={handleDragEnd}
@@ -166,6 +171,8 @@ interface DayColumnProps {
   day: Day;
   events: TimetableEvent[];
   compact: boolean;
+  slotCount: number;
+  startHour: number;
   onDragStart: (day: Day, row: number) => void;
   onDragMove: (day: Day, row: number) => void;
   onDragEnd: () => void;
@@ -177,6 +184,8 @@ function DayColumn({
   day,
   events,
   compact,
+  slotCount,
+  startHour,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -190,7 +199,7 @@ function DayColumn({
     if (!colRef.current) return 0;
     const rect = colRef.current.getBoundingClientRect();
     const y = clientY - rect.top;
-    return Math.max(0, Math.min(Math.floor((y / rect.height) * TOTAL_SLOTS), TOTAL_SLOTS - 1));
+    return Math.max(0, Math.min(Math.floor((y / rect.height) * slotCount), slotCount - 1));
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -214,8 +223,8 @@ function DayColumn({
     const top = Math.min(dragState.startRow, dragState.currentRow);
     const bottom = Math.max(dragState.startRow, dragState.currentRow) + 1;
     return {
-      top: `${(top / TOTAL_SLOTS) * 100}%`,
-      height: `${((bottom - top) / TOTAL_SLOTS) * 100}%`,
+      top: `${(top / slotCount) * 100}%`,
+      height: `${((bottom - top) / slotCount) * 100}%`,
     };
   })() : null;
 
@@ -225,7 +234,7 @@ function DayColumn({
       className="relative border-s border-border/30 cursor-cell"
       style={{
         gridColumn: dayCol,
-        gridRow: `2 / span ${TOTAL_SLOTS}`,
+        gridRow: `2 / span ${slotCount}`,
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -233,11 +242,11 @@ function DayColumn({
       onMouseLeave={handleMouseUp}
     >
       {/* Background grid lines */}
-      {Array.from({ length: TOTAL_SLOTS / 2 }, (_, i) => (
+      {Array.from({ length: slotCount / 2 }, (_, i) => (
         <div
           key={i}
           className="absolute inset-x-0 border-t border-border/30 pointer-events-none"
-          style={{ top: `${(i * 2 / TOTAL_SLOTS) * 100}%` }}
+          style={{ top: `${(i * 2 / slotCount) * 100}%` }}
         />
       ))}
 
@@ -251,10 +260,10 @@ function DayColumn({
 
       {/* Course blocks — absolutely positioned */}
       {events.map((event) => {
-        const row = timeToRow(event.startTime);
+        const row = timeToRow(event.startTime, startHour);
         const span = timeSpanRows(event.startTime, event.endTime);
-        const topPct = (row / TOTAL_SLOTS) * 100;
-        const heightPct = (span / TOTAL_SLOTS) * 100;
+        const topPct = (row / slotCount) * 100;
+        const heightPct = (span / slotCount) * 100;
 
         return (
           <div

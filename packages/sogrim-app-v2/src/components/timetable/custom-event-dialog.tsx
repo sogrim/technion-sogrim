@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { Day } from "@/types/timetable";
 import { useTimetableStore } from "@/stores/timetable-store";
-import { DAY_NAMES, formatTime, START_HOUR, SLOT_MINUTES } from "@/lib/timetable-utils";
+import { DAY_NAMES, formatTime, DEFAULT_START_HOUR, MAX_END_HOUR, SLOT_MINUTES } from "@/lib/timetable-utils";
 import { cn } from "@/lib/utils";
 import { X, Clock, Pencil } from "lucide-react";
 
@@ -43,13 +43,13 @@ export function CustomEventDialog({
   const updateCustomEvent = useTimetableStore((s) => s.updateCustomEvent);
   const removeCustomEvent = useTimetableStore((s) => s.removeCustomEvent);
 
-  const startMinutes = START_HOUR * 60 + startRow * SLOT_MINUTES;
+  const startMinutes = DEFAULT_START_HOUR * 60 + startRow * SLOT_MINUTES;
   // If endRow provided (from drag), calculate duration from it. Otherwise use duration buttons.
   const effectiveEndMinutes = endRow != null
-    ? START_HOUR * 60 + endRow * SLOT_MINUTES
+    ? DEFAULT_START_HOUR * 60 + endRow * SLOT_MINUTES
     : startMinutes + duration * 60;
   const startTime = formatTime(startMinutes);
-  const endTime = formatTime(Math.min(effectiveEndMinutes, 20 * 60));
+  const endTime = formatTime(Math.min(effectiveEndMinutes, MAX_END_HOUR * 60));
 
   const hasDragRange = endRow != null;
 

@@ -35,10 +35,7 @@ export function TimetableToolbar({ events }: TimetableToolbarProps) {
             ) : null}
           </div>
 
-          {/* View toggle — mobile only */}
-          <div className="md:hidden">
-            <ViewToggle />
-          </div>
+          <ViewToggle />
 
           <button
             onClick={() => setSearchOpen(true)}

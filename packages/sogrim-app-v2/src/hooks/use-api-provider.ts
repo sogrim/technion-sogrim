@@ -32,7 +32,7 @@ export function useApiProvider(): { ready: boolean; error: string | null } {
           setProvider(provider);
 
           // Load saved timetable from backend, then fall back to latest semester
-          await loadTimetableFromBackend();
+          await loadTimetableFromBackend(provider);
           const state = useTimetableStore.getState();
           if (!state.currentSemester) {
             const semesters = provider.getSemesters();
