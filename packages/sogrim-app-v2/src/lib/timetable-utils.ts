@@ -29,27 +29,44 @@ export const LESSON_TYPE_NAMES: Record<LessonType, string> = {
 export const DEFAULT_START_HOUR = 8;
 export const DEFAULT_END_HOUR = 18; // Show up to 17:30 by default
 export const MIN_START_HOUR = 7;    // Can shrink down to 07:00
-export const MAX_END_HOUR = 23;     // Can expand up to 22:30
+export const MAX_END_HOUR = 24;     // Can expand up to midnight
 export const SLOT_MINUTES = 30;
 export const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
 
-/** Compute visible start and end hours based on events. */
+/** Compute visible start and end hours based on events.
+ *  When there are no events, shows the default range (08:00-18:00).
+ *  When there are events, fits to span from 1 hour before the earliest
+ *  event to the hour after the latest event, with a minimum 10-hour window. */
 export function computeVisibleRange(events: { startTime: string; endTime: string }[]): {
   startHour: number;
   endHour: number;
 } {
-  let earliest = DEFAULT_START_HOUR * 60;
-  let latest = DEFAULT_END_HOUR * 60;
+  if (events.length === 0) {
+    return { startHour: DEFAULT_START_HOUR, endHour: DEFAULT_END_HOUR };
+  }
+
+  let earliest = Infinity;
+  let latest = 0;
   for (const e of events) {
     const start = parseTime(e.startTime);
     const end = parseTime(e.endTime);
     if (start < earliest) earliest = start;
     if (end > latest) latest = end;
   }
-  return {
-    startHour: Math.max(Math.floor(earliest / 60), MIN_START_HOUR),
-    endHour: Math.min(Math.ceil(latest / 60), MAX_END_HOUR),
-  };
+
+  let startHour = Math.max(Math.floor(earliest / 60), MIN_START_HOUR);
+  // Round up so the grid always contains the full last event
+  let endHour = Math.min(Math.ceil(latest / 60), MAX_END_HOUR);
+
+  // Ensure a minimum window of 10 hours for visual consistency
+  const minWindow = 10;
+  if (endHour - startHour < minWindow) {
+    const mid = (startHour + endHour) / 2;
+    startHour = Math.max(Math.floor(mid - minWindow / 2), MIN_START_HOUR);
+    endHour = Math.min(startHour + minWindow, MAX_END_HOUR);
+  }
+
+  return { startHour, endHour };
 }
 
 /** Total slots for a given range */

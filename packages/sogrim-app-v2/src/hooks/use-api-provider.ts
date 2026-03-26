@@ -1,7 +1,6 @@
 import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 import { ApiProvider } from "@/data/api-provider";
 import { setProvider, getProvider } from "@/data/course-schedule-provider";
-import { useTimetableStore, loadTimetableFromBackend } from "@/stores/timetable-store";
 
 let _apiProvider: ApiProvider | null = null;
 let _initPromise: Promise<void> | null = null;
@@ -27,20 +26,9 @@ export function useApiProvider(): { ready: boolean; error: string | null } {
       const provider = new ApiProvider();
       _initPromise = provider
         .init()
-        .then(async () => {
+        .then(() => {
           _apiProvider = provider;
           setProvider(provider);
-
-          // Load saved timetable from backend, then fall back to latest semester
-          await loadTimetableFromBackend(provider);
-          const state = useTimetableStore.getState();
-          if (!state.currentSemester) {
-            const semesters = provider.getSemesters();
-            if (semesters.length > 0) {
-              useTimetableStore.getState().setSemester(semesters[0].id);
-            }
-          }
-
           setReady(true);
         })
         .catch((err) => {
@@ -95,6 +83,11 @@ export function usePrefetchCourse(courseId: string | null) {
   }, [courseId]);
 
   return course;
+}
+
+/** Get the initialized ApiProvider instance (or undefined if not ready). */
+export function getApiProvider(): ApiProvider | undefined {
+  return _apiProvider ?? undefined;
 }
 
 /** Switch the provider to a different semester (by semester ID like "2025-201"). */

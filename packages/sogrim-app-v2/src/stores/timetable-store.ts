@@ -12,8 +12,6 @@ import type {
 import { getProvider } from "@/data/course-schedule-provider";
 import { generateDraftId, defaultDraftName } from "@/lib/timetable-utils";
 import { getConflictingEventKeys, eventKey } from "@/lib/timetable-conflicts";
-import { apiClient } from "@/lib/api-client";
-import type { ApiProvider } from "@/data/api-provider";
 
 interface TimetableState {
   // View state (ephemeral — not saved to backend)
@@ -30,8 +28,10 @@ interface TimetableState {
   activeDraftId: string | null;
 
   // Sync status
+  _loaded: boolean;   // true only after successful backend load
   _syncing: boolean;
   _lastSaved: number;
+  _dirty: boolean;    // true when there are unsaved changes
 
   // Actions: view
   setViewMode: (mode: ViewMode) => void;
@@ -89,8 +89,10 @@ export const useTimetableStore = create<TimetableState>()(
       currentSemester: "",
       drafts: [],
       activeDraftId: null,
+      _loaded: false,
       _syncing: false,
       _lastSaved: 0,
+      _dirty: false,
 
       setViewMode: (mode) => set({ viewMode: mode }),
       setSelectedDay: (day) => set({ selectedDay: day }),
@@ -246,114 +248,6 @@ export const useTimetableStore = create<TimetableState>()(
   ),
 );
 
-// ---------------------------------------------------------------------------
-// Backend sync: debounced auto-save on persistent state changes
-// ---------------------------------------------------------------------------
-
-/** Extract the persistent slice that gets saved to the backend. */
-function getPersistentState(state: TimetableState) {
-  return {
-    current_semester: state.currentSemester || null,
-    active_draft_id: state.activeDraftId,
-    drafts: state.drafts.map((d) => ({
-      id: d.id,
-      name: d.name,
-      semester: d.semester,
-      courses: d.courses.map((c) => ({
-        course_id: c.courseId,
-        selected_groups: c.selectedGroups,
-      })),
-      custom_events: (d.customEvents ?? []).map((e) => ({
-        id: e.id,
-        title: e.title,
-        day: e.day,
-        start_time: e.startTime,
-        end_time: e.endTime,
-        color: e.color ?? null,
-      })),
-      created_at: d.createdAt,
-      updated_at: d.updatedAt,
-      is_published: d.isPublished,
-    })),
-  };
-}
-
-let saveTimer: ReturnType<typeof setTimeout> | null = null;
-
-function debouncedSave() {
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    const state = useTimetableStore.getState();
-    const payload = getPersistentState(state);
-    useTimetableStore.setState({ _syncing: true });
-    try {
-      await apiClient.put("/students/timetable", payload);
-      useTimetableStore.setState({ _lastSaved: Date.now(), _syncing: false });
-    } catch (err) {
-      console.error("Failed to save timetable:", err);
-      useTimetableStore.setState({ _syncing: false });
-    }
-  }, 500);
-}
-
-// Subscribe to persistent state changes and auto-save
-useTimetableStore.subscribe(
-  (s) => [s.currentSemester, s.drafts, s.activeDraftId] as const,
-  () => {
-    // Only save if we've loaded from the backend (currentSemester is set)
-    if (useTimetableStore.getState().currentSemester) {
-      debouncedSave();
-    }
-  },
-  { equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b) },
-);
-
-/** Load timetable state from the backend. Call once after login.
- *  Pass the ApiProvider so we can prefetch courses in saved drafts. */
-export async function loadTimetableFromBackend(provider?: ApiProvider): Promise<void> {
-  try {
-    const { data } = await apiClient.get("/students/timetable");
-    const drafts: TimetableDraft[] = (data.drafts ?? []).map((d: any) => ({
-      id: d.id,
-      name: d.name,
-      semester: d.semester,
-      courses: (d.courses ?? []).map((c: any) => ({
-        courseId: c.course_id,
-        selectedGroups: c.selected_groups ?? {},
-      })),
-      customEvents: (d.custom_events ?? []).map((e: any) => ({
-        id: e.id,
-        title: e.title,
-        day: e.day,
-        startTime: e.start_time,
-        endTime: e.end_time,
-        color: e.color ?? undefined,
-      })),
-      createdAt: d.created_at,
-      updatedAt: d.updated_at,
-      isPublished: d.is_published ?? false,
-    }));
-
-    const savedSemester = data.current_semester ?? "";
-
-    useTimetableStore.setState({
-      currentSemester: savedSemester,
-      activeDraftId: data.active_draft_id ?? null,
-      drafts,
-    });
-
-    // Switch provider to the saved semester and prefetch course details
-    if (provider && savedSemester) {
-      await provider.switchSemester(savedSemester);
-      const courseIds = new Set(drafts.flatMap((d) => d.courses.map((c) => c.courseId)));
-      for (const id of courseIds) {
-        provider.prefetch(id);
-      }
-    }
-  } catch (err) {
-    console.error("Failed to load timetable:", err);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Event resolution (unchanged)

@@ -3,6 +3,8 @@ import type { Day, TimetableEvent } from "@/types/timetable";
 import {
   DAY_LABELS,
   DAYS,
+  DEFAULT_START_HOUR,
+  DEFAULT_END_HOUR,
   getTimeLabels,
   computeVisibleRange,
   totalSlots,
@@ -22,7 +24,12 @@ export function DayView({ events }: DayViewProps) {
   const selectedDay = useTimetableStore((s) => s.selectedDay);
   const setSelectedDay = useTimetableStore((s) => s.setSelectedDay);
 
-  const { startHour, endHour } = useMemo(() => computeVisibleRange(events), [events]);
+  // Only expand range, never shrink (prevents grid jumps)
+  const rangeRef = useRef({ startHour: DEFAULT_START_HOUR, endHour: DEFAULT_END_HOUR });
+  const computed = computeVisibleRange(events);
+  if (computed.startHour < rangeRef.current.startHour) rangeRef.current.startHour = computed.startHour;
+  if (computed.endHour > rangeRef.current.endHour) rangeRef.current.endHour = computed.endHour;
+  const { startHour, endHour } = rangeRef.current;
   const slotCount = totalSlots(startHour, endHour);
   const timeLabels = useMemo(() => getTimeLabels(startHour, endHour), [startHour, endHour]);
 
