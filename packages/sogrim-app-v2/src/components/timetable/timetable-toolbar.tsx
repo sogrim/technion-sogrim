@@ -4,7 +4,7 @@ import { DraftTabs } from "./draft-tabs";
 import { ViewToggle } from "./view-toggle";
 import { ConflictBadge } from "./conflict-badge";
 import type { TimetableEvent } from "@/types/timetable";
-import { Search, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { Search, Cloud, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimetableToolbarProps {
