@@ -4,7 +4,8 @@ import {
   DAY_LABELS,
   DAYS,
   getTimeLabels,
-  TOTAL_SLOTS,
+  computeVisibleRange,
+  totalSlots,
   timeToRow,
   timeSpanRows,
 } from "@/lib/timetable-utils";
@@ -20,7 +21,11 @@ interface DayViewProps {
 export function DayView({ events }: DayViewProps) {
   const selectedDay = useTimetableStore((s) => s.selectedDay);
   const setSelectedDay = useTimetableStore((s) => s.setSelectedDay);
-  const timeLabels = useMemo(() => getTimeLabels(), []);
+
+  const { startHour, endHour } = useMemo(() => computeVisibleRange(events), [events]);
+  const slotCount = totalSlots(startHour, endHour);
+  const timeLabels = useMemo(() => getTimeLabels(startHour, endHour), [startHour, endHour]);
+
   const colRef = useRef<HTMLDivElement>(null);
 
   const [customDialog, setCustomDialog] = useState<{
@@ -46,7 +51,7 @@ export function DayView({ events }: DayViewProps) {
     if (!colRef.current) return 0;
     const rect = colRef.current.getBoundingClientRect();
     const y = clientY - rect.top;
-    return Math.max(0, Math.min(Math.floor((y / rect.height) * TOTAL_SLOTS), TOTAL_SLOTS - 1));
+    return Math.max(0, Math.min(Math.floor((y / rect.height) * slotCount), slotCount - 1));
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -69,7 +74,7 @@ export function DayView({ events }: DayViewProps) {
       open: true,
       day: selectedDay,
       startRow,
-      endRow: Math.min(endRow, TOTAL_SLOTS),
+      endRow: Math.min(endRow, slotCount),
     });
     setDragState(null);
   };
@@ -77,7 +82,7 @@ export function DayView({ events }: DayViewProps) {
   const handleCustomEventClick = useCallback((eventId: string) => {
     const evt = events.find((e) => e.customEventId === eventId);
     if (!evt) return;
-    const row = timeToRow(evt.startTime);
+    const row = timeToRow(evt.startTime, startHour);
     setCustomDialog({
       open: true,
       day: evt.day,
@@ -91,8 +96,8 @@ export function DayView({ events }: DayViewProps) {
     const top = Math.min(dragState.startRow, dragState.currentRow);
     const bottom = Math.max(dragState.startRow, dragState.currentRow) + 1;
     return {
-      top: `${(top / TOTAL_SLOTS) * 100}%`,
-      height: `${((bottom - top) / TOTAL_SLOTS) * 100}%`,
+      top: `${(top / slotCount) * 100}%`,
+      height: `${((bottom - top) / slotCount) * 100}%`,
     };
   })() : null;
 
@@ -128,7 +133,7 @@ export function DayView({ events }: DayViewProps) {
           className="grid"
           style={{
             gridTemplateColumns: "56px 1fr",
-            gridTemplateRows: `repeat(${TOTAL_SLOTS}, minmax(24px, 1fr))`,
+            gridTemplateRows: `repeat(${slotCount}, minmax(4.2vh, 1fr))`,
           }}
           dir="rtl"
         >
@@ -152,7 +157,7 @@ export function DayView({ events }: DayViewProps) {
             className="relative border-s border-border/30 cursor-cell"
             style={{
               gridColumn: 2,
-              gridRow: `1 / span ${TOTAL_SLOTS}`,
+              gridRow: `1 / span ${slotCount}`,
             }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -160,11 +165,11 @@ export function DayView({ events }: DayViewProps) {
             onMouseLeave={handleMouseUp}
           >
             {/* Hour grid lines */}
-            {Array.from({ length: TOTAL_SLOTS / 2 }, (_, i) => (
+            {Array.from({ length: slotCount / 2 }, (_, i) => (
               <div
                 key={i}
                 className="absolute inset-x-0 border-t border-border/30 pointer-events-none"
-                style={{ top: `${(i * 2 / TOTAL_SLOTS) * 100}%` }}
+                style={{ top: `${(i * 2 / slotCount) * 100}%` }}
               />
             ))}
 
@@ -178,10 +183,10 @@ export function DayView({ events }: DayViewProps) {
 
             {/* Course blocks — absolutely positioned */}
             {dayEvents.map((event) => {
-              const row = timeToRow(event.startTime);
+              const row = timeToRow(event.startTime, startHour);
               const span = timeSpanRows(event.startTime, event.endTime);
-              const topPct = (row / TOTAL_SLOTS) * 100;
-              const heightPct = (span / TOTAL_SLOTS) * 100;
+              const topPct = (row / slotCount) * 100;
+              const heightPct = (span / slotCount) * 100;
 
               return (
                 <div

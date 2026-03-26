@@ -76,17 +76,18 @@ function TimetableContent() {
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Grid — always visible */}
         <div className="flex-1 min-w-0">
-          {/* Desktop always shows week, mobile respects viewMode */}
-          <div className="hidden md:block">
-            <WeekGrid events={events} />
-          </div>
-          <div className="md:hidden">
-            {viewMode === "week" ? (
-              <WeekGrid events={events} compact />
-            ) : (
-              <DayView events={events} />
-            )}
-          </div>
+          {viewMode === "week" ? (
+            <>
+              <div className="hidden md:block">
+                <WeekGrid events={events} />
+              </div>
+              <div className="md:hidden">
+                <WeekGrid events={events} compact />
+              </div>
+            </>
+          ) : (
+            <DayView events={events} />
+          )}
         </div>
 
         {/* Selected courses sidebar — always visible */}

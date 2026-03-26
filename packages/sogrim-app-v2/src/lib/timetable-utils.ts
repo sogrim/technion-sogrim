@@ -26,11 +26,37 @@ export const LESSON_TYPE_NAMES: Record<LessonType, string> = {
 };
 
 /** Grid hours range */
-export const START_HOUR = 8;
-export const END_HOUR = 20;
+export const DEFAULT_START_HOUR = 8;
+export const DEFAULT_END_HOUR = 18; // Show up to 17:30 by default
+export const MIN_START_HOUR = 7;    // Can shrink down to 07:00
+export const MAX_END_HOUR = 23;     // Can expand up to 22:30
 export const SLOT_MINUTES = 30;
 export const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
-export const TOTAL_SLOTS = (END_HOUR - START_HOUR) * SLOTS_PER_HOUR;
+
+/** Compute visible start and end hours based on events. */
+export function computeVisibleRange(events: { startTime: string; endTime: string }[]): {
+  startHour: number;
+  endHour: number;
+} {
+  let earliest = DEFAULT_START_HOUR * 60;
+  let latest = DEFAULT_END_HOUR * 60;
+  for (const e of events) {
+    const start = parseTime(e.startTime);
+    const end = parseTime(e.endTime);
+    if (start < earliest) earliest = start;
+    if (end > latest) latest = end;
+  }
+  return {
+    startHour: Math.max(Math.floor(earliest / 60), MIN_START_HOUR),
+    endHour: Math.min(Math.ceil(latest / 60), MAX_END_HOUR),
+  };
+}
+
+/** Total slots for a given range */
+export function totalSlots(startHour: number, endHour: number): number {
+  return (endHour - startHour) * SLOTS_PER_HOUR;
+}
+
 
 /** Parse "HH:MM" into minutes since midnight */
 export function parseTime(time: string): number {
@@ -46,9 +72,9 @@ export function formatTime(minutes: number): string {
 }
 
 /** Convert time to grid row index (0-based, each row = SLOT_MINUTES) */
-export function timeToRow(time: string): number {
+export function timeToRow(time: string, startHour?: number): number {
   const minutes = parseTime(time);
-  return (minutes - START_HOUR * 60) / SLOT_MINUTES;
+  return (minutes - (startHour ?? DEFAULT_START_HOUR) * 60) / SLOT_MINUTES;
 }
 
 /** Number of grid rows a time range spans */
@@ -59,9 +85,11 @@ export function timeSpanRows(startTime: string, endTime: string): number {
 }
 
 /** Generate time labels for the grid */
-export function getTimeLabels(): string[] {
+export function getTimeLabels(startHour?: number, endHour?: number): string[] {
+  const start = startHour ?? DEFAULT_START_HOUR;
+  const end = endHour ?? DEFAULT_END_HOUR;
   const labels: string[] = [];
-  for (let h = START_HOUR; h < END_HOUR; h++) {
+  for (let h = start; h < end; h++) {
     labels.push(formatTime(h * 60));
   }
   return labels;

@@ -13,6 +13,7 @@ import { getProvider } from "@/data/course-schedule-provider";
 import { generateDraftId, defaultDraftName } from "@/lib/timetable-utils";
 import { getConflictingEventKeys, eventKey } from "@/lib/timetable-conflicts";
 import { apiClient } from "@/lib/api-client";
+import type { ApiProvider } from "@/data/api-provider";
 
 interface TimetableState {
   // View state (ephemeral — not saved to backend)
@@ -307,8 +308,9 @@ useTimetableStore.subscribe(
   { equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b) },
 );
 
-/** Load timetable state from the backend. Call once after login. */
-export async function loadTimetableFromBackend(): Promise<void> {
+/** Load timetable state from the backend. Call once after login.
+ *  Pass the ApiProvider so we can prefetch courses in saved drafts. */
+export async function loadTimetableFromBackend(provider?: ApiProvider): Promise<void> {
   try {
     const { data } = await apiClient.get("/students/timetable");
     const drafts: TimetableDraft[] = (data.drafts ?? []).map((d: any) => ({
@@ -332,11 +334,22 @@ export async function loadTimetableFromBackend(): Promise<void> {
       isPublished: d.is_published ?? false,
     }));
 
+    const savedSemester = data.current_semester ?? "";
+
     useTimetableStore.setState({
-      currentSemester: data.current_semester ?? "",
+      currentSemester: savedSemester,
       activeDraftId: data.active_draft_id ?? null,
       drafts,
     });
+
+    // Switch provider to the saved semester and prefetch course details
+    if (provider && savedSemester) {
+      await provider.switchSemester(savedSemester);
+      const courseIds = new Set(drafts.flatMap((d) => d.courses.map((c) => c.courseId)));
+      for (const id of courseIds) {
+        provider.prefetch(id);
+      }
+    }
   } catch (err) {
     console.error("Failed to load timetable:", err);
   }
