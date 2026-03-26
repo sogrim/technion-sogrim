@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useTimetableStore, resolveEvents } from "@/stores/timetable-store";
-import { useApiProvider, useProviderUpdates } from "@/hooks/use-api-provider";
+import { useApiProvider, useProviderUpdates, getApiProvider } from "@/hooks/use-api-provider";
+import { useTimetableSync } from "@/hooks/use-timetable-sync";
 import { Loader2 } from "lucide-react";
 import { TimetableToolbar } from "./timetable-toolbar";
 import { WeekGrid } from "./week-grid";
@@ -37,6 +38,9 @@ export function TimetablePage() {
 }
 
 function TimetableContent() {
+  // Sync timetable state with the backend (load + debounced save + unload flush)
+  useTimetableSync(getApiProvider());
+
   // Subscribe to provider updates — also used as a dependency to re-resolve
   // events when course details arrive from the API
   const providerVersion = useProviderUpdates();

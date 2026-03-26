@@ -1,15 +1,26 @@
+import { useEffect, useRef } from "react";
 import { Moon, Sun, LogOut, Download, HelpCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useUserState } from "@/hooks/use-user-state";
+import { useUpdateSettings } from "@/hooks/use-mutations";
 import { exportCoursesToCsv } from "@/lib/export-csv";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
   const { userInfo, logout } = useAuthStore();
-  const { theme, toggleTheme } = useUiStore();
+  const { theme, toggleTheme, setTheme } = useUiStore();
   const { data: userState } = useUserState();
+  const updateSettings = useUpdateSettings();
+
+  // Apply saved dark mode preference from backend on initial load
+  const appliedRef = useRef(false);
+  useEffect(() => {
+    if (appliedRef.current || !userState?.settings) return;
+    appliedRef.current = true;
+    setTheme(userState.settings.dark_mode ? "dark" : "light");
+  }, [userState, setTheme]);
 
   const courseStatuses = userState?.details?.degree_status?.course_statuses;
 
@@ -53,7 +64,10 @@ export function Header() {
         </Link>
 
         <button
-          onClick={toggleTheme}
+          onClick={() => {
+            toggleTheme();
+            updateSettings.mutate({ dark_mode: theme === "light" });
+          }}
           className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           aria-label="Toggle theme"
         >

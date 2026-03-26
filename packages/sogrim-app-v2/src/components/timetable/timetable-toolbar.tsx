@@ -27,13 +27,18 @@ export function TimetableToolbar({ events }: TimetableToolbarProps) {
 
         <div className="flex items-center gap-2">
           {/* Sync indicator */}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground" title={lastSaved ? `נשמר לאחרונה ${new Date(lastSaved).toLocaleTimeString("he-IL")}` : ""}>
-            {syncing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : lastSaved ? (
-              <Cloud className="h-3.5 w-3.5 text-emerald-500" />
-            ) : null}
-          </div>
+          {(syncing || lastSaved > 0) && (
+            <div
+              className="flex items-center gap-1 text-xs text-muted-foreground"
+              title={lastSaved ? `נשמר לאחרונה ${new Date(lastSaved).toLocaleTimeString("he-IL")}` : "שומר..."}
+            >
+              {syncing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              ) : (
+                <Cloud className="h-3.5 w-3.5 text-emerald-500" />
+              )}
+            </div>
+          )}
 
           <ViewToggle />
 

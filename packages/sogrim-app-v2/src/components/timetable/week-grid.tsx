@@ -3,6 +3,8 @@ import type { Day, TimetableEvent } from "@/types/timetable";
 import {
   DAY_NAMES,
   DAYS,
+  DEFAULT_START_HOUR,
+  DEFAULT_END_HOUR,
   getTimeLabels,
   totalSlots,
   computeVisibleRange,
@@ -19,7 +21,13 @@ interface WeekGridProps {
 }
 
 export function WeekGrid({ events, compact = false }: WeekGridProps) {
-  const { startHour, endHour } = useMemo(() => computeVisibleRange(events), [events]);
+  // Only expand the visible range, never shrink — prevents grid jumps.
+  // This prevents grid jumps when previews appear/disappear.
+  const rangeRef = useRef({ startHour: DEFAULT_START_HOUR, endHour: DEFAULT_END_HOUR });
+  const computed = computeVisibleRange(events);
+  if (computed.startHour < rangeRef.current.startHour) rangeRef.current.startHour = computed.startHour;
+  if (computed.endHour > rangeRef.current.endHour) rangeRef.current.endHour = computed.endHour;
+  const { startHour, endHour } = rangeRef.current;
   const slotCount = totalSlots(startHour, endHour);
   const timeLabels = useMemo(() => getTimeLabels(startHour, endHour), [startHour, endHour]);
   const [customDialog, setCustomDialog] = useState<{

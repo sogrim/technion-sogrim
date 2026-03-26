@@ -74,43 +74,43 @@ export function SelectedCoursesPanel() {
                 key={selection.courseId}
                 className={cn(
                   "rounded-lg border border-border overflow-hidden",
-                  "bg-card transition-shadow",
+                  "bg-card transition-shadow group",
                   isExpanded && "shadow-sm",
                 )}
               >
                 {/* Compact header — always visible */}
                 <div
-                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-accent/30 transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-colors"
                   onClick={() => setExpandedId(isExpanded ? null : selection.courseId)}
                 >
                   {/* Color dot */}
                   <div
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    className="w-3 h-3 rounded-full shrink-0"
                     style={{ backgroundColor: bgColor }}
                   />
 
                   {/* Course name + credits */}
-                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                    <span className="text-xs font-medium truncate">{course.name}</span>
-                    <span className="text-[0.65rem] text-muted-foreground shrink-0">{course.credit} נק״ז</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{course.name}</div>
+                    <div className="text-[0.7rem] text-muted-foreground">{course.credit} נק״ז</div>
                   </div>
 
-                  {/* Expand arrow */}
-                  <ChevronDown className={cn(
-                    "h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0",
-                    isExpanded && "rotate-180",
-                  )} />
-
-                  {/* Delete */}
+                  {/* Delete — always visible */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       removeCourse(selection.courseId);
                     }}
-                    className="p-0.5 hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+                    className="p-1 hover:bg-destructive/10 rounded shrink-0 opacity-50 hover:opacity-100 transition-opacity"
                   >
-                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
                   </button>
+
+                  {/* Expand arrow */}
+                  <ChevronDown className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+                    isExpanded && "rotate-180",
+                  )} />
                 </div>
 
                 {/* Expanded: group selectors + details */}

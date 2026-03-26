@@ -52,3 +52,37 @@ export async function postParseAndCompute(payload: { catalogId: { $oid: string }
   const { data } = await apiClient.post<DegreeStatus>("/admins/parse-compute", payload);
   return data;
 }
+
+// Timetable
+export interface TimetableStateDTO {
+  current_semester: string | null;
+  active_draft_id: string | null;
+  drafts: TimetableDraftDTO[];
+}
+
+export interface TimetableDraftDTO {
+  id: string;
+  name: string;
+  semester: string;
+  courses: { course_id: string; selected_groups: Record<string, string> }[];
+  custom_events: {
+    id: string;
+    title: string;
+    day: number;
+    start_time: string;
+    end_time: string;
+    color: string | null;
+  }[];
+  created_at: string;
+  updated_at: string;
+  is_published: boolean;
+}
+
+export async function getTimetable(): Promise<TimetableStateDTO> {
+  const { data } = await apiClient.get<TimetableStateDTO>("/students/timetable");
+  return data;
+}
+
+export async function putTimetable(state: TimetableStateDTO): Promise<void> {
+  await apiClient.put("/students/timetable", state);
+}
