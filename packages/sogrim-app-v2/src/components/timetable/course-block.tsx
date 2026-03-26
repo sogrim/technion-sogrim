@@ -50,9 +50,9 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
     <div
       onClick={handleClick}
       className={cn(
-        "rounded-md cursor-pointer h-full",
+        "rounded-md cursor-pointer h-full overflow-hidden",
         "flex flex-col items-center justify-center text-center",
-        "transition-all duration-150 px-1 py-0.5",
+        "transition-all duration-150 px-1",
         isPreview
           ? "border-2 hover:border-[3px]"
           : "border-2 hover:brightness-95 dark:hover:brightness-110",
@@ -61,42 +61,39 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
       )}
       style={{
         ...style,
+        fontSize: compact ? "calc(0.05em + 1vh)" : "calc(0.1em + 1.3vh)",
         backgroundColor: isPreview
           ? (isDark ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.85)")
           : "var(--course-bg)",
         color: isPreview ? "var(--course-bg)" : "var(--course-text)",
         borderColor: "var(--course-border)",
       }}
-      title={
-        isPreview
-          ? `${typeLabel} ${groupNum}${location ? ` | ${location}` : ""}${event.instructor ? ` | ${event.instructor}` : ""} — לחצו לבחור`
-          : event.isCustom
-            ? event.courseName
-            : `${event.courseName} - ${typeLabel} ${groupNum}${location ? ` | ${location}` : ""}`
-      }
+      title={[
+        event.courseName,
+        !event.isCustom && `${typeLabel} ${groupNum}`,
+        location,
+        event.instructor,
+        isPreview && "לחצו לבחור",
+      ].filter(Boolean).join(" · ")}
     >
       {event.isCustom && !compact && (
         <Star className="absolute top-1 left-1 h-2.5 w-2.5 opacity-60" />
       )}
 
-      {/* Course name — always visible, scales down for narrow blocks */}
-      <div className={cn(
-        "font-bold leading-tight w-full break-words hyphens-auto",
-        compact ? "text-[0.55rem]" : "text-[0.65rem]",
-      )}>
+      {/* Course name */}
+      <div className="font-bold leading-tight w-full">
         {event.courseName}
       </div>
 
-      {/* Metadata block: type+group, building, instructor */}
+      {/* Metadata: type+group, building, instructor */}
       {!event.isCustom && (
         <div className={cn(
           "leading-tight w-full",
           isPreview ? "font-medium" : "opacity-90",
-          compact ? "text-[0.5rem]" : "text-[0.58rem]",
-        )}>
+        )} style={{ fontSize: "0.85em" }}>
           <div>{typeLabel} {groupNum}</div>
           {location && <div>{location}</div>}
-          {!compact && event.instructor && <div>{event.instructor}</div>}
+          {event.instructor && <div>{event.instructor}</div>}
         </div>
       )}
     </div>
