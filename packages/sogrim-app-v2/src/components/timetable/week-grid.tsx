@@ -95,7 +95,7 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
             gridTemplateColumns: compact
               ? "36px repeat(5, 1fr)"
               : "56px repeat(5, 1fr)",
-            gridTemplateRows: `auto repeat(${TOTAL_SLOTS}, minmax(${compact ? "16px" : "24px"}, 1fr))`,
+            gridTemplateRows: `auto repeat(${TOTAL_SLOTS}, minmax(${compact ? "16px" : "3.1vh"}, 1fr))`,
           }}
           dir="rtl"
         >
