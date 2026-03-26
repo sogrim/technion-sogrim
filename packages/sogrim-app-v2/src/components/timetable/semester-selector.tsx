@@ -1,5 +1,6 @@
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
+import { switchProviderSemester } from "@/hooks/use-api-provider";
 import { cn } from "@/lib/utils";
 
 export function SemesterSelector() {
@@ -16,7 +17,10 @@ export function SemesterSelector() {
   return (
     <select
       value={currentSemester}
-      onChange={(e) => setSemester(e.target.value)}
+      onChange={(e) => {
+        setSemester(e.target.value);
+        switchProviderSemester(e.target.value);
+      }}
       className={cn(
         "bg-secondary text-foreground rounded-lg px-3 py-1.5 text-sm font-medium",
         "border border-border cursor-pointer",

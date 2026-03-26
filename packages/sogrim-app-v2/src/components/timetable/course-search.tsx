@@ -1,10 +1,10 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
-import { useProviderUpdates } from "@/hooks/use-api-provider";
+import { useProviderUpdates, isProviderLoading } from "@/hooks/use-api-provider";
 import { LESSON_TYPE_NAMES, DAY_LABELS } from "@/lib/timetable-utils";
 import type { CourseSchedule, Day } from "@/types/timetable";
-import { Search, X, Plus, Clock, MapPin, SlidersHorizontal, RotateCcw } from "lucide-react";
+import { Search, X, Plus, Clock, MapPin, SlidersHorizontal, RotateCcw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Filters {
@@ -73,13 +73,9 @@ export function CourseSearch() {
 
       if (query.trim()) {
         courses = provider.searchCourses(query);
-        const all = provider.getAllCourses();
-        console.log("[CourseSearch] query:", query, "results:", courses.length, "totalCourses:", all.length, "first5:", all.slice(0, 5).map(c => c.id));
-      } else if (hasActiveFilters(filters)) {
-        // Show filtered results even without text query
-        courses = provider.getAllCourses();
       } else {
-        return [];
+        // Show all courses sorted by ID when no query
+        courses = provider.getAllCourses();
       }
 
       // Apply filters
@@ -95,7 +91,7 @@ export function CourseSearch() {
           if (!hasMatchingDay) return false;
         }
         return true;
-      }).slice(0, 80);
+      }).slice(0, 200);
     } catch {
       return [];
     }
@@ -308,16 +304,17 @@ export function CourseSearch() {
             </div>
           )}
 
-          {(query.trim() || filtersActive) && results.length === 0 && (
+          {results.length === 0 && isProviderLoading() && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Search className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">לא נמצאו קורסים</p>
+              <Loader2 className="h-6 w-6 animate-spin mb-2" />
+              <p className="text-sm">טוען קורסים...</p>
             </div>
           )}
 
-          {!query.trim() && !filtersActive && (
+          {results.length === 0 && !isProviderLoading() && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <p className="text-sm">הקלידו שם קורס או השתמשו בסינון</p>
+              <Search className="h-8 w-8 mb-2 opacity-50" />
+              <p className="text-sm">לא נמצאו קורסים</p>
             </div>
           )}
 
@@ -329,6 +326,12 @@ export function CourseSearch() {
               onAdd={() => addCourse(course.id)}
             />
           ))}
+
+          {results.length >= 200 && (
+            <div className="px-4 py-3 text-center text-xs text-muted-foreground border-t border-border/50 bg-secondary/30">
+              מוצגים 200 הקורסים הראשונים — צמצמו את החיפוש לתוצאות נוספות
+            </div>
+          )}
         </div>
       </div>
     </>

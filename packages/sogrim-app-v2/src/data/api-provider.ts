@@ -244,6 +244,7 @@ export class ApiProvider implements CourseScheduleProvider {
   private listeners: Listener[] = [];
   private year = "";
   private semesterCode = "";
+  private indexLoading = false;
 
   /** Subscribe to data changes (triggers React re-renders). */
   onChange(listener: Listener): () => void {
@@ -282,11 +283,36 @@ export class ApiProvider implements CourseScheduleProvider {
             : "202";
     }
 
-    // Fetch course index (id + name + faculty + credits) for search
-    const indexResp = await fetch(
-      `${API_URL}/courses/${this.year}/${this.semesterCode}/index`,
-    );
-    this.index = await indexResp.json();
+    await this.fetchIndex();
+  }
+
+  /** Switch to a different semester. Clears cache and refetches index. */
+  async switchSemester(semesterId: string): Promise<void> {
+    const [year, code] = semesterId.split("-");
+    if (!year || !code) return;
+    if (this.year === year && this.semesterCode === code) return;
+
+    this.year = year;
+    this.semesterCode = code;
+    this.cache.clear();
+    this.inflight.clear();
+    this.index = [];
+    this.notify();
+
+    await this.fetchIndex();
+  }
+
+  private async fetchIndex(): Promise<void> {
+    this.indexLoading = true;
+    try {
+      const indexResp = await fetch(
+        `${API_URL}/courses/${this.year}/${this.semesterCode}/index`,
+      );
+      this.index = await indexResp.json();
+    } finally {
+      this.indexLoading = false;
+    }
+    this.notify();
   }
 
   private async fetchAndCache(courseId: string): Promise<void> {
@@ -324,7 +350,7 @@ export class ApiProvider implements CourseScheduleProvider {
         c.id.includes(q) ||
         c.name.toLowerCase().includes(q) ||
         c.faculty?.toLowerCase().includes(q),
-    ).slice(0, 80);
+    ).slice(0, 200);
 
     // Return full CourseSchedule from cache if available, otherwise a skeleton
     return matches.map((entry) => {
@@ -364,5 +390,9 @@ export class ApiProvider implements CourseScheduleProvider {
 
   getSemesters(): Semester[] {
     return this.semesterList;
+  }
+
+  isLoading(): boolean {
+    return this.indexLoading;
   }
 }
