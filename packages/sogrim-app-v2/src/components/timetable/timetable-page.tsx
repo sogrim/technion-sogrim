@@ -37,8 +37,9 @@ export function TimetablePage() {
 }
 
 function TimetableContent() {
-  // Subscribe to provider updates so search results refresh as courses load
-  useProviderUpdates();
+  // Subscribe to provider updates — also used as a dependency to re-resolve
+  // events when course details arrive from the API
+  const providerVersion = useProviderUpdates();
 
   const viewMode = useTimetableStore((s) => s.viewMode);
   const drafts = useTimetableStore((s) => s.drafts);
@@ -63,7 +64,7 @@ function TimetableContent() {
   const activeDraft = drafts.find((d) => d.id === activeDraftId);
   const events = useMemo(
     () => resolveEvents(activeDraft, previewingCourse, previewingType),
-    [activeDraft, previewingCourse, previewingType],
+    [activeDraft, previewingCourse, previewingType, providerVersion],
   );
 
   const hasCourses = (activeDraft?.courses.length ?? 0) > 0;
