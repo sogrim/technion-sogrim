@@ -4,7 +4,7 @@ import { DraftTabs } from "./draft-tabs";
 import { ViewToggle } from "./view-toggle";
 import { ConflictBadge } from "./conflict-badge";
 import type { TimetableEvent } from "@/types/timetable";
-import { Search, Upload } from "lucide-react";
+import { Search, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimetableToolbarProps {
@@ -13,11 +13,8 @@ interface TimetableToolbarProps {
 
 export function TimetableToolbar({ events }: TimetableToolbarProps) {
   const setSearchOpen = useTimetableStore((s) => s.setSearchOpen);
-  const drafts = useTimetableStore((s) => s.drafts);
-  const activeDraftId = useTimetableStore((s) => s.activeDraftId);
-  const publishToPlanner = useTimetableStore((s) => s.publishToPlanner);
-
-  const activeDraft = drafts.find((d) => d.id === activeDraftId);
+  const syncing = useTimetableStore((s) => s._syncing);
+  const lastSaved = useTimetableStore((s) => s._lastSaved);
 
   return (
     <div className="space-y-3">
@@ -29,6 +26,15 @@ export function TimetableToolbar({ events }: TimetableToolbarProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Sync indicator */}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground" title={lastSaved ? `נשמר לאחרונה ${new Date(lastSaved).toLocaleTimeString("he-IL")}` : ""}>
+            {syncing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : lastSaved ? (
+              <Cloud className="h-3.5 w-3.5 text-emerald-500" />
+            ) : null}
+          </div>
+
           {/* View toggle — mobile only */}
           <div className="md:hidden">
             <ViewToggle />
@@ -44,25 +50,6 @@ export function TimetableToolbar({ events }: TimetableToolbarProps) {
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">הוסף קורס</span>
           </button>
-
-          {activeDraft && activeDraft.courses.length > 0 && !activeDraft.isPublished && (
-            <button
-              onClick={() => publishToPlanner(activeDraft.id)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
-                "border border-primary text-primary hover:bg-primary/10 transition-colors",
-              )}
-            >
-              <Upload className="h-4 w-4" />
-              <span className="hidden sm:inline">שמור בתכנון</span>
-            </button>
-          )}
-
-          {activeDraft?.isPublished && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
-              נשמר בתכנון
-            </div>
-          )}
         </div>
       </div>
 

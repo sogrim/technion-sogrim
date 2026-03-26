@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { subscribeWithSelector } from "zustand/middleware";
 import type {
   CourseSelection,
   CustomEvent,
@@ -12,24 +12,25 @@ import type {
 import { getProvider } from "@/data/course-schedule-provider";
 import { generateDraftId, defaultDraftName } from "@/lib/timetable-utils";
 import { getConflictingEventKeys, eventKey } from "@/lib/timetable-conflicts";
+import { apiClient } from "@/lib/api-client";
 
 interface TimetableState {
-  // View state
+  // View state (ephemeral — not saved to backend)
   viewMode: ViewMode;
   selectedDay: Day;
   searchOpen: boolean;
-
-  // Group preview — show all options for a course+type on the grid
   previewingCourse: string | null;
   previewingType: LessonType | null;
-
-  // Course detail modal
   detailCourseId: string | null;
 
-  // Semester & drafts
+  // Persistent state (saved to backend)
   currentSemester: string;
   drafts: TimetableDraft[];
   activeDraftId: string | null;
+
+  // Sync status
+  _syncing: boolean;
+  _lastSaved: number;
 
   // Actions: view
   setViewMode: (mode: ViewMode) => void;
@@ -56,9 +57,6 @@ interface TimetableState {
   addCustomEvent: (event: Omit<CustomEvent, "id">) => void;
   updateCustomEvent: (eventId: string, updates: Partial<CustomEvent>) => void;
   removeCustomEvent: (eventId: string) => void;
-
-  // Actions: planner integration
-  publishToPlanner: (draftId: string) => void;
 }
 
 /** Get or create the active draft, returns updated state slice */
@@ -79,7 +77,7 @@ function updateDraft(
 }
 
 export const useTimetableStore = create<TimetableState>()(
-  persist(
+  subscribeWithSelector(
     (set, get) => ({
       viewMode: "week",
       selectedDay: 0,
@@ -87,9 +85,11 @@ export const useTimetableStore = create<TimetableState>()(
       previewingCourse: null,
       previewingType: null,
       detailCourseId: null,
-      currentSemester: "spring-2026",
+      currentSemester: "",
       drafts: [],
       activeDraftId: null,
+      _syncing: false,
+      _lastSaved: 0,
 
       setViewMode: (mode) => set({ viewMode: mode }),
       setSelectedDay: (day) => set({ selectedDay: day }),
@@ -99,7 +99,6 @@ export const useTimetableStore = create<TimetableState>()(
 
       setSemester: (semester) => {
         const state = get();
-        // Find first draft for this semester, or create one
         const semesterDrafts = state.drafts.filter(
           (d) => d.semester === semester,
         );
@@ -157,11 +156,8 @@ export const useTimetableStore = create<TimetableState>()(
         const state = get();
         const draft = getActiveDraft(state);
         if (!draft) return;
-
-        // Don't add duplicates
         if (draft.courses.some((c) => c.courseId === courseId)) return;
 
-        // Add immediately — groups show as previews once data loads from API
         const selection: CourseSelection = { courseId, selectedGroups: {} };
         set({
           drafts: updateDraft(state.drafts, draft.id, (d) => ({
@@ -170,7 +166,6 @@ export const useTimetableStore = create<TimetableState>()(
           })),
         });
 
-        // Trigger fetch so provider cache fills and events resolve
         getProvider().getCourse(courseId);
       },
 
@@ -206,7 +201,6 @@ export const useTimetableStore = create<TimetableState>()(
             }),
             isPublished: false,
           })),
-          // Clear preview after selection
           previewingCourse: null,
           previewingType: null,
         });
@@ -247,21 +241,110 @@ export const useTimetableStore = create<TimetableState>()(
           })),
         });
       },
-
-      publishToPlanner: (draftId) => {
-        set({
-          drafts: updateDraft(get().drafts, draftId, () => ({
-            isPublished: true,
-          })),
-        });
-        // TODO: sync courses to planner via API
-      },
     }),
-    {
-      name: "sogrim-timetable",
-    },
   ),
 );
+
+// ---------------------------------------------------------------------------
+// Backend sync: debounced auto-save on persistent state changes
+// ---------------------------------------------------------------------------
+
+/** Extract the persistent slice that gets saved to the backend. */
+function getPersistentState(state: TimetableState) {
+  return {
+    current_semester: state.currentSemester || null,
+    active_draft_id: state.activeDraftId,
+    drafts: state.drafts.map((d) => ({
+      id: d.id,
+      name: d.name,
+      semester: d.semester,
+      courses: d.courses.map((c) => ({
+        course_id: c.courseId,
+        selected_groups: c.selectedGroups,
+      })),
+      custom_events: (d.customEvents ?? []).map((e) => ({
+        id: e.id,
+        title: e.title,
+        day: e.day,
+        start_time: e.startTime,
+        end_time: e.endTime,
+        color: e.color ?? null,
+      })),
+      created_at: d.createdAt,
+      updated_at: d.updatedAt,
+      is_published: d.isPublished,
+    })),
+  };
+}
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const state = useTimetableStore.getState();
+    const payload = getPersistentState(state);
+    useTimetableStore.setState({ _syncing: true });
+    try {
+      await apiClient.put("/students/timetable", payload);
+      useTimetableStore.setState({ _lastSaved: Date.now(), _syncing: false });
+    } catch (err) {
+      console.error("Failed to save timetable:", err);
+      useTimetableStore.setState({ _syncing: false });
+    }
+  }, 500);
+}
+
+// Subscribe to persistent state changes and auto-save
+useTimetableStore.subscribe(
+  (s) => [s.currentSemester, s.drafts, s.activeDraftId] as const,
+  () => {
+    // Only save if we've loaded from the backend (currentSemester is set)
+    if (useTimetableStore.getState().currentSemester) {
+      debouncedSave();
+    }
+  },
+  { equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b) },
+);
+
+/** Load timetable state from the backend. Call once after login. */
+export async function loadTimetableFromBackend(): Promise<void> {
+  try {
+    const { data } = await apiClient.get("/students/timetable");
+    const drafts: TimetableDraft[] = (data.drafts ?? []).map((d: any) => ({
+      id: d.id,
+      name: d.name,
+      semester: d.semester,
+      courses: (d.courses ?? []).map((c: any) => ({
+        courseId: c.course_id,
+        selectedGroups: c.selected_groups ?? {},
+      })),
+      customEvents: (d.custom_events ?? []).map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        day: e.day,
+        startTime: e.start_time,
+        endTime: e.end_time,
+        color: e.color ?? undefined,
+      })),
+      createdAt: d.created_at,
+      updatedAt: d.updated_at,
+      isPublished: d.is_published ?? false,
+    }));
+
+    useTimetableStore.setState({
+      currentSemester: data.current_semester ?? "",
+      activeDraftId: data.active_draft_id ?? null,
+      drafts,
+    });
+  } catch (err) {
+    console.error("Failed to load timetable:", err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Event resolution (unchanged)
+// ---------------------------------------------------------------------------
 
 /**
  * Resolve current draft's course selections into renderable TimetableEvents.
@@ -285,7 +368,6 @@ export function resolveEvents(
     const isPreviewTarget =
       previewingCourse === course.id && previewingType != null;
 
-    // Collect all lesson types this course offers
     const typeSet = new Set(course.groups.map((g) => g.type));
 
     for (const type of typeSet) {
@@ -293,7 +375,6 @@ export function resolveEvents(
       const typeGroups = course.groups.filter((g) => g.type === type);
 
       if (selectedGroupId) {
-        // User has chosen a group for this type — show only that one (solid)
         const group = typeGroups.find((g) => g.id === selectedGroupId);
         if (!group) continue;
         for (const lesson of group.lessons) {
@@ -313,7 +394,6 @@ export function resolveEvents(
           });
         }
 
-        // If eye-preview is active for this type, also show alternatives as ghosts
         if (isPreviewTarget && previewingType === type) {
           for (const altGroup of typeGroups.filter((g) => g.id !== selectedGroupId)) {
             for (const lesson of altGroup.lessons) {
@@ -336,7 +416,6 @@ export function resolveEvents(
           }
         }
       } else {
-        // No group selected yet — show ALL alternatives as previews
         for (const group of typeGroups) {
           for (const lesson of group.lessons) {
             events.push({
@@ -360,7 +439,6 @@ export function resolveEvents(
     }
   });
 
-  // Add custom events
   const customEvents = draft.customEvents ?? [];
   const courseCount = draft.courses.length;
   customEvents.forEach((ce, i) => {
@@ -380,7 +458,6 @@ export function resolveEvents(
     });
   });
 
-  // Mark conflicts (only among non-preview events)
   const realEvents = events.filter((e) => !e.isPreview);
   const conflictKeys = getConflictingEventKeys(realEvents);
   return events.map((e) => ({
