@@ -1,6 +1,7 @@
 import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 import { ApiProvider } from "@/data/api-provider";
 import { setProvider, getProvider } from "@/data/course-schedule-provider";
+import { useTimetableStore } from "@/stores/timetable-store";
 
 let _apiProvider: ApiProvider | null = null;
 let _initPromise: Promise<void> | null = null;
@@ -29,6 +30,11 @@ export function useApiProvider(): { ready: boolean; error: string | null } {
         .then(() => {
           _apiProvider = provider;
           setProvider(provider);
+          // Sync timetable store with provider's latest semester
+          const semesters = provider.getSemesters();
+          if (semesters.length > 0) {
+            useTimetableStore.getState().setSemester(semesters[0].id);
+          }
           setReady(true);
         })
         .catch((err) => {
@@ -84,6 +90,18 @@ export function usePrefetchCourse(courseId: string | null) {
   }, [courseId]);
 
   return course;
+}
+
+/** Switch the provider to a different semester (by semester ID like "2025-201"). */
+export function switchProviderSemester(semesterId: string) {
+  if (_apiProvider) {
+    _apiProvider.switchSemester(semesterId);
+  }
+}
+
+/** Check if the provider is currently loading the course index. */
+export function isProviderLoading(): boolean {
+  return _apiProvider?.isLoading() ?? false;
 }
 
 function getProviderSafe() {
