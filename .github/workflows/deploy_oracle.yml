@@ -23,30 +23,35 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.ORACLE_VM_IP }} >> ~/.ssh/known_hosts
 
+      - name: Write env to VM
+        run: |
+          ssh ${{ env.VM_USER }}@${{ secrets.ORACLE_VM_IP }} "cat > ~/sogrim/packages/server/.env" << 'ENVFILE'
+          IP="0.0.0.0"
+          PORT="5545"
+          URI="${{ secrets.MONGO_URI_DEV }}"
+          CLIENT_ID="${{ secrets.CLIENT_ID }}"
+          PROFILE="release"
+          ENVFILE
+
       - name: Deploy to VM
         run: |
           REF="${{ github.event.inputs.ref || 'master' }}"
           ssh ${{ env.VM_USER }}@${{ secrets.ORACLE_VM_IP }} bash -s "$REF" << 'DEPLOY'
-          set -euxo pipefail
+          set -euo pipefail
           REF="$1"
 
           cd ~/sogrim
 
-          # Fetch and checkout the requested ref
+          # Fetch and hard-reset to the requested ref, discarding any local changes
           git fetch origin
-          git checkout "$REF" 2>/dev/null || git checkout "origin/$REF"
-          git pull origin "$REF" 2>/dev/null || true
+          git reset --hard "origin/$REF"
 
           echo "Deploying $(git log --oneline -1)"
 
-          # Rebuild the server
+          # Rebuild the server (.env provides compile-time secrets)
           source ~/.cargo/env
           cd packages/server
-          IP=0.0.0.0 PORT=5545 \
-            URI="${{ secrets.MONGO_URI_DEV }}" \
-            CLIENT_ID="${{ secrets.CLIENT_ID }}" \
-            PROFILE=release \
-            cargo build --release
+          cargo build --release
 
           # Restart the service
           sudo systemctl restart sogrim
