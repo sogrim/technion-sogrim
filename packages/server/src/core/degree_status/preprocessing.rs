@@ -151,6 +151,9 @@ impl DegreeStatus {
     }
 
     pub fn preprocess(&mut self, catalog: &mut Catalog, courses: &HashMap<CourseId, Course>) {
+        if catalog.year() >= 2024 {
+            self.normalize_course_ids();
+        }
         self.reset(catalog);
 
         self.course_statuses.sort_by(|c1, c2| {
