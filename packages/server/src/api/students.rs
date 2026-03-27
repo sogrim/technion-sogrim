@@ -15,7 +15,7 @@ use crate::{
     resources::{
         catalog::{Catalog, DisplayCatalog},
         course::{self, Course, CourseId},
-        user::{User, UserDetails, UserSettings},
+        user::{TimetableState, User, UserDetails, UserSettings},
     },
 };
 
@@ -212,6 +212,22 @@ pub async fn update_settings(
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
     user.settings = settings.into_inner();
+    db.update::<User>(user).await?;
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[get("/timetable")]
+pub async fn get_timetable(user: User) -> Result<HttpResponse, AppError> {
+    Ok(HttpResponse::Ok().json(user.timetable))
+}
+
+#[put("/timetable")]
+pub async fn update_timetable(
+    mut user: User,
+    timetable: Json<TimetableState>,
+    db: Data<Db>,
+) -> Result<HttpResponse, AppError> {
+    user.timetable = timetable.into_inner();
     db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().finish())
 }
