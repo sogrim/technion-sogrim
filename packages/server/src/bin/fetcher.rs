@@ -9,7 +9,7 @@ use chrono::Local;
 use clap::Parser;
 use env_logger::Builder;
 use log::LevelFilter;
-use sogrim_server::sap::CachedSapClient;
+use sogrim_server::sap::{CachedSapClient, CourseIndexEntry};
 
 #[derive(Clone, clap::ValueEnum)]
 enum Season {
@@ -48,8 +48,8 @@ struct Args {
     #[arg(long, conflicts_with_all = &["year", "semester"], value_parser = clap::value_parser!(u8).range(1..=3))]
     latest: Option<u8>,
 
-    /// Academic year (e.g. 2025). Required unless --latest is used.
-    #[arg(long, required_unless_present = "latest")]
+    /// Academic year (e.g. 2025). Required unless --latest or --repair is used.
+    #[arg(long, required_unless_present_any = &["latest", "repair"])]
     year: Option<String>,
 
     /// Semesters to fetch (e.g. --semester winter spring). Defaults to all in the year.
@@ -67,6 +67,11 @@ struct Args {
     /// Max concurrent batch chunks (higher = faster but more load on SAP)
     #[arg(long, default_value = "16")]
     concurrency: usize,
+
+    /// Repair mode: scan all semesters in the cache, fetch missing courses,
+    /// and write them to disk. Fails hard if any course cannot be fetched.
+    #[arg(long, conflicts_with_all = &["latest", "year", "semester"])]
+    repair: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -267,6 +272,273 @@ fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
 }
 
 // ---------------------------------------------------------------------------
+// Repair
+// ---------------------------------------------------------------------------
+
+struct MissingCourse {
+    year: String,
+    semester: String,
+    course_id: String,
+    sem_dir: PathBuf,
+}
+
+fn scan_missing(cache_dir: &Path) -> Vec<MissingCourse> {
+    let mut missing = Vec::new();
+
+    let Ok(years) = fs::read_dir(cache_dir) else {
+        return missing;
+    };
+
+    for year_entry in years.flatten() {
+        let year = year_entry.file_name().to_string_lossy().to_string();
+        if !year_entry.path().is_dir() || year.starts_with('_') {
+            continue;
+        }
+
+        let Ok(sems) = fs::read_dir(year_entry.path()) else {
+            continue;
+        };
+
+        for sem_entry in sems.flatten() {
+            let semester = sem_entry.file_name().to_string_lossy().to_string();
+            let sem_dir = sem_entry.path();
+            if !sem_dir.is_dir() || semester.starts_with('_') {
+                continue;
+            }
+
+            let index_path = sem_dir.join("_index.json");
+            let Ok(data) = fs::read_to_string(&index_path) else {
+                continue;
+            };
+            let Ok(index) = serde_json::from_str::<Vec<CourseIndexEntry>>(&data) else {
+                continue;
+            };
+
+            for entry in &index {
+                let course_file = sem_dir.join(format!("{}.json", entry.id));
+                if !course_file.exists() {
+                    missing.push(MissingCourse {
+                        year: year.clone(),
+                        semester: semester.clone(),
+                        course_id: entry.id.clone(),
+                        sem_dir: sem_dir.clone(),
+                    });
+                }
+            }
+        }
+    }
+
+    // Sort for deterministic output
+    missing.sort_by(|a, b| {
+        (&a.year, &a.semester, &a.course_id).cmp(&(&b.year, &b.semester, &b.course_id))
+    });
+    missing
+}
+
+async fn run_repair(args: &Args) {
+    let interactive = is_interactive();
+    let started = Instant::now();
+
+    // Phase 1: Scan for missing courses
+    print_spinner(interactive, "scanning cache for missing courses");
+    let missing = scan_missing(&args.cache_dir);
+    if interactive {
+        eprint!("\r{}\r", " ".repeat(60));
+    }
+
+    if missing.is_empty() {
+        log::info!(target: "sogrim_server", "Repair: all indexes are consistent, nothing to do");
+        if interactive {
+            eprintln!("  all indexes are consistent, nothing to do");
+        }
+        return;
+    }
+
+    // Group by semester for display
+    let mut by_sem: std::collections::BTreeMap<String, Vec<&str>> = std::collections::BTreeMap::new();
+    for m in &missing {
+        by_sem
+            .entry(format!("{}/{}", m.year, m.semester))
+            .or_default()
+            .push(&m.course_id);
+    }
+
+    log::info!(target: "sogrim_server", "Repair: {} missing courses across {} semesters", missing.len(), by_sem.len());
+    if interactive {
+        eprintln!("  found {} missing courses across {} semesters:", missing.len(), by_sem.len());
+        for (sem, ids) in &by_sem {
+            let label = {
+                let parts: Vec<&str> = sem.split('/').collect();
+                semester_display(parts[0], parts[1])
+            };
+            eprintln!("    {label}: {} missing", ids.len());
+        }
+        eprintln!();
+    }
+
+    // Phase 2: Warm up proxy if needed
+    let use_proxy = args.proxy_url.is_some();
+    let client = Arc::new(CachedSapClient::with_proxy_url(args.proxy_url.clone()));
+
+    if use_proxy {
+        print_spinner(interactive, "warming up proxy");
+        for attempt in 1..=5 {
+            match client.get_semesters().await {
+                Ok(_) => {
+                    if interactive {
+                        eprint!("\r{}\r", " ".repeat(60));
+                    }
+                    print_spinner_done(interactive, "warming up proxy");
+                    break;
+                }
+                Err(e) => {
+                    if attempt == 5 {
+                        log::error!(target: "sogrim_server", "Proxy failed after 5 attempts: {e}");
+                        if interactive {
+                            eprintln!("\r  warming up proxy... FAILED");
+                            show_cursor();
+                        }
+                        std::process::exit(1);
+                    }
+                    log::warn!(target: "sogrim_server", "Proxy not ready (attempt {attempt}): {e}");
+                    if interactive {
+                        eprint!("\r  warming up proxy... retry {attempt}/5");
+                        let _ = io::stderr().flush();
+                    }
+                    tokio::time::sleep(Duration::from_secs(3)).await;
+                }
+            }
+        }
+    }
+
+    // Phase 3: Fetch missing courses
+    let bar = ProgressBar::new("fetching missing courses", missing.len(), interactive);
+    bar.draw();
+    let counter = bar.counter();
+    let mut fetched = 0usize;
+    let mut failed: Vec<String> = Vec::new();
+
+    for m in &missing {
+        match client
+            .get_course_details(&m.year, &m.semester, &m.course_id)
+            .await
+        {
+            Ok(details) => {
+                let json =
+                    serde_json::to_string_pretty(&*details).expect("failed to serialize course");
+                let file_path = m.sem_dir.join(format!("{}.json", m.course_id));
+                match atomic_write(&file_path, json.as_bytes()) {
+                    Ok(()) => {
+                        log::info!(target: "sogrim_server", "Repaired: {}/{}/{}", m.year, m.semester, m.course_id);
+                        fetched += 1;
+                    }
+                    Err(e) => {
+                        log::error!(target: "sogrim_server", "Failed to write {}/{}/{}: {e}", m.year, m.semester, m.course_id);
+                        failed.push(format!("{}/{}/{}", m.year, m.semester, m.course_id));
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!(target: "sogrim_server", "Failed to fetch {}/{}/{}: {e}", m.year, m.semester, m.course_id);
+                failed.push(format!("{}/{}/{}", m.year, m.semester, m.course_id));
+            }
+        }
+        counter.fetch_add(1, Ordering::Relaxed);
+        bar.draw();
+    }
+    bar.finish();
+
+    // Phase 4: Remove phantoms from indexes
+    let phantoms: Vec<&MissingCourse> = failed.iter()
+        .filter_map(|key| {
+            missing.iter().find(|m| format!("{}/{}/{}", m.year, m.semester, m.course_id) == *key)
+        })
+        .collect();
+
+    // Group phantoms by semester
+    let mut phantoms_by_sem: std::collections::BTreeMap<String, Vec<&str>> =
+        std::collections::BTreeMap::new();
+    for p in &phantoms {
+        phantoms_by_sem
+            .entry(format!("{}/{}", p.year, p.semester))
+            .or_default()
+            .push(&p.course_id);
+    }
+
+    let mut removed = 0usize;
+    for (sem_key, phantom_ids) in &phantoms_by_sem {
+        let parts: Vec<&str> = sem_key.split('/').collect();
+        let (year, semester) = (parts[0], parts[1]);
+        let sem_dir = args.cache_dir.join(year).join(semester);
+        let index_path = sem_dir.join("_index.json");
+
+        let Ok(data) = fs::read_to_string(&index_path) else { continue };
+        let Ok(index) = serde_json::from_str::<Vec<CourseIndexEntry>>(&data) else { continue };
+
+        let phantom_set: std::collections::HashSet<&str> =
+            phantom_ids.iter().copied().collect();
+        let filtered: Vec<&CourseIndexEntry> = index
+            .iter()
+            .filter(|e| !phantom_set.contains(e.id.as_str()))
+            .collect();
+
+        let before = index.len();
+        let after = filtered.len();
+        let index_json =
+            serde_json::to_string_pretty(&filtered).expect("failed to serialize index");
+        let _ = atomic_write(&index_path, index_json.as_bytes());
+        let label = semester_display(year, semester);
+        log::info!(
+            target: "sogrim_server",
+            "[{label}] rebuilt index: {before} → {after} (removed {} phantoms)",
+            before - after
+        );
+        removed += before - after;
+    }
+
+    // Phase 5: Verify
+    let still_missing = scan_missing(&args.cache_dir);
+    let elapsed = started.elapsed();
+
+    log::info!(
+        target: "sogrim_server",
+        "Repair complete: {fetched} fetched, {removed} phantoms removed from indexes, {} still missing, {:.1}s",
+        still_missing.len(),
+        elapsed.as_secs_f64(),
+    );
+
+    if interactive {
+        eprintln!();
+        eprintln!("  ──────────────────────────────────────");
+        eprintln!("  fetched:          {fetched} courses");
+        eprintln!("  phantoms removed: {removed} from indexes");
+        eprintln!("  still missing:    {}", still_missing.len());
+        eprintln!("  elapsed:          {:.1}s", elapsed.as_secs_f64());
+        eprintln!("  ──────────────────────────────────────");
+    }
+
+    if !still_missing.is_empty() {
+        log::error!(target: "sogrim_server", "Repair incomplete: {} courses still missing:", still_missing.len());
+        for m in &still_missing {
+            log::error!(target: "sogrim_server", "  {}/{}/{}", m.year, m.semester, m.course_id);
+        }
+        if interactive {
+            eprintln!();
+            eprintln!("  WARNING — still missing:");
+            for m in &still_missing {
+                let label = semester_display(&m.year, &m.semester);
+                eprintln!("    {label}: {}", m.course_id);
+            }
+        }
+        std::process::exit(1);
+    }
+
+    if interactive {
+        eprintln!();
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -290,6 +562,15 @@ async fn main() {
             std::process::exit(130);
         })
         .ok();
+    }
+
+    // Repair mode: scan + fetch missing courses, then exit
+    if args.repair {
+        run_repair(&args).await;
+        if interactive {
+            show_cursor();
+        }
+        return;
     }
 
     let started = Instant::now();
@@ -411,6 +692,7 @@ async fn main() {
         label: String,
         sem_dir: PathBuf,
         course_ids: Vec<String>,
+        index: Vec<CourseIndexEntry>,
     }
     let mut work: Vec<SemesterWork> = Vec::new();
     let mut total_to_fetch = 0usize;
@@ -444,12 +726,14 @@ async fn main() {
         log::info!(target: "sogrim_server", "[{label}] {} courses", course_ids.len());
         total_to_fetch += course_ids.len();
 
+        let index_vec: Vec<CourseIndexEntry> = index.as_ref().clone();
         work.push(SemesterWork {
             year: target.year.clone(),
             semester: target.semester.clone(),
             label,
             sem_dir,
             course_ids,
+            index: index_vec,
         });
     }
 
@@ -499,9 +783,10 @@ async fn main() {
     let mut total_courses = 0usize;
     let mut total_errors = 0usize;
 
-    for w in &work {
+    for w in &mut work {
         let mut written = 0usize;
         let mut errors = 0usize;
+        let mut failed_ids: Vec<String> = Vec::new();
         for course_id in &w.course_ids {
             match client
                 .get_course_details(&w.year, &w.semester, course_id)
@@ -515,12 +800,14 @@ async fn main() {
                         Ok(()) => written += 1,
                         Err(e) => {
                             log::error!(target: "sogrim_server", "Failed to write {course_id}.json: {e}");
+                            failed_ids.push(course_id.clone());
                             errors += 1;
                         }
                     }
                 }
                 Err(e) => {
                     log::warn!(target: "sogrim_server", "[{}] failed to fetch {course_id}: {e}", w.label);
+                    failed_ids.push(course_id.clone());
                     errors += 1;
                 }
             }
@@ -528,6 +815,28 @@ async fn main() {
             disk_bar.draw();
         }
         disk_bar.draw();
+
+        // Rebuild index excluding failed courses
+        if !failed_ids.is_empty() {
+            let failed_set: std::collections::HashSet<&str> =
+                failed_ids.iter().map(|s| s.as_str()).collect();
+            w.course_ids.retain(|id| !failed_set.contains(id.as_str()));
+            let filtered_index: Vec<&CourseIndexEntry> = w
+                .index
+                .iter()
+                .filter(|e| !failed_set.contains(e.id.as_str()))
+                .collect();
+            let index_json =
+                serde_json::to_string_pretty(&filtered_index).expect("failed to serialize index");
+            let _ = atomic_write(&w.sem_dir.join("_index.json"), index_json.as_bytes());
+            log::info!(
+                target: "sogrim_server",
+                "[{}] rebuilt index: removed {} phantom courses",
+                w.label,
+                failed_ids.len()
+            );
+        }
+
         log::info!(target: "sogrim_server", "[{}] done: {written} written, {errors} errors", w.label);
         total_courses += written;
         total_errors += errors;
