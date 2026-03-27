@@ -5,18 +5,24 @@ use actix_web::{
 };
 use actix_web_lab::middleware::from_fn;
 use db::Db;
+use disk_cache::DiskCourseCache;
 use error::AppError;
 use middleware::{auth, cors, logger};
 use resources::user::Permissions;
+use std::path::PathBuf;
 
 mod api;
 mod config;
 mod consts;
 mod core;
 mod db;
+mod disk_cache;
 mod error;
 mod middleware;
 mod resources;
+
+const CACHE_DIR_ENV: &str = "SOGRIM_CACHE_DIR";
+const DEFAULT_CACHE_DIR: &str = "/home/opc/cache";
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -26,10 +32,18 @@ async fn main() -> std::io::Result<()> {
     // Initialize DB client
     let db = Db::new().await;
 
+    // Initialize disk-backed course cache
+    let cache_dir = std::env::var(CACHE_DIR_ENV).unwrap_or_else(|_| DEFAULT_CACHE_DIR.to_string());
+    let course_cache = web::Data::new(DiskCourseCache::new(PathBuf::from(&cache_dir)));
+
+    // Load all disk cache into memory on startup
+    course_cache.load_all().await;
+
     // Start the server
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
+            .app_data(course_cache.clone())
             .app_data(auth::JwtDecoder::new())
             .wrap(cors::cors())
             .wrap(logger::init_actix_logger())
@@ -39,9 +53,11 @@ async fn main() -> std::io::Result<()> {
                     Result::<HttpResponse, AppError>::Ok(HttpResponse::Ok().finish())
                 },
             )))
+            .service(api::courses::get_semesters)
+            .service(api::courses::get_course_index)
+            .service(api::courses::get_course)
             .service(
                 // Global authentication scope
-                // All routes under this scope will be authenticated and authorized
                 scope("")
                     .wrap(from_fn(auth::authenticate))
                     .service(
