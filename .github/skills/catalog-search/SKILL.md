@@ -26,37 +26,67 @@ Given a faculty name and academic year (e.g., "Computer Science 2024-2025"), sea
 
 ### Search Strategy
 
-1. **Use web search** with queries like:
-   - `Technion <faculty> undergraduate catalog <year> site:technion.ac.il filetype:pdf`
-   - `טכניון הפקולטה ל<faculty-hebrew> תוכנית לימודים <hebrew-year> site:technion.ac.il`
-   - `undergraduate.cs.technion.ac.il catalog <year> pdf`
+**All searches MUST be conducted in Hebrew and scoped to `site:technion.ac.il`.** English queries return wrong results. Follow this order strictly:
 
-2. **Known URL patterns** (try these first before searching):
+#### Strategy A: Direct site browsing (try first)
 
-   | Faculty | Base URL |
+1. Navigate to the faculty's known undergraduate website (see table below).
+2. Use `web_fetch` to load the page and look for links containing "קטלוג" or "תוכנית לימודים" or PDF links.
+3. The catalog PDF is usually linked from the main undergraduate page or a "תוכניות לימודים" sub-page.
+
+   | Faculty | Undergraduate Site |
    |---|---|
    | Computer Science | `https://undergraduate.cs.technion.ac.il/` |
 
-   The CS catalog PDF is usually found under `wp-content/uploads/` on the CS undergraduate site. The filename often contains the Hebrew academic year (e.g., תשפ"ה for 2024-2025).
+   The CS catalog PDF is typically hosted under `wp-content/uploads/` on the CS undergraduate site. The filename contains the Hebrew faculty name and Hebrew academic year abbreviation (e.g., `הפקולטה-למדעי-המחשב-תשפ״ה`).
 
-3. **Hebrew year mapping** (useful for URL matching):
+#### Strategy B: Hebrew web search (if Strategy A fails)
 
-   | Academic Year | Hebrew Year | Hebrew Abbreviation |
-   |---|---|---|
-   | 2023-2024 | תשפ"ד | תשפד |
-   | 2024-2025 | תשפ"ה | תשפה |
-   | 2025-2026 | תשפ"ו | תשפו |
-   | 2026-2027 | תשפ"ז | תשפז |
+Search **in Hebrew** using these query patterns (most specific first):
 
-4. **Fallback**: If web search doesn't find a direct PDF link, search for the faculty's undergraduate page and browse for a "תוכנית לימודים" (study program) or "קטלוג" (catalog) link.
+1. `קטלוג <faculty-hebrew> <year> site:technion.ac.il`
+   - Example: `קטלוג מדעי המחשב 2024-2025 site:technion.ac.il`
 
-5. **Verify the URL**: Confirm the URL ends in `.pdf` and is accessible. Download a small portion to verify it's a valid PDF.
+2. `הפקולטה ל<faculty-hebrew> תוכנית לימודים <hebrew-year-abbrev> site:technion.ac.il`
+   - Example: `הפקולטה למדעי המחשב תוכנית לימודים תשפה site:technion.ac.il`
+
+3. `<faculty-hebrew> קטלוג <hebrew-year-abbrev> filetype:pdf site:technion.ac.il`
+   - Example: `מדעי המחשב קטלוג תשפה filetype:pdf site:technion.ac.il`
+
+**Do NOT use English-language queries** — they consistently return incorrect catalogs from other sources.
+
+#### Faculty name mapping
+
+| Faculty (English) | Faculty (Hebrew) | Search term |
+|---|---|---|
+| Computer Science | מדעי המחשב | מדעי המחשב |
+
+#### Hebrew year mapping
+
+| Academic Year | Hebrew Year | Hebrew Abbreviation (for URLs/search) |
+|---|---|---|
+| 2023-2024 | תשפ"ד | תשפד |
+| 2024-2025 | תשפ"ה | תשפה |
+| 2025-2026 | תשפ"ו | תשפו |
+| 2026-2027 | תשפ"ז | תשפז |
+
+#### Strategy C: Fallback
+
+If Strategies A and B don't find a direct PDF link:
+1. Search for the faculty's undergraduate page: `<faculty-hebrew> טכניון לימודי הסמכה site:technion.ac.il`
+2. Browse the page for links to "תוכנית לימודים" or "קטלוג"
+3. Follow links until you find the PDF
+
+#### Verify the URL
+
+Confirm the URL ends in `.pdf` and is accessible. Use `web_fetch` to download a small portion and verify it's a valid PDF (starts with `%PDF`).
 
 ### Example
 
-For "Computer Science 2024-2025":
-- Search: `Technion Computer Science undergraduate catalog 2024-2025 site:technion.ac.il filetype:pdf`
-- Expected result: `https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-הפקולטה-למדעי-המחשב-תשפ״ה-.pdf` (URL-encoded)
+For "Computer Science 2024-2025" (מדעי המחשב):
+1. **Strategy A**: Fetch `https://undergraduate.cs.technion.ac.il/` and look for PDF links containing "קטלוג" or "תשפה"
+2. **Strategy B** (if needed): Search `קטלוג מדעי המחשב 2024-2025 site:technion.ac.il`
+3. **Expected result**: `https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-הפקולטה-למדעי-המחשב-תשפ״ה-.pdf` (URL-encoded)
 
 ## Step 2: Extract PDF and Discover Tracks
 
@@ -214,7 +244,8 @@ Source PDF: <url>
 User: "Extract all Computer Science catalogs for 2024-2025"
 
 ### Conversation 1 — Search & Extract (Steps 1-3)
-1. Search web → find `https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-הפקולטה-למדעי-המחשב-תשפ״ה-.pdf`
+1. Browse `https://undergraduate.cs.technion.ac.il/` for PDF links → find `https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-הפקולטה-למדעי-המחשב-תשפ״ה-.pdf`
+   - If not found on the page, search in Hebrew: `קטלוג מדעי המחשב 2024-2025 site:technion.ac.il`
 2. Extract PDF text → discover tracks: 3-year, 4-year, Software Engineering, Data Science
 3. For each track: run catalog-extractor pipeline with appropriate reference → save JSON files
 4. **Stop conversation.** Tell the user: "Extraction complete. Start a new conversation for validation."
