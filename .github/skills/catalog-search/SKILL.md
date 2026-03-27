@@ -1,3 +1,8 @@
+---
+name: catalog-search
+description: "Search the internet for a Technion faculty catalog PDF, discover all degree tracks, extract each track into a JSON catalog, and validate the results. Orchestrates catalog-extractor and catalog-validation skills."
+---
+
 # Technion Catalog Search & Batch Extraction
 
 Search the internet for a Technion faculty catalog PDF, discover all degree tracks within it, extract each track into a JSON catalog, and validate the results — all orchestrated automatically.

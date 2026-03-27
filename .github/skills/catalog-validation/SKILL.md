@@ -1,3 +1,8 @@
+---
+name: catalog-validation
+description: "Validate Sogrim catalog JSON files for correctness — both structural (schema) and content (against the source Technion PDF)."
+---
+
 # Technion Catalog Validation
 
 Validate Sogrim catalog JSON files for correctness — both structural (schema) and content (against the source PDF).

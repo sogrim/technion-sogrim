@@ -1,3 +1,8 @@
+---
+name: catalog-extractor
+description: "Extract academic degree catalogs from Technion PDF course catalogs into structured JSON format for the Sogrim degree-completion checker."
+---
+
 # Technion Catalog JSON Extractor
 
 Extract academic degree catalogs from Technion PDF course catalogs into structured JSON format for the Sogrim degree-completion checker.
