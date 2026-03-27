@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.pdf
+raw_text.txt
+findings.json
