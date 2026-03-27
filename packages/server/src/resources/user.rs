@@ -3,7 +3,7 @@ use crate::{
     core::degree_status::DegreeStatus,
     db::{Db, Resource},
     error::AppError,
-    middleware::auth::Sub,
+    middleware::jwt_decoder::Sub,
 };
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpMessage, HttpRequest};
 use bson::{doc, DateTime, Document};
