@@ -9,7 +9,7 @@ const ZERO: f32 = 0.0;
 const HALF: f32 = 0.5;
 const SINGLE: f32 = 1.0;
 
-pub fn common_replacements_msg(course: &Course) -> String {
+pub fn common_replacement_msg(course: &Course) -> String {
     format!(
         "הנחנו כי קורס זה מחליף את הקורס {} ({}) בעקבות החלפות נפוצות. שימו לב כי נדרש אישור מהרכזות בשביל החלפה זו",
         course.name,
@@ -17,7 +17,7 @@ pub fn common_replacements_msg(course: &Course) -> String {
     )
 }
 
-pub fn catalog_replacements_msg(course: &Course) -> String {
+pub fn catalog_replacement_msg(course: &Course) -> String {
     format!("קורס זה מחליף את הקורס {} ({})", course.name, course.id)
 }
 
