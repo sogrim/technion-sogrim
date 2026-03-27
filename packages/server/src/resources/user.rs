@@ -23,6 +23,53 @@ pub struct UserSettings {
     pub dark_mode: bool,
 }
 
+// ---------------------------------------------------------------------------
+// Timetable persistence
+// ---------------------------------------------------------------------------
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct TimetableState {
+    #[serde(default)]
+    pub current_semester: Option<String>,
+    #[serde(default)]
+    pub active_draft_id: Option<String>,
+    #[serde(default)]
+    pub drafts: Vec<TimetableDraft>,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct TimetableDraft {
+    pub id: String,
+    pub name: String,
+    pub semester: String,
+    #[serde(default)]
+    pub courses: Vec<CourseSelection>,
+    #[serde(default)]
+    pub custom_events: Vec<CustomEvent>,
+    pub created_at: String,
+    pub updated_at: String,
+    #[serde(default)]
+    pub is_published: bool,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct CourseSelection {
+    pub course_id: String,
+    #[serde(default)]
+    pub selected_groups: std::collections::HashMap<String, String>,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct CustomEvent {
+    pub id: String,
+    pub title: String,
+    pub day: u8,
+    pub start_time: String,
+    pub end_time: String,
+    #[serde(default)]
+    pub color: Option<String>,
+}
+
 #[derive(Default, Clone, Copy, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
 pub enum Permissions {
     #[default]
@@ -38,6 +85,8 @@ pub struct User {
     pub permissions: Permissions,
     pub details: UserDetails,
     pub settings: UserSettings,
+    #[serde(default)]
+    pub timetable: TimetableState,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_seen: Option<DateTime>,
 }

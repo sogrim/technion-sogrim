@@ -78,7 +78,9 @@ async fn main() -> std::io::Result<()> {
                             .service(api::students::add_courses)
                             .service(api::students::compute_degree_status)
                             .service(api::students::update_details)
-                            .service(api::students::update_settings),
+                            .service(api::students::update_settings)
+                            .service(api::students::get_timetable)
+                            .service(api::students::update_timetable),
                     )
                     .service(
                         scope("/admins")

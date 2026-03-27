@@ -81,19 +81,14 @@ jobs:
           command: clippy
           args: --manifest-path packages/server/Cargo.toml --all-targets -- -D warnings
 
-  # Gate: always runs, fails if any real job failed. Required by branch protection.
-  ci-pass:
+  # Gate: only runs when something failed. Skipped jobs report as "Success"
+  # to branch protection, so this only needs to fire on failure to block merges.
+  ci-fail:
     name: CI Pass
-    needs: [test, format, clippy]
-    if: always()
+    needs: [changes, test, format, clippy]
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-latest
     steps:
       - run: |
-          if [ "${{ needs.test.result }}" = "failure" ] || \
-             [ "${{ needs.format.result }}" = "failure" ] || \
-             [ "${{ needs.clippy.result }}" = "failure" ] || \
-             [ "${{ needs.test.result }}" = "cancelled" ] || \
-             [ "${{ needs.format.result }}" = "cancelled" ] || \
-             [ "${{ needs.clippy.result }}" = "cancelled" ]; then
-            exit 1
-          fi
+          echo "::error::CI failed"
+          exit 1
