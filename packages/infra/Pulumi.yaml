@@ -1,0 +1,10 @@
+name: sogrim
+description: OCI Always Free infrastructure for sogrim
+runtime:
+  name: python
+  options:
+    toolchain: uv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: oci-python
