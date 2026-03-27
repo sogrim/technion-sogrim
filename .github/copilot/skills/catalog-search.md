@@ -13,6 +13,8 @@ This skill **orchestrates** the other two skills:
 - **catalog-extractor** — extracts a single track into JSON
 - **catalog-validation** — validates a JSON catalog against the source PDF
 
+**IMPORTANT — Unbiased validation**: Validation must run in a **separate, fresh conversation** (new thread / new Copilot chat) with no history from the extraction phase. This ensures the validator independently checks the JSON against the PDF without being influenced by extraction decisions, assumptions, or shortcuts.
+
 ## Step 1: Find the Catalog PDF URL
 
 Given a faculty name and academic year (e.g., "Computer Science 2024-2025"), search the web to find the official Technion catalog PDF.
@@ -131,6 +133,22 @@ If no reference exists for a track, omit `--reference` and build from scratch us
 
 ## Step 4: Validate Each Track (invoke catalog-validator)
 
+### ⚠️ CRITICAL: Fresh Conversation Required
+
+Validation **MUST** run in a **separate, clean conversation** with no history from the extraction phase. This prevents the validator from being biased by the extractor's assumptions or decisions.
+
+**How to do this:**
+1. After all tracks are extracted in Steps 1–3, **stop the current conversation**.
+2. **Start a new Copilot conversation** (new thread / new chat session).
+3. In the new conversation, provide **only**:
+   - The path to the generated JSON file (e.g., `packages/docs/ComputerScience3years2024-2025.json`)
+   - The PDF URL
+   - The instruction: "Validate this catalog JSON against the PDF using the catalog-validation skill"
+4. The validator will independently read the JSON and PDF with fresh eyes — no extraction context leaking in.
+5. Repeat for each track in a separate conversation (or batch them in one fresh conversation if validating multiple files, since each validation is independent).
+
+### Validation Workflow (in the fresh conversation)
+
 For **each extracted catalog**, invoke the **catalog-validation** skill:
 
 1. **Install dependencies** (if not already):
@@ -190,11 +208,19 @@ Source PDF: <url>
 
 User: "Extract all Computer Science catalogs for 2024-2025"
 
+### Conversation 1 — Search & Extract (Steps 1-3)
 1. Search web → find `https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-הפקולטה-למדעי-המחשב-תשפ״ה-.pdf`
 2. Extract PDF text → discover tracks: 3-year, 4-year, Software Engineering, Data Science
-3. For each track:
-   a. Run catalog-extractor pipeline with appropriate reference
-   b. Refine the skeleton JSON
-   c. Run catalog-validator
-   d. Fix any errors, re-validate
-4. Output summary table with all results
+3. For each track: run catalog-extractor pipeline with appropriate reference → save JSON files
+4. **Stop conversation.** Tell the user: "Extraction complete. Start a new conversation for validation."
+
+### Conversation 2 — Validate (Step 4, fresh thread)
+1. User starts a **new Copilot conversation** (no extraction history)
+2. User says: "Validate these catalog JSONs against the PDF using catalog-validation:
+   - `packages/docs/ComputerScience3years2024-2025.json`
+   - `packages/docs/ComputerScience4years2024-2025.json`
+   - `packages/docs/ComputerScienceSoftwareEngineerCourse2024-2025.json`
+   - `packages/docs/ComputerScienceDataScienceAndEngineering2024-2025.json`
+   - PDF: `<url>`"
+3. Validator independently reads each JSON + PDF, finds issues, fixes them
+4. Produces summary report
