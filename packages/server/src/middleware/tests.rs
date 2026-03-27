@@ -47,7 +47,7 @@ pub(crate) fn fake_rsa_keypair() -> &'static (EncodingKey, RsaKey) {
     })
 }
 
-fn __fake_jwt(is_expired: bool) -> String {
+fn make_fake_jwt(is_expired: bool) -> String {
     let (encoding_key, public_key) = fake_rsa_keypair();
     let exp = if is_expired {
         0
@@ -74,10 +74,10 @@ fn __fake_jwt(is_expired: bool) -> String {
 }
 
 pub(crate) fn fake_jwt() -> String {
-    __fake_jwt(false)
+    make_fake_jwt(false)
 }
 pub(crate) fn fake_jwt_expired() -> String {
-    __fake_jwt(true)
+    make_fake_jwt(true)
 }
 
 #[test]

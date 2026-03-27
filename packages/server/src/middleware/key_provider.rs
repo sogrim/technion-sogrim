@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use actix_web::http::header;
+use reqwest::header;
 use serde::Deserialize;
 
 use crate::error::AppError;
