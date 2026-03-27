@@ -96,7 +96,8 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
     let validationsStatus = courseFromUserValidations(
       newRowInput,
       tableRows,
-      true
+      true,
+      semester === null
     );
 
     if (validationsStatus.error) {
@@ -164,7 +165,12 @@ const SemesterGridComp: React.FC<SemesterGridProps> = ({ semester }) => {
         }
         // @ts-ignore //TODO fix typing
         newRow[field] = value;
-        let validationsStatus = courseFromUserValidations(newRow, tableRows);
+        let validationsStatus = courseFromUserValidations(
+          newRow,
+          tableRows,
+          false,
+          semester === null
+        );
         if (validationsStatus.error) {
           const oldRows = [...tableRows];
           oldRows[courseInTableIndex] = tableRows[courseInTableIndex];

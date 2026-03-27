@@ -173,22 +173,34 @@ const NewRowComp: React.FC<NewRowProps> = ({
 
       <Divider orientation="vertical" variant="middle" flexItem />
 
-      <CourseAutocomplete
-        name="courseNumber"
-        helperText="מס׳ הקורס"
-        options={courseNumberOptions}
-        option_map={(option) => `${option._id} - ${option.name}`}
-        option_filter={(options, state) =>
-          options.filter((option: string) =>
-            option.split("-")[0].includes(state.inputValue)
-          )
-        }
-        value={courseNumber}
-        inputValue={courseNumber}
-        onChange={handleValueSelected}
-        onInputChange={handleEditChange}
-        isLoading={isLoadingByNumber}
-      />
+      {isSemester0 ? (
+        <TextField
+          id="course-number"
+          name="courseNumber"
+          onChange={handleEditChange}
+          value={courseNumber}
+          variant="outlined"
+          size="small"
+          helperText="מס׳ קורס (אופציונלי)"
+        />
+      ) : (
+        <CourseAutocomplete
+          name="courseNumber"
+          helperText="מס׳ הקורס"
+          options={courseNumberOptions}
+          option_map={(option) => `${option._id} - ${option.name}`}
+          option_filter={(options, state) =>
+            options.filter((option: string) =>
+              option.split("-")[0].includes(state.inputValue)
+            )
+          }
+          value={courseNumber}
+          inputValue={courseNumber}
+          onChange={handleValueSelected}
+          onInputChange={handleEditChange}
+          isLoading={isLoadingByNumber}
+        />
+      )}
 
       <Divider orientation="vertical" variant="middle" flexItem />
 
@@ -251,27 +263,25 @@ const NewRowComp: React.FC<NewRowProps> = ({
       </>
       <Divider orientation="vertical" variant="middle" flexItem />
 
-      {!isSemester0 && (
-        <Box sx={{ flexDirection: "column" }}>
-          <Select
-            id="course-type"
-            name="type"
-            onChange={(event, newValue) => handleEditChange(event, "type")}
-            value={type}
-            variant="outlined"
-            size="small"
-            sx={{ width: "170px" }}
-          >
-            {banksNamesOptions?.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </Select>
-          <FormHelperText sx={{ ml: 2 }}>קטגוריה</FormHelperText>
-          <Divider orientation="vertical" variant="middle" flexItem />
-        </Box>
-      )}
+      <Box sx={{ flexDirection: "column" }}>
+        <Select
+          id="course-type"
+          name="type"
+          onChange={(event, newValue) => handleEditChange(event, "type")}
+          value={type}
+          variant="outlined"
+          size="small"
+          sx={{ width: "170px" }}
+        >
+          {banksNamesOptions?.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </Select>
+        <FormHelperText sx={{ ml: 2 }}>קטגוריה</FormHelperText>
+        <Divider orientation="vertical" variant="middle" flexItem />
+      </Box>
 
       <IconButton
         sx={{ alignSelf: "flex-end" }}

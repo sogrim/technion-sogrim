@@ -13,6 +13,9 @@ import {
 } from "../types/data-types";
 import { RootStore } from "./RootStore";
 
+const generateCustomExemptionId = () =>
+  `EXEMPTION-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 const isCourseRowEqualToCourseStatus = (
   row: RowData,
   courseStatus: CourseStatus,
@@ -235,10 +238,14 @@ export class DataStore {
 
   insertCourseInUserDetails = (rowData: RowData, semester: string | null) => {
     const courseList = this.userDetails?.degree_status.course_statuses ?? [];
+    const courseNumber =
+      semester === null && !rowData.courseNumber
+        ? generateCustomExemptionId()
+        : rowData.courseNumber;
 
     const newCourse: CourseStatus = {
       course: {
-        _id: rowData.courseNumber,
+        _id: courseNumber,
         credit: +rowData.credit,
         name: rowData.name,
       },
