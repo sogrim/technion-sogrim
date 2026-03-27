@@ -355,7 +355,8 @@ async fn run_repair(args: &Args) {
     }
 
     // Group by semester for display
-    let mut by_sem: std::collections::BTreeMap<String, Vec<&str>> = std::collections::BTreeMap::new();
+    let mut by_sem: std::collections::BTreeMap<String, Vec<&str>> =
+        std::collections::BTreeMap::new();
     for m in &missing {
         by_sem
             .entry(format!("{}/{}", m.year, m.semester))
@@ -365,7 +366,11 @@ async fn run_repair(args: &Args) {
 
     log::info!(target: "sogrim_server", "Repair: {} missing courses across {} semesters", missing.len(), by_sem.len());
     if interactive {
-        eprintln!("  found {} missing courses across {} semesters:", missing.len(), by_sem.len());
+        eprintln!(
+            "  found {} missing courses across {} semesters:",
+            missing.len(),
+            by_sem.len()
+        );
         for (sem, ids) in &by_sem {
             let label = {
                 let parts: Vec<&str> = sem.split('/').collect();
@@ -449,9 +454,12 @@ async fn run_repair(args: &Args) {
     bar.finish();
 
     // Phase 4: Remove phantoms from indexes
-    let phantoms: Vec<&MissingCourse> = failed.iter()
+    let phantoms: Vec<&MissingCourse> = failed
+        .iter()
         .filter_map(|key| {
-            missing.iter().find(|m| format!("{}/{}/{}", m.year, m.semester, m.course_id) == *key)
+            missing
+                .iter()
+                .find(|m| format!("{}/{}/{}", m.year, m.semester, m.course_id) == *key)
         })
         .collect();
 
@@ -472,11 +480,14 @@ async fn run_repair(args: &Args) {
         let sem_dir = args.cache_dir.join(year).join(semester);
         let index_path = sem_dir.join("_index.json");
 
-        let Ok(data) = fs::read_to_string(&index_path) else { continue };
-        let Ok(index) = serde_json::from_str::<Vec<CourseIndexEntry>>(&data) else { continue };
+        let Ok(data) = fs::read_to_string(&index_path) else {
+            continue;
+        };
+        let Ok(index) = serde_json::from_str::<Vec<CourseIndexEntry>>(&data) else {
+            continue;
+        };
 
-        let phantom_set: std::collections::HashSet<&str> =
-            phantom_ids.iter().copied().collect();
+        let phantom_set: std::collections::HashSet<&str> = phantom_ids.iter().copied().collect();
         let filtered: Vec<&CourseIndexEntry> = index
             .iter()
             .filter(|e| !phantom_set.contains(e.id.as_str()))
