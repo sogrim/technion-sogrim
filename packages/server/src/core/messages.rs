@@ -115,7 +115,7 @@ pub fn medicine_preclinical_avg_error_msg(avg: f32) -> String {
 }
 
 pub fn medicine_preclinical_avg_msg(avg: f32) -> String {
-    format!("ממוצע הציונים של קורסי הרפואה שלקחת הוא {:.2}", avg)
+    format!("ממוצע הציונים של קורסי הרפואה שלקחת הוא {avg:.2}")
 }
 
 pub fn medicine_preclinical_course_repetitions_error_msg(

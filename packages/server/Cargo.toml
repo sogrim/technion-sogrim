@@ -5,6 +5,18 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "sogrim_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sogrim-server"
+path = "src/main.rs"
+
+[[bin]]
+name = "sogrim-fetcher"
+path = "src/bin/fetcher.rs"
+
 [dependencies]
 log = "0.4"
 colored = "2"
@@ -24,6 +36,13 @@ env_logger = "0.10"
 lazy_static = "1.4"
 petgraph = "0.6"
 regex = "1.9"
+reqwest = { version = "0.12", features = ["json"] }
+chrono = "0.4"
+clap = { version = "4", features = ["derive"] }
+moka = { version = "0.12", features = ["future"] }
+urlencoding = "2"
+atty = "0.2"
+ctrlc = "3"
 
 [build-dependencies]
 dotenvy = "0.15"
