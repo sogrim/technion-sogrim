@@ -191,7 +191,7 @@ fn run_exhaustive_search(
     .unwrap_or(best_match)
 }
 
-impl<'a> BankRuleHandler<'a> {
+impl BankRuleHandler<'_> {
     pub fn specialization_group(
         mut self,
         sgs: &SpecializationGroups,

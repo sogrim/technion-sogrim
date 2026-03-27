@@ -3,6 +3,7 @@ pub mod credit_transfer_graph;
 pub mod degree_status;
 pub mod messages;
 pub mod parser;
+pub mod parser_v2;
 pub mod types;
 
 pub mod catalog_validations;

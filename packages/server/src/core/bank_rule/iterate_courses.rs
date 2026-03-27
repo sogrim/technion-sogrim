@@ -6,7 +6,7 @@ use crate::resources::course::Course;
 
 use super::BankRuleHandler;
 
-impl<'a> BankRuleHandler<'a> {
+impl BankRuleHandler<'_> {
     pub fn iterate_course_list(&mut self) -> CreditInfo {
         // return sum_credit, count_courses, missing_points
         let mut sum_credit = self.credit_overflow;

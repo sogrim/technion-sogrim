@@ -8,7 +8,7 @@ use actix_web::{
 use bson::DateTime;
 
 use crate::{
-    core::{degree_status::DegreeStatus, parser},
+    core::{degree_status::DegreeStatus, parser_v2},
     db::{Db, FilterOption},
     error::AppError,
     middleware::auth::Sub,
@@ -137,7 +137,7 @@ pub async fn add_courses(
     db: Data<Db>,
 ) -> Result<HttpResponse, AppError> {
     user.details.degree_status = DegreeStatus::default();
-    user.details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
+    user.details.degree_status.course_statuses = parser_v2::parse_copy_paste_data(&data)?;
     user.details.modified = true;
     let updated_user = db.update::<User>(user).await?;
     Ok(HttpResponse::Ok().json(updated_user))

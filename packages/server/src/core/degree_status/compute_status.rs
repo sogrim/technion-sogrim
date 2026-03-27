@@ -2,7 +2,7 @@ use crate::core::{messages, types::Transfer};
 
 use super::DegreeStatusHandler;
 
-impl<'a> DegreeStatusHandler<'a> {
+impl DegreeStatusHandler<'_> {
     pub fn compute_status(mut self) {
         for bank in self.course_banks.clone() {
             let course_list_for_bank = self.catalog.get_course_list(&bank.name);
