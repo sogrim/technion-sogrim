@@ -75,24 +75,6 @@ impl DegreeStatus {
                 .and_then(|course| course.tags.clone());
         });
     }
-
-    pub fn get_all_taken_courses_for_bank(&self, bank_name: &str) -> Vec<CourseId> {
-        self.course_statuses
-            .iter()
-            .filter(|course_status| course_status.r#type == Some(bank_name.to_string()))
-            .map(|course_status| course_status.course.id.clone())
-            .collect()
-    }
-
-    pub fn get_all_completed_courses_for_bank(&self, bank_name: &str) -> Vec<CourseId> {
-        self.course_statuses
-            .iter()
-            .filter(|course_status| {
-                course_status.r#type == Some(bank_name.to_string()) && course_status.completed()
-            })
-            .map(|course_status| course_status.course.id.clone())
-            .collect()
-    }
 }
 
 pub struct DegreeStatusHandler<'a> {
@@ -128,10 +110,10 @@ impl<'a> DegreeStatusHandler<'a> {
 
 impl DegreeStatus {
     pub fn compute(&mut self, mut catalog: Catalog, courses: HashMap<CourseId, Course>) {
-        // prepare the data for degree status computation
-        self.preprocess(&mut catalog, &courses);
-
         let course_banks = catalog.get_bank_traversal_order();
+
+        // prepare the data for degree status computation
+        self.preprocess(&mut catalog);
 
         DegreeStatusHandler {
             degree_status: self,
