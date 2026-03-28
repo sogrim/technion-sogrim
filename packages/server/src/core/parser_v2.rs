@@ -1,5 +1,5 @@
-use lazy_static::lazy_static;
 use regex::Regex;
+use std::sync::LazyLock;
 
 use crate::{
     error::AppError,
@@ -7,13 +7,13 @@ use crate::{
 };
 use std::collections::HashMap;
 
-lazy_static! {
-    // 8 digits not preceded or followed by another digit.
-    static ref COURSE_ID_RE: Regex = Regex::new(r"(?:^|\D)(\d{8})(?:\D|$)").unwrap();
-    static ref SEMESTER_RE: Regex =
-        Regex::new(r"(\d{4}-\d{4})\s+(אביב|חורף|קיץ)\s+(תש\S+)").unwrap();
-    static ref NUMBER_RE: Regex = Regex::new(r"\b(\d+\.?\d*)\b").unwrap();
-}
+// 8 digits not preceded or followed by another digit.
+static COURSE_ID_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?:^|\D)(\d{8})(?:\D|$)").unwrap());
+static SEMESTER_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(\d{4}-\d{4})\s+(אביב|חורף|קיץ)\s+(תש\S+)").unwrap());
+static NUMBER_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\b(\d+\.?\d*)\b").unwrap());
 
 // ── Format Detection ──
 
