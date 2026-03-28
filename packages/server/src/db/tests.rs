@@ -3,15 +3,14 @@ use crate::{
     db::{Db, FilterOption},
     resources::course::Course,
 };
-use actix_rt::test;
-use actix_web::{body::MessageBody, http::StatusCode, ResponseError};
+use axum::{http::StatusCode, response::IntoResponse};
 
 use mongodb::{
     options::{ClientOptions, Credential},
     Client,
 };
 
-#[test]
+#[tokio::test]
 pub async fn test_db_internal_error() {
     // Create explicit client options and update it manually
     let mut client_options = ClientOptions::parse(CONFIG.uri)
@@ -54,32 +53,28 @@ pub async fn test_db_internal_error() {
             .expect_err("Expected error"),
     ];
     for err in errors {
-        let err_resp = err.error_response();
-        assert_eq!(err_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
-        assert!(err_resp
-            .into_body()
-            .try_into_bytes()
-            .unwrap()
-            .into_iter()
-            .map(|b| b as char)
-            .collect::<String>()
-            .contains("Authentication failed"));
+        let resp = err.into_response();
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        let error_str = resp
+            .extensions()
+            .get::<String>()
+            .cloned()
+            .unwrap_or_default();
+        assert!(error_str.contains("Authentication failed"));
     }
 
     let ping_err = db.ping().await.expect_err("Expected ping error");
-    let ping_resp = ping_err.error_response();
-    assert_eq!(ping_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
-    assert!(ping_resp
-        .into_body()
-        .try_into_bytes()
-        .unwrap()
-        .iter()
-        .map(|b| *b as char)
-        .collect::<String>()
-        .contains("Authentication failed"));
+    let resp = ping_err.into_response();
+    assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    let error_str = resp
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_default();
+    assert!(error_str.contains("Authentication failed"));
 }
 
-#[test]
+#[tokio::test]
 pub async fn test_get_courses_by_filters() {
     let db = Db::new().await;
 

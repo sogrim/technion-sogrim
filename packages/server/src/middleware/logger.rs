@@ -1,10 +1,6 @@
 use std::time::{Duration, Instant};
 
-use actix_web::{
-    dev::{ServiceRequest, ServiceResponse},
-    middleware::Logger,
-    HttpMessage,
-};
+use axum::{extract::Request, middleware::Next, response::Response};
 use colored::{Color, ColoredString, Colorize};
 
 const SEP: &str = "  |  ";
@@ -27,50 +23,21 @@ pub fn init_env_logger() {
         .init();
 }
 
-pub fn init_actix_logger() -> Logger {
+pub async fn log_requests(req: Request, next: Next) -> Response {
     log_header_once();
-    Logger::new(
-        format!(
-            " {}{SEP}{}{SEP}{}{SEP}{}",
-            "%{REQUEST}xi",
-            "%{STATUS}xo".bold(),
-            "%{DURATION}xo".bold(),
-            "%{REASON}xo".bold(),
-        )
-        .as_str(),
-    )
-    .custom_request_replace("REQUEST", format_request)
-    .custom_response_replace("STATUS", format_status)
-    .custom_response_replace("DURATION", format_duration)
-    .custom_response_replace("REASON", format_reason)
-    .log_target("sogrim_server")
-}
 
-fn format_request(req: &ServiceRequest) -> String {
-    // Adding the start time to the request extensions is a hack to measure the duration of handling a request.
-    // This hack works because:
-    // 1. The logger middleware is the FIRST and LAST middleware to be called.
-    // 2. custom_request_replace is called BEFORE the request is handled.
-    // 3. custom_response_replace is called AFTER the response is handled.
-    // This means that the start time is stored in the request extensions BEFORE the request is handled
-    // and then retrieved in the response formatter AFTER the response is handled,
-    // which allows us to measure the duration of handling the request.
     let start = Instant::now();
-    req.extensions_mut().insert(start);
+    let method = req.method().to_string();
+    let uri = req.uri().clone();
 
-    let method = &req.method().as_str();
-    let query = if req.query_string().is_empty() {
-        String::new()
-    } else {
-        format!("?{}", req.query_string())
-    };
+    let query = uri.query().map(|q| format!("?{q}")).unwrap_or_default();
     let path = format!(
         "{}{}",
-        req.path(),
+        uri.path(),
         &query[0..std::cmp::min(query.len(), MAX_QUERY_LEN)]
     );
     let version = format!("{:?}", req.version());
-    format!(
+    let request_line = format!(
         "{} {} {}{}",
         method,
         path,
@@ -78,18 +45,43 @@ fn format_request(req: &ServiceRequest) -> String {
         " ".repeat(MAX_REQ_LINE_LEN.saturating_sub(method.len() + path.len() + version.len())),
     )
     .yellow()
-    .to_string()
-}
+    .to_string();
 
-fn format_status(res: &ServiceResponse) -> String {
-    if res.status().is_success() {
-        format!("  {} ", res.status().as_str().green(),)
+    let res = next.run(req).await;
+
+    let status = res.status();
+    let elapsed = start.elapsed();
+
+    let status_str = if status.is_success() {
+        format!("  {} ", status.as_str().green())
     } else {
-        format!("  {} ", res.status().as_str().red(),)
-    }
+        format!("  {} ", status.as_str().red())
+    };
+
+    let duration_str = format_duration(elapsed, status.is_success());
+
+    let canonical_reason = status.canonical_reason().unwrap_or_default().to_string();
+    let reason_str = if status.is_success() {
+        format!("{}", canonical_reason.green().italic())
+    } else {
+        let extensions = res.extensions();
+        let reason = extensions.get::<String>().unwrap_or(&canonical_reason);
+        format!("{}", reason.red().italic())
+    };
+
+    log::info!(
+        target: "sogrim_server",
+        " {}{SEP}{}{SEP}{}{SEP}{}",
+        request_line.bold(),
+        status_str.bold(),
+        duration_str.bold(),
+        reason_str.bold(),
+    );
+
+    res
 }
 
-fn format_duration(res: &ServiceResponse) -> String {
+fn format_duration(duration: Duration, is_success: bool) -> String {
     fn __format_duration(duration: Duration) -> ColoredString {
         // lerp between green, yellow and red depending on the duration
         let duration_micros = duration.as_micros();
@@ -123,41 +115,19 @@ fn format_duration(res: &ServiceResponse) -> String {
             _ => format!("{:.2}s", duration.as_secs_f32()).color(color),
         }
     }
-    let extensions = res.request().extensions();
-    let start = extensions
-        .get::<Instant>()
-        .copied()
-        .unwrap_or_else(Instant::now);
-    if res.status().is_success() {
-        let duration = __format_duration(start.elapsed());
+    if is_success {
+        let duration = __format_duration(duration);
         format!(
             " {}{}",
             duration,
             " ".repeat(DURATION_TO_DETAILS_OFFSET - duration.chars().count()),
         )
     } else {
-        let duration = __format_duration(start.elapsed()).red();
+        let duration = __format_duration(duration).red();
         format!(
             " {}{}",
             duration,
             " ".repeat(DURATION_TO_DETAILS_OFFSET - duration.chars().count()),
         )
-    }
-}
-
-fn format_reason(res: &ServiceResponse) -> String {
-    let canonical_reason = res
-        .response()
-        .status()
-        .canonical_reason()
-        .unwrap_or_default()
-        .to_string();
-    if res.status().is_success() {
-        format!("{}", canonical_reason.green().italic())
-    } else {
-        // get the error from extensions or use canonical reason
-        let extensions = res.response().extensions();
-        let reason = extensions.get::<String>().unwrap_or(&canonical_reason);
-        format!("{}", reason.red().italic())
     }
 }

@@ -5,79 +5,66 @@ use crate::db::Db;
 use crate::error::AppError;
 use crate::resources::catalog::Catalog;
 use crate::resources::{course::Course, user::User};
-use actix_web::web::{Data, Json, Path};
-use actix_web::{delete, get, put, HttpResponse};
+use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use http::StatusCode;
 
 /////////////////////////////////////////////////////////////////////////////
 // Course API
 /////////////////////////////////////////////////////////////////////////////
 
-#[get("/courses")]
-pub async fn get_all_courses(_: User, db: Data<Db>) -> Result<HttpResponse, AppError> {
-    db.get_all::<Course>()
-        .await
-        .map(|courses| HttpResponse::Ok().json(courses))
+pub async fn get_all_courses(
+    _: User,
+    Extension(db): Extension<Db>,
+) -> Result<impl IntoResponse, AppError> {
+    db.get_all::<Course>().await.map(Json)
 }
 
-#[get("/courses/{id}")]
 pub async fn get_course_by_id(
     _: User,
-    id: Path<String>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
-    db.get::<Course>(id.as_str())
-        .await
-        .map(|course| HttpResponse::Ok().json(course))
+    Path(id): Path<String>,
+    Extension(db): Extension<Db>,
+) -> Result<impl IntoResponse, AppError> {
+    db.get::<Course>(id.as_str()).await.map(Json)
 }
 
-#[put("/courses/{id}")]
 pub async fn create_or_update_course(
     _: User,
-    _id: Path<String>,
-    course: Json<Course>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
-    db.create_or_update::<Course>(course.into_inner())
-        .await
-        .map(|course| HttpResponse::Ok().json(course))
+    Path(_id): Path<String>,
+    Extension(db): Extension<Db>,
+    Json(course): Json<Course>,
+) -> Result<impl IntoResponse, AppError> {
+    db.create_or_update::<Course>(course).await.map(Json)
 }
 
-#[delete("/courses/{id}")]
 pub async fn delete_course(
     _: User,
-    id: Path<String>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
+    Path(id): Path<String>,
+    Extension(db): Extension<Db>,
+) -> Result<impl IntoResponse, AppError> {
     db.delete::<Course>(id.as_str())
         .await
-        .map(|_| HttpResponse::Ok().finish())
+        .map(|_| StatusCode::OK)
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // Catalog API
 /////////////////////////////////////////////////////////////////////////////
 
-#[get("/catalogs/{id}")]
 pub async fn get_catalog_by_id(
     _: User,
-    id: Path<String>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
+    Path(id): Path<String>,
+    Extension(db): Extension<Db>,
+) -> Result<impl IntoResponse, AppError> {
     let obj_id = bson::oid::ObjectId::from_str(&id).map_err(|e| AppError::Bson(e.to_string()))?;
-    db.get::<Catalog>(&obj_id)
-        .await
-        .map(|course| HttpResponse::Ok().json(course))
+    db.get::<Catalog>(&obj_id).await.map(Json)
 }
 
-#[put("/catalogs/{id}")]
 pub async fn create_or_update_catalog(
     _: User,
-    _id: Path<String>,
-    catalog: Json<Catalog>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
+    Path(_id): Path<String>,
+    Extension(db): Extension<Db>,
+    Json(catalog): Json<Catalog>,
+) -> Result<impl IntoResponse, AppError> {
     catalog_validations::validate_catalog(&catalog)?;
-    db.create_or_update::<Catalog>(catalog.into_inner())
-        .await
-        .map(|catalog| HttpResponse::Ok().json(catalog))
+    db.create_or_update::<Catalog>(catalog).await.map(Json)
 }

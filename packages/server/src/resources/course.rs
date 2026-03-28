@@ -98,7 +98,7 @@ impl<'de> Visitor<'de> for StateStrVisitor {
             "לא רלוונטי" => Ok(CourseState::Irrelevant),
             _ => {
                 let err: E = Err::invalid_type(Unexpected::Str(v), &self);
-                log::error!("Json deserialize error: {}", err.to_string());
+                log::error!("Json deserialize error: {err}");
                 Err(err)
             }
         }
@@ -268,7 +268,7 @@ impl<'de> Visitor<'de> for GradeStrVisitor {
             )),
             _ => {
                 let err: E = Err::invalid_type(Unexpected::Str(v), &self);
-                log::error!("Json deserialize error: {}", err.to_string());
+                log::error!("Json deserialize error: {err}");
                 Err(err)
             }
         }

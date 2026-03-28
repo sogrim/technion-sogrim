@@ -550,7 +550,7 @@ impl CachedSapClient {
                             Err(e) => {
                                 if attempt == MAX_RETRIES {
                                     log::warn!(target: "sogrim_server",
-                                        "Fetch: batch failed after {} retries: {e}", MAX_RETRIES
+                                        "Fetch: batch failed after {MAX_RETRIES} retries: {e}"
                                     );
                                 } else {
                                     sleep(backoff).await;
@@ -662,7 +662,7 @@ impl CachedSapClient {
                             Err(e) => {
                                 if attempt == MAX_RETRIES {
                                     log::warn!(target: "sogrim_server",
-                                        "fetch_semester: batch failed after {} retries: {e}", MAX_RETRIES
+                                        "fetch_semester: batch failed after {MAX_RETRIES} retries: {e}"
                                     );
                                 } else {
                                     sleep(backoff).await;
@@ -1451,7 +1451,7 @@ mod tests {
     // Integration tests below require SAP API access.
     // Run with: cargo test -- --ignored
 
-    #[actix_rt::test]
+    #[tokio::test]
     #[ignore]
     async fn test_multi_batch() {
         let c = client();
@@ -1466,14 +1466,14 @@ mod tests {
         assert!(!results[1]["d"]["results"].as_array().unwrap().is_empty());
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     #[ignore]
     async fn test_fetch_semesters() {
         let semesters = client().get_semesters().await.unwrap();
         assert!(!semesters.is_empty());
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     #[ignore]
     async fn test_fetch_course_ids() {
         let semesters = client().get_semesters().await.unwrap();
@@ -1484,7 +1484,7 @@ mod tests {
         assert!(ids.iter().all(|id| !id.starts_with("SM")));
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     #[ignore]
     async fn test_cached_course_details() {
         let c = client();
@@ -1511,7 +1511,7 @@ mod tests {
         println!("{json}");
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     #[ignore]
     async fn test_investigate_all_semesters_with_dates() {
         let c = client();
@@ -1574,7 +1574,7 @@ mod tests {
         }
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     #[ignore]
     async fn test_measure_bandwidth_full_semester() {
         let c = Arc::new(CachedSapClient::new());

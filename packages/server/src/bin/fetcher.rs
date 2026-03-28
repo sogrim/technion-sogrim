@@ -692,7 +692,7 @@ async fn main() {
         .iter()
         .map(|t| format!("{}/{}", t.year, t.semester))
         .collect();
-    log::info!(target: "sogrim_server", "Will fetch: {:?}", sem_labels);
+    log::info!(target: "sogrim_server", "Will fetch: {sem_labels:?}");
 
     let concurrency = args.concurrency;
     print_header(interactive, &targets, &args.proxy_url, concurrency);

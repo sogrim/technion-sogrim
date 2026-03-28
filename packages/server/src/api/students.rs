@@ -1,11 +1,8 @@
 use std::{collections::HashMap, str::FromStr};
 
-use actix_web::{
-    get, post, put,
-    web::{Data, Json, Query},
-    HttpMessage, HttpRequest, HttpResponse,
-};
+use axum::{extract::Query, response::IntoResponse, Extension, Json};
 use bson::DateTime;
+use http::StatusCode;
 
 use crate::{
     core::{degree_status::DegreeStatus, parser},
@@ -19,14 +16,11 @@ use crate::{
     },
 };
 
-#[get("/catalogs")]
 pub async fn get_catalogs(
     _: User, //TODO think about whether this is necessary
-    req: HttpRequest,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
-    let params = Query::<HashMap<String, String>>::from_query(req.query_string())
-        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    Query(params): Query<HashMap<String, String>>,
+    Extension(db): Extension<Db>,
+) -> Result<impl IntoResponse, AppError> {
     let catalogs = match params.iter().last() {
         Some((key, value)) => {
             db.get_filtered::<Catalog>(FilterOption::Regex, key, value)
@@ -34,7 +28,7 @@ pub async fn get_catalogs(
         }
         None => db.get_all::<Catalog>().await,
     }?;
-    Ok(HttpResponse::Ok().json(
+    Ok(Json(
         catalogs
             .into_iter()
             .map(DisplayCatalog::from)
@@ -43,15 +37,12 @@ pub async fn get_catalogs(
 }
 
 //TODO: maybe this should be "PUT" because it will ALWAYS create a user if one doesn't exist?
-#[get("/login")]
-pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppError> {
-    let user_id = req
-        .extensions()
-        .get::<Sub>()
-        .cloned()
-        .ok_or_else(|| AppError::Middleware("No sub found in request extensions".into()))?;
+pub async fn login(
+    Extension(db): Extension<Db>,
+    Extension(sub): Extension<Sub>,
+) -> Result<impl IntoResponse, AppError> {
     let user = User {
-        sub: user_id,
+        sub,
         ..Default::default()
     };
 
@@ -74,15 +65,14 @@ pub async fn login(db: Data<Db>, req: HttpRequest) -> Result<HttpResponse, AppEr
     // Don't send the user's last seen time to the client
     updated_user.last_seen = None;
 
-    Ok(HttpResponse::Ok().json(updated_user))
+    Ok(Json(updated_user))
 }
 
-#[put("/catalog")]
 pub async fn update_catalog(
     mut user: User,
+    Extension(db): Extension<Db>,
     catalog_id: String,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
+) -> Result<impl IntoResponse, AppError> {
     let obj_id = bson::oid::ObjectId::from_str(&catalog_id)?;
     let catalog = db.get::<Catalog>(&obj_id).await?;
     user.details.catalog = Some(DisplayCatalog::from(catalog));
@@ -101,51 +91,49 @@ pub async fn update_catalog(
         });
 
     let updated_user = db.update::<User>(user).await?;
-    Ok(HttpResponse::Ok().json(updated_user))
+    Ok(Json(updated_user))
 }
 
-#[get("/courses")]
 pub async fn get_courses_by_filter(
     _: User,
-    req: HttpRequest,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
-    let params = Query::<HashMap<String, String>>::from_query(req.query_string())
-        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    Query(params): Query<HashMap<String, String>>,
+    Extension(db): Extension<Db>,
+) -> Result<impl IntoResponse, AppError> {
     match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
             let courses = db
                 .get_filtered::<Course>(FilterOption::Regex, "name", name)
                 .await?;
-            Ok(HttpResponse::Ok().json(courses))
+            Ok(Json(courses))
         }
         (None, Some(number)) => {
             let courses = db
                 .get_filtered::<Course>(FilterOption::Regex, "_id", number)
                 .await?;
-            Ok(HttpResponse::Ok().json(courses))
+            Ok(Json(courses))
         }
         (Some(_), Some(_)) => Err(AppError::BadRequest("Invalid query params".into())),
         (None, None) => Err(AppError::BadRequest("Missing query params".into())),
     }
 }
 
-#[post("/courses")]
 pub async fn add_courses(
     mut user: User,
+    Extension(db): Extension<Db>,
     data: String,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
+) -> Result<impl IntoResponse, AppError> {
     user.details.degree_status = DegreeStatus::default();
     user.details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
     user.details.modified = true;
     let updated_user = db.update::<User>(user).await?;
-    Ok(HttpResponse::Ok().json(updated_user))
+    Ok(Json(updated_user))
 }
 
 // here "modified" becomes false
-#[get("/degree-status")]
-pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpResponse, AppError> {
+pub async fn compute_degree_status(
+    mut user: User,
+    Extension(db): Extension<Db>,
+) -> Result<impl IntoResponse, AppError> {
     let catalog_id = user
         .details
         .catalog
@@ -190,44 +178,40 @@ pub async fn compute_degree_status(mut user: User, db: Data<Db>) -> Result<HttpR
         user.details.degree_status.set_to_in_progress(course_list);
     }
     db.update::<User>(user.clone()).await?;
-    Ok(HttpResponse::Ok().json(user))
+    Ok(Json(user))
 }
 
 // here "modified" is true
-#[put("/details")]
 pub async fn update_details(
     mut user: User,
-    details: Json<UserDetails>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
-    user.details = details.into_inner();
+    Extension(db): Extension<Db>,
+    Json(details): Json<UserDetails>,
+) -> Result<impl IntoResponse, AppError> {
+    user.details = details;
     db.update::<User>(user).await?;
-    Ok(HttpResponse::Ok().finish())
+    Ok(StatusCode::OK)
 }
 
-#[put("/settings")]
 pub async fn update_settings(
     mut user: User,
-    settings: Json<UserSettings>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
-    user.settings = settings.into_inner();
+    Extension(db): Extension<Db>,
+    Json(settings): Json<UserSettings>,
+) -> Result<impl IntoResponse, AppError> {
+    user.settings = settings;
     db.update::<User>(user).await?;
-    Ok(HttpResponse::Ok().finish())
+    Ok(StatusCode::OK)
 }
 
-#[get("/timetable")]
-pub async fn get_timetable(user: User) -> Result<HttpResponse, AppError> {
-    Ok(HttpResponse::Ok().json(user.timetable))
+pub async fn get_timetable(user: User) -> Result<impl IntoResponse, AppError> {
+    Ok(Json(user.timetable))
 }
 
-#[put("/timetable")]
 pub async fn update_timetable(
     mut user: User,
-    timetable: Json<TimetableState>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
-    user.timetable = timetable.into_inner();
+    Extension(db): Extension<Db>,
+    Json(timetable): Json<TimetableState>,
+) -> Result<impl IntoResponse, AppError> {
+    user.timetable = timetable;
     db.update::<User>(user).await?;
-    Ok(HttpResponse::Ok().finish())
+    Ok(StatusCode::OK)
 }
