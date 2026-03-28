@@ -1,5 +1,7 @@
 ---
-description: "Extract academic degree catalogs from Technion PDF course catalogs into structured JSON format for the Sogrim degree-completion checker."
+name: catalog-extractor
+description: Extract academic degree catalogs from Technion PDF course catalogs into structured JSON. Use when asked to extract, parse, or convert a Technion catalog PDF into JSON format.
+allowed-tools: Read, Write, Edit, Bash(uv run *), Bash(cd *), Glob, Grep
 ---
 
 # Technion Catalog JSON Extractor
@@ -9,12 +11,6 @@ Extract academic degree catalogs from Technion PDF course catalogs into structur
 ## Python Scripts
 
 **IMPORTANT**: This skill uses pre-built Python scripts in `packages/catalog-extractor/`. Do NOT recreate these scripts from scratch — use and improve them instead.
-
-### Setup (one-time)
-```bash
-cd packages/catalog-extractor
-pip install -r requirements.txt
-```
 
 ### Available scripts
 
@@ -30,27 +26,25 @@ pip install -r requirements.txt
 
 ### Quick pipeline
 ```bash
-cd packages/catalog-extractor
-python main.py <pdf_url_or_path> --name "Hebrew catalog name" --reference ../docs/ComputerScience3years2024-2025.json --output ../docs/NewCatalog.json --save-text raw_text.txt --save-sections sections.json
+uv run --project packages/catalog-extractor main.py <pdf_url_or_path> --name "Hebrew catalog name" --reference ../docs/ComputerScience3years2024-2025.json --output ../docs/NewCatalog.json --save-text raw_text.txt --save-sections sections.json
 ```
 
 ## Workflow
 
-1. **Install dependencies**: Run `pip install -r packages/catalog-extractor/requirements.txt` if not already installed.
-2. **Extract text**: Run `python packages/catalog-extractor/extract_pdf.py <pdf_url_or_path> --output raw_text.txt` to get the raw PDF text.
-3. **Review raw text**: Read the extracted text to understand the PDF structure and identify which program/track to extract.
-4. **Ask which program/track**: Present the user with the available programs found in the PDF and ask which one to extract.
-5. **Parse and build skeleton**: Run the pipeline or manually use `parse_sections.py` + `build_catalog.py` to get a skeleton JSON.
-6. **Refine the JSON**: The skeleton will have TODOs. Using the raw text and your understanding of the catalog, fill in:
+1. **Extract text**: Run `uv run --project packages/catalog-extractor extract_pdf.py <pdf_url_or_path> --output raw_text.txt` to get the raw PDF text.
+2. **Review raw text**: Read the extracted text to understand the PDF structure and identify which program/track to extract.
+3. **Ask which program/track**: Present the user with the available programs found in the PDF and ask which one to extract.
+4. **Parse and build skeleton**: Run the pipeline or manually use `parse_sections.py` + `build_catalog.py` to get a skeleton JSON.
+5. **Refine the JSON**: The skeleton will have TODOs. Using the raw text and your understanding of the catalog, fill in:
    - `total_credit` — from the PDF's total credit summary
    - `description` — Hebrew description of the program
    - Bank `credit` values — from each section's credit requirements
    - `credit_overflows` — based on the track type (see patterns below)
    - Complex rules: `Chains` for שרשרת מדעית, `SpecializationGroups` for קבוצות התמחות
    - `catalog_replacements` — from replacement notes in the PDF
-7. **Validate schema**: Run `python packages/catalog-extractor/validate_catalog.py <output.json>`
-8. **Cross-validate against PDF**: Run `python packages/catalog-extractor/validate_against_pdf.py <output.json> <pdf_url> --verbose` to compare courses, credits, banks, chains, and overflows against the source PDF. Fix any ERRORs before proceeding.
-9. **Output JSON**: Save to `packages/docs/{Faculty}{Track}{Year}.json`
+6. **Validate schema**: Run `uv run --project packages/catalog-extractor validate_catalog.py <output.json>`
+7. **Cross-validate against PDF**: Run `uv run --project packages/catalog-extractor validate_against_pdf.py <output.json> <pdf_url> --verbose` to compare courses, credits, banks, chains, and overflows against the source PDF. Fix any ERRORs before proceeding.
+8. **Output JSON**: Save to `packages/docs/{Faculty}{Track}{Year}.json`
 
 ### Improving the scripts
 If the PDF format has changed or the scripts miss something, **update the scripts in `packages/catalog-extractor/`** rather than writing one-off code. This keeps the tooling reusable for future catalogs.
@@ -258,13 +252,13 @@ When the PDF lists two courses joined by "או" (or), the student may take eithe
 
 **General rule for all replacements**: The KEY appears in both `course_to_bank` and as a replacement key. The VALUE appears ONLY in the replacement — never in `course_to_bank`.
 
-> **⚠️ WRONG** — bidirectional replacements, value in course_to_bank:
+> **WRONG** — bidirectional replacements, value in course_to_bank:
 > ```json
 > "course_to_bank": { "02360330": "ליבה", "00460197": "ליבה" },
 > "catalog_replacements": { "02360330": ["00460197"], "00460197": ["02360330"] }
 > ```
 >
-> **✅ CORRECT** — one-directional, value only in replacements:
+> **CORRECT** — one-directional, value only in replacements:
 > ```json
 > "course_to_bank": { "02360330": "ליבה" },
 > "catalog_replacements": { "02360330": ["00460197"] }
@@ -455,24 +449,23 @@ Reference these files in `packages/docs/` for format examples:
 ## Validation Checklist
 
 Before outputting the final JSON:
-1. ✅ All course IDs are 8-digit zero-padded strings
-2. ✅ Every course in `course_to_bank` maps to a valid bank name from `course_banks`
-3. ✅ `total_credit` matches the sum described in the PDF
-4. ✅ All banks listed in `course_banks` have their courses represented in `course_to_bank`
-5. ✅ `credit_overflows` follows the standard pattern for the track type (3-year or 4-year)
-6. ✅ Specialization groups (4-year) have correct `courses_sum`, `course_list`, and `mandatory` fields
-7. ✅ `_id` is `{"$oid": ""}` for new catalogs
-8. ✅ `faculty` field is set correctly
-9. ✅ JSON is valid and parseable
-10. ✅ Hebrew text is properly encoded (UTF-8)
+1. All course IDs are 8-digit zero-padded strings
+2. Every course in `course_to_bank` maps to a valid bank name from `course_banks`
+3. `total_credit` matches the sum described in the PDF
+4. All banks listed in `course_banks` have their courses represented in `course_to_bank`
+5. `credit_overflows` follows the standard pattern for the track type (3-year or 4-year)
+6. Specialization groups (4-year) have correct `courses_sum`, `course_list`, and `mandatory` fields
+7. `_id` is `{"$oid": ""}` for new catalogs
+8. `faculty` field is set correctly
+9. JSON is valid and parseable
+10. Hebrew text is properly encoded (UTF-8)
 
 ## Cross-Validation Against PDF
 
 After building or editing a catalog JSON, **always** cross-validate it against the source PDF:
 
 ```bash
-cd packages/catalog-extractor
-python validate_against_pdf.py <catalog.json> <pdf_url_or_path> --verbose
+uv run --project packages/catalog-extractor validate_against_pdf.py <catalog.json> <pdf_url_or_path> --verbose
 ```
 
 ### What it checks (10 validations)

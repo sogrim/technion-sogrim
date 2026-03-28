@@ -66,28 +66,10 @@ TRACK_CONFIGS = {
         "keywords": ["הנדסת מחשבים"],
         "header_pattern": re.compile(r"המסלול\s+להנדסת\s+מחשבים"),
         "expected_banks": {
-            "חובה", "שרשרת מדעית", "ליבה", "רשימה א", "פרויקט",
-            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+            "חובה", "ליבה", "קבוצות התמחות", "בחירה פקולטית", "פרויקט",
+            "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
         },
-        "chova_includes": ["חובה", "שרשרת מדעית"],
-    },
-    "general_4yr": {
-        "keywords": ["כללי ארבע", "מסלול כללי"],
-        "header_pattern": re.compile(r"תוכנית\s+לימודים\s+במסלול\s+כללי\s+ארבע"),
-        "expected_banks": {
-            "חובה", "שרשרת מדעית", "ליבה", "רשימה א", "פרויקט",
-            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
-        },
-        "chova_includes": ["חובה", "שרשרת מדעית"],
-    },
-    "general_3yr": {
-        "keywords": ["כללי תלת"],
-        "header_pattern": re.compile(r"תוכנית\s+לימודים\s+במסלול\s+כללי\s+תלת"),
-        "expected_banks": {
-            "חובה", "שרשרת מדעית", "רשימה א", "פרויקט",
-            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
-        },
-        "chova_includes": ["חובה", "שרשרת מדעית"],
+        "chova_includes": ["חובה", "פרויקט"],
     },
     "data": {
         "keywords": ["למידה וניתוח מידע", "מידע"],
@@ -97,6 +79,33 @@ TRACK_CONFIGS = {
             "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
         },
         "chova_includes": ["חובה", "שרשרת מדעית"],
+    },
+    "general_3yr": {
+        "keywords": ["כללי תלת", "תלת שנתי", "תלת-שנתי"],
+        "header_pattern": re.compile(r"תוכנית\s+לימודים\s+במסלול\s+כללי\s+תלת"),
+        "expected_banks": {
+            "חובה", "שרשרת מדעית", "מתמטי נוסף", "רשימה א", "פרויקט",
+            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה", "שרשרת מדעית", "מתמטי נוסף"],
+    },
+    "general_4yr": {
+        "keywords": ["כללי ארבע", "מסלול כללי"],
+        "header_pattern": re.compile(r"תוכנית\s+לימודים\s+במסלול\s+כללי\s+ארבע"),
+        "expected_banks": {
+            "חובה", "שרשרת מדעית", "רשימה א", "פרויקט",
+            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה", "שרשרת מדעית"],
+    },
+    "bioinfo": {
+        "keywords": ["ביואינפורמטיקה"],
+        "header_pattern": re.compile(r"המגמה\s+למדעי\s+המחשב\s+עם\s+התמקדות\s+בביואינפורמטיקה"),
+        "expected_banks": {
+            "חובה", "רשימה א", "רשימה מביולוגיה א", "רשימה מביולוגיה ב",
+            "בחירה מביולוגיה כללי", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה"],
     },
 }
 
@@ -109,7 +118,10 @@ ALL_SECTION_HEADERS = [
     "תוכנית לימודים במסלול כללי ארבע-שנתי",
     "תוכנית משולבת לתואר במדעי המחשב ובמתמטיקה",
     "תוכנית משולבת לתואר במדעי המחשב ובפיזיקה",
+    "תוכנית לימודים משולבת לתואר בוגר למדעים",
+    "תוכנית לימודים משולבת לתואר מוסמך",
     "המגמה ללמידה וניתוח מידע",
+    "המגמה למדעי המחשב עם התמקדות בביואינפורמטיקה",
     "מגמת מצוינות",
     "תוכנית לתואר כפול",
 ]
@@ -143,14 +155,33 @@ def _find_page_start(full_text: str, pos: int) -> int:
 
 
 def _find_section_end(full_text: str, start_pos: int, own_header: str) -> int:
-    """Find where the next track section begins after start_pos."""
+    """Find where the next track section begins after start_pos.
+
+    Only considers markers that appear at the start of a line (preceded by
+    newline + optional whitespace), to avoid matching incidental mentions
+    within sentences.
+    """
     end_pos = len(full_text)
     for marker in ALL_SECTION_HEADERS:
         if marker == own_header:
             continue
-        idx = full_text.find(marker, start_pos + 500)
-        if 0 <= idx < end_pos:
-            end_pos = idx
+        search_from = start_pos + 500
+        while True:
+            idx = full_text.find(marker, search_from)
+            if idx < 0 or idx >= end_pos:
+                break
+            # Check if this is at the start of a line
+            pre = full_text[max(0, idx - 40):idx]
+            last_nl = pre.rfind("\n")
+            if last_nl >= 0 and pre[last_nl + 1:].strip() == "":
+                # Marker is preceded by newline + only whitespace → real header
+                end_pos = idx
+                break
+            elif idx == 0:
+                end_pos = idx
+                break
+            # Not a line-start match, keep searching
+            search_from = idx + 1
     return end_pos
 
 
@@ -177,7 +208,8 @@ def extract_track_section(full_text: str, catalog: dict) -> tuple[str, str]:
     best_match = matches[-1]  # default to last (section header, not intro mention)
     if total_credit and len(matches) > 1:
         credit_str = str(int(total_credit)) if total_credit == int(total_credit) else str(total_credit)
-        for m in matches:
+        # Iterate in reverse: later occurrences are more likely the actual section
+        for m in reversed(matches):
             nearby = full_text[m.start():m.start() + 2000]
             if credit_str in nearby:
                 best_match = m
@@ -285,12 +317,11 @@ def extract_chova_courses(se_text: str) -> set[str]:
             continue
 
         if in_chova:
-            for match in re.finditer(r"\b(\d{5,8})\b", line):
+            for match in re.finditer(r"\b(\d{7,8})\b", line):
                 raw = match.group(1)
-                if len(raw) >= 5:
-                    padded = pad_course_id(raw)
-                    if not padded.startswith("00000"):
-                        chova_ids.add(padded)
+                padded = pad_course_id(raw)
+                if not padded.startswith("00000"):
+                    chova_ids.add(padded)
 
     return chova_ids
 
@@ -303,8 +334,9 @@ def extract_liba_courses(track_text: str) -> set[str]:
 
     for line in lines:
         stripped = line.strip()
-        if stripped == "מקצועות ליבה" or "יש ללמוד" in stripped and "קורסים" in stripped:
+        if stripped == "מקצועות ליבה" or ("יש ללמוד" in stripped and "קורסים" in stripped):
             in_liba = True
+            liba_ids.clear()  # Reset — only keep IDs from the LAST ליבה section
             continue
         if in_liba and (
             "מגמת מצוינות" in stripped
@@ -312,8 +344,11 @@ def extract_liba_courses(track_text: str) -> set[str]:
             or "המגמה ל" in stripped
             or "תוכנית לימודים" in stripped
             or stripped.startswith("=== PAGE")
+            or "מקצועות בחירה" in stripped
+            or "קבוצות התמחות" in stripped
         ):
-            break
+            in_liba = False
+            continue
         if in_liba:
             for match in re.finditer(r"\b(\d{5,8})\b", line):
                 raw = match.group(1)
@@ -324,20 +359,27 @@ def extract_liba_courses(track_text: str) -> set[str]:
 
     # Handle broken course IDs split across lines (e.g., "341\n0\n236\n0")
     # Re-scan the ליבה block as a single string to catch fragmented IDs
+    # Use the LAST "מקצועות ליבה" occurrence (skip introduction mentions)
     liba_start = None
     liba_end = None
     for i, line in enumerate(lines):
         stripped = line.strip()
         if stripped == "מקצועות ליבה":
             liba_start = i
-        elif liba_start and (
-            stripped.startswith("=== PAGE")
-            or "המסלול להנדסת" in stripped
-            or "המגמה ל" in stripped
-            or "תוכנית לימודים" in stripped
-        ):
-            liba_end = i
-            break
+            liba_end = None
+    if liba_start:
+        for i in range(liba_start + 1, len(lines)):
+            stripped = lines[i].strip()
+            if (
+                stripped.startswith("=== PAGE")
+                or "המסלול להנדסת" in stripped
+                or "המגמה ל" in stripped
+                or "תוכנית לימודים" in stripped
+                or "מקצועות בחירה" in stripped
+                or "קבוצות התמחות" in stripped
+            ):
+                liba_end = i
+                break
     if liba_start and liba_end:
         block = " ".join(lines[liba_start:liba_end])
         # RTL rendering splits IDs: "341 0 236 0" → read RTL as "0 236 0 341" → 02360341

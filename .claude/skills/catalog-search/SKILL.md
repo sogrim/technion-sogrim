@@ -1,5 +1,7 @@
 ---
-description: "Search the internet for a Technion faculty catalog PDF, discover all degree tracks, extract each track into a JSON catalog, and validate the results. Orchestrates catalog-extractor and catalog-validation skills."
+name: catalog-search
+description: Search for a Technion faculty catalog PDF, discover all degree tracks, extract each into JSON, and validate. Use when asked to find, search for, or batch-extract Technion catalogs.
+allowed-tools: Read, Write, Edit, Bash(uv run *), Bash(cd *), Glob, Grep, WebSearch, WebFetch, Agent, TeamCreate, SendMessage
 ---
 
 # Technion Catalog Search & Batch Extraction
@@ -91,15 +93,9 @@ For "Computer Science 2024-2025" (מדעי המחשב):
 
 Once you have the PDF URL:
 
-1. **Install dependencies** (if not already):
+1. **Extract the raw text**:
    ```bash
-   cd packages/catalog-extractor
-   pip install -r requirements.txt
-   ```
-
-2. **Extract the raw text**:
-   ```bash
-   python extract_pdf.py "<pdf_url>" --output raw_text.txt
+   uv run --project packages/catalog-extractor extract_pdf.py "<pdf_url>" --output raw_text.txt
    ```
 
 3. **Read the extracted text** and identify all degree tracks/programs in the PDF. Look for section headers that indicate different tracks:
@@ -125,27 +121,31 @@ Once you have the PDF URL:
 
 - Present the discovered tracks to the user and confirm which ones to extract (or extract all).
 
-## Step 3: Extract Each Track (invoke catalog-extractor)
+## Step 3: Extract Each Track (via Teammate Agents)
 
-For **each track** found in Step 2, invoke the **catalog-extractor** skill:
+**IMPORTANT**: Use **TeamCreate** to spawn teammate agents for extraction — do NOT use regular background agents. Teammates provide a shared task list, the user can cycle through them with Shift+Down, and they can coordinate via SendMessage.
+
+For **each track** found in Step 2, spawn a **teammate** that runs the catalog-extractor skill:
 
 1. **Determine the track parameters**:
    - `name`: Hebrew catalog name (e.g., `"מדמח תלת שנתי 2024-2025"`)
    - `output`: File path following the naming convention: `packages/docs/{Faculty}{Track}{Year}.json`
    - `reference`: Use the most recent existing catalog of the same track as a reference (if available in `packages/docs/`)
 
-2. **Run the extraction pipeline**:
-   ```bash
-   cd packages/catalog-extractor
-   python main.py "<pdf_url>" \
-     --name "<hebrew_name>" \
-     --reference ../docs/<ReferenceFile>.json \
-     --output ../docs/<OutputFile>.json \
-     --save-text raw_text_<track>.txt \
-     --save-sections sections_<track>.json
+2. **Spawn extraction teammates** — one per track, all in parallel. Each teammate prompt MUST include:
+   - A pointer to read `.claude/skills/catalog-extractor/SKILL.md` for extraction guidelines
+   - The PDF URL or raw text path (`/tmp/<name>_raw.txt`)
+   - The reference catalog path
+   - The output file path
+   - The relevant line range in the raw text for this track's section
+   ```
+   Create an agent team. Spawn an extractor teammate for each track:
+   - Extractor-4yr: "Read .claude/skills/catalog-extractor/SKILL.md for guidelines. Extract the 4-year track. Raw text at /tmp/cs_raw.txt lines 418-3044. Reference: packages/docs/ComputerScience4years2024-2025.json. Output: packages/docs/ComputerScience4years2025-2026.json"
+   - Extractor-3yr: "Read .claude/skills/catalog-extractor/SKILL.md for guidelines. Extract the 3-year track ..."
+   - (one per track)
    ```
 
-3. **Refine the output**: The extraction pipeline produces a skeleton. Use the catalog-extractor skill's guidelines to fill in:
+3. Each teammate should **start from the reference catalog** and update it based on the new PDF, following the catalog-extractor skill guidelines (from the SKILL.md file) to fill in:
    - `total_credit`
    - Bank `credit` values
    - `credit_overflows` (follow patterns for track type)
@@ -165,52 +165,38 @@ When extracting a track, use the most recent existing catalog of the **same trac
 
 If no reference exists for a track, omit `--reference` and build from scratch using the raw text.
 
-## Step 4: Validate Each Track (invoke catalog-validator)
+## Step 4: Validate Each Track (Agent Team)
 
-### ⚠️ CRITICAL: Fresh Conversation Required
+### CRITICAL: Context Isolation via Agent Teams
 
-Validation **MUST** run in a **separate, clean conversation** with no history from the extraction phase. This prevents the validator from being biased by the extractor's assumptions or decisions.
+Validation **MUST** run with no history from the extraction phase to prevent bias. Use **agent teams** to spawn a validator teammate — each teammate gets a completely fresh context window with zero extraction history.
 
 **How to do this:**
-1. After all tracks are extracted in Steps 1–3, **stop the current conversation**.
-2. **Start a new Copilot conversation** (new thread / new chat session).
-3. In the new conversation, provide **only**:
-   - The path to the generated JSON file (e.g., `packages/docs/ComputerScience3years2024-2025.json`)
-   - The PDF URL
-   - The instruction: "Validate this catalog JSON against the PDF using the catalog-validation skill"
-4. The validator will independently read the JSON and PDF with fresh eyes — no extraction context leaking in.
-5. Repeat for each track in a separate conversation (or batch them in one fresh conversation if validating multiple files, since each validation is independent).
 
-### Validation Workflow (in the fresh conversation)
+After all tracks are extracted in Steps 1-3, create an agent team for validation:
 
-For **each extracted catalog**, invoke the **catalog-validation** skill:
-
-1. **Install dependencies** (if not already):
-   ```bash
-   cd packages/catalog-validation
-   pip install -r requirements.txt
+1. **Spawn a validator teammate** for each extracted catalog. Each prompt MUST include a pointer to read `.claude/skills/catalog-validation/SKILL.md` for validation guidelines:
+   ```
+   Create an agent team. Spawn a validator teammate for each catalog:
+   - Validator-3yr: "Read .claude/skills/catalog-validation/SKILL.md for guidelines. Validate packages/docs/ComputerScience3years2025-2026.json against <pdf_url>. Run uv run --project packages/catalog-validation validate_all.py ... --verbose. Fix any ERRORs and re-validate until clean."
+   - Validator-4yr: "Read .claude/skills/catalog-validation/SKILL.md for guidelines. Validate packages/docs/ComputerScience4years2025-2026.json against <pdf_url> ..."
+   - (one per catalog)
    ```
 
-2. **Run full validation**:
-   ```bash
-   cd packages/catalog-validation
-   python validate_all.py ../docs/<CatalogFile>.json "<pdf_url>" --verbose
-   ```
+2. **Each teammate runs independently** — they read the JSON and PDF with fresh eyes, no extraction context leaking in. They can fix ERRORs autonomously and re-validate.
 
-3. **Review findings**:
-   - **ERRORs**: Must be fixed. Go back and correct the JSON.
-   - **WARNINGs**: Review manually. Some may be false positives (e.g., courses in a different section of the PDF).
-   - **OK**: Check passed.
+3. **Wait for all validators to complete**, then collect their findings.
 
-4. **Fix and re-validate**: If there are errors:
-   - Edit the JSON file to fix the issues
-   - Re-run validation
-   - Repeat until 0 errors
-
-5. **Cross-check between tracks**: After all tracks are validated individually, do a quick sanity check:
+4. **Cross-check between tracks**: After all tracks are validated individually, do a quick sanity check:
    - חובה (mandatory) courses for 3-year should be a subset of 4-year (4-year has more requirements)
    - Common replacements should be consistent across tracks of the same year
    - Credit overflows should follow the standard patterns for each track type
+
+### Monitoring Validation
+
+- Press **Shift+Down** to cycle through validator teammates
+- Press **Ctrl+T** to see the shared task list
+- Send direct messages to steer a teammate: `Message Validator-3yr: "The שרשרת מדעית warning is a false positive, skip it"`
 
 ## Step 5: Summary Report
 
@@ -225,10 +211,10 @@ Source PDF: <url>
 
 | Track | Output File | Total Credits | Status | Errors | Warnings |
 |---|---|---|---|---|---|
-| 3-year | ComputerScience3years2024-2025.json | 120 | ✅ Valid | 0 | 2 |
-| 4-year | ComputerScience4years2024-2025.json | 160 | ✅ Valid | 0 | 1 |
-| Software Eng | ComputerScienceSoftwareEngineerCourse2024-2025.json | 159.5 | ✅ Valid | 0 | 3 |
-| Data Science | ComputerScienceDataScienceAndEngineering2024-2025.json | 145 | ⚠️ 1 Warning | 0 | 1 |
+| 3-year | ComputerScience3years2024-2025.json | 120 | Valid | 0 | 2 |
+| 4-year | ComputerScience4years2024-2025.json | 160 | Valid | 0 | 1 |
+| Software Eng | ComputerScienceSoftwareEngineerCourse2024-2025.json | 159.5 | Valid | 0 | 3 |
+| Data Science | ComputerScienceDataScienceAndEngineering2024-2025.json | 145 | 1 Warning | 0 | 1 |
 ```
 
 ## Error Handling
@@ -242,20 +228,15 @@ Source PDF: <url>
 
 User: "Extract all Computer Science catalogs for 2024-2025"
 
-### Conversation 1 — Search & Extract (Steps 1-3)
-1. Browse `https://undergraduate.cs.technion.ac.il/` for PDF links → find `https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-הפקולטה-למדעי-המחשב-תשפ״ה-.pdf`
-   - If not found on the page, search in Hebrew: `קטלוג מדעי המחשב 2024-2025 site:technion.ac.il`
-2. Extract PDF text → discover tracks: 3-year, 4-year, Software Engineering, Data Science
-3. For each track: run catalog-extractor pipeline with appropriate reference → save JSON files
-4. **Stop conversation.** Tell the user: "Extraction complete. Start a new conversation for validation."
+### Phase 1 — Search & Extract via Teammate Agents (Steps 1-3)
+1. Browse `https://undergraduate.cs.technion.ac.il/` for PDF links -> find the catalog PDF
+2. Extract PDF text -> discover tracks: 3-year, 4-year, Software Engineering, Data Science
+3. Create an agent team with one extractor teammate per track (all run in parallel)
+4. Each extractor reads its reference catalog + relevant PDF sections, builds updated JSON
 
-### Conversation 2 — Validate (Step 4, fresh thread)
-1. User starts a **new Copilot conversation** (no extraction history)
-2. User says: "Validate these catalog JSONs against the PDF using catalog-validation:
-   - `packages/docs/ComputerScience3years2024-2025.json`
-   - `packages/docs/ComputerScience4years2024-2025.json`
-   - `packages/docs/ComputerScienceSoftwareEngineerCourse2024-2025.json`
-   - `packages/docs/ComputerScienceDataScienceAndEngineering2024-2025.json`
-   - PDF: `<url>`"
-3. Validator independently reads each JSON + PDF, finds issues, fixes them
-4. Produces summary report
+### Phase 2 — Validate via Agent Team (Step 4, same conversation)
+4. Create an agent team with one validator teammate per extracted catalog
+5. Each validator runs in a fresh context — reads the JSON and PDF independently, fixes errors, re-validates
+6. Wait for all validators to finish, collect findings
+7. Cross-check between tracks for consistency
+8. Produce summary report

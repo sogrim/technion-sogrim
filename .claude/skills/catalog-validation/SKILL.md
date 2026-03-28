@@ -1,5 +1,8 @@
 ---
-description: "Validate Sogrim catalog JSON files for correctness — both structural (schema) and content (against the source Technion PDF)."
+name: catalog-validation
+description: Validate Sogrim catalog JSON files for correctness — schema validation and cross-validation against the source Technion PDF. Use when asked to validate or check a catalog JSON.
+context: fork
+allowed-tools: Read, Write, Edit, Bash(uv run *), Bash(cd *), Glob, Grep
 ---
 
 # Technion Catalog Validation
@@ -9,12 +12,6 @@ Validate Sogrim catalog JSON files for correctness — both structural (schema) 
 ## Python Scripts
 
 **IMPORTANT**: This skill uses pre-built Python scripts in `packages/catalog-validation/`. Do NOT recreate these scripts from scratch — use and improve them instead.
-
-### Setup (one-time)
-```bash
-cd packages/catalog-validation
-pip install -r requirements.txt
-```
 
 ### Available scripts
 
@@ -27,23 +24,21 @@ pip install -r requirements.txt
 
 ## Workflow
 
-1. **Install dependencies**: `pip install -r packages/catalog-validation/requirements.txt`
-2. **Run full validation**:
+1. **Run full validation**:
    ```bash
-   cd packages/catalog-validation
-   python validate_all.py ../docs/<CatalogFile>.json <pdf_url> --verbose
+   uv run --project packages/catalog-validation validate_all.py packages/docs/<CatalogFile>.json <pdf_url> --verbose
    ```
 3. **Review findings**: Fix all ERRORs. Review WARNINGs manually.
 4. **Re-run** until 0 errors.
 
 ### Schema-only validation (no PDF needed)
 ```bash
-python validate_schema.py ../docs/<CatalogFile>.json
+uv run --project packages/catalog-validation validate_schema.py packages/docs/<CatalogFile>.json
 ```
 
 ### PDF cross-validation only
 ```bash
-python validate_pdf.py ../docs/<CatalogFile>.json <pdf_url> --verbose
+uv run --project packages/catalog-validation validate_pdf.py packages/docs/<CatalogFile>.json <pdf_url> --verbose
 ```
 
 ## Validation Checks
@@ -91,7 +86,7 @@ The script **automatically detects** the track type from the JSON catalog name (
 
 Use `--json-output findings.json` to save machine-readable results:
 ```bash
-python validate_all.py ../docs/CatalogFile.json <pdf_url> --json-output findings.json
+uv run --project packages/catalog-validation validate_all.py packages/docs/CatalogFile.json <pdf_url> --json-output findings.json
 ```
 
 Each finding is:
@@ -108,8 +103,8 @@ Each finding is:
 
 Replacements are **one-directional**: the KEY is the preferred CS faculty course, the VALUE is the alternative.
 
-- **KEY** (e.g., `02360330`) → appears in `course_to_bank` and as the replacement key
-- **VALUE** (e.g., `00460197`) → appears ONLY in `catalog_replacements`, **never** in `course_to_bank`
+- **KEY** (e.g., `02360330`) -> appears in `course_to_bank` and as the replacement key
+- **VALUE** (e.g., `00460197`) -> appears ONLY in `catalog_replacements`, **never** in `course_to_bank`
 - Replacements are NOT bidirectional — do not add a reverse entry
 
 The schema validator enforces this: it warns if any replacement value is also found in `course_to_bank`.
@@ -145,17 +140,15 @@ If the PDF format changes or a check needs updating, **modify the scripts in `pa
 ## Examples
 
 ```bash
-cd packages/catalog-validation
-
 # Validate the Cyber Security 2024-2025 catalog
-python validate_all.py \
-  ../docs/ComputerScienceCyberSecurity2024-2025.json \
+uv run --project packages/catalog-validation validate_all.py \
+  packages/docs/ComputerScienceCyberSecurity2024-2025.json \
   "https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-%D7%94%D7%A4%D7%A7%D7%95%D7%9C%D7%98%D7%94-%D7%9C%D7%9E%D7%93%D7%A2%D7%99-%D7%94%D7%9E%D7%97%D7%A9%D7%91-%D7%AA%D7%A9%D7%A4%D7%B4%D7%94-.pdf" \
   --verbose
 
 # Validate the SE 2024-2025 catalog (same PDF, different JSON)
-python validate_all.py \
-  ../docs/ComputerScienceSoftwareEngineerCourse2024-2025.json \
+uv run --project packages/catalog-validation validate_all.py \
+  packages/docs/ComputerScienceSoftwareEngineerCourse2024-2025.json \
   "https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-%D7%94%D7%A4%D7%A7%D7%95%D7%9C%D7%98%D7%94-%D7%9C%D7%9E%D7%93%D7%A2%D7%99-%D7%94%D7%9E%D7%97%D7%A9%D7%91-%D7%AA%D7%A9%D7%A4%D7%B4%D7%94-.pdf" \
   --verbose
 ```
