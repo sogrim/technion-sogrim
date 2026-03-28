@@ -2,9 +2,7 @@ on:
   merge_group:
   pull_request:
     branches:
-      - master # TODO someday will probably need to be renamed into 'main'
-    paths:
-      - "packages/server/**" # Trigger this CI flow if changes were made to the server ONLY
+      - master
 
 name: Server-CI
 
@@ -16,64 +14,81 @@ env:
   CLIENT_ID: ${{secrets.CLIENT_ID}}
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'packages/server/**'
+
   test:
     name: Run Tests
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
+      - uses: actions-rs/cargo@v1
         with:
           command: test
           args: --manifest-path packages/server/Cargo.toml
 
   format:
     name: Format
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
           components: rustfmt
-
-      - name: Check cargo fmt
-        uses: actions-rs/cargo@v1
+      - uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --manifest-path packages/server/Cargo.toml --all -- --check
 
   clippy:
     name: Clippy
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
           components: clippy
-
-      - name: Check cargo clippy
-        uses: actions-rs/cargo@v1
+      - uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: --manifest-path packages/server/Cargo.toml --all-targets -- -D warnings
+
+  # Gate: only runs when something failed. Skipped jobs report as "Success"
+  # to branch protection, so this only needs to fire on failure to block merges.
+  ci-fail:
+    name: CI Pass
+    needs: [changes, test, format, clippy]
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::CI failed"
+          exit 1

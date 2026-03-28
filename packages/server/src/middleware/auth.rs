@@ -1,88 +1,39 @@
-extern crate jsonwebtoken_google;
-
-use crate::config::CONFIG;
-use actix_web::{
-    body::MessageBody,
-    dev::{ServiceRequest, ServiceResponse},
-    http::header,
-    Error, HttpMessage, HttpResponse,
+use axum::{
+    extract::Request,
+    http::{header, StatusCode},
+    middleware::Next,
+    response::{IntoResponse, Response},
 };
-use actix_web_lab::middleware::Next;
-use jsonwebtoken_google::{Parser, ParserError};
-use serde::Deserialize;
 
-pub type Sub = String;
-#[derive(Default, Debug, Deserialize)]
-pub struct IdInfo {
-    // Identifier of the user, guaranteed to be unique by Google.
-    pub sub: Sub,
-}
+use super::jwt_decoder::JwtDecoder;
 
-pub struct JwtDecoder {
-    parser: Parser,
-}
+// use `pub` to re-export the `Sub` type from the `jwt_decoder` module
+pub use super::jwt_decoder::Sub;
 
-impl JwtDecoder {
-    // Set up a jwt parser with actual google client id
-    pub fn new() -> Self {
-        JwtDecoder {
-            parser: Parser::new(CONFIG.client_id),
-        }
-    }
-    // Decode the jwt and return id info (sub wrapper)
-    pub async fn decode(&self, token: &str) -> Result<IdInfo, ParserError> {
-        self.parser.parse::<IdInfo>(token).await
-    }
-    // Set up a debug jwt parser for testing
-    #[cfg(test)]
-    pub fn new_with_parser(parser: Parser) -> Self {
-        JwtDecoder { parser }
-    }
-}
-
-pub async fn authenticate(
-    req: ServiceRequest,
-    next: Next<impl MessageBody + 'static>,
-) -> Result<ServiceResponse<impl MessageBody>, Error> {
-    let (request, payload) = req.into_parts();
-    let Some(header) = request.headers().get(header::AUTHORIZATION) else {
-        let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
-        resp.response_mut()
-            .extensions_mut()
-            .insert::<String>(String::from("No authorization header"));
-        return Ok(resp);
+pub async fn authenticate(mut req: Request, next: Next) -> Response {
+    let Some(auth_header) = req.headers().get(header::AUTHORIZATION) else {
+        return (StatusCode::UNAUTHORIZED, "No authorization header").into_response();
     };
 
-    let Ok(jwt) = header.to_str() else {
-        let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
-        resp.response_mut()
-            .extensions_mut()
-            .insert::<String>(String::from("Invalid authorization header"));
-        return Ok(resp);
+    let Ok(jwt) = auth_header.to_str() else {
+        return (StatusCode::UNAUTHORIZED, "Invalid authorization header").into_response();
     };
 
-    let Some(decoder) = request.app_data::<JwtDecoder>() else {
-        let mut resp = ServiceResponse::new(request, HttpResponse::InternalServerError().finish());
-        resp.response_mut()
-            .extensions_mut()
-            .insert::<String>(String::from("JwtDecoder not initialized"));
-        return Ok(resp);
+    let Some(decoder) = req.extensions().get::<JwtDecoder>().cloned() else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "JwtDecoder not initialized",
+        )
+            .into_response();
     };
 
     let sub = match decoder.decode(jwt).await {
-        Ok(id_info) => id_info.sub,
+        Ok(sub) => sub,
         Err(err) => {
-            let mut resp = ServiceResponse::new(request, HttpResponse::Unauthorized().finish());
-            resp.response_mut()
-                .extensions_mut()
-                .insert::<String>(format!("Invalid JWT: {err}"));
-            return Ok(resp);
+            return (StatusCode::UNAUTHORIZED, err.to_string()).into_response();
         }
     };
 
-    request.extensions_mut().insert::<Sub>(sub);
-    let res = next
-        .call(ServiceRequest::from_parts(request, payload))
-        .await?;
-    Ok(res.map_into_boxed_body())
+    req.extensions_mut().insert::<Sub>(sub);
+    next.run(req).await
 }

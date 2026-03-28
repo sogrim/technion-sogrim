@@ -1,79 +1,127 @@
-use crate::config::CONFIG;
-use actix_web::{
-    web::{self, scope},
-    App, HttpResponse, HttpServer,
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use axum::{
+    extract::Extension,
+    routing::{delete, get, post, put},
+    Router,
 };
-use actix_web_lab::middleware::from_fn;
 use db::Db;
+use disk_cache::DiskCourseCache;
 use error::AppError;
-use middleware::{auth, cors, logger};
+use http::StatusCode;
+use log::info;
+use middleware::{auth, cors, jwt_decoder::JwtDecoder, logger};
 use resources::user::Permissions;
+
+use crate::config::CONFIG;
 
 mod api;
 mod config;
 mod consts;
 mod core;
 mod db;
+mod disk_cache;
 mod error;
 mod middleware;
 mod resources;
 
-#[actix_web::main]
+const CACHE_DIR_ENV: &str = "SOGRIM_CACHE_DIR";
+const DEFAULT_CACHE_DIR: &str = "/home/opc/cache";
+
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
+    let now = std::time::Instant::now();
     // Initialize logger
     logger::init_env_logger();
+    info!(target: "server", "Initialized logger in {}μs", now.elapsed().as_micros());
 
     // Initialize DB client
     let db = Db::new().await;
+    info!(target: "server", "Initialized DB client in {}ms", now.elapsed().as_millis());
 
-    // Start the server
-    HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(db.clone()))
-            .app_data(auth::JwtDecoder::new())
-            .wrap(cors::cors())
-            .wrap(logger::init_actix_logger())
-            .service(web::resource("/healthcheck").route(web::get().to(
-                |db: web::Data<Db>| async move {
-                    db.ping().await?;
-                    Result::<HttpResponse, AppError>::Ok(HttpResponse::Ok().finish())
-                },
-            )))
-            .service(
-                // Global authentication scope
-                // All routes under this scope will be authenticated and authorized
-                scope("")
-                    .wrap(from_fn(auth::authenticate))
-                    .service(
-                        scope("/students")
-                            .app_data(web::Data::new(Permissions::Student))
-                            .service(api::students::get_catalogs)
-                            .service(api::students::login)
-                            .service(api::students::update_catalog)
-                            .service(api::students::get_courses_by_filter)
-                            .service(api::students::add_courses)
-                            .service(api::students::compute_degree_status)
-                            .service(api::students::update_details)
-                            .service(api::students::update_settings),
-                    )
-                    .service(
-                        scope("/admins")
-                            .app_data(web::Data::new(Permissions::Admin))
-                            .service(api::admins::parse_courses_and_compute_degree_status),
-                    )
-                    .service(
-                        scope("/owners")
-                            .app_data(web::Data::new(Permissions::Owner))
-                            .service(api::owners::get_all_courses)
-                            .service(api::owners::get_course_by_id)
-                            .service(api::owners::create_or_update_course)
-                            .service(api::owners::delete_course)
-                            .service(api::owners::get_catalog_by_id)
-                            .service(api::owners::create_or_update_catalog),
-                    ),
-            )
-    })
-    .bind(format!("{}:{}", CONFIG.ip, CONFIG.port))?
-    .run()
-    .await
+    // Initialize JWT decoder
+    let jwt_decoder = JwtDecoder::new().await;
+    info!(target: "server", "Initialized JWT decoder in {}ms", now.elapsed().as_millis());
+
+    // Initialize disk-backed course cache
+    let cache_dir = std::env::var(CACHE_DIR_ENV).unwrap_or_else(|_| DEFAULT_CACHE_DIR.to_string());
+    let course_cache = Arc::new(DiskCourseCache::new(PathBuf::from(&cache_dir)));
+
+    // Load all disk cache into memory on startup
+    let cache_start = std::time::Instant::now();
+    course_cache.load_all().await;
+    info!(target: "server", "Loaded disk cache in {}ms", cache_start.elapsed().as_millis());
+
+    // Public routes (no auth required)
+    let public_routes = Router::new()
+        .route(
+            "/healthcheck",
+            get(|Extension(db): Extension<Db>| async move {
+                db.ping().await?;
+                Result::<StatusCode, AppError>::Ok(StatusCode::OK)
+            }),
+        )
+        .route("/semesters", get(api::courses::get_semesters))
+        .route(
+            "/courses/{year}/{semester}/index",
+            get(api::courses::get_course_index),
+        )
+        .route(
+            "/courses/{year}/{semester}/{course_id}",
+            get(api::courses::get_course),
+        );
+
+    // Student routes
+    let student_routes = Router::new()
+        .route("/catalogs", get(api::students::get_catalogs))
+        .route("/login", get(api::students::login))
+        .route("/catalog", put(api::students::update_catalog))
+        .route("/courses", get(api::students::get_courses_by_filter))
+        .route("/courses", post(api::students::add_courses))
+        .route("/degree-status", get(api::students::compute_degree_status))
+        .route("/details", put(api::students::update_details))
+        .route("/settings", put(api::students::update_settings))
+        .route("/timetable", get(api::students::get_timetable))
+        .route("/timetable", put(api::students::update_timetable))
+        .layer(Extension(Permissions::Student));
+
+    // Admin routes
+    let admin_routes = Router::new()
+        .route(
+            "/parse-compute",
+            post(api::admins::parse_courses_and_compute_degree_status),
+        )
+        .layer(Extension(Permissions::Admin));
+
+    // Owner routes
+    let owner_routes = Router::new()
+        .route("/courses", get(api::owners::get_all_courses))
+        .route("/courses/{id}", get(api::owners::get_course_by_id))
+        .route("/courses/{id}", put(api::owners::create_or_update_course))
+        .route("/courses/{id}", delete(api::owners::delete_course))
+        .route("/catalogs/{id}", get(api::owners::get_catalog_by_id))
+        .route("/catalogs/{id}", put(api::owners::create_or_update_catalog))
+        .layer(Extension(Permissions::Owner));
+
+    // Auth-protected routes
+    let auth_routes = Router::new()
+        .nest("/students", student_routes)
+        .nest("/admins", admin_routes)
+        .nest("/owners", owner_routes)
+        .layer(axum::middleware::from_fn(auth::authenticate));
+
+    let app = Router::new()
+        .merge(public_routes)
+        .merge(auth_routes)
+        .layer(axum::middleware::from_fn(logger::log_requests))
+        .layer(cors::cors())
+        .layer(Extension(db))
+        .layer(Extension(course_cache))
+        .layer(Extension(jwt_decoder));
+
+    let addr = format!("{}:{}", CONFIG.ip, CONFIG.port);
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    info!(target: "server", "Listening on {addr}");
+    axum::serve(listener, app).await
 }

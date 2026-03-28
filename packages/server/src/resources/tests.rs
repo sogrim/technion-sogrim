@@ -1,9 +1,8 @@
-use actix_rt::test;
 use serde_json::json;
 
 use super::course::{CourseState, Grade};
 
-#[test]
+#[tokio::test]
 async fn test_course_state_serde() {
     let course_states = vec![
         CourseState::Complete,
@@ -24,7 +23,7 @@ async fn test_course_state_serde() {
     );
 }
 
-#[test]
+#[tokio::test]
 async fn test_course_grade_serde() {
     let course_grades = vec![
         Grade::Numeric(95),

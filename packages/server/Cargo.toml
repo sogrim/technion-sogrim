@@ -5,29 +5,47 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "sogrim_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sogrim-server"
+path = "src/main.rs"
+
+[[bin]]
+name = "sogrim-fetcher"
+path = "src/bin/fetcher.rs"
+
 [dependencies]
-log = "0.4"
-colored = "2"
-mongodb = "2.7"
-bson = "2.7"
+log = "0.4.29"
+colored = "3.1"
+mongodb = { version = "3.5", default-features = false, features = ["bson-3", "compat-3-3-0", "rustls-tls", "dns-resolver"] }
+bson = { version = "3.1", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tokio = "1.32"
-actix-rt = "2.9"
-actix-web = "4.4"
-actix-web-lab = "0.19"
-actix-cors = "0.6"
-futures-util = "0.3"
-jsonwebtoken = "8.3"
-jsonwebtoken-google = "0.1"
-env_logger = "0.10"
-lazy_static = "1.4"
-petgraph = "0.6"
-regex = "1.9"
+serde_json = "1.0.149"
+tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "net", "time", "sync"] }
+axum = "0.8"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+http = "1"
+futures-util = "0.3.32"
+jsonwebtoken = { version = "10.3", features = ["aws_lc_rs"] }
+env_logger = "0.11.10"
+petgraph = "0.8.3"
+regex = "1.12"
+reqwest = { version = "0.13", features = ["json"] }
+chrono = "0.4.44"
+clap = { version = "4.6", features = ["derive"] }
+moka = { version = "0.12", features = ["future"] }
+urlencoding = "2"
+atty = "0.2"
+ctrlc = "3.5"
 
 [build-dependencies]
 dotenvy = "0.15"
 
-[dev-dependencies.jsonwebtoken-google]
-version = "0.1"
-features = ["test-helper"]
+[dev-dependencies]
+base64 = "0.22"
+rand = "0.10"
+rsa = "0.10.0-rc.17"

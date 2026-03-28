@@ -3,12 +3,12 @@ use crate::{
     core::degree_status::DegreeStatus,
     db::{Db, Resource},
     error::AppError,
-    middleware::auth::Sub,
+    middleware::jwt_decoder::Sub,
 };
-use actix_web::{dev::Payload, web::Data, FromRequest, HttpMessage, HttpRequest};
+use axum::{extract::FromRequestParts, Extension};
 use bson::{doc, DateTime, Document};
+use http::request::Parts;
 use serde::{Deserialize, Serialize};
-use std::{future::Future, pin::Pin};
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
@@ -21,6 +21,53 @@ pub struct UserDetails {
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserSettings {
     pub dark_mode: bool,
+}
+
+// ---------------------------------------------------------------------------
+// Timetable persistence
+// ---------------------------------------------------------------------------
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct TimetableState {
+    #[serde(default)]
+    pub current_semester: Option<String>,
+    #[serde(default)]
+    pub active_draft_id: Option<String>,
+    #[serde(default)]
+    pub drafts: Vec<TimetableDraft>,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct TimetableDraft {
+    pub id: String,
+    pub name: String,
+    pub semester: String,
+    #[serde(default)]
+    pub courses: Vec<CourseSelection>,
+    #[serde(default)]
+    pub custom_events: Vec<CustomEvent>,
+    pub created_at: String,
+    pub updated_at: String,
+    #[serde(default)]
+    pub is_published: bool,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct CourseSelection {
+    pub course_id: String,
+    #[serde(default)]
+    pub selected_groups: std::collections::HashMap<String, String>,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct CustomEvent {
+    pub id: String,
+    pub title: String,
+    pub day: u8,
+    pub start_time: String,
+    pub end_time: String,
+    #[serde(default)]
+    pub color: Option<String>,
 }
 
 #[derive(Default, Clone, Copy, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
@@ -38,6 +85,8 @@ pub struct User {
     pub permissions: Permissions,
     pub details: UserDetails,
     pub settings: UserSettings,
+    #[serde(default)]
+    pub timetable: TimetableState,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_seen: Option<DateTime>,
 }
@@ -51,37 +100,30 @@ impl Resource for User {
     }
 }
 
-impl FromRequest for User {
-    type Error = AppError;
-    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
-    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let req = req.clone();
-        Box::pin(async move {
-            let Some(db) = req.app_data::<Data<Db>>() else {
-                return Err(AppError::InternalServer(
-                    "Mongodb client not found in application data".into(),
-                ));
-            };
-            let Some(permissions) = req.app_data::<Data<Permissions>>().cloned() else {
-                return Err(AppError::InternalServer(
-                    "Permissions not found in application data".into(),
-                ));
-            };
-            let Some(id) = req.extensions().get::<Sub>().cloned() else {
-                return Err(AppError::Middleware(
-                    "Sub not found in request extensions".into(),
-                ));
-            };
-            let user = db.get::<User>(id).await?;
-            if user.permissions < **permissions {
-                return Err(AppError::Unauthorized(
-                    "User not authorized to access this resource".into(),
-                ));
-            }
-            Ok(user)
-        })
-    }
-    fn extract(req: &HttpRequest) -> Self::Future {
-        Self::from_request(req, &mut Payload::None)
+impl FromRequestParts<()> for User {
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &()) -> Result<Self, Self::Rejection> {
+        let Extension(db) = Extension::<Db>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| {
+                AppError::InternalServer("Mongodb client not found in application data".into())
+            })?;
+        let Extension(permissions) = Extension::<Permissions>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| {
+                AppError::InternalServer("Permissions not found in application data".into())
+            })?;
+        let id =
+            parts.extensions.get::<Sub>().cloned().ok_or_else(|| {
+                AppError::Middleware("Sub not found in request extensions".into())
+            })?;
+        let user = db.get::<User>(id).await?;
+        if user.permissions < permissions {
+            return Err(AppError::Unauthorized(
+                "User not authorized to access this resource".into(),
+            ));
+        }
+        Ok(user)
     }
 }

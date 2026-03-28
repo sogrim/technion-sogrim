@@ -1,0 +1,84 @@
+name: Fetch Courses from SAP
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"  # Every 6 hours
+  workflow_dispatch:
+env:
+  VM_USER: opc
+
+jobs:
+  fetch:
+    name: Fetch Latest Courses
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.ORACLE_VM_IP }}" >> ~/.ssh/known_hosts
+
+      - name: Run fetcher on VM
+        run: |
+          ssh ${{ env.VM_USER }}@${{ secrets.ORACLE_VM_IP }} bash -s << 'FETCH'
+          set -euo pipefail
+
+          FETCHER="$HOME/sogrim/packages/server/target/release/sogrim-fetcher"
+          CACHE_DIR="$HOME/cache"
+          LOG_DIR="$CACHE_DIR/_logs"
+          echo "=== sogrim-fetcher ==="
+          echo "  time:      $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "  cache_dir: $CACHE_DIR"
+          echo ""
+
+          if [ ! -f "$FETCHER" ]; then
+            echo "ERROR: fetcher binary not found at $FETCHER"
+            echo "Run the deploy workflow first."
+            exit 1
+          fi
+
+          $FETCHER \
+            --latest 3 \
+            --cache-dir "$CACHE_DIR" \
+            --proxy-url "${{ secrets.SAP_PROXY_URL }}" \
+            2>&1
+
+          echo ""
+          echo "=== Latest log file ==="
+          LATEST_LOG=$(ls -t "$LOG_DIR"/fetcher_*.log 2>/dev/null | head -1)
+          if [ -n "$LATEST_LOG" ]; then
+            echo "  $LATEST_LOG"
+            echo ""
+            cat "$LATEST_LOG"
+          else
+            echo "  No log file found"
+          fi
+
+          echo ""
+          echo "=== Disk cache summary ==="
+          for year_dir in "$CACHE_DIR"/*/; do
+            [ -d "$year_dir" ] || continue
+            year=$(basename "$year_dir")
+            [[ "$year" == _* ]] && continue
+            for sem_dir in "$year_dir"*/; do
+              [ -d "$sem_dir" ] || continue
+              sem=$(basename "$sem_dir")
+              count=$(find "$sem_dir" -name "*.json" ! -name "_*" | wc -l)
+              echo "  $year/$sem: $count courses"
+            done
+          done
+
+          echo ""
+          echo "=== Disk usage ==="
+          du -sh "$CACHE_DIR"
+
+          echo ""
+          echo "=== Server healthcheck ==="
+          curl -sf http://localhost:5545/healthcheck && echo " OK" || echo " FAILED"
+          FETCH
+
+      - name: Verify HTTPS endpoint
+        run: |
+          curl -sf "https://sogrim.duckdns.org/healthcheck" && echo "HTTPS OK" || echo "HTTPS FAILED"
