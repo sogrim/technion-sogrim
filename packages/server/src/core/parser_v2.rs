@@ -12,8 +12,7 @@ static COURSE_ID_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?:^|\D)(\d{8})(?:\D|$)").unwrap());
 static SEMESTER_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(\d{4}-\d{4})\s+(אביב|חורף|קיץ)\s+(תש\S+)").unwrap());
-static NUMBER_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\b(\d+\.?\d*)\b").unwrap());
+static NUMBER_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\b(\d+\.?\d*)\b").unwrap());
 
 // ── Format Detection ──
 
