@@ -62,21 +62,24 @@ python validate_pdf.py ../docs/<CatalogFile>.json <pdf_url> --verbose
 | 7 | Bank coverage | All non-special banks have at least one course |
 | 8 | Credit overflows | All `from`/`to` reference valid bank names |
 | 9 | Replacements | All IDs in `catalog_replacements` and `common_replacements` are 8-digit, values are lists |
+| 10 | Replacement convention | Replacement **values** must NOT appear in `course_to_bank` — only the **key** (CS faculty course) goes in `course_to_bank` |
 
 ### PDF Cross-Validation (`validate_pdf.py`)
 
+The script **automatically detects** the track type from the JSON catalog name (e.g., `CyberSecurity`, `SoftwareEngineer`, `ComputerEngineering`, `DataScience`) and extracts the correct section from the PDF. No manual configuration is needed.
+
 | # | Check | What it verifies |
 |---|---|---|
-| 1 | SE section extraction | Finds the correct track section in the PDF using credit total anchor |
+| 1 | Track section extraction | Auto-detects track type and extracts the correct PDF section |
 | 2 | Total credits | JSON `total_credit` matches PDF total |
-| 3 | Credit breakdown | חובה + שרשרת credits match PDF's combined count |
+| 3 | Credit breakdown | חובה + related bank credits match PDF's combined count (track-aware) |
 | 4 | חובה courses | All courses from PDF semester tables exist in JSON (replacement-aware) |
-| 5 | ליבה courses | All PDF ליבה courses match JSON ליבה bank |
+| 5 | ליבה courses | All PDF ליבה courses match JSON ליבה bank (handles fragmented IDs and replacement-aware) |
 | 6 | Course coverage | חובה/ליבה courses from JSON appear somewhere in PDF |
-| 7 | Bank structure | All expected banks present in JSON |
+| 7 | Bank structure | All expected banks present in JSON (per-track expectations) |
 | 8 | Chain structure | שרשרת מדעית uses `Chains` rule with valid chain options |
 | 9 | Credit overflows | Overflow rules are defined |
-| 10 | ליבה rule | ליבה bank requires correct number of courses per PDF |
+| 10 | ליבה rule | ליבה bank requires correct number of courses (extracted from PDF) |
 
 ## Severity Levels
 
@@ -102,24 +105,56 @@ Each finding is:
 }
 ```
 
-## Adapting for Other Tracks
+## Catalog Replacement Convention
 
-The PDF cross-validation currently targets the **SE (Software Engineering)** track using the 159.5-credit anchor. To validate other tracks:
+Replacements are **one-directional**: the KEY is the preferred CS faculty course, the VALUE is the alternative.
 
-1. Update `extract_se_section()` in `validate_pdf.py` to find the correct track anchor (e.g., different credit total)
-2. Adjust `extract_chova_courses()` and `extract_liba_courses()` for that track's PDF structure
-3. Update `expected_banks` in the bank structure check
+- **KEY** (e.g., `02360330`) → appears in `course_to_bank` and as the replacement key
+- **VALUE** (e.g., `00460197`) → appears ONLY in `catalog_replacements`, **never** in `course_to_bank`
+- Replacements are NOT bidirectional — do not add a reverse entry
+
+The schema validator enforces this: it warns if any replacement value is also found in `course_to_bank`.
+
+## Supported Tracks
+
+The PDF cross-validation supports multiple tracks via `TRACK_CONFIGS` in `validate_pdf.py`:
+
+| Track | Catalog name pattern | Credit total | חובה includes |
+|---|---|---|---|
+| Cyber Security | `CyberSecurity` | 155 | חובה + שרשרת מדעית + מתמטי נוסף |
+| Software Engineering | `SoftwareEngineer` | 159.5 | חובה + שרשרת מדעית |
+| Computer Engineering | `ComputerEngineering` | 160 | חובה + שרשרת מדעית |
+| General 4-year | `General` (no 3yr) | 155 | חובה + שרשרת מדעית |
+| General 3-year | `3Year` | 161 | חובה + שרשרת מדעית |
+| Data Science | `DataScience` | varies | חובה + שרשרת מדעית |
+
+### Adding a New Track
+
+1. Add an entry to `TRACK_CONFIGS` in `validate_pdf.py` with: `keywords`, `header_pattern`, `total_credits`, `expected_banks`, `chova_includes`
+2. Add the track's section header to `ALL_SECTION_HEADERS` for boundary detection
+3. Run validation — the script will auto-detect the track from the catalog name
+
+### Known PDF Parsing Quirks
+
+- **Fragmented course IDs**: Hebrew RTL rendering can split IDs across lines (e.g., `02360341` appears as `341\n0\n236\n0`). The ליבה extraction handles this automatically.
+- **חובה credit mapping**: Some tracks include sub-banks (שרשרת מדעית, מתמטי נוסף) within the PDF's "חובה" total. The `chova_includes` config handles this per-track.
 
 ## Improving the Scripts
 
 If the PDF format changes or a check needs updating, **modify the scripts in `packages/catalog-validation/`** rather than writing one-off code. This keeps the tooling reusable.
 
-## Example
+## Examples
 
 ```bash
 cd packages/catalog-validation
 
-# Validate the SE 2024-2025 catalog
+# Validate the Cyber Security 2024-2025 catalog
+python validate_all.py \
+  ../docs/ComputerScienceCyberSecurity2024-2025.json \
+  "https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-%D7%94%D7%A4%D7%A7%D7%95%D7%9C%D7%98%D7%94-%D7%9C%D7%9E%D7%93%D7%A2%D7%99-%D7%94%D7%9E%D7%97%D7%A9%D7%91-%D7%AA%D7%A9%D7%A4%D7%B4%D7%94-.pdf" \
+  --verbose
+
+# Validate the SE 2024-2025 catalog (same PDF, different JSON)
 python validate_all.py \
   ../docs/ComputerScienceSoftwareEngineerCourse2024-2025.json \
   "https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-%D7%94%D7%A4%D7%A7%D7%95%D7%9C%D7%98%D7%94-%D7%9C%D7%9E%D7%93%D7%A2%D7%99-%D7%94%D7%9E%D7%97%D7%A9%D7%91-%D7%AA%D7%A9%D7%A4%D7%B4%D7%94-.pdf" \

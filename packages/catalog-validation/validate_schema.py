@@ -132,6 +132,8 @@ def validate_schema(catalog: dict) -> list[dict]:
 
     # ── Replacements ──────────────────────────────────────────────────────
     repl_errors = []
+    repl_warnings = []
+    course_to_bank = catalog.get("course_to_bank", {})
     for field in ["catalog_replacements", "common_replacements"]:
         for cid, replacements in catalog.get(field, {}).items():
             if not re.match(r"^\d{8}$", cid):
@@ -142,11 +144,21 @@ def validate_schema(catalog: dict) -> list[dict]:
                 for rid in replacements:
                     if not re.match(r"^\d{8}$", rid):
                         repl_errors.append(f"{field}: replacement '{rid}'")
+                    if rid in course_to_bank:
+                        repl_warnings.append(
+                            f"{field}: value '{rid}' (replaces '{cid}') "
+                            f"should not be in course_to_bank "
+                            f"(found in bank '{course_to_bank[rid]}')")
 
     if repl_errors:
         add("ERROR", "replacements",
             f"{len(repl_errors)} replacement ID issues",
             f"Examples: {repl_errors[:5]}")
+    elif repl_warnings:
+        add("WARNING", "replacements",
+            f"Replacement values found in course_to_bank "
+            f"(values should only appear in replacements, not in course_to_bank)",
+            "\n    ".join(repl_warnings[:5]))
     else:
         cat_count = len(catalog.get("catalog_replacements", {}))
         com_count = len(catalog.get("common_replacements", {}))

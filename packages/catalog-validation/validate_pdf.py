@@ -38,27 +38,163 @@ BANK_HEADER_MAP = {
 }
 
 
-def extract_se_section(full_text: str) -> str:
-    """Extract the Software Engineering track section from the full PDF text.
+# ── Track configurations ──────────────────────────────────────────────────────
+# keywords: matched against catalog name/description to detect track type
+# header_pattern: regex to find the track section header in the PDF
+# expected_banks: banks that must appear in the JSON
+# chova_includes: JSON banks whose credits the PDF counts under "חובה"
+TRACK_CONFIGS = {
+    "cyber": {
+        "keywords": ["סייבר"],
+        "header_pattern": re.compile(r"מגמת\s+סייבר\s+ואבטחת\s+מערכות\s+ממוחשבות"),
+        "expected_banks": {
+            "חובה", "שרשרת מדעית", "ליבה", "רשימה א", "רשימה ב",
+            "פרויקט סייבר", "פרויקט/סמינר", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה", "שרשרת מדעית", "מתמטי נוסף"],
+    },
+    "se": {
+        "keywords": ["הנדסת תוכנה", "תוכנה"],
+        "header_pattern": re.compile(r"המסלול\s+להנדסת\s+תוכנה"),
+        "expected_banks": {
+            "חובה", "שרשרת מדעית", "ליבה", "רשימה א", "פרויקט",
+            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה", "שרשרת מדעית"],
+    },
+    "ce": {
+        "keywords": ["הנדסת מחשבים"],
+        "header_pattern": re.compile(r"המסלול\s+להנדסת\s+מחשבים"),
+        "expected_banks": {
+            "חובה", "שרשרת מדעית", "ליבה", "רשימה א", "פרויקט",
+            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה", "שרשרת מדעית"],
+    },
+    "general_4yr": {
+        "keywords": ["כללי ארבע", "מסלול כללי"],
+        "header_pattern": re.compile(r"תוכנית\s+לימודים\s+במסלול\s+כללי\s+ארבע"),
+        "expected_banks": {
+            "חובה", "שרשרת מדעית", "ליבה", "רשימה א", "פרויקט",
+            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה", "שרשרת מדעית"],
+    },
+    "general_3yr": {
+        "keywords": ["כללי תלת"],
+        "header_pattern": re.compile(r"תוכנית\s+לימודים\s+במסלול\s+כללי\s+תלת"),
+        "expected_banks": {
+            "חובה", "שרשרת מדעית", "רשימה א", "פרויקט",
+            "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה", "שרשרת מדעית"],
+    },
+    "data": {
+        "keywords": ["למידה וניתוח מידע", "מידע"],
+        "header_pattern": re.compile(r"המגמה\s+ללמידה\s+וניתוח\s+מידע"),
+        "expected_banks": {
+            "חובה", "שרשרת מדעית", "ליבה", "רשימה א", "פרויקט",
+            "בחירת העשרה", "חינוך גופני", "בחירה חופשית",
+        },
+        "chova_includes": ["חובה", "שרשרת מדעית"],
+    },
+}
 
-    Strategy: find the page containing "159.5" credits (SE total), then expand
-    to include the full semester tables and elective lists that follow.
+# All known section headers used to detect section boundaries
+ALL_SECTION_HEADERS = [
+    "מגמת סייבר ואבטחת מערכות ממוחשבות",
+    "המסלול להנדסת תוכנה",
+    "המסלול להנדסת מחשבים",
+    "תוכנית לימודים במסלול כללי תלת-שנתי",
+    "תוכנית לימודים במסלול כללי ארבע-שנתי",
+    "תוכנית משולבת לתואר במדעי המחשב ובמתמטיקה",
+    "תוכנית משולבת לתואר במדעי המחשב ובפיזיקה",
+    "המגמה ללמידה וניתוח מידע",
+    "מגמת מצוינות",
+    "תוכנית לתואר כפול",
+]
+
+
+def detect_track_type(catalog: dict) -> str:
+    """Detect the track type from catalog name and description."""
+    text = catalog.get("name", "") + " " + catalog.get("description", "")
+    for track_id, config in TRACK_CONFIGS.items():
+        for keyword in config["keywords"]:
+            if keyword in text:
+                return track_id
+    return "se"  # default fallback
+
+
+def get_track_config(track_type: str) -> dict:
+    """Get configuration for a track type, with SE as fallback."""
+    return TRACK_CONFIGS.get(track_type, TRACK_CONFIGS["se"])
+
+
+def _find_page_start(full_text: str, pos: int) -> int:
+    """Find the start of the page containing the given position."""
+    page_pattern = re.compile(r"=== PAGE (\d+) ===")
+    page_start = 0
+    for p in page_pattern.finditer(full_text):
+        if p.start() <= pos:
+            page_start = p.start()
+        else:
+            break
+    return page_start
+
+
+def _find_section_end(full_text: str, start_pos: int, own_header: str) -> int:
+    """Find where the next track section begins after start_pos."""
+    end_pos = len(full_text)
+    for marker in ALL_SECTION_HEADERS:
+        if marker == own_header:
+            continue
+        idx = full_text.find(marker, start_pos + 500)
+        if 0 <= idx < end_pos:
+            end_pos = idx
+    return end_pos
+
+
+def extract_track_section(full_text: str, catalog: dict) -> tuple[str, str]:
+    """Extract the track section matching the given catalog from the PDF text.
+
+    Returns (section_text, track_type).
+    Uses catalog name/description to detect the track, then finds it in the PDF
+    by matching the header pattern near the expected credit total.
     """
-    # Primary: find by 159.5 credits anchor (unique to SE track)
-    idx_159 = full_text.find("159.5")
-    if idx_159 >= 0:
-        page_pattern = re.compile(r"=== PAGE (\d+) ===")
-        pages = list(page_pattern.finditer(full_text))
+    track_type = detect_track_type(catalog)
+    config = get_track_config(track_type)
+    header_pattern = config["header_pattern"]
+    total_credit = catalog.get("total_credit")
 
-        # Find which page contains 159.5
-        start_page_pos = 0
-        for p in pages:
-            if p.start() <= idx_159:
-                start_page_pos = p.start()
-            else:
+    # Find all occurrences of the track header
+    matches = list(header_pattern.finditer(full_text))
+
+    if not matches:
+        # Fallback: try the legacy SE extraction
+        return _extract_se_section_legacy(full_text), "se"
+
+    # If multiple matches, prefer the one near the credit total
+    best_match = matches[-1]  # default to last (section header, not intro mention)
+    if total_credit and len(matches) > 1:
+        credit_str = str(int(total_credit)) if total_credit == int(total_credit) else str(total_credit)
+        for m in matches:
+            nearby = full_text[m.start():m.start() + 2000]
+            if credit_str in nearby:
+                best_match = m
                 break
 
-        # The SE section spans from this page until the next track
+    start_pos = best_match.start()
+    own_header = best_match.group()
+    end_pos = _find_section_end(full_text, start_pos, own_header)
+
+    return full_text[start_pos:end_pos], track_type
+
+
+def _extract_se_section_legacy(full_text: str) -> str:
+    """Legacy SE extraction for backward compatibility."""
+    idx_159 = full_text.find("159.5")
+    if idx_159 >= 0:
+        start_page_pos = _find_page_start(full_text, idx_159)
         end_markers = [
             "המסלול להנדסת מחשבים",
             "תוכנית משולבת לתואר במדעי המחשב ובמתמטיקה",
@@ -66,34 +202,24 @@ def extract_se_section(full_text: str) -> str:
         end_pos = len(full_text)
         for marker in end_markers:
             idx = full_text.find(marker, start_page_pos + 500)
-            if idx >= 0 and idx < end_pos:
+            if 0 <= idx < end_pos:
                 end_pos = idx
-
         return full_text[start_page_pos:end_pos]
 
-    # Fallback: look for SE track header with flexible spacing
     se_pattern = re.compile(r"המסלול\s+להנדסת\s+תוכנה")
     matches = list(se_pattern.finditer(full_text))
-
     if matches:
-        start_idx = matches[-1].start()
-        page_pattern = re.compile(r"=== PAGE (\d+) ===")
-        start_page_pos = 0
-        for p in page_pattern.finditer(full_text):
-            if p.start() <= start_idx:
-                start_page_pos = p.start()
-
+        start_pos = _find_page_start(full_text, matches[-1].start())
         end_markers = [
             "המסלול להנדסת מחשבים",
             "תוכנית משולבת לתואר",
         ]
         end_pos = len(full_text)
         for marker in end_markers:
-            idx = full_text.find(marker, start_page_pos + 500)
-            if idx >= 0 and idx < end_pos:
+            idx = full_text.find(marker, start_pos + 500)
+            if 0 <= idx < end_pos:
                 end_pos = idx
-
-        return full_text[start_page_pos:end_pos]
+        return full_text[start_pos:end_pos]
 
     return ""
 
@@ -169,20 +295,22 @@ def extract_chova_courses(se_text: str) -> set[str]:
     return chova_ids
 
 
-def extract_liba_courses(se_text: str) -> set[str]:
-    """Extract courses from the ליבה section of the SE track."""
+def extract_liba_courses(track_text: str) -> set[str]:
+    """Extract courses from the ליבה section of the track."""
     liba_ids = set()
-    lines = se_text.split("\n")
+    lines = track_text.split("\n")
     in_liba = False
 
     for line in lines:
         stripped = line.strip()
-        if stripped == "מקצועות ליבה" or "יש ללמוד 3 קורסים" in stripped:
+        if stripped == "מקצועות ליבה" or "יש ללמוד" in stripped and "קורסים" in stripped:
             in_liba = True
             continue
         if in_liba and (
             "מגמת מצוינות" in stripped
             or "המסלול להנדסת" in stripped
+            or "המגמה ל" in stripped
+            or "תוכנית לימודים" in stripped
             or stripped.startswith("=== PAGE")
         ):
             break
@@ -194,7 +322,40 @@ def extract_liba_courses(se_text: str) -> set[str]:
                     if not padded.startswith("00000"):
                         liba_ids.add(padded)
 
+    # Handle broken course IDs split across lines (e.g., "341\n0\n236\n0")
+    # Re-scan the ליבה block as a single string to catch fragmented IDs
+    liba_start = None
+    liba_end = None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == "מקצועות ליבה":
+            liba_start = i
+        elif liba_start and (
+            stripped.startswith("=== PAGE")
+            or "המסלול להנדסת" in stripped
+            or "המגמה ל" in stripped
+            or "תוכנית לימודים" in stripped
+        ):
+            liba_end = i
+            break
+    if liba_start and liba_end:
+        block = " ".join(lines[liba_start:liba_end])
+        # RTL rendering splits IDs: "341 0 236 0" → read RTL as "0 236 0 341" → 02360341
+        for match in re.finditer(r"\b(\d{3,4})\s+0\s+(\d{3})\s+0\b", block):
+            reconstructed = "0" + match.group(2) + "0" + match.group(1)
+            padded = pad_course_id(reconstructed)
+            if len(padded) == 8 and not padded.startswith("00000"):
+                liba_ids.add(padded)
+
     return liba_ids
+
+
+def extract_liba_course_count_from_pdf(track_text: str) -> int | None:
+    """Extract the required number of ליבה courses from the PDF text."""
+    m = re.search(r"יש ללמוד\s+(\d+)\s+קורסים", track_text)
+    if m:
+        return int(m.group(1))
+    return None
 
 
 def validate_against_pdf(catalog: dict, pdf_text: str, verbose: bool = False) -> list[dict]:
@@ -212,17 +373,20 @@ def validate_against_pdf(catalog: dict, pdf_text: str, verbose: bool = False) ->
             "details": details,
         })
 
-    # ── 1. Extract SE section from PDF ────────────────────────────────────
-    se_text = extract_se_section(pdf_text)
-    if not se_text:
-        add("ERROR", "extraction", "Could not find SE track section in PDF")
+    # ── 1. Extract track section from PDF ─────────────────────────────────
+    track_text, track_type = extract_track_section(pdf_text, catalog)
+    track_config = get_track_config(track_type)
+
+    if not track_text:
+        add("ERROR", "extraction", "Could not find track section in PDF")
         return findings
 
     if verbose:
-        add("INFO", "extraction", f"Extracted SE section: {len(se_text)} chars")
+        add("INFO", "extraction",
+            f"Extracted {track_type} section: {len(track_text)} chars")
 
     # ── 2. Total credits ──────────────────────────────────────────────────
-    pdf_total = extract_total_credits(se_text)
+    pdf_total = extract_total_credits(track_text)
     json_total = catalog.get("total_credit")
 
     if pdf_total is not None:
@@ -233,27 +397,35 @@ def validate_against_pdf(catalog: dict, pdf_text: str, verbose: bool = False) ->
             add("OK", "total_credit", f"Total credits match: {json_total}")
 
     # ── 3. Credit breakdown ───────────────────────────────────────────────
-    breakdown = extract_credit_breakdown(se_text)
+    breakdown = extract_credit_breakdown(track_text)
     if verbose and breakdown:
         add("INFO", "breakdown", f"PDF breakdown: {breakdown}")
 
     json_banks = {b["name"]: b.get("credit") for b in catalog.get("course_banks", [])}
 
+    # PDF's "חובה" may include multiple JSON banks (e.g., שרשרת + מתמטי נוסף)
+    chova_bank_names = track_config.get("chova_includes", ["חובה", "שרשרת מדעית"])
+
     if "חובה" in breakdown and "חובה" in json_banks:
         pdf_chova = breakdown["חובה"]
-        json_chova = json_banks.get("חובה", 0) or 0
-        json_chain = json_banks.get("שרשרת מדעית", 0) or 0
-        combined = json_chova + json_chain
-        if combined != pdf_chova and json_chova != pdf_chova:
-            add("WARNING", "credits",
-                f"חובה credits: JSON חובה={json_chova} + שרשרת={json_chain} = {combined}, PDF={pdf_chova}",
-                "PDF 'חובה' often includes scientific chain credits")
+        json_combined = sum(json_banks.get(b, 0) or 0 for b in chova_bank_names)
+        json_chova_only = json_banks.get("חובה", 0) or 0
+        if json_combined == pdf_chova or json_chova_only == pdf_chova:
+            details = ""
+            if json_combined != json_chova_only and json_combined == pdf_chova:
+                parts = [f"{b}={json_banks.get(b, 0) or 0}" for b in chova_bank_names]
+                details = f"JSON {' + '.join(parts)} = {json_combined}"
+            add("OK", "credits", f"חובה credits consistent: {pdf_chova}",
+                details)
         else:
-            add("OK", "credits", f"חובה credits consistent: {pdf_chova}")
+            parts = [f"{b}={json_banks.get(b, 0) or 0}" for b in chova_bank_names]
+            add("WARNING", "credits",
+                f"חובה credits: JSON {' + '.join(parts)} = {json_combined}, PDF={pdf_chova}",
+                "PDF 'חובה' may include scientific chain / math credits")
 
     # ── 4. Course-level comparison: חובה ──────────────────────────────────
     json_courses = catalog.get("course_to_bank", {})
-    pdf_chova_ids = extract_chova_courses(se_text)
+    pdf_chova_ids = extract_chova_courses(track_text)
     json_chova_ids = {cid for cid, bank in json_courses.items() if bank == "חובה"}
 
     missing_in_json_chova = pdf_chova_ids - json_chova_ids
@@ -316,11 +488,33 @@ def validate_against_pdf(catalog: dict, pdf_text: str, verbose: bool = False) ->
             f"All {len(pdf_chova_ids)} PDF חובה courses accounted for{extra}")
 
     # ── 5. ליבה courses ───────────────────────────────────────────────────
-    pdf_liba = extract_liba_courses(se_text)
+    pdf_liba = extract_liba_courses(track_text)
     json_liba = {cid for cid, bank in json_courses.items() if bank == "ליבה"}
 
-    missing_liba = pdf_liba - json_liba
+    # Build reverse replacement map: value → key
+    reverse_replacements = {}
+    for field in ["catalog_replacements", "common_replacements"]:
+        for key_cid, vals in catalog.get(field, {}).items():
+            for val_cid in vals:
+                reverse_replacements[val_cid] = key_cid
+
+    # A PDF ליבה course is covered if it's in json_liba OR its replacement key is
+    missing_liba = set()
+    covered_by_repl_liba = set()
+    for cid in pdf_liba:
+        if cid in json_liba:
+            continue
+        if cid in reverse_replacements and reverse_replacements[cid] in json_liba:
+            covered_by_repl_liba.add(cid)
+        else:
+            missing_liba.add(cid)
+
     extra_liba = json_liba - pdf_liba
+
+    if covered_by_repl_liba and verbose:
+        for cid in sorted(covered_by_repl_liba):
+            add("INFO", "ליבה_replacement",
+                f"PDF ליבה course {cid} covered by replacement → {reverse_replacements[cid]}")
 
     if missing_liba:
         missing_entirely = missing_liba - all_json_ids
@@ -334,7 +528,9 @@ def validate_against_pdf(catalog: dict, pdf_text: str, verbose: bool = False) ->
                 add("WARNING", "ליבה_courses",
                     f"PDF ליבה course {cid} is in JSON bank '{json_courses[cid]}' instead of 'ליבה'")
     else:
-        add("OK", "ליבה_courses", f"All {len(pdf_liba)} PDF ליבה courses match JSON")
+        add("OK", "ליבה_courses",
+            f"All {len(pdf_liba)} PDF ליבה courses match JSON"
+            + (f" ({len(covered_by_repl_liba)} via replacements)" if covered_by_repl_liba else ""))
 
     if extra_liba:
         add("WARNING", "ליבה_courses",
@@ -342,7 +538,7 @@ def validate_against_pdf(catalog: dict, pdf_text: str, verbose: bool = False) ->
             f"IDs: {sorted(extra_liba)}")
 
     # ── 6. Overall course presence check ──────────────────────────────────
-    all_pdf_ids = extract_all_course_ids_from_text(se_text)
+    all_pdf_ids = extract_all_course_ids_from_text(track_text)
 
     json_only = all_json_ids - all_pdf_ids
     json_only_important = {
@@ -356,23 +552,22 @@ def validate_against_pdf(catalog: dict, pdf_text: str, verbose: bool = False) ->
 
     if json_only_important:
         add("WARNING", "coverage",
-            f"{len(json_only_important)} JSON חובה/ליבה courses not found in SE PDF section",
+            f"{len(json_only_important)} JSON חובה/ליבה courses not found in {track_type} PDF section",
             f"IDs: {sorted(json_only_important)}")
 
     if json_only_chain and verbose:
         add("INFO", "coverage",
-            f"{len(json_only_chain)} שרשרת מדעית courses not in SE section (expected, defined in general track)",
+            f"{len(json_only_chain)} שרשרת מדעית courses not in {track_type} section (expected, defined in general track)",
             f"IDs: {sorted(json_only_chain)}")
 
     if verbose:
         add("INFO", "coverage",
             f"JSON total courses: {len(all_json_ids)}, "
-            f"PDF SE section IDs: {len(all_pdf_ids)}, "
+            f"PDF {track_type} section IDs: {len(all_pdf_ids)}, "
             f"JSON-only: {len(json_only)}")
 
     # ── 7. Bank structure check ───────────────────────────────────────────
-    expected_banks = {"חובה", "שרשרת מדעית", "ליבה", "רשימה א", "פרויקט",
-                      "רשימה ב", "בחירת העשרה", "חינוך גופני", "בחירה חופשית"}
+    expected_banks = track_config.get("expected_banks", set())
     actual_banks = set(json_banks.keys())
 
     missing_banks = expected_banks - actual_banks
@@ -410,10 +605,17 @@ def validate_against_pdf(catalog: dict, pdf_text: str, verbose: bool = False) ->
         if isinstance(rule, dict) and "AccumulateCourses" in rule:
             req = rule["AccumulateCourses"]
             count = int(req.get("$numberLong", req) if isinstance(req, dict) else req)
-            add("OK", "ליבה_rule", f"ליבה requires {count} courses (PDF says 3)")
-            if count != 3:
-                add("WARNING", "ליבה_rule",
-                    f"ליבה requires {count} courses but PDF says 3")
+            pdf_liba_count = extract_liba_course_count_from_pdf(track_text)
+            if pdf_liba_count is not None:
+                if count == pdf_liba_count:
+                    add("OK", "ליבה_rule",
+                        f"ליבה requires {count} courses (PDF says {pdf_liba_count})")
+                else:
+                    add("WARNING", "ליבה_rule",
+                        f"ליבה requires {count} courses but PDF says {pdf_liba_count}")
+            else:
+                add("OK", "ליבה_rule",
+                    f"ליבה requires {count} courses (could not extract PDF count)")
         else:
             add("WARNING", "ליבה_rule", f"ליבה rule unexpected format: {rule}")
 

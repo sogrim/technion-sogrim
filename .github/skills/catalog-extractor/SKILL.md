@@ -109,7 +109,7 @@ Array of course bank objects. Each bank represents a category of courses:
 | רשימה א | `"AccumulateCredit"` | List A electives - accumulate credits |
 | רשימה ב | `"AccumulateCredit"` | List B electives - accumulate credits |
 | קבוצות התמחות | `{"SpecializationGroups": {...}}` | **4-year only** - specialization groups |
-| פרויקט | `{"AccumulateCourses": {"$numberLong": "1"}}` | Project - credit is `null` |
+| פרויקט | `{"AccumulateCourses": {"$numberLong": "N"}}` | Project — see [Projects section](#projects-and-seminars) for credit rules |
 | סמינר | `{"AccumulateCourses": {"$numberLong": "1"}}` | **4-year only** - Seminar, credit is `null` |
 | בחירת העשרה | `"Malag"` | Enrichment electives |
 | חינוך גופני | `"Sport"` | Physical education |
@@ -172,6 +172,7 @@ Defines how excess credits overflow between banks:
 Common overflow patterns:
 - **3-year**: חובה→רשימה ב, רשימה א→רשימה ב, פרויקט→רשימה א, שרשרת מדעית→רשימה ב, מתמטי נוסף→רשימה ב, רשימה ב→בחירה חופשית, בחירת העשרה→בחירה חופשית, חינוך גופני→בחירה חופשית
 - **4-year**: Same as above plus: פרויקט→סמינר, סמינר→רשימה א, קבוצות התמחות→רשימה א
+- **Computer Engineering**: חובה→בחירה פקולטית, ליבה→בחירה פקולטית, קבוצות התמחות→בחירה פקולטית, פרויקט→בחירה פקולטית, בחירה פקולטית→בחירה חופשית, בחירת העשרה→בחירה חופשית, חינוך גופני→בחירה חופשית
 
 #### `course_to_bank`
 Maps every course ID to its bank name:
@@ -242,9 +243,208 @@ String identifier: `"ComputerScience"` for CS catalogs.
 - `catalog_replacements`: Courses that have been replaced specifically in this catalog year. Look for notes like "במקום" (instead of) or replacement tables.
 - `common_replacements`: Standard replacements that apply across catalogs (e.g., old math courses replaced by new ones). These are typically stable across years — copy from the most recent existing catalog and adjust if needed.
 
+### Handling "או" (Or) Course Alternatives
+
+**CRITICAL for cross-faculty tracks** (e.g., Computer Engineering shared between CS and EE faculties):
+
+When the PDF lists two courses joined by "או" (or), the student may take either one. These **must** be handled with `catalog_replacements`:
+
+```
+5.0 - - 2 4 אלגברה 1מ׳ 1  01040064
+ או
+5.0 - - 2 4 אלגברה 1מ'    01040016
+```
+
+**Key/value orientation**: The KEY of the replacement should be the CS course (0236/0234 prefix) and appear in `course_to_bank`. The VALUE should be the EE alternative (0044/0046 prefix) and appear ONLY in `catalog_replacements`, NOT in `course_to_bank`.
+
+**General rule for all replacements**: The KEY appears in both `course_to_bank` and as a replacement key. The VALUE appears ONLY in the replacement — never in `course_to_bank`.
+
+> **⚠️ WRONG** — bidirectional replacements, value in course_to_bank:
+> ```json
+> "course_to_bank": { "02360330": "ליבה", "00460197": "ליבה" },
+> "catalog_replacements": { "02360330": ["00460197"], "00460197": ["02360330"] }
+> ```
+>
+> **✅ CORRECT** — one-directional, value only in replacements:
+> ```json
+> "course_to_bank": { "02360330": "ליבה" },
+> "catalog_replacements": { "02360330": ["00460197"] }
+> ```
+
+**For חובה (All rule) banks**: Only the KEY course appears in חובה. The replacement allows the VALUE course to substitute for it.
+
+**For ליבה / specialization groups**: Only the KEY course appears in the bank. The replacement prevents double-counting if a student takes the VALUE version instead.
+
+**Where to look for "or" patterns in the PDF**:
+1. **Semester tables** — courses with "או" between them (e.g., `01040064 או 01040016`)
+2. **Footnotes** — e.g., "סטודנט יוכל לבחור בין..." (student may choose between...)
+3. **ליבה section** — alternatives listed with "או"
+4. **Specialization groups** — courses paired with "או" or "/" separators
+5. **Mandatory courses within groups** — listed as `XXXXX/YYYYY` or with "או"
+
+**Example** (Computer Engineering 2024-2025): CS courses are keys, EE alternatives are values:
+```json
+"catalog_replacements": {
+  "02360334": ["00440334"],         // Networks - CS key, EE value
+  "02360927": ["00460212"],         // Robotics - CS key, EE value
+  "02360703": ["00460271"],         // OOP - CS key, EE value
+  "02360781": ["04600211"],         // Deep Learning - CS key, EE value
+  "02360268": ["00460268"],         // Processor Eng
+  "02360860": ["00460200"],         // Image Processing
+  "02360873": ["00460746"],         // Computer Vision
+  "02360766": ["00460195"],         // Machine Learning
+  "02360360": ["00460266"],         // Compilation
+  "02360278": ["00460278"]          // Accelerators
+}
+```
+
+**How to systematically find all "or" pairs**: Scan the entire track section for the word "או" and for "/" between course numbers. Every such occurrence needs a `catalog_replacements` entry. Always prefer the CS course (0236/0234) as the key.
+
 ### Projects and Seminars
-- Project courses (פרויקט) and seminars (סמינר) have `credit: null` because their credits count toward other banks via overflow rules.
-- List all valid project/seminar course IDs in `course_to_bank`.
+
+Projects and seminars come in **two patterns** depending on the track:
+
+#### Pattern A: Single project, no credit requirement (3-year, 4-year CS, Bioinformatics)
+- `credit: null` — the project has no standalone credit requirement
+- Credits overflow to another bank (e.g., רשימה א or בחירה פקולטית)
+- Rule: `AccumulateCourses: 1` (choose 1 project)
+- Example: 3-year CS has פרויקט with `credit: null`, overflow to רשימה א
+
+#### Pattern B: Multiple projects with minimum credit requirement (Computer Engineering)
+- `credit: 6.0` — the projects require a minimum total of 6 credits
+- Rule: `AccumulateCourses: 2` (must complete 2 projects)
+- Each project is typically 3-4 credits; any excess beyond 6 overflows to בחירה פקולטית
+- **How to detect**: When the PDF semester tables show projects in their own semesters (e.g., semesters 6 and 7 each dedicated to a project), and the PDF credit header counts projects within חובה but the projects clearly stand alone
+
+**Key rule**: If the PDF includes project credits in the חובה total (e.g., "112.5-114.5 חובה" which includes 6-8 credits of projects), you must **subtract** project credits from חובה and assign them to the פרויקט bank. The חובה bank should only contain the non-project mandatory courses.
+
+Similarly for seminars (סמינר):
+
+## Common Extraction Pitfalls
+
+These are real mistakes found during catalog validation. Keep these in mind when extracting any track.
+
+### Pitfall 1: Including courses from the wrong track
+
+**Problem**: The Technion PDF contains ALL tracks for a faculty (3-year, 4-year, SE, bioinformatics, etc.) in a single document. It's easy to accidentally include courses from a different track's semester table into חובה.
+
+**Example** (Bioinformatics 2024-2025): Courses `02340125` (אלגוריתמים נומריים) and `02360360` (תורת הקומפילציה) were placed in חובה, but they belong to the general 4-year track, not the bioinformatics track. They should have been in רשימה א.
+
+**How to avoid**: Carefully identify the exact pages/section for your target track. Cross-reference ONLY the semester table for that specific track when building the חובה bank. Verify the חובה credit total matches the PDF.
+
+### Pitfall 2: Adding a פרויקט bank when the track doesn't need one
+
+**Problem**: Most CS tracks have a separate "פרויקט" bank (AccumulateCourses: 1) where students choose one project. But some tracks (like bioinformatics) have their project as a **mandatory** course already in חובה, with no separate project selection.
+
+**Example** (Bioinformatics 2024-2025): The track has `02360524` (פרויקט בביואינפורמטיקה) as a mandatory course in חובה. There should be no separate פרויקט bank — all project courses should go to רשימה א instead.
+
+**How to avoid**: Check whether the track's semester table lists a specific project course. If yes, it's mandatory (חובה) and no פרויקט bank is needed. Only create a פרויקט bank when the PDF says "choose one project from the list".
+
+### Pitfall 3: Lumping structured elective requirements into a single bank
+
+**Problem**: Some tracks have elective sections with multiple sub-requirements (e.g., "complete one cluster AND at least 2 courses from another list AND accumulate X total credits"). Collapsing these into a single AccumulateCredit bank loses the sub-requirements.
+
+**Example** (Bioinformatics 2024-2025): The PDF's "בחירה מביולוגיה" section requires:
+1. Complete one of two course clusters (מקבץ מולקולרי OR מקבץ מיקרוביולוגיה ואבולוציה)
+2. Complete at least 2 courses from רשימה ב
+3. Total biology credits must reach 14.5
+
+This was initially extracted as a single `"בחירה בביולוגיה"` bank with `AccumulateCredit: 14.5`, which doesn't enforce requirements 1 and 2.
+
+**Correct approach** — Split into 3 banks connected by credit overflow:
+
+```json
+// Bank 1: Chain requirement — pick one cluster
+{
+  "name": "רשימה מביולוגיה א",
+  "rule": {
+    "Chains": [
+      ["01250801", "01340082"],
+      ["01340121", "01340133", "01340142"]
+    ]
+  },
+  "credit": null
+}
+
+// Bank 2: Minimum course count
+{
+  "name": "רשימה מביולוגיה ב",
+  "rule": {"AccumulateCourses": {"$numberLong": "2"}},
+  "credit": null
+}
+
+// Bank 3: Overall credit target (overflow-only)
+{
+  "name": "בחירה מביולוגיה כללי",
+  "rule": "AccumulateCredit",
+  "credit": 14.5
+}
+```
+
+With overflows: `רשימה מביולוגיה א → בחירה מביולוגיה כללי`, `רשימה מביולוגיה ב → בחירה מביולוגיה כללי`. This way all three sub-requirements are enforced: the chain, the minimum courses, and the total credit target.
+
+**How to avoid**: Read the PDF elective section carefully. If it says things like "choose one of the following clusters", "at least N courses from list X", or "remaining credits from lists Y", these are separate requirements that need separate banks with overflow connections.
+
+### Pitfall 4: Missing cross-faculty elective courses for Bioinformatics
+
+**Problem**: The Bioinformatics track has a `בחירה מביולוגיה כללי` bank that accumulates 14.5 credits from Biology courses. The CS catalog PDF only lists the structured requirements (cluster choices and minimum course counts), but students can also take **any** course from the Biology faculty's רשימה א' and רשימה ב' to fill the remaining credits. These courses are listed in a **separate PDF** — the Biology faculty catalog — not in the CS catalog.
+
+**How to populate**: Download the Biology faculty catalog PDF (e.g., `https://ugportal.technion.ac.il/wp-content/uploads/2025/09/13-ביולוגיה-תשפ״ו.pdf`) and extract all course IDs from:
+1. **רשימה א'** — the main elective list (typically ~7 courses)
+2. **רשימה ב'** — additional elective courses (typically ~13 courses)
+
+Map all these courses to the `בחירה מביולוגיה כללי` bank, **unless** they are already assigned to `רשימה מביולוגיה א` or `רשימה מביולוגיה ב` (the structured sub-banks).
+
+**Example courses** (from Biology faculty catalog 2025-2026):
+- רשימה א': `01340069`, `01340153`, `01340039`, `01340156`, `01340155`, `01340157`, `02760413`
+- רשימה ב': `00640615`, `00660418`, `01340049`, `01340088`, `01340140`, `01340141`, `01340147`, `01360042`, `01360088` (plus some that overlap with רשימה א')
+
+**How to avoid**: When extracting the Bioinformatics track, always check the Biology faculty catalog for the full list of elective courses available to fill `בחירה מביולוגיה כללי`. Do not leave this bank empty.
+
+### Pitfall 5: Missing "או" (or) course replacements in cross-faculty tracks
+
+**Problem**: Cross-faculty tracks (e.g., Computer Engineering shared between CS and EE) list many courses with "או" (or) alternatives — the student can take the CS version OR the EE version. If these are not added to `catalog_replacements`, the system will either:
+- **חובה (All rule)**: Require the student to take BOTH versions (since both are listed and "All" means take all)
+- **ליבה / specialization groups**: Count both versions as separate courses, double-counting credits
+
+**Example** (Computer Engineering 2024-2025): The PDF shows `01040064 או 01040016` for Algebra in חובה. Without a replacement, the system requires both. Similarly, `02360334 או 00440334` in ליבה would count as 2 courses if both are in the bank.
+
+**How to avoid**:
+1. Scan the entire track section for "או" between course numbers and "/" separators (e.g., `02360334/00440334`)
+2. For EVERY "or" pair, add an entry to `catalog_replacements`: `"CS_COURSE": ["EE_COURSE"]` — prefer 0236/0234 as the key
+3. Only the KEY course should be in `course_to_bank` — the VALUE course is handled via the replacement and must NOT be in `course_to_bank`
+4. Pay special attention to cross-faculty tracks where this pattern is very common (10-20 pairs)
+
+See the "Handling 'או' (Or) Course Alternatives" section above for detailed guidance and a full example.
+
+### Pitfall 6: קבוצות התמחות having a credit requirement instead of group-only
+
+**Problem**: In some tracks (e.g., Computer Engineering), the PDF lists a total credit requirement under "בחירה פקולטית" that **includes** credits from קבוצות התמחות courses. It's tempting to put a credit requirement on the קבוצות התמחות bank itself (e.g., 27.0), but the actual requirement is only to complete courses from 2 specialization groups — the credit target belongs to בחירה פקולטית.
+
+**Example** (Computer Engineering 2024-2025): The PDF says 26.0-28.0 credits for "מקצועות בחירה פקולטית". This includes all specialization group courses. The correct setup is:
+- `קבוצות התמחות`: `credit: null`, rule: `SpecializationGroups` with `groups_number: 2`
+- `בחירה פקולטית`: `credit: 28.0`, rule: `AccumulateCredit`
+- Overflow: `קבוצות התמחות → בחירה פקולטית` — all specialization credits count toward the 28
+
+**Wrong approach**: Setting `קבוצות התמחות` credit to 27.0 and `בחירה פקולטית` to 0.0.
+
+**How to detect**: Look at the PDF credit breakdown header. If the track does NOT list a separate line for "קבוצות התמחות" credits but instead has a "בחירה פקולטית" line, then specialization group credits flow into בחירה פקולטית.
+
+**Rule of thumb**: קבוצות התמחות should generally have `credit: null` (only the group-count requirement matters). The credit target for elective courses including specialization belongs to בחירה פקולטית.
+
+### Pitfall 7: Projects counted under חובה credit total in PDF
+
+**Problem**: Some tracks (e.g., Computer Engineering) show projects within the חובה credit total in the PDF header (e.g., "112.5-114.5 חובה"), but the projects are actually separate from the regular mandatory courses and have their own selection rules.
+
+**Example** (Computer Engineering 2024-2025): PDF shows 112.5-114.5 for חובה. But the actual mandatory (non-project) courses sum to 106.5, and the remaining 6-8 credits are from 2 projects. The correct setup is:
+- `חובה`: `credit: 106.5`, rule: `All` (only non-project mandatory courses)
+- `פרויקט`: `credit: 6.0`, rule: `AccumulateCourses: 2`
+- Projects overflow to: `פרויקט → בחירה פקולטית`
+
+**How to detect**:
+1. Check if the semester tables have dedicated "project semesters" (e.g., semesters 6-7 showing only projects)
+2. Sum the non-project mandatory course credits — if significantly less than the PDF's חובה total, the difference is projects
+3. Look for variable credit ranges (112.5-114.5) — the range usually comes from projects having variable credits (3 or 4 each)
 
 ## Existing Examples
 
