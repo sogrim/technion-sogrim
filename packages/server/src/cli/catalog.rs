@@ -1,9 +1,9 @@
 use std::path::Path;
 
-use bson::{doc, oid::ObjectId};
-use futures_util::TryStreamExt;
 use crate::db::Db;
 use crate::resources::catalog::{Catalog, Faculty};
+use bson::{doc, oid::ObjectId};
+use futures_util::TryStreamExt;
 
 /// Convert MongoDB Extended JSON patterns to plain JSON values.
 /// Handles `{"$numberLong": "123"}` → `123` recursively.
@@ -81,7 +81,10 @@ pub async fn list(db: &Db) -> Result<(), anyhow::Error> {
         return Ok(());
     }
 
-    println!("{:<26} {:<50} {:<25} {:>8}", "ID", "Name", "Faculty", "Credits");
+    println!(
+        "{:<26} {:<50} {:<25} {:>8}",
+        "ID", "Name", "Faculty", "Credits"
+    );
     println!("{}", "-".repeat(112));
     for c in &catalogs {
         println!(
@@ -97,8 +100,8 @@ pub async fn list(db: &Db) -> Result<(), anyhow::Error> {
 }
 
 pub async fn delete(db: &Db, id_hex: &str) -> Result<(), anyhow::Error> {
-    let oid = ObjectId::parse_str(id_hex)
-        .map_err(|_| anyhow::anyhow!("Invalid ObjectId: {id_hex}"))?;
+    let oid =
+        ObjectId::parse_str(id_hex).map_err(|_| anyhow::anyhow!("Invalid ObjectId: {id_hex}"))?;
 
     let result = db
         .collection::<Catalog>()
