@@ -22,8 +22,6 @@ impl<'a> DegreeStatusHandler<'a> {
             courses: &self.courses,
             credit_overflow,
             courses_overflow,
-            catalog_replacements: &self.catalog.catalog_replacements,
-            common_replacements: &self.catalog.common_replacements,
         };
 
         // Initialize necessary variable for rules handling

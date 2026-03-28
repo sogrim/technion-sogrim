@@ -240,8 +240,6 @@ macro_rules! create_bank_rule_handler {
             courses: &COURSES,
             credit_overflow: $credit_overflow,
             courses_overflow: $courses_overflow,
-            catalog_replacements: &HashMap::new(),
-            common_replacements: &HashMap::new(),
         }
     };
 }
