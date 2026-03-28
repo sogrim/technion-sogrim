@@ -8,7 +8,7 @@ use crate::{
 
 use super::DegreeStatusHandler;
 
-impl<'a> DegreeStatusHandler<'a> {
+impl DegreeStatusHandler<'_> {
     pub fn handle_credit_overflow(
         &mut self,
         bank: &CourseBank,

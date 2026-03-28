@@ -1,6 +1,6 @@
 use super::BankRuleHandler;
 
-impl<'a> BankRuleHandler<'a> {
+impl BankRuleHandler<'_> {
     pub fn malag(self) -> f32 {
         self.credit_overflow
             + self

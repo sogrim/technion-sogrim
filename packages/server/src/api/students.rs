@@ -5,7 +5,7 @@ use bson::DateTime;
 use http::StatusCode;
 
 use crate::{
-    core::{degree_status::DegreeStatus, parser},
+    core::{degree_status::DegreeStatus, parser_v2},
     db::{Db, FilterOption},
     error::AppError,
     middleware::jwt_decoder::Sub,
@@ -123,7 +123,7 @@ pub async fn add_courses(
     data: String,
 ) -> Result<impl IntoResponse, AppError> {
     user.details.degree_status = DegreeStatus::default();
-    user.details.degree_status.course_statuses = parser::parse_copy_paste_data(&data)?;
+    user.details.degree_status.course_statuses = parser_v2::parse_copy_paste_data(&data)?;
     user.details.modified = true;
     let updated_user = db.update::<User>(user).await?;
     Ok(Json(updated_user))

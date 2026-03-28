@@ -80,7 +80,7 @@ impl Serialize for CourseState {
 }
 struct StateStrVisitor;
 
-impl<'de> Visitor<'de> for StateStrVisitor {
+impl Visitor<'_> for StateStrVisitor {
     type Value = CourseState;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -246,7 +246,7 @@ impl PartialOrd for Grade {
 
 struct GradeStrVisitor;
 
-impl<'de> Visitor<'de> for GradeStrVisitor {
+impl Visitor<'_> for GradeStrVisitor {
     type Value = Grade;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

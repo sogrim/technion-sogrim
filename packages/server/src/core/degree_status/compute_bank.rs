@@ -6,7 +6,7 @@ use crate::{
 
 use super::DegreeStatusHandler;
 
-impl<'a> DegreeStatusHandler<'a> {
+impl DegreeStatusHandler<'_> {
     pub fn compute_bank(
         &mut self,
         bank: CourseBank,

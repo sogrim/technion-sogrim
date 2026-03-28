@@ -1,6 +1,6 @@
 use super::BankRuleHandler;
 
-impl<'a> BankRuleHandler<'a> {
+impl BankRuleHandler<'_> {
     pub fn accumulate_credit(mut self) -> f32 {
         let credit_info = self.iterate_course_list();
         credit_info.sum_credit

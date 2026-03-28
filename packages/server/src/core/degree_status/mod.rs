@@ -87,7 +87,7 @@ pub struct DegreeStatusHandler<'a> {
     courses_overflow_map: HashMap<String, f32>,
 }
 
-impl<'a> DegreeStatusHandler<'a> {
+impl DegreeStatusHandler<'_> {
     fn find_next_bank_with_credit_requirement(&self, bank_name: &str) -> Option<String> {
         let find_next_bank = |bank_name: &str| {
             self.catalog

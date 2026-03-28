@@ -128,7 +128,7 @@ async fn test_students_api_full_flow() {
     assert!(resp.status().is_success());
 
     // post /students/courses
-    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
+    let from_pdf = std::fs::read_to_string("../docs/grade_sheet_new_format_chrome.txt")
         .expect("Something went wrong reading the file");
     let req = Request::builder()
         .method(Method::POST)
