@@ -159,8 +159,14 @@ su - opc -c '
   source "$HOME/.cargo/env"
   git clone https://github.com/sogrim/technion-sogrim.git ~/sogrim
   cd ~/sogrim/packages/server
-  IP=0.0.0.0 PORT=5545 URI="{mongo_uri}" CLIENT_ID="{google_client_id}" PROFILE=release \
-    cargo build --release
+  cat > .env << DOTENV
+SOGRIM_URI="{mongo_uri}"
+SOGRIM_CLIENT_ID="{google_client_id}"
+SOGRIM_PORT=5545
+SOGRIM_PROFILE=release
+SOGRIM_CACHE_DIR=/home/opc/cache
+DOTENV
+  cargo build --release
 '
 
 # --- Sogrim server systemd service ---

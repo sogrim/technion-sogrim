@@ -1,8 +1,7 @@
-use crate::config::CONFIG;
 use http::header;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-pub fn cors() -> CorsLayer {
+pub fn cors(debug: bool) -> CorsLayer {
     let methods = vec![
         http::Method::GET,
         http::Method::POST,
@@ -11,7 +10,7 @@ pub fn cors() -> CorsLayer {
     ];
     let headers = vec![header::AUTHORIZATION, header::CONTENT_TYPE];
 
-    let origin = if CONFIG.profile == "debug" {
+    let origin = if debug {
         AllowOrigin::predicate(|origin, _| origin.as_bytes().starts_with(b"http://localhost"))
     } else {
         AllowOrigin::list([

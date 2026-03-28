@@ -6,42 +6,47 @@ use axum::{
     routing::{delete, get, post, put},
     Router,
 };
+use log::info;
+use anyhow::Context;
+use sogrim_server::config::Config;
+
+// Re-export library modules so server-specific submodules can use crate:: paths
+pub use sogrim_server::{consts, core, db, error, resources};
+
+mod api;
+mod disk_cache;
+mod middleware;
+
 use db::Db;
 use disk_cache::DiskCourseCache;
 use error::AppError;
-use http::StatusCode;
-use log::info;
 use middleware::{auth, cors, jwt_decoder::JwtDecoder, logger};
 use resources::user::Permissions;
-
-use crate::config::CONFIG;
-
-mod api;
-mod config;
-mod consts;
-mod core;
-mod db;
-mod disk_cache;
-mod error;
-mod middleware;
-mod resources;
 
 const CACHE_DIR_ENV: &str = "SOGRIM_CACHE_DIR";
 const DEFAULT_CACHE_DIR: &str = "/home/opc/cache";
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
+    let _ = dotenvy::dotenv();
+
     let now = std::time::Instant::now();
     // Initialize logger
     logger::init_env_logger();
     info!(target: "server", "Initialized logger in {}μs", now.elapsed().as_micros());
 
+    // Load configuration from environment variables
+    let config = Config::from_env().context("failed to load configuration")?;
+    let is_debug = config.profile == "debug";
+
     // Initialize DB client
-    let db = Db::new().await;
+    let db = Db::connect(&config.uri, &config.profile)
+        .await
+        .context("failed to connect to MongoDB")?;
     info!(target: "server", "Initialized DB client in {}ms", now.elapsed().as_millis());
 
     // Initialize JWT decoder
-    let jwt_decoder = JwtDecoder::new().await;
+    let jwt_decoder = JwtDecoder::new(config.client_id).await;
     info!(target: "server", "Initialized JWT decoder in {}ms", now.elapsed().as_millis());
 
     // Initialize disk-backed course cache
@@ -59,7 +64,7 @@ async fn main() -> std::io::Result<()> {
             "/healthcheck",
             get(|Extension(db): Extension<Db>| async move {
                 db.ping().await?;
-                Result::<StatusCode, AppError>::Ok(StatusCode::OK)
+                Result::<_, AppError>::Ok(http::StatusCode::OK)
             }),
         )
         .route("/semesters", get(api::courses::get_semesters))
@@ -115,13 +120,13 @@ async fn main() -> std::io::Result<()> {
         .merge(public_routes)
         .merge(auth_routes)
         .layer(axum::middleware::from_fn(logger::log_requests))
-        .layer(cors::cors())
+        .layer(cors::cors(is_debug))
         .layer(Extension(db))
         .layer(Extension(course_cache))
         .layer(Extension(jwt_decoder));
 
-    let addr = format!("{}:{}", CONFIG.ip, CONFIG.port);
+    let addr = format!("0.0.0.0:{}", config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     info!(target: "server", "Listening on {addr}");
-    axum::serve(listener, app).await
+    Ok(axum::serve(listener, app).await?)
 }

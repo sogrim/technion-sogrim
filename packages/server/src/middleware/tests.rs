@@ -1,7 +1,6 @@
 use std::{sync::OnceLock, time::SystemTime};
 
 use crate::{
-    config::CONFIG,
     db::Db,
     middleware::{self, jwt_decoder::JwtDecoder},
     resources::user::{Permissions, User},
@@ -20,6 +19,17 @@ use serde_json::json;
 use tower::ServiceExt;
 
 use super::key_provider::RsaKey;
+
+const TEST_CLIENT_ID: &str = "test-client-id-for-jwt-validation";
+
+fn test_uri() -> String {
+    let _ = dotenvy::dotenv();
+    std::env::var("SOGRIM_URI").expect("SOGRIM_URI must be set for tests")
+}
+
+fn test_profile() -> String {
+    std::env::var("SOGRIM_PROFILE").unwrap_or_else(|_| "debug".into())
+}
 
 /// Generate a fake RSA keypair for testing.
 /// Well.. it's not really fake, it's just randomly generated and not stored anywhere.
@@ -71,7 +81,7 @@ fn make_fake_jwt(is_expired: bool) -> String {
     };
     let json = json!({
         "sub": "11112222333344445555",
-        "aud": CONFIG.client_id,
+        "aud": TEST_CLIENT_ID,
         "iss": [
             "https://accounts.google.com",
             "accounts.google.com",
@@ -96,7 +106,7 @@ async fn test_from_request_no_db_client() {
     // Create authorization header
     let jwt = fake_jwt();
     let (_, public_key) = fake_rsa_keypair();
-    let decoder = JwtDecoder::mock(public_key);
+    let decoder = JwtDecoder::mock(public_key, TEST_CLIENT_ID);
     let app = Router::new()
         .route("/", get(|_: User| async { "Shouldn't get here" }))
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))
@@ -122,7 +132,9 @@ async fn test_from_request_no_db_client() {
 
 #[tokio::test]
 async fn test_from_request_no_auth_mw() {
-    let db = Db::new().await;
+    let db = Db::connect(&test_uri(), &test_profile())
+        .await
+        .expect("Failed to connect to MongoDB");
     let app = Router::new()
         .route("/", get(|_: User| async { "Shouldn't get here" }))
         .layer(Extension(Permissions::Student))
@@ -151,7 +163,9 @@ async fn test_from_request_no_auth_mw() {
 
 #[tokio::test]
 async fn test_auth_mw_no_jwt_decoder() {
-    let db = Db::new().await;
+    let db = Db::connect(&test_uri(), &test_profile())
+        .await
+        .expect("Failed to connect to MongoDB");
     let app = Router::new()
         .route("/", get(|| async { "Shouldn't get here" }))
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))
@@ -179,7 +193,7 @@ async fn test_auth_mw_no_jwt_decoder() {
 async fn test_auth_mw_client_errors() {
     let expired_jwt = fake_jwt_expired();
     let (_, public_key) = fake_rsa_keypair();
-    let decoder = JwtDecoder::mock(public_key);
+    let decoder = JwtDecoder::mock(public_key, TEST_CLIENT_ID);
     let app = Router::new()
         .route("/", get(|| async { "Shouldn't get here" }))
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))

@@ -26,11 +26,11 @@ jobs:
       - name: Write env to VM
         run: |
           ssh ${{ env.VM_USER }}@${{ secrets.ORACLE_VM_IP }} "cat > ~/sogrim/packages/server/.env" << 'ENVFILE'
-          IP="0.0.0.0"
-          PORT="5545"
-          URI="${{ secrets.MONGO_URI_DEV }}"
-          CLIENT_ID="${{ secrets.CLIENT_ID }}"
-          PROFILE="release"
+          SOGRIM_URI="${{ secrets.MONGO_URI_DEV }}"
+          SOGRIM_CLIENT_ID="${{ secrets.CLIENT_ID }}"
+          SOGRIM_PORT="5545"
+          SOGRIM_PROFILE="release"
+          SOGRIM_CACHE_DIR="/home/opc/cache"
           ENVFILE
 
       - name: Deploy to VM
@@ -48,7 +48,7 @@ jobs:
 
           echo "Deploying $(git log --oneline -1)"
 
-          # Rebuild the server (.env provides compile-time secrets)
+          # Rebuild
           source ~/.cargo/env
           cd packages/server
           cargo build --release

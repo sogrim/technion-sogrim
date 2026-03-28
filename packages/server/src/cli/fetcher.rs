@@ -6,10 +6,10 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use chrono::Local;
-use clap::Parser;
 use env_logger::Builder;
 use log::LevelFilter;
-use sogrim_server::sap::{CachedSapClient, CourseIndexEntry};
+
+use crate::sap::{CachedSapClient, CourseIndexEntry};
 
 #[derive(Clone, clap::ValueEnum)]
 enum Season {
@@ -41,9 +41,8 @@ fn semester_display(year: &str, semester: &str) -> String {
 }
 
 /// Fetch Technion course data from SAP and write to disk cache.
-#[derive(Parser)]
-#[command(name = "sogrim-fetcher", about = "Fetch Technion course data from SAP")]
-struct Args {
+#[derive(clap::Args)]
+pub struct FetcherArgs {
     /// Fetch the N most recent semesters (max 3). Conflicts with --year/--semester.
     #[arg(long, conflicts_with_all = &["year", "semester"], value_parser = clap::value_parser!(u8).range(1..=3))]
     latest: Option<u8>,
@@ -335,7 +334,7 @@ fn scan_missing(cache_dir: &Path) -> Vec<MissingCourse> {
     missing
 }
 
-async fn run_repair(args: &Args) {
+async fn run_repair(args: &FetcherArgs) {
     let interactive = is_interactive();
     let started = Instant::now();
 
@@ -559,9 +558,7 @@ struct SemesterTarget {
     semester: String,
 }
 
-#[tokio::main]
-async fn main() {
-    let args = Args::parse();
+pub async fn run(args: FetcherArgs) {
     let interactive = is_interactive();
     init_logger(&args.cache_dir, interactive);
 

@@ -23,7 +23,7 @@ pub enum Faculty {
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Catalog {
-    #[serde(rename(serialize = "_id", deserialize = "_id"))]
+    #[serde(rename(serialize = "_id", deserialize = "_id"), default)]
     pub id: bson::oid::ObjectId,
     pub name: String,
     pub faculty: Faculty,
