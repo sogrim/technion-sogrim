@@ -5,10 +5,10 @@ use crate::{
     error::AppError,
     middleware::jwt_decoder::Sub,
 };
-use actix_web::{dev::Payload, web::Data, FromRequest, HttpMessage, HttpRequest};
+use axum::{extract::FromRequestParts, Extension};
 use bson::{doc, DateTime, Document};
+use http::request::Parts;
 use serde::{Deserialize, Serialize};
-use std::{future::Future, pin::Pin};
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserDetails {
@@ -100,37 +100,30 @@ impl Resource for User {
     }
 }
 
-impl FromRequest for User {
-    type Error = AppError;
-    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
-    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let req = req.clone();
-        Box::pin(async move {
-            let Some(db) = req.app_data::<Data<Db>>() else {
-                return Err(AppError::InternalServer(
-                    "Mongodb client not found in application data".into(),
-                ));
-            };
-            let Some(permissions) = req.app_data::<Data<Permissions>>().cloned() else {
-                return Err(AppError::InternalServer(
-                    "Permissions not found in application data".into(),
-                ));
-            };
-            let Some(id) = req.extensions().get::<Sub>().cloned() else {
-                return Err(AppError::Middleware(
-                    "Sub not found in request extensions".into(),
-                ));
-            };
-            let user = db.get::<User>(id).await?;
-            if user.permissions < **permissions {
-                return Err(AppError::Unauthorized(
-                    "User not authorized to access this resource".into(),
-                ));
-            }
-            Ok(user)
-        })
-    }
-    fn extract(req: &HttpRequest) -> Self::Future {
-        Self::from_request(req, &mut Payload::None)
+impl FromRequestParts<()> for User {
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &()) -> Result<Self, Self::Rejection> {
+        let Extension(db) = Extension::<Db>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| {
+                AppError::InternalServer("Mongodb client not found in application data".into())
+            })?;
+        let Extension(permissions) = Extension::<Permissions>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| {
+                AppError::InternalServer("Permissions not found in application data".into())
+            })?;
+        let id =
+            parts.extensions.get::<Sub>().cloned().ok_or_else(|| {
+                AppError::Middleware("Sub not found in request extensions".into())
+            })?;
+        let user = db.get::<User>(id).await?;
+        if user.permissions < permissions {
+            return Err(AppError::Unauthorized(
+                "User not authorized to access this resource".into(),
+            ));
+        }
+        Ok(user)
     }
 }

@@ -1,4 +1,7 @@
-use actix_web::{http::StatusCode, HttpResponse, ResponseError};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
 #[derive(Debug)]
 pub enum AppError {
@@ -19,14 +22,8 @@ impl From<mongodb::error::Error> for AppError {
     }
 }
 
-impl From<bson::ser::Error> for AppError {
-    fn from(err: bson::ser::Error) -> Self {
-        AppError::Bson(err.to_string())
-    }
-}
-
-impl From<bson::oid::Error> for AppError {
-    fn from(err: bson::oid::Error) -> Self {
+impl From<bson::error::Error> for AppError {
+    fn from(err: bson::error::Error) -> Self {
         AppError::Bson(err.to_string())
     }
 }
@@ -64,9 +61,9 @@ impl std::fmt::Display for AppError {
     }
 }
 
-impl ResponseError for AppError {
-    fn error_response(&self) -> HttpResponse {
-        let (status_code, error) = match self {
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let (status, error) = match &self {
             AppError::BadRequest(e) => (StatusCode::BAD_REQUEST, e.to_owned()),
             AppError::Bson(e) => (StatusCode::BAD_REQUEST, format!("Bson error: {e}")),
             AppError::Parser(e) => (StatusCode::BAD_REQUEST, format!("Parser error: {e}")),
@@ -88,17 +85,9 @@ impl ResponseError for AppError {
                 format!("Google key provider error: {e}"),
             ),
         };
-        let mut res = match status_code {
-            StatusCode::BAD_REQUEST => HttpResponse::BadRequest().body(error.clone()),
-            StatusCode::NOT_FOUND => HttpResponse::NotFound().body(error.clone()),
-            StatusCode::UNAUTHORIZED => HttpResponse::Unauthorized().body(error.clone()),
-            StatusCode::INTERNAL_SERVER_ERROR => {
-                HttpResponse::InternalServerError().body(error.clone())
-            }
-            _ => unreachable!(),
-        };
-        res.extensions_mut().insert(error);
-        res
+        let mut resp = (status, error.clone()).into_response();
+        resp.extensions_mut().insert(error);
+        resp
     }
 }
 

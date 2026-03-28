@@ -1,9 +1,9 @@
 use crate::config::CONFIG;
 use crate::error::AppError;
-use bson::to_bson;
 pub use bson::{doc, Bson};
+use bson::{serialize_to_bson, serialize_to_document};
 use futures_util::TryStreamExt;
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateModifications};
+use mongodb::options::ReturnDocument;
 use serde::{de::DeserializeOwned, Serialize};
 
 use super::{Db, FilterOption, InsertOption, Resource};
@@ -13,11 +13,11 @@ impl Db {
     where
         R: Resource + Send + Sync + Unpin,
     {
-        let id = bson::to_bson(&id)?;
+        let id = serialize_to_bson(&id)?;
         self.client()
             .database(CONFIG.profile)
             .collection::<R>(R::collection_name())
-            .find_one(doc! {"_id": id.clone()}, None)
+            .find_one(doc! {"_id": id.clone()})
             .await?
             .ok_or_else(|| AppError::NotFound(format!("{}: {}", R::collection_name(), id)))
     }
@@ -30,7 +30,7 @@ impl Db {
             .client()
             .database(CONFIG.profile)
             .collection::<R>(R::collection_name())
-            .find(None, None)
+            .find(doc! {})
             .await?
             .try_collect::<Vec<R>>()
             .await?)
@@ -49,10 +49,7 @@ impl Db {
             .client()
             .database(CONFIG.profile)
             .collection::<R>(R::collection_name())
-            .find(
-                doc! {field_to_filter.as_ref(): { filter_option.as_ref(): filter.into()}},
-                None,
-            )
+            .find(doc! {field_to_filter.as_ref(): { filter_option.as_ref(): filter.into()}})
             .await?
             .try_collect::<Vec<R>>()
             .await?)
@@ -67,14 +64,10 @@ impl Db {
             .collection::<R>(R::collection_name())
             .find_one_and_update(
                 resource.key(),
-                UpdateModifications::Document(doc! { insert_option.as_ref(): to_bson(&resource)? }),
-                Some(
-                    FindOneAndUpdateOptions::builder()
-                        .upsert(true)
-                        .return_document(ReturnDocument::After)
-                        .build(),
-                ),
+                doc! { insert_option.as_ref(): serialize_to_document(&resource)? },
             )
+            .upsert(true)
+            .return_document(ReturnDocument::After)
             .await?
             .ok_or_else(|| {
                 // This should never happen, but to avoid unwrapping we return an explicit error
@@ -100,12 +93,12 @@ impl Db {
     where
         R: Resource + Send + Sync + Unpin,
     {
-        let id = bson::to_bson(&id)?;
+        let id = serialize_to_bson(&id)?;
         Ok(self
             .client()
             .database(CONFIG.profile)
             .collection::<R>(R::collection_name())
-            .delete_one(doc! {"_id": id.clone()}, None)
+            .delete_one(doc! {"_id": id.clone()})
             .await
             .map(|_| ())?) // Discard the result of the delete operation
     }

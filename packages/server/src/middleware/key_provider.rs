@@ -31,9 +31,9 @@ impl RsaKey {
 /// The output type of a future that returns the RSA keys and the expiration time of the cache.
 type FetchResult = Result<(Vec<RsaKey>, Option<Duration>), AppError>;
 /// The type above, as the output of a boxed future.
-type FetchResultBoxedFuture = Box<dyn Future<Output = FetchResult>>;
+type FetchResultBoxedFuture = Box<dyn Future<Output = FetchResult> + Send>;
 /// The type of a function pointer that returns a thread-safe, pinned, version of the boxed future above.
-pub type FetchFnPtr = Box<dyn Fn() -> Pin<FetchResultBoxedFuture> + Send>;
+pub type FetchFnPtr = Box<dyn Fn() -> Pin<FetchResultBoxedFuture> + Send + Sync>;
 
 /// The type representing a key provider that fetches keys from Google.
 pub struct GoogleKeyProvider {

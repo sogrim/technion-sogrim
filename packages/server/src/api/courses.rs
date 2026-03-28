@@ -1,33 +1,30 @@
-use actix_web::{get, web, HttpResponse};
+use std::sync::Arc;
+
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, Extension, Json};
 
 use crate::disk_cache::DiskCourseCache;
 
-#[get("/semesters")]
-pub async fn get_semesters(cache: web::Data<DiskCourseCache>) -> HttpResponse {
+pub async fn get_semesters(Extension(cache): Extension<Arc<DiskCourseCache>>) -> impl IntoResponse {
     let semesters = cache.discover_semesters();
-    HttpResponse::Ok().json(semesters)
+    Json(semesters)
 }
 
-#[get("/courses/{year}/{semester}/index")]
 pub async fn get_course_index(
-    cache: web::Data<DiskCourseCache>,
-    path: web::Path<(String, String)>,
-) -> HttpResponse {
-    let (year, semester) = path.into_inner();
+    Extension(cache): Extension<Arc<DiskCourseCache>>,
+    Path((year, semester)): Path<(String, String)>,
+) -> impl IntoResponse {
     match cache.get_index(&year, &semester).await {
-        Some(index) => HttpResponse::Ok().json(&*index),
-        None => HttpResponse::NotFound().finish(),
+        Some(index) => Json(&*index).into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
     }
 }
 
-#[get("/courses/{year}/{semester}/{course_id}")]
 pub async fn get_course(
-    cache: web::Data<DiskCourseCache>,
-    path: web::Path<(String, String, String)>,
-) -> HttpResponse {
-    let (year, semester, course_id) = path.into_inner();
+    Extension(cache): Extension<Arc<DiskCourseCache>>,
+    Path((year, semester, course_id)): Path<(String, String, String)>,
+) -> impl IntoResponse {
     match cache.get_course(&year, &semester, &course_id).await {
-        Some(details) => HttpResponse::Ok().json(&*details),
-        None => HttpResponse::NotFound().finish(),
+        Some(details) => Json(&*details).into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
     }
 }

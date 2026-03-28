@@ -24,7 +24,7 @@ impl Db {
     pub async fn ping(&self) -> Result<(), AppError> {
         self.client()
             .database("admin")
-            .run_command(doc! {"ping": 1}, None)
+            .run_command(doc! {"ping": 1})
             .await
             .map_err(|e| AppError::InternalServer(e.to_string()))
             .map(|_| ())

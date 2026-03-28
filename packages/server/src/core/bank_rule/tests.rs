@@ -1,7 +1,5 @@
 use std::collections::HashMap;
-
-use actix_rt::test;
-use lazy_static::lazy_static;
+use std::sync::LazyLock;
 
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::degree_status::DegreeStatus;
@@ -10,15 +8,15 @@ use crate::core::types::{Requirement, SpecializationGroup, SpecializationGroups}
 use crate::create_bank_rule_handler;
 use crate::resources::course::{Course, CourseState, CourseStatus, Grade};
 
-lazy_static! {
-    static ref COURSES: HashMap<String, Course> = HashMap::from([
+static COURSES: LazyLock<HashMap<String, Course>> = LazyLock::new(|| {
+    HashMap::from([
         (
             "104031".to_string(),
             Course {
                 id: "104031".to_string(),
                 credit: 5.5,
                 name: "infi1m".to_string(),
-                tags: None
+                tags: None,
             },
         ),
         (
@@ -27,7 +25,7 @@ lazy_static! {
                 id: "104166".to_string(),
                 credit: 5.5,
                 name: "Algebra alef".to_string(),
-                tags: None
+                tags: None,
             },
         ),
         (
@@ -36,7 +34,7 @@ lazy_static! {
                 id: "114052".to_string(),
                 credit: 3.5,
                 name: "פיסיקה 2".to_string(),
-                tags: None
+                tags: None,
             },
         ),
         (
@@ -45,7 +43,7 @@ lazy_static! {
                 id: "114054".to_string(),
                 credit: 3.5,
                 name: "פיסיקה 3".to_string(),
-                tags: None
+                tags: None,
             },
         ),
         (
@@ -54,7 +52,7 @@ lazy_static! {
                 id: "236303".to_string(),
                 credit: 3.0,
                 name: "project1".to_string(),
-                tags: None
+                tags: None,
             },
         ),
         (
@@ -63,7 +61,7 @@ lazy_static! {
                 id: "236512".to_string(),
                 credit: 3.0,
                 name: "project2".to_string(),
-                tags: None
+                tags: None,
             },
         ),
         (
@@ -72,7 +70,7 @@ lazy_static! {
                 id: "1".to_string(),
                 credit: 1.0,
                 name: "".to_string(),
-                tags: None
+                tags: None,
             },
         ),
         (
@@ -81,7 +79,7 @@ lazy_static! {
                 id: "2".to_string(),
                 credit: 2.0,
                 name: "".to_string(),
-                tags: None
+                tags: None,
             },
         ),
         (
@@ -90,13 +88,13 @@ lazy_static! {
                 id: "3".to_string(),
                 credit: 3.0,
                 name: "".to_string(),
-                tags: None
+                tags: None,
             },
         ),
-    ]);
-}
+    ])
+});
 
-#[test]
+#[tokio::test]
 async fn test_rule_all() {
     // for debugging
     let mut degree_status = create_degree_status();
@@ -145,7 +143,7 @@ async fn test_rule_all() {
     // check sum credit
     assert_eq!(res, 5.5);
 }
-#[test]
+#[tokio::test]
 async fn test_rule_accumulate_credit() {
     // for debugging
     let mut degree_status = create_degree_status();
@@ -180,7 +178,7 @@ async fn test_rule_accumulate_credit() {
     assert_eq!(res, 11.5);
 }
 
-#[test]
+#[tokio::test]
 async fn test_rule_accumulate_courses() {
     // for debugging
     let mut degree_status = create_degree_status();
@@ -219,7 +217,7 @@ async fn test_rule_accumulate_courses() {
     assert_eq!(res, 6.0);
 }
 
-#[test]
+#[tokio::test]
 async fn test_rule_chain() {
     let mut degree_status = create_degree_status();
     let bank_name = "science chain".to_string();
@@ -282,7 +280,7 @@ async fn test_rule_chain() {
     assert_eq!(res, 7.0);
 }
 
-#[test]
+#[tokio::test]
 async fn test_rule_malag() {
     // for debugging
     let mut degree_status = create_degree_status();
@@ -310,7 +308,7 @@ async fn test_rule_malag() {
     assert_eq!(res, 2.0);
 }
 
-#[test]
+#[tokio::test]
 async fn test_rule_sport() {
     // for debugging
     let mut degree_status = create_degree_status();
@@ -337,7 +335,7 @@ async fn test_rule_sport() {
     // check sum credit
     assert_eq!(res, 1.0);
 }
-#[test]
+#[tokio::test]
 async fn test_specialization_group() {
     // Simulate specialization groups behavior from catalog 2018 computer engineering
     let bank_name = "specialization group".to_string();

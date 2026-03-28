@@ -18,419 +18,489 @@ use crate::{
         user::{Permissions, User, UserDetails},
     },
 };
-use actix_rt::test;
-use actix_web::{
-    http::StatusCode,
-    test::{self},
-    web::{scope, Bytes, Data},
-    App, HttpMessage,
+use axum::{
+    body::Body,
+    extract::Extension,
+    http::{Method, Request, StatusCode},
+    routing::{delete, get, post, put},
+    Router,
 };
-use actix_web_lab::middleware::from_fn;
 use bson::oid::ObjectId;
+use tower::ServiceExt;
 
 use super::admins::{self, ComputeDegreeStatusPayload};
 
-#[test]
+#[tokio::test]
 pub async fn test_get_all_catalogs() {
     // Create authorization header
     let jwt = fake_jwt();
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
-            .app_data(Data::new(Permissions::Student))
-            .wrap(from_fn(middleware::auth::authenticate))
-            .service(scope("/students").service(students::get_catalogs)),
-    )
-    .await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let app = Router::new()
+        .nest(
+            "/students",
+            Router::new().route("/catalogs", get(students::get_catalogs)),
+        )
+        .layer(axum::middleware::from_fn(middleware::auth::authenticate))
+        .layer(Extension(Permissions::Student))
+        .layer(Extension(db.clone()))
+        .layer(Extension(decoder));
 
     // Create and send request
-    let resp = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/students/catalogs")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
 
+    let resp = app.clone().oneshot(req).await.unwrap();
     assert!(resp.status().is_success());
 
     // Check for valid json response
-    let vec_catalogs: Vec<DisplayCatalog> = test::read_body_json(resp).await;
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let vec_catalogs: Vec<DisplayCatalog> = serde_json::from_slice(&body).unwrap();
     assert!(vec_catalogs.len() >= 8);
 }
 
-#[test]
+#[tokio::test]
 async fn test_students_api_full_flow() {
     // Create authorization header
-
     let jwt = fake_jwt();
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
-            .app_data(Data::new(Permissions::Student))
-            .wrap(from_fn(middleware::auth::authenticate))
-            .service(
-                scope("/students")
-                    .service(students::get_catalogs)
-                    .service(students::login)
-                    .service(students::update_catalog)
-                    .service(students::add_courses)
-                    .service(students::compute_degree_status)
-                    .service(students::update_details),
-            ),
-    )
-    .await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let app = Router::new()
+        .nest(
+            "/students",
+            Router::new()
+                .route("/catalogs", get(students::get_catalogs))
+                .route("/login", get(students::login))
+                .route("/catalog", put(students::update_catalog))
+                .route("/courses", post(students::add_courses))
+                .route("/degree-status", get(students::compute_degree_status))
+                .route("/details", put(students::update_details)),
+        )
+        .layer(axum::middleware::from_fn(middleware::auth::authenticate))
+        .layer(Extension(Permissions::Student))
+        .layer(Extension(db.clone()))
+        .layer(Extension(decoder));
 
-    // let mut responses = Vec::new();
     // get /students/login
-    let mut res = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/students/login")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
-    let user: User = test::read_body_json(res).await;
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let user: User = serde_json::from_slice(&body).unwrap();
     let mut user_details: UserDetails = user.details;
 
     // get /catalogs
-    res = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/students/catalogs")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
-    let catalogs: Vec<DisplayCatalog> = test::read_body_json(res).await;
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let catalogs: Vec<DisplayCatalog> = serde_json::from_slice(&body).unwrap();
 
     // put /students/catalog
-    res = test::TestRequest::put()
+    let req = Request::builder()
+        .method(Method::PUT)
         .uri("/students/catalog")
-        .insert_header(("authorization", jwt.clone()))
-        .set_payload(catalogs[0].id.to_string())
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
+        .header("authorization", jwt.clone())
+        .body(Body::from(catalogs[0].id.to_string()))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
 
     // post /students/courses
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
         .expect("Something went wrong reading the file");
-    res = test::TestRequest::post()
+    let req = Request::builder()
+        .method(Method::POST)
         .uri("/students/courses")
-        .insert_header(("authorization", jwt.clone()))
-        .set_payload(from_pdf)
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
+        .header("authorization", jwt.clone())
+        .body(Body::from(from_pdf))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
 
     // get /students/degree-status
-    res = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/students/degree-status")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
 
-    // put /students/details"
+    // put /students/details
     user_details
         .degree_status
         .course_statuses
         .push(CourseStatus::default());
-    res = test::TestRequest::put()
+    let req = Request::builder()
+        .method(Method::PUT)
         .uri("/students/details")
-        .insert_header(("authorization", jwt.clone()))
-        .insert_header(("content-type", "application/json"))
-        .set_payload(
+        .header("authorization", jwt.clone())
+        .header("content-type", "application/json")
+        .body(Body::from(
             serde_json::to_string(&user_details).expect("Fail to deserialize user details"),
-        )
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
+        ))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
 }
-#[test]
+
+#[tokio::test]
 async fn test_compute_in_progress() {
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .app_data(Data::new(Permissions::Student))
-            .service(
-                scope("/students")
-                    .service(students::compute_degree_status)
-                    .service(students::update_details),
-            ),
-    )
-    .await;
+    let app = Router::new()
+        .nest(
+            "/students",
+            Router::new()
+                .route("/degree-status", get(students::compute_degree_status))
+                .route("/details", put(students::update_details)),
+        )
+        .layer(Extension(Permissions::Student))
+        .layer(Extension(db.clone()));
 
-    let get_degree_status_before = test::TestRequest::get()
+    let mut req = Request::builder()
+        .method(Method::GET)
         .uri("/students/degree-status")
-        .to_request();
-    get_degree_status_before
-        .extensions_mut()
+        .body(Body::empty())
+        .unwrap();
+    req.extensions_mut()
         .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
 
-    let res = test::call_service(&app, get_degree_status_before).await;
-    let mut user: User = test::read_body_json(res).await;
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let mut user: User = serde_json::from_slice(&body).unwrap();
     assert_eq!(user.details.degree_status.total_credit, 0.0);
 
     user.details.compute_in_progress = true;
-    let put_user_details = test::TestRequest::put()
+    let mut req = Request::builder()
+        .method(Method::PUT)
         .uri("/students/details")
-        .insert_header(("content-type", "application/json"))
-        .set_payload(serde_json::to_string(&user.details).expect("Fail to deserialize user"))
-        .to_request();
-    put_user_details
-        .extensions_mut()
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&user.details).expect("Fail to deserialize user"),
+        ))
+        .unwrap();
+    req.extensions_mut()
         .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
-    let res = test::call_service(&app, put_user_details).await;
-    assert_eq!(res.status(), StatusCode::OK);
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
 
-    let get_degree_status_after = test::TestRequest::get()
+    let mut req = Request::builder()
+        .method(Method::GET)
         .uri("/students/degree-status")
-        .to_request();
-    get_degree_status_after
-        .extensions_mut()
+        .body(Body::empty())
+        .unwrap();
+    req.extensions_mut()
         .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
 
-    let res = test::call_service(&app, get_degree_status_after).await;
-    let mut user: User = test::read_body_json(res).await;
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let mut user: User = serde_json::from_slice(&body).unwrap();
     assert_eq!(user.details.degree_status.total_credit, 2.5);
 
     user.details.compute_in_progress = false;
-    let put_user_details = test::TestRequest::put()
+    let mut req = Request::builder()
+        .method(Method::PUT)
         .uri("/students/details")
-        .insert_header(("content-type", "application/json"))
-        .set_payload(serde_json::to_string(&user.details).expect("Fail to deserialize user"))
-        .to_request();
-    put_user_details
-        .extensions_mut()
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&user.details).expect("Fail to deserialize user"),
+        ))
+        .unwrap();
+    req.extensions_mut()
         .insert::<auth::Sub>("bugo-the-debugo-senior".to_string());
-    let res = test::call_service(&app, put_user_details).await;
-    assert_eq!(res.status(), StatusCode::OK);
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
 }
 
-#[test]
+#[tokio::test]
 async fn test_owner_api_courses() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
-            .app_data(Data::new(Permissions::Owner))
-            .wrap(from_fn(middleware::auth::authenticate))
-            .service(
-                scope("owners")
-                    .service(owners::get_all_courses)
-                    .service(owners::get_course_by_id)
-                    .service(owners::create_or_update_course)
-                    .service(owners::delete_course),
-            ),
-    )
-    .await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let app = Router::new()
+        .nest(
+            "/owners",
+            Router::new()
+                .route("/courses", get(owners::get_all_courses))
+                .route("/courses/{id}", get(owners::get_course_by_id))
+                .route("/courses/{id}", put(owners::create_or_update_course))
+                .route("/courses/{id}", delete(owners::delete_course)),
+        )
+        .layer(axum::middleware::from_fn(middleware::auth::authenticate))
+        .layer(Extension(Permissions::Owner))
+        .layer(Extension(db.clone()))
+        .layer(Extension(decoder));
 
     // get /courses
-    let res = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/owners/courses")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
-    let courses: Vec<Course> = test::read_body_json(res).await;
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let courses: Vec<Course> = serde_json::from_slice(&body).unwrap();
     let mut course = courses[0].clone();
 
     // put /courses/{id}
     course.id = "some-id".into();
-    let res = test::TestRequest::put()
+    let req = Request::builder()
+        .method(Method::PUT)
         .uri(format!("/owners/courses/{}", course.id).as_str())
-        .insert_header(("authorization", jwt.clone()))
-        .insert_header(("content-type", "application/json"))
-        .set_payload(serde_json::to_string(&course).expect("Fail to deserialize course"))
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
+        .header("authorization", jwt.clone())
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&course).expect("Fail to deserialize course"),
+        ))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
 
     // get /courses/{id}
-    let res = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/owners/courses/some-id")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
-    let course_res: Course = test::read_body_json(res).await;
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let course_res: Course = serde_json::from_slice(&body).unwrap();
     assert_eq!(course_res.id, course.id);
     assert_eq!(course_res.name, course.name);
     assert_eq!(course_res.credit, course.credit);
 
     // delete /courses/{id}
-    let res = test::TestRequest::delete()
+    let req = Request::builder()
+        .method(Method::DELETE)
         .uri("/owners/courses/some-id")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
 
     // get /courses with 404 error
-    let res = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/owners/courses/some-id")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
-    assert_eq!(res.status(), StatusCode::NOT_FOUND);
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
-#[test]
+#[tokio::test]
 async fn test_owner_api_catalogs() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .app_data(Data::new(Permissions::Owner))
-            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
-            .wrap(from_fn(middleware::auth::authenticate))
-            .service(scope("/owners").service(owners::get_catalog_by_id)),
-    )
-    .await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let app = Router::new()
+        .nest(
+            "/owners",
+            Router::new().route("/catalogs/{id}", get(owners::get_catalog_by_id)),
+        )
+        .layer(axum::middleware::from_fn(middleware::auth::authenticate))
+        .layer(Extension(Permissions::Owner))
+        .layer(Extension(db.clone()))
+        .layer(Extension(decoder));
 
     // get /catalog/{id}
-    let res = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/owners/catalogs/61ddcc8a2397192f08d517d9")
-        .insert_header(("authorization", jwt.clone()))
-        .send_request(&app)
-        .await;
-    assert!(res.status().is_success());
-    let catalog: Catalog = test::read_body_json(res).await;
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let catalog: Catalog = serde_json::from_slice(&body).unwrap();
     assert_eq!(catalog.name, "מדמח הנדסת מחשבים 2018-2019");
 
     //TODO: create? delete?
 }
 
-#[test]
+#[tokio::test]
 async fn test_student_login_no_sub() {
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .service(scope("/students").service(login)),
-    )
-    .await;
+    let app = Router::new()
+        .nest("/students", Router::new().route("/login", get(login)))
+        .layer(Extension(db.clone()));
 
     // Create and send request
-    let resp = test::TestRequest::get()
+    let req = Request::builder()
+        .method(Method::GET)
         .uri("/students/login")
-        .send_request(&app)
-        .await;
+        .body(Body::empty())
+        .unwrap();
 
+    let resp = app.clone().oneshot(req).await.unwrap();
+
+    // Without auth middleware, the Sub extension is missing — axum rejects the request
     assert!(resp.status().is_server_error());
-    assert_eq!(
-        Bytes::from("Middleware error: No sub found in request extensions"),
-        test::read_body(resp).await
-    );
 }
 
-#[test]
+#[tokio::test]
 async fn test_students_api_no_catalog() {
     // *** IMPORTANT: This should NEVER happen, but the tests are added anyway for coverage
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .app_data(Data::new(Permissions::Student))
-            .service(scope("/students").service(students::compute_degree_status)),
-    )
-    .await;
-    let request = test::TestRequest::get()
-        .uri("/students/degree-status")
-        .to_request();
+    let app = Router::new()
+        .nest(
+            "/students",
+            Router::new().route("/degree-status", get(students::compute_degree_status)),
+        )
+        .layer(Extension(Permissions::Student))
+        .layer(Extension(db.clone()));
 
+    let mut req = Request::builder()
+        .method(Method::GET)
+        .uri("/students/degree-status")
+        .body(Body::empty())
+        .unwrap();
     // Manually insert a sub of a fake user with no catalog
-    request
-        .extensions_mut()
+    req.extensions_mut()
         .insert::<auth::Sub>("bugo-the-debugo-junior".to_string());
-    let resp = test::call_service(&app, request).await;
+
+    let resp = app.clone().oneshot(req).await.unwrap();
     assert!(resp.status().is_server_error());
-    assert_eq!(
-        Bytes::from("No catalog chosen for user"),
-        test::read_body(resp).await
-    );
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(body, "No catalog chosen for user");
 }
 
-#[test]
+#[tokio::test]
 async fn test_admins_parse_and_compute_api() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .app_data(JwtDecoder::mock(&fake_rsa_keypair().1))
-            .app_data(Data::new(Permissions::Admin))
-            .wrap(from_fn(middleware::auth::authenticate))
-            .service(scope("/admins").service(admins::parse_courses_and_compute_degree_status)),
-    )
-    .await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let app = Router::new()
+        .nest(
+            "/admins",
+            Router::new().route(
+                "/parse-compute",
+                post(admins::parse_courses_and_compute_degree_status),
+            ),
+        )
+        .layer(axum::middleware::from_fn(middleware::auth::authenticate))
+        .layer(Extension(Permissions::Admin))
+        .layer(Extension(db.clone()))
+        .layer(Extension(decoder));
 
     let copy_paste_data = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
         .expect("Something went wrong reading the file");
 
-    let post_admins_compute = test::TestRequest::post()
+    let req = Request::builder()
+        .method(Method::POST)
         .uri("/admins/parse-compute")
-        .insert_header(("authorization", jwt.clone()))
-        .set_json(ComputeDegreeStatusPayload {
-            catalog_id: ObjectId::from_str("61a102bb04c5400b98e6f401").unwrap(),
-            grade_sheet_as_string: copy_paste_data,
-        })
-        .to_request();
+        .header("authorization", jwt.clone())
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&ComputeDegreeStatusPayload {
+                catalog_id: ObjectId::from_str("61a102bb04c5400b98e6f401").unwrap(),
+                grade_sheet_as_string: copy_paste_data,
+            })
+            .unwrap(),
+        ))
+        .unwrap();
 
-    let resp = test::call_service(&app, post_admins_compute).await;
-
-    let degree_status: DegreeStatus = test::read_body_json(resp).await;
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let degree_status: DegreeStatus = serde_json::from_slice(&body).unwrap();
     assert_eq!(degree_status.total_credit, 106.5);
     assert!(degree_status
         .overflow_msgs
         .contains(&messages::credit_leftovers_msg(0.0)))
 }
 
-#[test]
+#[tokio::test]
 async fn test_unauthorized_path() {
     // Init env and app
     let db = Db::new().await;
-    let app = test::init_service(
-        App::new()
-            .app_data(Data::new(db.clone()))
-            .app_data(Data::new(Permissions::Admin))
-            .service(scope("/admins").service(admins::parse_courses_and_compute_degree_status)),
-    )
-    .await;
+    let app = Router::new()
+        .nest(
+            "/admins",
+            Router::new().route(
+                "/parse-compute",
+                post(admins::parse_courses_and_compute_degree_status),
+            ),
+        )
+        .layer(Extension(Permissions::Admin))
+        .layer(Extension(db.clone()));
 
     // Create and send request
-    let request = test::TestRequest::post()
+    let mut req = Request::builder()
+        .method(Method::POST)
         .uri("/admins/parse-compute")
-        .set_json(ComputeDegreeStatusPayload {
-            catalog_id: ObjectId::new(),
-            grade_sheet_as_string: "".to_string(),
-        })
-        .to_request();
-
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&ComputeDegreeStatusPayload {
+                catalog_id: ObjectId::new(),
+                grade_sheet_as_string: "".to_string(),
+            })
+            .unwrap(),
+        ))
+        .unwrap();
     // Manually insert a sub of a fake user with no permissions
-    request
-        .extensions_mut()
+    req.extensions_mut()
         .insert::<auth::Sub>("bugo-the-debugo-junior".to_string());
 
-    let resp = test::call_service(&app, request).await;
+    let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
     assert_eq!(
-        Bytes::from("Permission denied: User not authorized to access this resource"),
-        test::read_body(resp).await
+        body,
+        "Permission denied: User not authorized to access this resource"
     );
 }

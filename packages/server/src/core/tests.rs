@@ -9,10 +9,9 @@ use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
 use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
-use actix_rt::test;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::LazyLock;
 
 use super::types::Requirement;
 use super::*;
@@ -21,7 +20,7 @@ pub const COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID: &str = "61a102bb04c5400b98e
 pub const COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID: &str = "61ec835f015bedeab20397a4"; // catalog id from database
 pub const MEDICINE_18_19_CATALOG_ID: &str = "63efa36f9e57dc03df270751"; // catalog id from database
 
-#[test]
+#[tokio::test]
 async fn test_year_catalog() {
     let db = Db::new().await;
     let catalog = db
@@ -34,7 +33,7 @@ async fn test_year_catalog() {
     assert_eq!(catalog.year(), 2019);
 }
 
-#[test]
+#[tokio::test]
 async fn test_pdf_parser() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
         .expect("Something went wrong reading the file");
@@ -53,7 +52,7 @@ async fn test_pdf_parser() {
     assert!(parser::parse_copy_paste_data(&from_pdf_bad_content).is_err());
 }
 
-#[test]
+#[tokio::test]
 async fn test_asterisk_course_input_from_edge_browser() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_5.txt")
         .expect("Something went wrong reading the file");
@@ -69,7 +68,7 @@ async fn test_asterisk_course_input_from_edge_browser() {
     assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_3");
 }
 
-#[test]
+#[tokio::test]
 async fn test_asterisk_course_input_from_chrome_browser() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_3.txt")
         .expect("Something went wrong reading the file");
@@ -85,7 +84,7 @@ async fn test_asterisk_course_input_from_chrome_browser() {
     assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_1");
 }
 
-#[test]
+#[tokio::test]
 async fn test_parser_copy_paste_from_acrobat_reader() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
         .expect("Something went wrong reading the file");
@@ -111,7 +110,7 @@ async fn test_parser_copy_paste_from_acrobat_reader() {
     assert!(course_status.grade.is_none());
 }
 
-#[test]
+#[tokio::test]
 async fn test_parser_copy_paste_med_status() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_7.txt")
         .expect("Something went wrong reading the file");
@@ -127,7 +126,7 @@ async fn test_parser_copy_paste_med_status() {
     assert!(course_status.grade.is_none());
 }
 
-#[test]
+#[tokio::test]
 async fn test_parser_course_status_repetitions() {
     let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
         .expect("Something went wrong reading the file");
@@ -144,8 +143,8 @@ async fn test_parser_course_status_repetitions() {
     dbg!(course_status3);
 }
 
-lazy_static! {
-    static ref COURSES: HashMap<String, Course> = HashMap::from([
+static COURSES: LazyLock<HashMap<String, Course>> = LazyLock::new(|| {
+    HashMap::from([
         (
             "104031".to_string(),
             Course {
@@ -227,8 +226,8 @@ lazy_static! {
                 tags: None,
             },
         ),
-    ]);
-}
+    ])
+});
 
 #[macro_export]
 macro_rules! create_bank_rule_handler {
@@ -344,7 +343,7 @@ pub fn create_degree_status() -> DegreeStatus {
     }
 }
 
-#[test]
+#[tokio::test]
 async fn test_irrelevant_course() {
     // for debugging
     let mut degree_status = create_degree_status();
@@ -360,7 +359,7 @@ async fn test_irrelevant_course() {
     assert_eq!(degree_status.course_statuses[2].r#type, None);
 }
 
-#[test]
+#[tokio::test]
 async fn test_restore_irrelevant_course() {
     let mut degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v_4.txt",
@@ -406,7 +405,7 @@ async fn test_restore_irrelevant_course() {
     }
 }
 
-#[test]
+#[tokio::test]
 async fn test_modified() {
     // for debugging
     let mut degree_status = create_degree_status();
@@ -488,7 +487,7 @@ async fn test_modified() {
     assert_eq!(res, 9.0);
 }
 
-#[test]
+#[tokio::test]
 async fn test_duplicated_courses() {
     let mut degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v_4.txt",
@@ -566,7 +565,7 @@ async fn run_degree_status_full_flow(file_name: &str, catalog: &str) -> DegreeSt
     run_degree_status(degree_status, catalog).await
 }
 
-#[test]
+#[tokio::test]
 async fn test_missing_credit() {
     let degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v.txt",
@@ -688,7 +687,7 @@ async fn test_missing_credit() {
     );
 }
 
-#[test]
+#[tokio::test]
 async fn test_overflow_credit() {
     let degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v_2.txt",
@@ -788,7 +787,7 @@ async fn test_overflow_credit() {
     );
 }
 
-#[test]
+#[tokio::test]
 async fn test_postprocessing_english_requirement() {
     let mut degree_status = run_degree_status_full_flow(
         "pdf_ctrl_c_ctrl_v_2.txt",
@@ -845,7 +844,7 @@ async fn test_postprocessing_english_requirement() {
     assert_eq!(degree_status.overflow_msgs.len(), 3);
 }
 
-#[test]
+#[tokio::test]
 async fn test_postprocessing_medicine_requirement() {
     let mut degree_status =
         run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_9.txt", MEDICINE_18_19_CATALOG_ID).await;
@@ -921,7 +920,7 @@ async fn test_postprocessing_medicine_requirement() {
         .contains(&messages::medicine_preclinical_avg_error_msg(75.0)));
 }
 
-#[test]
+#[tokio::test]
 async fn test_software_engineer_itinerary() {
     let degree_status =
         run_degree_status_full_flow("pdf_ctrl_c_ctrl_v_3.txt", "61d84fce5c5e7813e895a27d").await;
@@ -1018,7 +1017,7 @@ async fn test_software_engineer_itinerary() {
 // Test catalog validations
 // ------------------------------------------------------------------------------------------------------
 
-#[test]
+#[tokio::test]
 async fn test_catalog_validations() {
     let mut catalog = get_catalog(COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID).await;
     assert!(validate_catalog(&catalog).is_ok());

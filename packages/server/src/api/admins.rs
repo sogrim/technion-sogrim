@@ -6,8 +6,7 @@ use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseId;
 use crate::resources::course::{self, Course};
 use crate::resources::user::User;
-use actix_web::web::{Data, Json};
-use actix_web::{post, HttpResponse};
+use axum::{response::IntoResponse, Extension, Json};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -17,13 +16,11 @@ pub struct ComputeDegreeStatusPayload {
     pub grade_sheet_as_string: String,
 }
 
-#[post("/parse-compute")]
 pub async fn parse_courses_and_compute_degree_status(
     _admin: User,
-    payload: Json<ComputeDegreeStatusPayload>,
-    db: Data<Db>,
-) -> Result<HttpResponse, AppError> {
-    let payload = payload.into_inner();
+    Extension(db): Extension<Db>,
+    Json(payload): Json<ComputeDegreeStatusPayload>,
+) -> Result<impl IntoResponse, AppError> {
     let catalog = db.get::<Catalog>(payload.catalog_id).await?;
     let course_statuses = parser::parse_copy_paste_data(&payload.grade_sheet_as_string)?;
     let mut degree_status = DegreeStatus {
@@ -51,5 +48,5 @@ pub async fn parse_courses_and_compute_degree_status(
 
     degree_status.compute(catalog, course::vec_to_map(courses));
 
-    Ok(HttpResponse::Ok().json(degree_status))
+    Ok(Json(degree_status))
 }

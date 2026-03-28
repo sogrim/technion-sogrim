@@ -21,7 +21,7 @@ pub struct Jwt {
 #[derive(Clone)]
 pub struct JwtDecoder {
     /// The decoder uses an external provider (API) for providing public keys from Google certs endpoint.
-    /// The `JwtDecoder` is shared across actix worker threads, and the key provider requires mutable access because
+    /// The `JwtDecoder` is shared across async tasks, and the key provider requires mutable access because
     /// it needs to refetch keys from Google when they expire, and update the cache, which changes the internal state.
     /// Therefore, we must wrap the provider in an atomically-reference-counted (`Arc`) mutex.
     key_provider: Arc<Mutex<GoogleKeyProvider>>,

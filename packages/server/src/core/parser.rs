@@ -1,5 +1,5 @@
-use lazy_static::lazy_static;
 use regex::Regex;
+use std::sync::LazyLock;
 
 use crate::{
     error::AppError,
@@ -7,14 +7,15 @@ use crate::{
 };
 use std::collections::HashMap;
 
-lazy_static! {
-    static ref CREDIT_RE: Regex = Regex::new(r"(?P<credit>(([1-9][0-9]|[0-9])\.[0-9]))").unwrap();
-    static ref COURSE_ID_RE: Regex = Regex::new(r"(?P<course_id>[0-9]{6})").unwrap();
-    static ref GRADE_RE: Regex = Regex::new(
-        r"(?P<grade>(100|([1-9][0-9])|[0-9]$)|פטור ללא ניקוד|פטור עם ניקוד|עבר|נכשל|לא השלים|לא השלים(מ)|-$|^--| -  )"
-    )
-    .unwrap();
-}
+static CREDIT_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?P<credit>(([1-9][0-9]|[0-9])\.[0-9]))").unwrap());
+static COURSE_ID_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?P<course_id>[0-9]{6})").unwrap());
+static GRADE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+    r"(?P<grade>(100|([1-9][0-9])|[0-9]$)|פטור ללא ניקוד|פטור עם ניקוד|עבר|נכשל|לא השלים|לא השלים(מ)|-$|^--| -  )"
+).unwrap()
+});
 
 enum Format {
     Default,

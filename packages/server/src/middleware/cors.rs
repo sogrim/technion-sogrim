@@ -1,21 +1,31 @@
 use crate::config::CONFIG;
-use actix_cors::Cors;
-use actix_web::http::header;
+use http::header;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
-pub fn cors() -> actix_cors::Cors {
-    let cors = Cors::default()
-        .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
-        .allowed_headers(vec![header::AUTHORIZATION, header::CONTENT_TYPE]);
-    if CONFIG.profile == "debug" {
-        cors.allowed_origin_fn(|origin, _req_head| {
-            origin.as_bytes().starts_with(b"http://localhost")
-        })
+pub fn cors() -> CorsLayer {
+    let methods = vec![
+        http::Method::GET,
+        http::Method::POST,
+        http::Method::PUT,
+        http::Method::DELETE,
+    ];
+    let headers = vec![header::AUTHORIZATION, header::CONTENT_TYPE];
+
+    let origin = if CONFIG.profile == "debug" {
+        AllowOrigin::predicate(|origin, _| origin.as_bytes().starts_with(b"http://localhost"))
     } else {
-        cors.allowed_origin("https://sogrim.org")
-            .allowed_origin("https://students.sogrim.org")
-            .allowed_origin("https://sogrim.onrender.com")
-            .allowed_origin("https://sogrim-v2.onrender.com")
-    }
+        AllowOrigin::list([
+            "https://sogrim.org".parse().unwrap(),
+            "https://students.sogrim.org".parse().unwrap(),
+            "https://sogrim.onrender.com".parse().unwrap(),
+            "https://sogrim-v2.onrender.com".parse().unwrap(),
+        ])
+    };
+
+    CorsLayer::new()
+        .allow_methods(methods)
+        .allow_headers(headers)
+        .allow_origin(origin)
 }
 
 #[cfg(test)]
