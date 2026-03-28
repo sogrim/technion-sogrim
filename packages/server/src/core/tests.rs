@@ -528,7 +528,7 @@ async fn test_duplicated_courses() {
     }
 }
 
-#[test]
+#[tokio::test]
 async fn test_course_replacement() {
     let mut degree_status = DegreeStatus {
         course_statuses: vec![CourseStatus {
