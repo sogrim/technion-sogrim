@@ -78,7 +78,7 @@ fn preprocess_removes_irrelevant_duplicate_when_user_added_same_course() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog);
+    degree_status.preprocess(&mut catalog, &HashMap::new());
 
     assert_eq!(degree_status.course_statuses.len(), 1);
     assert_eq!(degree_status.course_statuses[0].course.id, "dup");
@@ -118,7 +118,7 @@ fn preprocess_clears_type_for_unmodified_and_irrelevant_courses() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog);
+    degree_status.preprocess(&mut catalog, &HashMap::new());
 
     assert_eq!(degree_status.get_course_status("alg").unwrap().r#type, None);
     assert_eq!(degree_status.get_course_status("dup").unwrap().r#type, None);
@@ -151,7 +151,7 @@ fn preprocess_removes_irrelevant_courses_from_catalog_mapping() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog);
+    degree_status.preprocess(&mut catalog, &HashMap::new());
 
     assert!(!catalog.course_to_bank.contains_key("alg"));
     assert!(catalog.course_to_bank.contains_key("dup"));
