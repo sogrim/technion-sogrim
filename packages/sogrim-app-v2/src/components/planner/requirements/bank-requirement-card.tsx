@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { CourseBankReq, CourseStatus } from "@/types/api";
 
 interface BankRequirementCardProps {
@@ -107,14 +113,23 @@ export function BankRequirementCard({
                 key={cs.course._id}
                 className="flex items-center justify-between text-sm py-1"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-foreground truncate">
-                    {cs.course.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    ({cs.course.credit} {"נק״ז"})
-                  </span>
-                </div>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 min-w-0 cursor-default">
+                        <span className="text-foreground truncate">
+                          {cs.course.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          ({cs.course.credit} {"נק״ז"})
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      מס׳ קורס {cs.course._id}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-muted-foreground text-xs">
                     {cs.grade ?? "-"}
