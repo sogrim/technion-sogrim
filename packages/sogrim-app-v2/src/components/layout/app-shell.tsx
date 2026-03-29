@@ -1,0 +1,46 @@
+import type { ReactNode } from "react";
+import { useAuthStore } from "@/stores/auth-store";
+import { GoogleAuth } from "@/components/auth/google-auth";
+import { AnonymousPage } from "@/components/auth/anonymous-page";
+import { Sidebar } from "./sidebar";
+import { MobileNav } from "./mobile-nav";
+import { Header } from "./header";
+
+interface AppShellProps {
+  children: ReactNode;
+}
+
+export function AppShell({ children }: AppShellProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <GoogleAuth />
+        <AnonymousPage />
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <GoogleAuth />
+
+      {/* Desktop: sidebar + header + content */}
+      <div className="hidden md:flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header />
+          <main className="flex-1 p-4 md:p-6">{children}</main>
+        </div>
+      </div>
+
+      {/* Mobile: header + content + bottom nav */}
+      <div className="flex flex-col min-h-screen md:hidden">
+        <Header />
+        <main className="flex-1 p-4 pb-20">{children}</main>
+        <MobileNav />
+      </div>
+    </div>
+  );
+}
