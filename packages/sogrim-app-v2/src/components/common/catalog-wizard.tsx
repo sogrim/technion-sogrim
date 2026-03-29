@@ -5,10 +5,11 @@ import type { Faculty } from "@/types/api";
 
 interface CatalogWizardProps {
   compact?: boolean;
+  onCatalogSelected?: (catalogId: string) => void;
   onError?: (message: string) => void;
 }
 
-export function CatalogWizard({ compact = false, onError }: CatalogWizardProps) {
+export function CatalogWizard({ compact = false, onCatalogSelected, onError }: CatalogWizardProps) {
   const [selectedFaculty, setSelectedFaculty] = useState<Faculty | null>(null);
 
   if (!selectedFaculty) {
@@ -25,6 +26,7 @@ export function CatalogWizard({ compact = false, onError }: CatalogWizardProps) 
       faculty={selectedFaculty}
       onBack={() => setSelectedFaculty(null)}
       onError={onError}
+      onSuccess={onCatalogSelected}
       compact={compact}
     />
   );

@@ -222,8 +222,20 @@ export function SettingsPage() {
               ) : (
                 <div className="space-y-3">
                   <Separator />
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:bg-amber-950/20 dark:border-amber-700">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        החלפת קטלוג תגרום לחישוב מחדש של סטטוס התואר. הקורסים שלך יישמרו.
+                      </p>
+                    </div>
+                  </div>
                   <CatalogWizard
                     compact
+                    onCatalogSelected={(catalogId) => {
+                      setShowCatalogWizard(false);
+                      setToast({ message: "הקטלוג עודכן בהצלחה. סטטוס התואר יחושב מחדש.", type: "success" });
+                    }}
                     onError={(msg) => setToast({ message: msg, type: "error" })}
                   />
                   <Button

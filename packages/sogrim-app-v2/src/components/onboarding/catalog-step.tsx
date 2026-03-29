@@ -26,6 +26,7 @@ interface CatalogStepProps {
   faculty: Faculty;
   onBack?: () => void;
   onError?: (message: string) => void;
+  onSuccess?: (catalogId: string) => void;
   compact?: boolean;
 }
 
@@ -33,6 +34,7 @@ export function CatalogStep({
   faculty,
   onBack,
   onError,
+  onSuccess,
   compact = false,
 }: CatalogStepProps) {
   const { data: catalogs, isLoading } = useCatalogs(faculty);
@@ -40,6 +42,9 @@ export function CatalogStep({
 
   function handleSelect(catalogId: string) {
     updateCatalog.mutate(catalogId, {
+      onSuccess: () => {
+        onSuccess?.(catalogId);
+      },
       onError: () => {
         onError?.("שגיאה בבחירת הקטלוג");
       },
