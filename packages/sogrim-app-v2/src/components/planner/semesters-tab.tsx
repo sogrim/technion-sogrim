@@ -104,6 +104,16 @@ export function SemestersTab({
   );
   const currentSemester = tabs[currentSemesterIdx] ?? null;
 
+  // Auto-select the first real semester if current selection is the null tab
+  useEffect(() => {
+    if (currentSemester === null && semesters.length > 0) {
+      const firstRealIdx = hasNullSemester ? 1 : 0;
+      if (firstRealIdx < tabs.length) {
+        onSelectSemester(firstRealIdx);
+      }
+    }
+  }, [tabs, currentSemester, semesters.length, hasNullSemester, onSelectSemester]);
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (

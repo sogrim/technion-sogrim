@@ -82,6 +82,7 @@ function rowToCourseStatus(row: RowData, original: CourseStatus): CourseStatus {
     course: {
       ...original.course,
       credit: isNaN(credit) ? original.course.credit : credit,
+      name: row.name || original.course.name,
     },
     grade: row.grade,
     state: (row.state as CourseStatus["state"]) || original.state,
@@ -132,7 +133,7 @@ export function CourseGrid({
         field: "name",
         flex: 2.5,
         minWidth: 160,
-        editable: false,
+        editable: true,
         filter: true,
         headerClass: "ag-header-center",
         cellClass: "ag-cell-center",

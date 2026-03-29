@@ -8,10 +8,11 @@ interface BannerProps {
   degreeStatus: DegreeStatus;
   catalog?: Catalog;
   hasModifiedToast?: boolean;
+  includeInProgress: boolean;
+  onToggleInProgress: (v: boolean) => void;
 }
 
-export function Banner({ degreeStatus, catalog, hasModifiedToast }: BannerProps) {
-  const [includeInProgress, setIncludeInProgress] = useState(false);
+export function Banner({ degreeStatus, catalog, hasModifiedToast, includeInProgress, onToggleInProgress }: BannerProps) {
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const { course_bank_requirements, course_statuses, total_credit } = degreeStatus;
@@ -100,7 +101,7 @@ export function Banner({ degreeStatus, catalog, hasModifiedToast }: BannerProps)
                 <button
                   role="switch"
                   aria-checked={includeInProgress}
-                  onClick={(e) => { e.stopPropagation(); setIncludeInProgress(!includeInProgress); }}
+                  onClick={(e) => { e.stopPropagation(); onToggleInProgress(!includeInProgress); }}
                   className={cn(
                     "relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors",
                     includeInProgress ? "bg-blue-400" : "bg-white/30"
@@ -130,7 +131,7 @@ export function Banner({ degreeStatus, catalog, hasModifiedToast }: BannerProps)
             <button
               role="switch"
               aria-checked={includeInProgress}
-              onClick={() => setIncludeInProgress(!includeInProgress)}
+              onClick={() => onToggleInProgress(!includeInProgress)}
               className={cn(
                 "relative inline-flex h-4 w-8 shrink-0 rounded-full border-2 border-transparent transition-colors",
                 includeInProgress ? "bg-blue-500" : "bg-muted"

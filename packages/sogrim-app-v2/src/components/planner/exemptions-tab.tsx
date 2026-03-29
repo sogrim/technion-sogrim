@@ -7,7 +7,9 @@ interface ExemptionsTabProps {
 
 export function ExemptionsTab({ courseStatuses }: ExemptionsTabProps) {
   const exemptionCourses = courseStatuses.filter(
-    (cs) => cs.semester === null
+    (cs) =>
+      cs.semester === null &&
+      (cs.grade === "פטור ללא ניקוד" || cs.grade === "פטור עם ניקוד")
   );
 
   if (exemptionCourses.length === 0) {

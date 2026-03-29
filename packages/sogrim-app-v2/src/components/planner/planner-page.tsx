@@ -55,6 +55,7 @@ export function PlannerPage() {
     type: "error" | "success";
   } | null>(null);
   const [activeTab, setActiveTab] = useState<PlannerTab>("requirements");
+  const [includeInProgress, setIncludeInProgress] = useState(false);
   const [extraSemesters, setExtraSemesters] = useState<string[]>([]);
 
   const details = userState?.details;
@@ -183,6 +184,16 @@ export function PlannerPage() {
     [courseStatuses, currentSemesterIdx, sendUpdate, setCurrentSemester]
   );
 
+  const handleIgnoreCourse = useCallback(
+    (courseId: string, action: "לא רלוונטי" | "לא הושלם") => {
+      const updatedStatuses = courseStatuses.map((cs) =>
+        cs.course._id === courseId ? { ...cs, state: action, modified: true } : cs
+      );
+      sendUpdate(updatedStatuses);
+    },
+    [courseStatuses, sendUpdate]
+  );
+
   const isModified =
     details?.modified === true && courseStatuses.length > 0;
 
@@ -237,6 +248,8 @@ export function PlannerPage() {
         degreeStatus={details!.degree_status}
         catalog={details!.catalog}
         hasModifiedToast={isModified}
+        includeInProgress={includeInProgress}
+        onToggleInProgress={setIncludeInProgress}
       />
 
       {/* 3 Tabs - centered, large text */}
@@ -267,7 +280,11 @@ export function PlannerPage() {
       {/* Tab content */}
       <div className="mt-6 px-4">
         {activeTab === "requirements" && details && (
-          <RequirementsPanel degreeStatus={details.degree_status} />
+          <RequirementsPanel
+            degreeStatus={details.degree_status}
+            onIgnoreCourse={handleIgnoreCourse}
+            includeInProgress={includeInProgress}
+          />
         )}
 
         {activeTab === "semesters" && (
