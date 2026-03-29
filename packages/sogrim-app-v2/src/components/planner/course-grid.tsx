@@ -105,7 +105,16 @@ export function CourseGrid({
   } | null>(null);
 
   const semesterCourses = useMemo(
-    () => courseStatuses.filter((cs) => cs.semester === semester),
+    () =>
+      courseStatuses.filter((cs) => {
+        if (cs.semester !== semester) return false;
+        if (semester === null) {
+          return (
+            cs.grade === "פטור ללא ניקוד" || cs.grade === "פטור עם ניקוד"
+          );
+        }
+        return true;
+      }),
     [courseStatuses, semester]
   );
 

@@ -83,7 +83,11 @@ export function SemestersTab({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const addMenuRef = useRef<HTMLDivElement>(null);
 
-  const hasNullSemester = courseStatuses.some((cs) => cs.semester === null);
+  const hasNullSemester = courseStatuses.some(
+    (cs) =>
+      cs.semester === null &&
+      (cs.grade === "פטור ללא ניקוד" || cs.grade === "פטור עם ניקוד")
+  );
   const courseSemesters = getAllSemesters(courseStatuses);
   // Merge course-based semesters with extra (empty) semesters from parent
   const semesters = useMemo(() => {
