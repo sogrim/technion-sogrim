@@ -7,7 +7,6 @@ use futures_util::TryStreamExt;
 
 /// Convert MongoDB Extended JSON patterns to plain JSON values.
 /// Handles `{"$numberLong": "123"}` → `123` recursively.
-#[allow(dead_code)] // Used by upsert (currently todo!())
 fn normalize_extended_json(value: &mut serde_json::Value) {
     match value {
         serde_json::Value::Object(map) => {
@@ -32,22 +31,41 @@ fn normalize_extended_json(value: &mut serde_json::Value) {
     }
 }
 
-/// Upsert catalog JSON files into MongoDB.
-///
-/// For each file:
-/// 1. Read and parse the JSON (handle Extended JSON: `$numberLong`, empty `$oid`)
-/// 2. Look up existing catalog by `name` field
-/// 3. If exists: reuse its `_id` and replace the document
-/// 4. If new: generate a fresh `ObjectId` and insert
-///
-/// Hints:
-/// - Use `normalize_extended_json()` to convert `{"$numberLong": "1"}` → `1`
-/// - Strip `_id` from parsed JSON before deserializing (catalog JSONs have placeholder empty ObjectIds)
-/// - `Catalog` has `#[serde(default)]` on `id`, so it deserializes fine without `_id`
-/// - Use `db.collection::<Catalog>()` for typed MongoDB access
-/// - `collection.replace_one(filter).upsert(true)` for atomic upsert
-pub async fn upsert(_db: &Db, _files: &[impl AsRef<Path>]) -> Result<(), anyhow::Error> {
-    todo!("Implement catalog upsert — see doc comment above for guidance")
+pub async fn upsert(db: &Db, files: &[impl AsRef<Path>]) -> Result<(), anyhow::Error> {
+    for path in files {
+        let path = path.as_ref();
+        let text = std::fs::read_to_string(path)
+            .map_err(|e| anyhow::anyhow!("Failed to read {}: {e}", path.display()))?;
+
+        // Parse JSON and normalize MongoDB Extended JSON patterns ($numberLong, $oid)
+        let mut value: serde_json::Value = serde_json::from_str(&text)
+            .map_err(|e| anyhow::anyhow!("Failed to parse {}: {e}", path.display()))?;
+        if let Some(obj) = value.as_object_mut() {
+            obj.remove("_id"); // Strip placeholder _id — we set the real one below
+        }
+        normalize_extended_json(&mut value);
+        let mut catalog: Catalog = serde_json::from_value(value)
+            .map_err(|e| anyhow::anyhow!("Failed to deserialize {}: {e}", path.display()))?;
+
+        let collection = db.collection::<Catalog>();
+        let existing = collection
+            .find_one(doc! {"name": &catalog.name})
+            .await
+            .map_err(|e| anyhow::anyhow!("MongoDB query failed: {e}"))?;
+
+        let is_update = existing.is_some();
+        catalog.id = existing.map(|c| c.id).unwrap_or_else(ObjectId::new);
+
+        collection
+            .replace_one(doc! {"_id": catalog.id}, &catalog)
+            .upsert(true)
+            .await
+            .map_err(|e| anyhow::anyhow!("MongoDB upsert failed: {e}"))?;
+
+        let verb = if is_update { "Updated" } else { "Created" };
+        eprintln!("  {verb} \"{}\" ({})", catalog.name, catalog.id);
+    }
+    Ok(())
 }
 
 /// Lightweight struct for listing catalogs (avoids deserializing all fields).
