@@ -34,8 +34,8 @@ use super::admins::{self, ComputeDegreeStatusPayload};
 pub async fn test_get_all_catalogs() {
     // Create authorization header
     let jwt = fake_jwt();
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/students",
@@ -70,8 +70,8 @@ async fn test_students_api_full_flow() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/students",
@@ -170,7 +170,7 @@ async fn test_students_api_full_flow() {
 #[tokio::test]
 async fn test_compute_in_progress() {
     // Init env and app
-    let db = Db::new().await;
+    let db = Db::from_test_env().await;
     let app = Router::new()
         .nest(
             "/students",
@@ -245,8 +245,8 @@ async fn test_owner_api_courses() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/owners",
@@ -333,8 +333,8 @@ async fn test_owner_api_catalogs() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/owners",
@@ -366,7 +366,7 @@ async fn test_owner_api_catalogs() {
 #[tokio::test]
 async fn test_student_login_no_sub() {
     // Init env and app
-    let db = Db::new().await;
+    let db = Db::from_test_env().await;
     let app = Router::new()
         .nest("/students", Router::new().route("/login", get(login)))
         .layer(Extension(db.clone()));
@@ -388,7 +388,7 @@ async fn test_student_login_no_sub() {
 async fn test_students_api_no_catalog() {
     // *** IMPORTANT: This should NEVER happen, but the tests are added anyway for coverage
     // Init env and app
-    let db = Db::new().await;
+    let db = Db::from_test_env().await;
     let app = Router::new()
         .nest(
             "/students",
@@ -419,8 +419,8 @@ async fn test_admins_parse_and_compute_api() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/admins",
@@ -465,7 +465,7 @@ async fn test_admins_parse_and_compute_api() {
 #[tokio::test]
 async fn test_unauthorized_path() {
     // Init env and app
-    let db = Db::new().await;
+    let db = Db::from_test_env().await;
     let app = Router::new()
         .nest(
             "/admins",

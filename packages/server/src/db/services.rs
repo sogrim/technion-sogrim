@@ -1,4 +1,3 @@
-use crate::config::CONFIG;
 use crate::error::AppError;
 pub use bson::{doc, Bson};
 use bson::{serialize_to_bson, serialize_to_document};
@@ -14,9 +13,7 @@ impl Db {
         R: Resource + Send + Sync + Unpin,
     {
         let id = serialize_to_bson(&id)?;
-        self.client()
-            .database(CONFIG.profile)
-            .collection::<R>(R::collection_name())
+        self.collection::<R>()
             .find_one(doc! {"_id": id.clone()})
             .await?
             .ok_or_else(|| AppError::NotFound(format!("{}: {}", R::collection_name(), id)))
@@ -27,9 +24,7 @@ impl Db {
         R: Resource + Send + Sync + Unpin,
     {
         Ok(self
-            .client()
-            .database(CONFIG.profile)
-            .collection::<R>(R::collection_name())
+            .collection::<R>()
             .find(doc! {})
             .await?
             .try_collect::<Vec<R>>()
@@ -46,9 +41,7 @@ impl Db {
         R: Resource + DeserializeOwned + Send + Sync + Unpin,
     {
         Ok(self
-            .client()
-            .database(CONFIG.profile)
-            .collection::<R>(R::collection_name())
+            .collection::<R>()
             .find(doc! {field_to_filter.as_ref(): { filter_option.as_ref(): filter.into()}})
             .await?
             .try_collect::<Vec<R>>()
@@ -59,9 +52,7 @@ impl Db {
     where
         R: Resource + Send + Sync + Unpin,
     {
-        self.client()
-            .database(CONFIG.profile)
-            .collection::<R>(R::collection_name())
+        self.collection::<R>()
             .find_one_and_update(
                 resource.key(),
                 doc! { insert_option.as_ref(): serialize_to_document(&resource)? },
@@ -95,9 +86,7 @@ impl Db {
     {
         let id = serialize_to_bson(&id)?;
         Ok(self
-            .client()
-            .database(CONFIG.profile)
-            .collection::<R>(R::collection_name())
+            .collection::<R>()
             .delete_one(doc! {"_id": id.clone()})
             .await
             .map(|_| ())?) // Discard the result of the delete operation

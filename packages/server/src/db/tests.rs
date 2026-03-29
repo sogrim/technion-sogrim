@@ -1,5 +1,4 @@
 use crate::{
-    config::CONFIG,
     db::{Db, FilterOption},
     resources::course::Course,
 };
@@ -10,10 +9,19 @@ use mongodb::{
     Client,
 };
 
+fn test_uri() -> String {
+    let _ = dotenvy::dotenv();
+    std::env::var("SOGRIM_URI").expect("SOGRIM_URI must be set for tests")
+}
+
+fn test_profile() -> String {
+    std::env::var("SOGRIM_PROFILE").unwrap_or_else(|_| "debug".into())
+}
+
 #[tokio::test]
 pub async fn test_db_internal_error() {
     // Create explicit client options and update it manually
-    let mut client_options = ClientOptions::parse(CONFIG.uri)
+    let mut client_options = ClientOptions::parse(test_uri())
         .await
         .expect("Failed to parse client options");
 
@@ -28,7 +36,7 @@ pub async fn test_db_internal_error() {
     let client = Client::with_options(client_options).expect("Failed to create client");
 
     // Initialize db
-    let db = Db::from(client);
+    let db = Db::with_client(client, &test_profile());
 
     // Assert that all db requests cause an internal server error
     let errors = vec![
@@ -76,7 +84,9 @@ pub async fn test_db_internal_error() {
 
 #[tokio::test]
 pub async fn test_get_courses_by_filters() {
-    let db = Db::new().await;
+    let db = Db::connect(&test_uri(), &test_profile())
+        .await
+        .expect("Failed to connect to MongoDB");
 
     let courses = db
         .get_filtered::<Course>(FilterOption::Regex, "name", "חשבון אינפיניטסימלי 1מ'")

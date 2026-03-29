@@ -25,21 +25,21 @@ jobs:
           ssh ${{ env.VM_USER }}@${{ secrets.ORACLE_VM_IP }} bash -s << 'FETCH'
           set -euo pipefail
 
-          FETCHER="$HOME/sogrim/packages/server/target/release/sogrim-fetcher"
+          SOGRIM="$HOME/sogrim/packages/server/target/release/sogrim"
           CACHE_DIR="$HOME/cache"
           LOG_DIR="$CACHE_DIR/_logs"
-          echo "=== sogrim-fetcher ==="
+          echo "=== sogrim fetcher ==="
           echo "  time:      $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "  cache_dir: $CACHE_DIR"
           echo ""
 
-          if [ ! -f "$FETCHER" ]; then
-            echo "ERROR: fetcher binary not found at $FETCHER"
+          if [ ! -f "$SOGRIM" ]; then
+            echo "ERROR: sogrim binary not found at $SOGRIM"
             echo "Run the deploy workflow first."
             exit 1
           fi
 
-          $FETCHER \
+          $SOGRIM fetcher \
             --latest 3 \
             --cache-dir "$CACHE_DIR" \
             --proxy-url "${{ secrets.SAP_PROXY_URL }}" \

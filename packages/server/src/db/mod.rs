@@ -1,8 +1,8 @@
 use bson::{doc, Document};
-use mongodb::Client;
+use mongodb::{Client, Collection};
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{config::CONFIG, error::AppError};
+use crate::error::AppError;
 
 pub mod services;
 
@@ -12,15 +12,33 @@ pub mod tests;
 #[derive(Debug, Clone)]
 pub struct Db {
     client: Client,
+    profile: String,
 }
 
 impl Db {
-    pub async fn new() -> Self {
-        let client = Client::with_uri_str(&CONFIG.uri)
+    pub async fn connect(uri: &str, profile: &str) -> Result<Self, AppError> {
+        let client = Client::with_uri_str(uri)
             .await
-            .expect("Failed to connect to MongoDB");
-        Self { client }
+            .map_err(|e| AppError::InternalServer(format!("MongoDB connection failed: {e}")))?;
+        Ok(Self {
+            client,
+            profile: profile.to_owned(),
+        })
     }
+
+    pub fn collection<R: Resource + Send + Sync>(&self) -> Collection<R> {
+        self.client
+            .database(&self.profile)
+            .collection(R::collection_name())
+    }
+
+    pub fn with_client(client: Client, profile: &str) -> Self {
+        Self {
+            client,
+            profile: profile.to_owned(),
+        }
+    }
+
     pub async fn ping(&self) -> Result<(), AppError> {
         self.client()
             .database("admin")
@@ -29,14 +47,28 @@ impl Db {
             .map_err(|e| AppError::InternalServer(e.to_string()))
             .map(|_| ())
     }
+
     pub fn client(&self) -> &Client {
         &self.client
     }
-}
 
-impl From<Client> for Db {
-    fn from(client: Client) -> Self {
-        Self { client }
+    pub fn profile(&self) -> &str {
+        &self.profile
+    }
+
+    /// Gracefully drain the connection pool. Call before the tokio runtime exits.
+    pub async fn shutdown(self) {
+        self.client.shutdown().await;
+    }
+
+    /// Convenience constructor for tests: reads SOGRIM_URI and SOGRIM_PROFILE from env.
+    pub async fn from_test_env() -> Self {
+        let _ = dotenvy::dotenv();
+        let uri = std::env::var("SOGRIM_URI").expect("SOGRIM_URI must be set for tests");
+        let profile = std::env::var("SOGRIM_PROFILE").unwrap_or_else(|_| "debug".into());
+        Self::connect(&uri, &profile)
+            .await
+            .expect("Failed to connect to MongoDB for tests")
     }
 }
 

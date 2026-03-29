@@ -3,8 +3,10 @@ use crate::{
     core::degree_status::DegreeStatus,
     db::{Db, Resource},
     error::AppError,
-    middleware::jwt_decoder::Sub,
 };
+
+/// Google JWT subject identifier (unique user ID).
+pub type Sub = String;
 use axum::{extract::FromRequestParts, Extension};
 use bson::{doc, DateTime, Document};
 use http::request::Parts;

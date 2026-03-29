@@ -2707,6 +2707,7 @@ dependencies = [
 name = "sogrim-server"
 version = "1.4.0"
 dependencies = [
+ "anyhow",
  "atty",
  "axum",
  "base64",

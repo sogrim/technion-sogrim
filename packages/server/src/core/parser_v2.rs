@@ -297,7 +297,7 @@ fn parse_edge_lines(lines: &[&str]) -> Result<Vec<RawCourse>, AppError> {
 
             let (mut name1, credit1, grade1) = parse_edge_fields(data1.trim());
             if !name_suffix.is_empty() {
-                name1 = format!("{} {}", name1, name_suffix);
+                name1 = format!("{name1} {name_suffix}");
             }
             courses.push(RawCourse {
                 id: e_id,
