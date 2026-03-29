@@ -26,15 +26,16 @@ export function BankRequirementCard({
 
   const isAllBank = bank.bank_rule_name === "all";
 
-  const bankCourses = courses.filter(
-    (cs) => cs.type === bank.course_bank_name
-  );
+  const bankCourses = courses.filter((cs) => cs.type === bank.course_bank_name);
 
   // When includeInProgress, add in-progress courses' credits/count to the backend totals
   const inProgressExtra = includeInProgress
     ? bankCourses.filter((cs) => cs.state === "בתהליך")
     : [];
-  const extraCredit = inProgressExtra.reduce((s, cs) => s + cs.course.credit, 0);
+  const extraCredit = inProgressExtra.reduce(
+    (s, cs) => s + cs.course.credit,
+    0,
+  );
   const extraCount = inProgressExtra.length;
 
   const effectiveCreditCompleted = bank.credit_completed + extraCredit;
@@ -44,13 +45,13 @@ export function BankRequirementCard({
     if (bank.credit_requirement > 0) {
       return Math.min(
         100,
-        Math.round((effectiveCreditCompleted / bank.credit_requirement) * 100)
+        Math.round((effectiveCreditCompleted / bank.credit_requirement) * 100),
       );
     }
     if (bank.course_requirement > 0) {
       return Math.min(
         100,
-        Math.round((effectiveCourseCompleted / bank.course_requirement) * 100)
+        Math.round((effectiveCourseCompleted / bank.course_requirement) * 100),
       );
     }
     return bank.completed ? 100 : 0;
@@ -113,7 +114,7 @@ export function BankRequirementCard({
               <span>
                 {bank.credit_requirement > 0
                   ? `השלמת ${effectiveCreditCompleted} מתוך ${bank.credit_requirement} נק״ז`
-                  : "\u00A0"}
+                  : "אין דרישת נק״ז בקטגוריה זו"}
               </span>
               {bank.course_requirement > 0 && (
                 <span>
@@ -148,9 +149,7 @@ export function BankRequirementCard({
                           </span>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        מס׳ קורס {cs.course._id}
-                      </TooltipContent>
+                      <TooltipContent>מס׳ קורס {cs.course._id}</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                   {cs.additional_msg && (
@@ -161,9 +160,7 @@ export function BankRequirementCard({
                             <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          {cs.additional_msg}
-                        </TooltipContent>
+                        <TooltipContent>{cs.additional_msg}</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   )}
@@ -192,14 +189,18 @@ export function BankRequirementCard({
                         <TooltipTrigger asChild>
                           {cs.state === "לא רלוונטי" ? (
                             <button
-                              onClick={() => onIgnoreCourse(cs.course._id, "לא הושלם")}
+                              onClick={() =>
+                                onIgnoreCourse(cs.course._id, "לא הושלם")
+                              }
                               className="p-0.5 rounded hover:bg-background transition-colors text-green-600"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </button>
                           ) : (
                             <button
-                              onClick={() => onIgnoreCourse(cs.course._id, "לא רלוונטי")}
+                              onClick={() =>
+                                onIgnoreCourse(cs.course._id, "לא רלוונטי")
+                              }
                               className="p-0.5 rounded hover:bg-background transition-colors text-muted-foreground hover:text-foreground"
                             >
                               <Ban className="h-4 w-4" />
