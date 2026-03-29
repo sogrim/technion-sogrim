@@ -70,6 +70,7 @@ export function PlannerCourseSearch({
     }
 
     onAdd(result.newRowData);
+    setToast(null);
     resetForm();
   }
 
