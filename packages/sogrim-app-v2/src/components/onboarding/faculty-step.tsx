@@ -31,25 +31,28 @@ const FACULTIES: {
 
 interface FacultyStepProps {
   onSelect: (faculty: Faculty) => void;
+  compact?: boolean;
 }
 
-export function FacultyStep({ onSelect }: FacultyStepProps) {
+export function FacultyStep({ onSelect, compact = false }: FacultyStepProps) {
   return (
-    <div className="space-y-8">
-      <div className="text-center space-y-3">
-        <div className="flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <GraduationCap className="h-8 w-8 text-primary" />
+    <div className={compact ? "space-y-3" : "space-y-8"}>
+      {!compact && (
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <GraduationCap className="h-8 w-8 text-primary" />
+            </div>
           </div>
+          <h2 className="text-2xl font-bold">בחר פקולטה</h2>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            בחר את הפקולטה שאליה אתה משתייך כדי להציג את מסלולי הלימודים
+            הרלוונטיים.
+          </p>
         </div>
-        <h2 className="text-2xl font-bold">בחר פקולטה</h2>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          בחר את הפקולטה שאליה אתה משתייך כדי להציג את מסלולי הלימודים
-          הרלוונטיים.
-        </p>
-      </div>
+      )}
 
-      <div className="grid gap-4">
+      <div className={compact ? "grid gap-2 grid-cols-1 sm:grid-cols-3" : "grid gap-4"}>
         {FACULTIES.map((faculty) => {
           const Icon = faculty.icon;
           return (
@@ -64,18 +67,23 @@ export function FacultyStep({ onSelect }: FacultyStepProps) {
                   "hover:shadow-md"
                 )}
               >
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <Icon className="h-6 w-6 text-primary" />
+                <CardHeader className={compact ? "p-3" : undefined}>
+                  <div className={cn("flex items-center gap-4", compact && "gap-2")}>
+                    <div className={cn(
+                      "flex shrink-0 items-center justify-center rounded-lg bg-primary/10",
+                      compact ? "h-8 w-8" : "h-12 w-12"
+                    )}>
+                      <Icon className={cn("text-primary", compact ? "h-4 w-4" : "h-6 w-6")} />
                     </div>
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">
+                    <div className={compact ? "space-y-0" : "space-y-1"}>
+                      <CardTitle className={compact ? "text-sm" : "text-lg"}>
                         {faculty.label}
                       </CardTitle>
-                      <CardDescription>
-                        {faculty.description}
-                      </CardDescription>
+                      {!compact && (
+                        <CardDescription>
+                          {faculty.description}
+                        </CardDescription>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
