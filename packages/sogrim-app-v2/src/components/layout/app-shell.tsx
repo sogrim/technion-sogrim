@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useApiProvider } from "@/hooks/use-api-provider";
 import { GoogleAuth } from "@/components/auth/google-auth";
 import { AnonymousPage } from "@/components/auth/anonymous-page";
 import { Sidebar } from "./sidebar";
@@ -12,6 +13,9 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // Initialize course schedule provider globally so it's available on all pages
+  useApiProvider();
 
   if (!isAuthenticated) {
     return (
