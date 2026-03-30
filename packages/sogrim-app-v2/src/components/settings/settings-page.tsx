@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   User,
   Palette,
@@ -13,13 +14,10 @@ import {
   AlertTriangle,
   Trash2,
 } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useUserState } from "@/hooks/use-user-state";
-import { useCatalogs } from "@/hooks/use-catalogs";
 import {
-  useUpdateCatalog,
   useUpdateSettings,
   useImportUgData,
   useComputeDegreeStatus,
@@ -32,93 +30,31 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
 import { ResetUserDialog } from "./reset-user-dialog";
-import type { Catalog } from "@/types/api";
-
-const FACULTY_LABELS: Record<string, string> = {
-  ComputerScience: "מדעי המחשב",
-  DataAndDecisionScience: "מדעי הנתונים וקבלת החלטות",
-  Medicine: "רפואה",
-  Unknown: "כללי",
-};
-
-function groupByFaculty(
-  catalogs: Catalog[]
-): Record<string, Catalog[]> {
-  const grouped: Record<string, Catalog[]> = {};
-  for (const catalog of catalogs) {
-    const faculty = catalog.faculty || "Unknown";
-    if (!grouped[faculty]) grouped[faculty] = [];
-    grouped[faculty].push(catalog);
-  }
-  return grouped;
-}
+import { CatalogWizard } from "@/components/common/catalog-wizard";
 
 export function SettingsPage() {
+  const navigate = useNavigate();
   const userInfo = useAuthStore((s) => s.userInfo);
   const theme = useUiStore((s) => s.theme);
   const toggleTheme = useUiStore((s) => s.toggleTheme);
   const { data: userState, isLoading: userLoading } = useUserState();
-  const { data: catalogs, isLoading: catalogsLoading } = useCatalogs();
-  const updateCatalog = useUpdateCatalog();
   const updateSettings = useUpdateSettings();
   const importMutation = useImportUgData();
   const computeMutation = useComputeDegreeStatus();
-  const navigate = useNavigate();
 
   const [ugData, setUgData] = useState("");
-  const [showCatalogWarning, setShowCatalogWarning] = useState(false);
-  const [pendingCatalogId, setPendingCatalogId] = useState<string | null>(null);
+  const [showCatalogWizard, setShowCatalogWizard] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: "error" | "success";
   } | null>(null);
-
-  const currentCatalogId = userState?.details?.catalog?._id?.$oid;
-
-  function handleCatalogChange(
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) {
-    const catalogId = e.target.value;
-    if (!catalogId || catalogId === currentCatalogId) return;
-
-    // Show warning before changing catalog
-    setPendingCatalogId(catalogId);
-    setShowCatalogWarning(true);
-  }
-
-  function confirmCatalogChange() {
-    if (!pendingCatalogId) return;
-
-    updateCatalog.mutate(pendingCatalogId, {
-      onSuccess: () => {
-        setToast({
-          message: "הקטלוג עודכן בהצלחה. סטטוס התואר יחושב מחדש.",
-          type: "success",
-        });
-        setShowCatalogWarning(false);
-        setPendingCatalogId(null);
-        navigate({ to: "/planner" });
-      },
-      onError: () => {
-        setToast({ message: "שגיאה בעדכון הקטלוג", type: "error" });
-        setShowCatalogWarning(false);
-        setPendingCatalogId(null);
-      },
-    });
-  }
-
-  function cancelCatalogChange() {
-    setShowCatalogWarning(false);
-    setPendingCatalogId(null);
-  }
 
   function handleThemeToggle() {
     toggleTheme();
@@ -190,8 +126,6 @@ export function SettingsPage() {
     });
   }
 
-  const grouped = catalogs ? groupByFaculty(catalogs) : {};
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">הגדרות</h1>
@@ -254,107 +188,66 @@ export function SettingsPage() {
             <CardTitle>קטלוג לימודים</CardTitle>
           </div>
           <CardDescription>
-            בחר את מסלול הלימודים שלך. הקטלוג מגדיר את דרישות התואר.
+            מסלול הלימודים שלך. הקטלוג מגדיר את דרישות התואר.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {catalogsLoading ? (
+          {userLoading ? (
             <Skeleton className="h-9 w-full" />
           ) : (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="catalog-select">מסלול לימודים</Label>
-                <Select
-                  id="catalog-select"
-                  value={currentCatalogId || ""}
-                  onChange={handleCatalogChange}
-                  disabled={updateCatalog.isPending}
-                >
-                  <option value="" disabled>
-                    בחר קטלוג...
-                  </option>
-                  {Object.entries(grouped).map(
-                    ([faculty, facultyCatalogs]) => (
-                      <optgroup
-                        key={faculty}
-                        label={FACULTY_LABELS[faculty] || faculty}
-                      >
-                        {facultyCatalogs.map((catalog) => (
-                          <option
-                            key={catalog._id.$oid}
-                            value={catalog._id.$oid}
-                          >
-                            {catalog.name} ({catalog.total_credit}{" "}
-                            נ״ז)
-                          </option>
-                        ))}
-                      </optgroup>
-                    )
+              {userState?.details?.catalog && (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">
+                    קטלוג נוכחי: {userState.details.catalog.name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    סה״כ נקודות זכות: {userState.details.catalog.total_credit}
+                  </p>
+                  {userState.details.catalog.description &&
+                    userState.details.catalog.description !== "יהיה פה הסבר" && (
+                    <p className="text-sm text-muted-foreground">
+                      {userState.details.catalog.description}
+                    </p>
                   )}
-                </Select>
-              </div>
-
-              {/* Catalog change warning */}
-              {showCatalogWarning && (
-                <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-3 dark:bg-amber-950/20 dark:border-amber-700">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                        החלפת קטלוג תגרום לחישוב מחדש של סטטוס התואר
-                      </p>
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        הקורסים שלך יישמרו, אך דרישות התואר יחושבו מחדש
-                        לפי הקטלוג החדש.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={cancelCatalogChange}
-                      disabled={updateCatalog.isPending}
-                    >
-                      ביטול
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={confirmCatalogChange}
-                      disabled={updateCatalog.isPending}
-                    >
-                      {updateCatalog.isPending ? (
-                        <>
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          מעדכן...
-                        </>
-                      ) : (
-                        "אישור החלפה"
-                      )}
-                    </Button>
-                  </div>
                 </div>
               )}
 
-              {userState?.details?.catalog && !showCatalogWarning && (
-                <>
+              {!showCatalogWizard ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCatalogWizard(true)}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  שנה מסלול
+                </Button>
+              ) : (
+                <div className="space-y-3">
                   <Separator />
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">
-                      קטלוג נוכחי: {userState.details.catalog.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      סה״כ נקודות זכות:{" "}
-                      {userState.details.catalog.total_credit}
-                    </p>
-                    {userState.details.catalog.description &&
-                      userState.details.catalog.description !== "יהיה פה הסבר" && (
-                      <p className="text-sm text-muted-foreground">
-                        {userState.details.catalog.description}
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:bg-amber-950/20 dark:border-amber-700">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        החלפת קטלוג תגרום לחישוב מחדש של סטטוס התואר. הקורסים שלך יישמרו.
                       </p>
-                    )}
+                    </div>
                   </div>
-                </>
+                  <CatalogWizard
+                    compact
+                    onCatalogSelected={() => {
+                      setShowCatalogWizard(false);
+                      navigate({ to: "/planner" });
+                    }}
+                    onError={(msg) => setToast({ message: msg, type: "error" })}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCatalogWizard(false)}
+                  >
+                    ביטול
+                  </Button>
+                </div>
               )}
             </>
           )}
