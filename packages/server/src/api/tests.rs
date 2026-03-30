@@ -39,28 +39,52 @@ pub async fn test_get_all_catalogs() {
     let app = Router::new()
         .nest(
             "/students",
-            Router::new().route("/catalogs", get(students::get_catalogs)),
+            Router::new()
+                .route("/login", get(students::login))
+                .route("/catalogs", get(students::get_catalogs)),
         )
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))
         .layer(Extension(Permissions::Student))
         .layer(Extension(db.clone()))
         .layer(Extension(decoder));
 
-    // Create and send request
+    // Ensure test user exists (login creates or updates the user)
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/students/login")
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let status = resp.status();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert!(
+        status.is_success(),
+        "login failed with status {status} body: {}",
+        String::from_utf8_lossy(&body)
+    );
+
+    // Create and send request for catalogs
     let req = Request::builder()
         .method(Method::GET)
         .uri("/students/catalogs")
         .header("authorization", jwt.clone())
         .body(Body::empty())
         .unwrap();
-
     let resp = app.clone().oneshot(req).await.unwrap();
-    assert!(resp.status().is_success());
-
-    // Check for valid json response
+    let status = resp.status();
     let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await
         .unwrap();
+    assert!(
+        status.is_success(),
+        "catalogs failed with status {status} body: {}",
+        String::from_utf8_lossy(&body)
+    );
+
+    // Check for valid json response
     let vec_catalogs: Vec<DisplayCatalog> = serde_json::from_slice(&body).unwrap();
     assert!(vec_catalogs.len() >= 8);
 }
@@ -96,10 +120,15 @@ async fn test_students_api_full_flow() {
         .body(Body::empty())
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
-    assert!(resp.status().is_success());
+    let status = resp.status();
     let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await
         .unwrap();
+    assert!(
+        status.is_success(),
+        "login failed with status {status} body: {}",
+        String::from_utf8_lossy(&body)
+    );
     let user: User = serde_json::from_slice(&body).unwrap();
     let mut user_details: UserDetails = user.details;
 
@@ -111,10 +140,15 @@ async fn test_students_api_full_flow() {
         .body(Body::empty())
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
-    assert!(resp.status().is_success());
+    let status = resp.status();
     let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await
         .unwrap();
+    assert!(
+        status.is_success(),
+        "catalogs failed with status {status} body: {}",
+        String::from_utf8_lossy(&body)
+    );
     let catalogs: Vec<DisplayCatalog> = serde_json::from_slice(&body).unwrap();
 
     // put /students/catalog

@@ -18,6 +18,7 @@ pub enum Faculty {
     Unknown,
     ComputerScience,
     DataAndDecisionScience,
+    ElectricalEngineering,
     Medicine,
 }
 
