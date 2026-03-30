@@ -14,17 +14,8 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://sogrim-api.onrender.com',
+        target: 'http://localhost:5545',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        secure: true,
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            // Remove Origin header so the production backend doesn't reject it
-            proxyReq.removeHeader('origin');
-            proxyReq.removeHeader('referer');
-          });
-        },
       },
     },
   },

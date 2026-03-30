@@ -1,5 +1,6 @@
 use std::env;
 use std::fmt;
+use std::path::PathBuf;
 
 /// Server configuration loaded from `SOGRIM_*` environment variables at runtime.
 #[derive(Debug, Clone)]
@@ -8,6 +9,7 @@ pub struct Config {
     pub port: u16,
     pub client_id: String,
     pub profile: String,
+    pub static_dir: Option<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -43,6 +45,7 @@ impl Config {
                 .unwrap_or(5545),
             client_id: required("SOGRIM_CLIENT_ID")?,
             profile: optional("SOGRIM_PROFILE")?.unwrap_or_else(|| "debug".into()),
+            static_dir: optional("SOGRIM_STATIC_DIR")?.map(PathBuf::from),
         })
     }
 }
