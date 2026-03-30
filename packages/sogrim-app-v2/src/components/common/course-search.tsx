@@ -37,17 +37,17 @@ export interface CourseSearchProps {
   onClose: () => void;
   onSelect: (course: CourseSchedule) => void;
   /** IDs of already-selected courses (shown with checkmark) */
-  selectedIds?: Set<string>;
+  selectedIds: Set<string>;
   /** true = clicking toggles add/remove (timetable mode), false = single-select then close */
-  toggleMode?: boolean;
+  toggleMode: boolean;
 }
 
 export function CourseSearch({
   open,
   onClose,
   onSelect,
-  selectedIds = new Set(),
-  toggleMode = false,
+  selectedIds,
+  toggleMode,
 }: CourseSearchProps) {
   // Re-render when API provider fetches new course data
   const _providerVersion = useProviderUpdates();

@@ -11,20 +11,9 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-export function AppShell({ children }: AppShellProps) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
+function AuthenticatedShell({ children }: { children: ReactNode }) {
   // Initialize course schedule provider globally so it's available on all pages
   useApiProvider();
-
-  if (!isAuthenticated) {
-    return (
-      <>
-        <GoogleAuth />
-        <AnonymousPage />
-      </>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,4 +36,19 @@ export function AppShell({ children }: AppShellProps) {
       </div>
     </div>
   );
+}
+
+export function AppShell({ children }: AppShellProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <GoogleAuth />
+        <AnonymousPage />
+      </>
+    );
+  }
+
+  return <AuthenticatedShell>{children}</AuthenticatedShell>;
 }

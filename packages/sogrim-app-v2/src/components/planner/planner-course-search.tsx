@@ -92,6 +92,7 @@ export function PlannerCourseSearch({
           open={searchOpen}
           onClose={() => setSearchOpen(false)}
           onSelect={handleCourseSelected}
+          selectedIds={new Set<string>()}
           toggleMode={false}
         />
 
