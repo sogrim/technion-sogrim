@@ -31,6 +31,7 @@ jobs:
           SOGRIM_PORT="5545"
           SOGRIM_PROFILE="release"
           SOGRIM_CACHE_DIR="/home/opc/cache"
+          SOGRIM_STATIC_DIR="/home/opc/sogrim/packages/sogrim-app-v2/dist"
           ENVFILE
 
       - name: Deploy to VM
@@ -48,7 +49,20 @@ jobs:
 
           echo "Deploying $(git log --oneline -1)"
 
-          # Rebuild
+          # Source env vars (needed for SOGRIM_CLIENT_ID during frontend build)
+          set -a
+          source packages/server/.env
+          set +a
+
+          # Build frontend
+          export VITE_GOOGLE_CLIENT_ID="$SOGRIM_CLIENT_ID"
+          export VITE_API_URL="/api"
+          cd packages/sogrim-app-v2
+          ~/.bun/bin/bun install --frozen-lockfile
+          ~/.bun/bin/bun run build
+          cd ../..
+
+          # Rebuild server
           source ~/.cargo/env
           cd packages/server
           cargo build --release

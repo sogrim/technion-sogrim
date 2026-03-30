@@ -9,6 +9,7 @@ use axum::{
 };
 use log::info;
 use sogrim_server::config::Config;
+use tower_http::services::{ServeDir, ServeFile};
 
 // Re-export library modules so server-specific submodules can use crate:: paths
 pub use sogrim_server::{consts, core, db, error, resources};
@@ -60,13 +61,6 @@ async fn main() -> anyhow::Result<()> {
 
     // Public routes (no auth required)
     let public_routes = Router::new()
-        .route(
-            "/healthcheck",
-            get(|Extension(db): Extension<Db>| async move {
-                db.ping().await?;
-                Result::<_, AppError>::Ok(http::StatusCode::OK)
-            }),
-        )
         .route("/semesters", get(api::courses::get_semesters))
         .route(
             "/courses/{year}/{semester}/index",
@@ -116,14 +110,47 @@ async fn main() -> anyhow::Result<()> {
         .nest("/owners", owner_routes)
         .layer(axum::middleware::from_fn(auth::authenticate));
 
+    // All API routes nested under /api
+    let api_routes = Router::new().merge(public_routes).merge(auth_routes);
+
     let app = Router::new()
-        .merge(public_routes)
-        .merge(auth_routes)
+        .route(
+            "/healthcheck",
+            get(|Extension(db): Extension<Db>| async move {
+                db.ping().await?;
+                Result::<_, AppError>::Ok(http::StatusCode::OK)
+            }),
+        )
+        .nest("/api", api_routes)
         .layer(axum::middleware::from_fn(logger::log_requests))
         .layer(cors::cors(is_debug))
         .layer(Extension(db))
         .layer(Extension(course_cache))
         .layer(Extension(jwt_decoder));
+
+    // Optionally serve static frontend files with SPA fallback
+    let app = if let Some(ref static_dir) = config.static_dir {
+        if !static_dir.is_dir() {
+            anyhow::bail!(
+                "SOGRIM_STATIC_DIR={} does not exist or is not a directory",
+                static_dir.display()
+            );
+        }
+        let index = static_dir.join("index.html");
+        if !index.is_file() {
+            log::warn!(
+                target: "server",
+                "index.html not found in SOGRIM_STATIC_DIR={}; SPA fallback will not work",
+                static_dir.display()
+            );
+        }
+        info!(target: "server", "Serving static files from {}", static_dir.display());
+        let serve = ServeDir::new(static_dir).not_found_service(ServeFile::new(index));
+        app.fallback_service(serve)
+    } else {
+        info!(target: "server", "SOGRIM_STATIC_DIR not set; not serving frontend files");
+        app
+    };
 
     let addr = format!("0.0.0.0:{}", config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
