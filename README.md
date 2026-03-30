@@ -12,7 +12,6 @@
 ![React](https://img.shields.io/badge/React_19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 
-<!-- Add screenshot here -->
 
 </div>
 
@@ -52,7 +51,7 @@ It currently supports **Computer Science**, **Data Science**, and **Medicine** f
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | React 19, TypeScript, Vite 7, Tailwind CSS 4, [shadcn/ui](https://ui.shadcn.com) |
-| **Routing & Data** | TanStack Router (file-based), TanStack Query |
+| **Routing & Data** | TanStack Router, TanStack Query |
 | **Tables** | AG Grid Community |
 | **State** | Zustand |
 | **Auth** | Google Identity Services (One Tap) |
@@ -69,7 +68,7 @@ technion-sogrim/
 ├── packages/
 │   ├── sogrim-app-v2/       # Frontend — React 19 + Vite + shadcn
 │   │   └── src/
-│   │       ├── components/  # UI: planner, timetable, auth, layout, onboarding
+│   │       ├── components/  # UI components (planner, timetable, settings, auth, etc.)
 │   │       ├── hooks/       # Custom React hooks
 │   │       ├── stores/      # Zustand state stores
 │   │       ├── types/       # TypeScript type definitions
@@ -81,8 +80,11 @@ technion-sogrim/
 │   │       ├── core/        # Degree computation engine
 │   │       ├── db/          # MongoDB data access
 │   │       ├── middleware/   # Auth & request middleware
+│   │       ├── bin/          # CLI binary entry points
 │   │       ├── sap/         # Course catalog parsing
 │   │       └── resources/   # Static resources
+│   ├── sogrim-app/           # V1 frontend (legacy)
+│   ├── sogrim-bo-app/        # Back-office app
 │   ├── infra/               # Pulumi infrastructure as code
 │   └── docs/                # Documentation & plans
 ├── .github/workflows/       # CI/CD pipelines
@@ -101,7 +103,8 @@ technion-sogrim/
 
 ```bash
 cd packages/server
-cp .env.example .env    # configure MongoDB URI, Google OAuth client ID, etc.
+# Create .env with required variables (see config.rs for details):
+# SOGRIM_URI=mongodb://... SOGRIM_CLIENT_ID=... SOGRIM_PROFILE=dev
 cargo run
 ```
 
@@ -113,7 +116,7 @@ npm install
 npm run dev             # starts Vite dev server with API proxy
 ```
 
-The frontend dev server proxies `/api` requests to the backend. Open [http://localhost:5173](http://localhost:5173) to see the app.
+The frontend dev server proxies `/api` requests to the backend. Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ### Build for Production
 
