@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useApiProvider } from "@/hooks/use-api-provider";
 import { GoogleAuth } from "@/components/auth/google-auth";
 import { AnonymousPage } from "@/components/auth/anonymous-page";
 import { Sidebar } from "./sidebar";
@@ -10,17 +11,9 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-export function AppShell({ children }: AppShellProps) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
-  if (!isAuthenticated) {
-    return (
-      <>
-        <GoogleAuth />
-        <AnonymousPage />
-      </>
-    );
-  }
+function AuthenticatedShell({ children }: { children: ReactNode }) {
+  // Initialize course schedule provider globally so it's available on all pages
+  useApiProvider();
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,4 +36,19 @@ export function AppShell({ children }: AppShellProps) {
       </div>
     </div>
   );
+}
+
+export function AppShell({ children }: AppShellProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <GoogleAuth />
+        <AnonymousPage />
+      </>
+    );
+  }
+
+  return <AuthenticatedShell>{children}</AuthenticatedShell>;
 }
