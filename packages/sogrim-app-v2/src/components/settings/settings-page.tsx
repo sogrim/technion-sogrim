@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   User,
   Palette,
@@ -38,6 +39,7 @@ import { ResetUserDialog } from "./reset-user-dialog";
 import { CatalogWizard } from "@/components/common/catalog-wizard";
 
 export function SettingsPage() {
+  const navigate = useNavigate();
   const userInfo = useAuthStore((s) => s.userInfo);
   const theme = useUiStore((s) => s.theme);
   const toggleTheme = useUiStore((s) => s.toggleTheme);
@@ -232,9 +234,9 @@ export function SettingsPage() {
                   </div>
                   <CatalogWizard
                     compact
-                    onCatalogSelected={(catalogId) => {
+                    onCatalogSelected={() => {
                       setShowCatalogWizard(false);
-                      setToast({ message: "הקטלוג עודכן בהצלחה. סטטוס התואר יחושב מחדש.", type: "success" });
+                      navigate({ to: "/planner" });
                     }}
                     onError={(msg) => setToast({ message: msg, type: "error" })}
                   />
