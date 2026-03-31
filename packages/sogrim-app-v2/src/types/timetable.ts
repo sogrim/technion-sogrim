@@ -1,5 +1,5 @@
-/** Day of week: Sunday=0 through Thursday=4 */
-export type Day = 0 | 1 | 2 | 3 | 4;
+/** Day of week: Sunday=0 through Friday=5 */
+export type Day = 0 | 1 | 2 | 3 | 4 | 5;
 
 export type LessonType = "lecture" | "tutorial" | "lab" | "seminar";
 

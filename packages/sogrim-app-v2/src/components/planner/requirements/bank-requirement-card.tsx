@@ -1,34 +1,63 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, Ban, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { CourseBankReq, CourseStatus } from "@/types/api";
 
 interface BankRequirementCardProps {
   bank: CourseBankReq;
   courses: CourseStatus[];
+  onIgnoreCourse: (courseId: string, action: "לא רלוונטי" | "לא הושלם") => void;
+  includeInProgress: boolean;
 }
 
 export function BankRequirementCard({
   bank,
   courses,
+  onIgnoreCourse,
+  includeInProgress,
 }: BankRequirementCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const percentage =
-    bank.credit_requirement > 0
-      ? Math.min(
-          100,
-          Math.round(
-            (bank.credit_completed / bank.credit_requirement) * 100
-          )
-        )
-      : 0;
+  const isAllBank = bank.bank_rule_name === "all";
+
+  const bankCourses = courses.filter((cs) => cs.type === bank.course_bank_name);
+
+  // When includeInProgress, add in-progress courses' credits/count to the backend totals
+  const inProgressExtra = includeInProgress
+    ? bankCourses.filter((cs) => cs.state === "בתהליך")
+    : [];
+  const extraCredit = inProgressExtra.reduce(
+    (s, cs) => s + cs.course.credit,
+    0,
+  );
+  const extraCount = inProgressExtra.length;
+
+  const effectiveCreditCompleted = bank.credit_completed + extraCredit;
+  const effectiveCourseCompleted = bank.course_completed + extraCount;
+
+  const percentage = (() => {
+    if (bank.credit_requirement > 0) {
+      return Math.min(
+        100,
+        Math.round((effectiveCreditCompleted / bank.credit_requirement) * 100),
+      );
+    }
+    if (bank.course_requirement > 0) {
+      return Math.min(
+        100,
+        Math.round((effectiveCourseCompleted / bank.course_requirement) * 100),
+      );
+    }
+    return bank.completed ? 100 : 0;
+  })();
 
   const isCompleted = bank.completed ?? percentage >= 100;
-
-  const bankCourses = courses.filter(
-    (cs) => cs.type === bank.course_bank_name
-  );
 
   return (
     <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
@@ -83,13 +112,13 @@ export function BankRequirementCard({
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
-                {"השלמת"} {bank.credit_completed}{" "}
-                {"מתוך"} {bank.credit_requirement}{" "}
-                {"נק״ז"}
+                {bank.credit_requirement > 0
+                  ? `השלמת ${effectiveCreditCompleted} מתוך ${bank.credit_requirement} נק״ז`
+                  : "אין דרישת נק״ז בקטגוריה זו"}
               </span>
               {bank.course_requirement > 0 && (
                 <span>
-                  {bank.course_completed}/{bank.course_requirement}{" "}
+                  {effectiveCourseCompleted}/{bank.course_requirement}{" "}
                   {"קורסים"}
                 </span>
               )}
@@ -108,12 +137,33 @@ export function BankRequirementCard({
                 className="flex items-center justify-between text-sm py-1"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-foreground truncate">
-                    {cs.course.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    ({cs.course.credit} {"נק״ז"})
-                  </span>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2 min-w-0 cursor-default">
+                          <span className="text-foreground truncate">
+                            {cs.course.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            ({cs.course.credit} {"נק״ז"})
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>מס׳ קורס {cs.course._id}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  {cs.additional_msg && (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-default shrink-0">
+                            <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>{cs.additional_msg}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-muted-foreground text-xs">
@@ -133,6 +183,38 @@ export function BankRequirementCard({
                   >
                     {cs.state}
                   </Badge>
+                  {isAllBank && (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          {cs.state === "לא רלוונטי" ? (
+                            <button
+                              onClick={() =>
+                                onIgnoreCourse(cs.course._id, "לא הושלם")
+                              }
+                              className="p-0.5 rounded hover:bg-background transition-colors text-green-600"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                onIgnoreCourse(cs.course._id, "לא רלוונטי")
+                              }
+                              className="p-0.5 rounded hover:bg-background transition-colors text-muted-foreground hover:text-foreground"
+                            >
+                              <Ban className="h-4 w-4" />
+                            </button>
+                          )}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {cs.state === "לא רלוונטי"
+                            ? "בטל התעלמות מקורס זה"
+                            : "התעלם מקורס זה בחישוב"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
               </div>
             ))}

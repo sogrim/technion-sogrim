@@ -61,17 +61,10 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
     }
   });
 
-  // Find incomplete banks
-  const incompleteBanks = course_bank_requirements.filter(
-    (bank) =>
-      !(bank.completed ?? bank.credit_completed >= bank.credit_requirement)
-  );
-
   const hasOverflow = overflow_msgs.length > 0;
   const hasWarnings = bankMessages.length > 0;
-  const hasIncomplete = incompleteBanks.length > 0;
 
-  if (!hasOverflow && !hasWarnings && !hasIncomplete) {
+  if (!hasOverflow && !hasWarnings) {
     return null;
   }
 
@@ -111,29 +104,6 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
                   {item.bankName}:
                 </span>{" "}
                 <span className="text-foreground">{item.message}</span>
-              </li>
-            ))}
-          </ul>
-        </AccordionSection>
-      )}
-
-      {hasIncomplete && (
-        <AccordionSection
-          title={"\u05D3\u05E8\u05D9\u05E9\u05D5\u05EA \u05DC\u05D4\u05E9\u05DC\u05DE\u05D4"}
-          icon={<AlertTriangle className="h-4 w-4 text-[#d66563]" />}
-          count={incompleteBanks.length}
-        >
-          <ul className="space-y-2">
-            {incompleteBanks.map((bank) => (
-              <li
-                key={bank.course_bank_name}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="text-foreground">{bank.course_bank_name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {bank.credit_completed}/{bank.credit_requirement}{" "}
-                  {"\u05E0\u05E7\u05F4\u05D6"}
-                </span>
               </li>
             ))}
           </ul>

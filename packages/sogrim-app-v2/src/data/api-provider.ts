@@ -159,7 +159,7 @@ function toSchedule(sap: SapCourseDetails): CourseSchedule {
 
     for (const event of sapGroup.events) {
       if (event.day == null || !event.start_time || !event.end_time) continue;
-      if (event.day > 4) continue; // Skip Friday/Saturday
+      if (event.day > 5) continue; // Skip Saturday
 
       const kind = mapKind(event.kind);
       if (!byKind.has(kind)) byKind.set(kind, []);
@@ -310,11 +310,19 @@ export class ApiProvider implements CourseScheduleProvider {
   }
 
   private async fetchIndex(): Promise<void> {
+    if (!this.year || !this.semesterCode) {
+      this.index = [];
+      return;
+    }
     this.indexLoading = true;
     try {
       const indexResp = await fetch(
         `${API_URL}/courses/${this.year}/${this.semesterCode}/index`,
       );
+      if (!indexResp.ok) {
+        this.index = [];
+        return;
+      }
       this.index = await indexResp.json();
     } finally {
       this.indexLoading = false;

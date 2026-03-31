@@ -7,6 +7,7 @@ export const DAY_NAMES: Record<Day, string> = {
   2: "שלישי",
   3: "רביעי",
   4: "חמישי",
+  5: "שישי",
 };
 
 /** Short day labels for pills */
@@ -16,6 +17,7 @@ export const DAY_LABELS: Record<Day, string> = {
   2: "ג׳",
   3: "ד׳",
   4: "ה׳",
+  5: "ו׳",
 };
 
 export const LESSON_TYPE_NAMES: Record<LessonType, string> = {
@@ -113,7 +115,7 @@ export function getTimeLabels(startHour?: number, endHour?: number): string[] {
 }
 
 /** All days in order */
-export const DAYS: Day[] = [0, 1, 2, 3, 4];
+export const DAYS: Day[] = [0, 1, 2, 3, 4, 5];
 
 /** Generate a unique draft ID */
 export function generateDraftId(): string {
