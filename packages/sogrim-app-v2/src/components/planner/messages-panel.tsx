@@ -131,8 +131,11 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
               >
                 <span className="text-foreground">{bank.course_bank_name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {bank.credit_completed}/{bank.credit_requirement}{" "}
-                  {"\u05E0\u05E7\u05F4\u05D6"}
+                  {bank.credit_requirement > 0 &&
+                    `${bank.credit_completed}/${bank.credit_requirement} נק״ז`}
+                  {bank.credit_requirement > 0 && bank.course_requirement > 0 && " | "}
+                  {bank.course_requirement > 0 &&
+                    `${bank.course_completed}/${bank.course_requirement} קורסים`}
                 </span>
               </li>
             ))}
