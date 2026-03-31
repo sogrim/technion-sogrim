@@ -9,8 +9,7 @@ export function ModifiedToast() {
 
   return (
     <div
-      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm text-foreground rounded-lg mb-2 md:rounded-none md:-mx-6 md:-mt-6 md:px-6 md:mb-0"
-      style={{ backgroundColor: "#e8dff5" }}
+      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg mb-2 md:rounded-none md:-mx-6 md:-mt-6 md:px-6 md:mb-0 bg-[#e8dff5] text-[#3b2069] dark:bg-[#2d1f4e] dark:text-[#d4c4f0]"
     >
       <span className="text-center font-medium text-xs md:text-sm">
         {"סטטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר."}
@@ -35,7 +34,7 @@ export function ModifiedToast() {
       <div className="relative">
         <button
           onClick={() => setShowInfo(!showInfo)}
-          className="flex items-center gap-1 text-[10px] md:text-xs text-[#7c5cbf] hover:text-[#6a4da6] underline"
+          className="flex items-center gap-1 text-[10px] md:text-xs text-[#7c5cbf] hover:text-[#6a4da6] dark:text-[#b69df0] dark:hover:text-[#c9b4f5] underline"
           type="button"
         >
           <Info className="h-3 w-3" />
