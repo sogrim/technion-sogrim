@@ -32,7 +32,7 @@ pub fn credit_overflow_msg(overflow: f32, from: &str, to: &str) -> String {
 }
 
 pub fn credit_overflow_detailed_msg(from: &str, to: &str) -> String {
-    format!("הנקודות של קורסים ב {from} נספרות תחת {to}")
+    format!("הנקודות של קורסים ב{from} נספרות תחת {to}")
 }
 
 pub fn courses_overflow_msg(overflow: f32, from: &str, to: &str) -> String {
