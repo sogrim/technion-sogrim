@@ -26,11 +26,12 @@ jobs:
       - name: Write env to VM
         run: |
           ssh ${{ env.VM_USER }}@${{ secrets.ORACLE_VM_IP }} "cat > ~/sogrim/packages/server/.env" << 'ENVFILE'
-          IP="0.0.0.0"
-          PORT="5545"
-          URI="${{ secrets.MONGO_URI_DEV }}"
-          CLIENT_ID="${{ secrets.CLIENT_ID }}"
-          PROFILE="release"
+          SOGRIM_URI="${{ secrets.MONGO_URI_DEV }}"
+          SOGRIM_CLIENT_ID="${{ secrets.CLIENT_ID }}"
+          SOGRIM_PORT="5545"
+          SOGRIM_PROFILE="release"
+          SOGRIM_CACHE_DIR="/home/opc/cache"
+          SOGRIM_STATIC_DIR="/home/opc/sogrim/packages/sogrim-app-v2/dist"
           ENVFILE
 
       - name: Deploy to VM
@@ -48,7 +49,20 @@ jobs:
 
           echo "Deploying $(git log --oneline -1)"
 
-          # Rebuild the server (.env provides compile-time secrets)
+          # Source env vars (needed for SOGRIM_CLIENT_ID during frontend build)
+          set -a
+          source packages/server/.env
+          set +a
+
+          # Build frontend
+          export VITE_GOOGLE_CLIENT_ID="$SOGRIM_CLIENT_ID"
+          export VITE_API_URL="/api"
+          cd packages/sogrim-app-v2
+          ~/.bun/bin/bun install --frozen-lockfile
+          ~/.bun/bin/bun run build
+          cd ../..
+
+          # Rebuild server
           source ~/.cargo/env
           cd packages/server
           cargo build --release

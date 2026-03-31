@@ -34,33 +34,57 @@ use super::admins::{self, ComputeDegreeStatusPayload};
 pub async fn test_get_all_catalogs() {
     // Create authorization header
     let jwt = fake_jwt();
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/students",
-            Router::new().route("/catalogs", get(students::get_catalogs)),
+            Router::new()
+                .route("/login", get(students::login))
+                .route("/catalogs", get(students::get_catalogs)),
         )
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))
         .layer(Extension(Permissions::Student))
         .layer(Extension(db.clone()))
         .layer(Extension(decoder));
 
-    // Create and send request
+    // Ensure test user exists (login creates or updates the user)
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/students/login")
+        .header("authorization", jwt.clone())
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let status = resp.status();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert!(
+        status.is_success(),
+        "login failed with status {status} body: {}",
+        String::from_utf8_lossy(&body)
+    );
+
+    // Create and send request for catalogs
     let req = Request::builder()
         .method(Method::GET)
         .uri("/students/catalogs")
         .header("authorization", jwt.clone())
         .body(Body::empty())
         .unwrap();
-
     let resp = app.clone().oneshot(req).await.unwrap();
-    assert!(resp.status().is_success());
-
-    // Check for valid json response
+    let status = resp.status();
     let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await
         .unwrap();
+    assert!(
+        status.is_success(),
+        "catalogs failed with status {status} body: {}",
+        String::from_utf8_lossy(&body)
+    );
+
+    // Check for valid json response
     let vec_catalogs: Vec<DisplayCatalog> = serde_json::from_slice(&body).unwrap();
     assert!(vec_catalogs.len() >= 8);
 }
@@ -70,8 +94,8 @@ async fn test_students_api_full_flow() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/students",
@@ -96,10 +120,15 @@ async fn test_students_api_full_flow() {
         .body(Body::empty())
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
-    assert!(resp.status().is_success());
+    let status = resp.status();
     let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await
         .unwrap();
+    assert!(
+        status.is_success(),
+        "login failed with status {status} body: {}",
+        String::from_utf8_lossy(&body)
+    );
     let user: User = serde_json::from_slice(&body).unwrap();
     let mut user_details: UserDetails = user.details;
 
@@ -111,10 +140,15 @@ async fn test_students_api_full_flow() {
         .body(Body::empty())
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
-    assert!(resp.status().is_success());
+    let status = resp.status();
     let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await
         .unwrap();
+    assert!(
+        status.is_success(),
+        "catalogs failed with status {status} body: {}",
+        String::from_utf8_lossy(&body)
+    );
     let catalogs: Vec<DisplayCatalog> = serde_json::from_slice(&body).unwrap();
 
     // put /students/catalog
@@ -170,7 +204,7 @@ async fn test_students_api_full_flow() {
 #[tokio::test]
 async fn test_compute_in_progress() {
     // Init env and app
-    let db = Db::new().await;
+    let db = Db::from_test_env().await;
     let app = Router::new()
         .nest(
             "/students",
@@ -245,8 +279,8 @@ async fn test_owner_api_courses() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/owners",
@@ -333,8 +367,8 @@ async fn test_owner_api_catalogs() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/owners",
@@ -366,7 +400,7 @@ async fn test_owner_api_catalogs() {
 #[tokio::test]
 async fn test_student_login_no_sub() {
     // Init env and app
-    let db = Db::new().await;
+    let db = Db::from_test_env().await;
     let app = Router::new()
         .nest("/students", Router::new().route("/login", get(login)))
         .layer(Extension(db.clone()));
@@ -388,7 +422,7 @@ async fn test_student_login_no_sub() {
 async fn test_students_api_no_catalog() {
     // *** IMPORTANT: This should NEVER happen, but the tests are added anyway for coverage
     // Init env and app
-    let db = Db::new().await;
+    let db = Db::from_test_env().await;
     let app = Router::new()
         .nest(
             "/students",
@@ -419,8 +453,8 @@ async fn test_admins_parse_and_compute_api() {
     // Create authorization header
     let jwt = fake_jwt();
     // Init env and app
-    let db = Db::new().await;
-    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1);
+    let db = Db::from_test_env().await;
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
     let app = Router::new()
         .nest(
             "/admins",
@@ -465,7 +499,7 @@ async fn test_admins_parse_and_compute_api() {
 #[tokio::test]
 async fn test_unauthorized_path() {
     // Init env and app
-    let db = Db::new().await;
+    let db = Db::from_test_env().await;
     let app = Router::new()
         .nest(
             "/admins",

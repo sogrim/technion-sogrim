@@ -1,5 +1,6 @@
 .env
 .DS_Store
+__pycache__/
 package-lock.json
 .vscode/
 .idea/

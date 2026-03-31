@@ -1,47 +1,53 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use anyhow::Context;
 use axum::{
     extract::Extension,
     routing::{delete, get, post, put},
     Router,
 };
+use log::info;
+use sogrim_server::config::Config;
+use tower_http::services::{ServeDir, ServeFile};
+
+// Re-export library modules so server-specific submodules can use crate:: paths
+pub use sogrim_server::{consts, core, db, error, resources};
+
+mod api;
+mod disk_cache;
+mod middleware;
+
 use db::Db;
 use disk_cache::DiskCourseCache;
 use error::AppError;
-use http::StatusCode;
-use log::info;
 use middleware::{auth, cors, jwt_decoder::JwtDecoder, logger};
 use resources::user::Permissions;
-
-use crate::config::CONFIG;
-
-mod api;
-mod config;
-mod consts;
-mod core;
-mod db;
-mod disk_cache;
-mod error;
-mod middleware;
-mod resources;
 
 const CACHE_DIR_ENV: &str = "SOGRIM_CACHE_DIR";
 const DEFAULT_CACHE_DIR: &str = "/home/opc/cache";
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
+    let _ = dotenvy::dotenv();
+
     let now = std::time::Instant::now();
     // Initialize logger
     logger::init_env_logger();
     info!(target: "server", "Initialized logger in {}μs", now.elapsed().as_micros());
 
+    // Load configuration from environment variables
+    let config = Config::from_env().context("failed to load configuration")?;
+    let is_debug = config.profile == "debug";
+
     // Initialize DB client
-    let db = Db::new().await;
+    let db = Db::connect(&config.uri, &config.profile)
+        .await
+        .context("failed to connect to MongoDB")?;
     info!(target: "server", "Initialized DB client in {}ms", now.elapsed().as_millis());
 
     // Initialize JWT decoder
-    let jwt_decoder = JwtDecoder::new().await;
+    let jwt_decoder = JwtDecoder::new(config.client_id).await;
     info!(target: "server", "Initialized JWT decoder in {}ms", now.elapsed().as_millis());
 
     // Initialize disk-backed course cache
@@ -55,13 +61,6 @@ async fn main() -> std::io::Result<()> {
 
     // Public routes (no auth required)
     let public_routes = Router::new()
-        .route(
-            "/healthcheck",
-            get(|Extension(db): Extension<Db>| async move {
-                db.ping().await?;
-                Result::<StatusCode, AppError>::Ok(StatusCode::OK)
-            }),
-        )
         .route("/semesters", get(api::courses::get_semesters))
         .route(
             "/courses/{year}/{semester}/index",
@@ -111,17 +110,50 @@ async fn main() -> std::io::Result<()> {
         .nest("/owners", owner_routes)
         .layer(axum::middleware::from_fn(auth::authenticate));
 
+    // All API routes nested under /api
+    let api_routes = Router::new().merge(public_routes).merge(auth_routes);
+
     let app = Router::new()
-        .merge(public_routes)
-        .merge(auth_routes)
+        .route(
+            "/healthcheck",
+            get(|Extension(db): Extension<Db>| async move {
+                db.ping().await?;
+                Result::<_, AppError>::Ok(http::StatusCode::OK)
+            }),
+        )
+        .nest("/api", api_routes)
         .layer(axum::middleware::from_fn(logger::log_requests))
-        .layer(cors::cors())
+        .layer(cors::cors(is_debug))
         .layer(Extension(db))
         .layer(Extension(course_cache))
         .layer(Extension(jwt_decoder));
 
-    let addr = format!("{}:{}", CONFIG.ip, CONFIG.port);
+    // Optionally serve static frontend files with SPA fallback
+    let app = if let Some(ref static_dir) = config.static_dir {
+        if !static_dir.is_dir() {
+            anyhow::bail!(
+                "SOGRIM_STATIC_DIR={} does not exist or is not a directory",
+                static_dir.display()
+            );
+        }
+        let index = static_dir.join("index.html");
+        if !index.is_file() {
+            log::warn!(
+                target: "server",
+                "index.html not found in SOGRIM_STATIC_DIR={}; SPA fallback will not work",
+                static_dir.display()
+            );
+        }
+        info!(target: "server", "Serving static files from {}", static_dir.display());
+        let serve = ServeDir::new(static_dir).not_found_service(ServeFile::new(index));
+        app.fallback_service(serve)
+    } else {
+        info!(target: "server", "SOGRIM_STATIC_DIR not set; not serving frontend files");
+        app
+    };
+
+    let addr = format!("0.0.0.0:{}", config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     info!(target: "server", "Listening on {addr}");
-    axum::serve(listener, app).await
+    Ok(axum::serve(listener, app).await?)
 }

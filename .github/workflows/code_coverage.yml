@@ -8,10 +8,10 @@ on:
 name: Code Coverage
 
 env:
-  IP: "0.0.0.0"
-  PORT: ${{secrets.PORT}}
-  URI: ${{secrets.MONGO_URI_DEV}}
-  CLIENT_ID: ${{secrets.CLIENT_ID}}
+  SOGRIM_URI: ${{secrets.MONGO_URI_DEV}}
+  SOGRIM_CLIENT_ID: ${{secrets.CLIENT_ID}}
+  SOGRIM_PORT: ${{secrets.PORT}}
+  SOGRIM_PROFILE: debug
 
 jobs:
   test:

@@ -11,7 +11,7 @@ use super::*;
 async fn cors_allows_localhost_origin_in_debug_profile() {
     let app = Router::new()
         .route("/", get(|| async { StatusCode::OK }))
-        .layer(cors());
+        .layer(cors(true));
 
     let req = Request::builder()
         .method(Method::OPTIONS)
@@ -29,7 +29,7 @@ async fn cors_allows_localhost_origin_in_debug_profile() {
 async fn cors_does_not_allow_non_localhost_origin_in_debug_profile() {
     let app = Router::new()
         .route("/", get(|| async { StatusCode::OK }))
-        .layer(cors());
+        .layer(cors(true));
 
     let req = Request::builder()
         .method(Method::OPTIONS)

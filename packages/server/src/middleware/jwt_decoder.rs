@@ -4,14 +4,15 @@ use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::Deserialize;
 use tokio::sync::Mutex;
 
-use crate::{config::CONFIG, error::AppError};
+use crate::error::AppError;
 
 use super::key_provider::GoogleKeyProvider;
 
 #[cfg(test)]
 use super::key_provider::RsaKey;
 
-pub type Sub = String;
+pub use sogrim_server::resources::user::Sub;
+
 #[derive(Default, Debug, Deserialize)]
 pub struct Jwt {
     // Identifier of the user, guaranteed to be unique by Google.
@@ -25,13 +26,14 @@ pub struct JwtDecoder {
     /// it needs to refetch keys from Google when they expire, and update the cache, which changes the internal state.
     /// Therefore, we must wrap the provider in an atomically-reference-counted (`Arc`) mutex.
     key_provider: Arc<Mutex<GoogleKeyProvider>>,
+    client_id: String,
 }
 
 impl JwtDecoder {
-    // Set up a jwt parser with actual google client id
-    pub async fn new() -> Self {
+    pub async fn new(client_id: String) -> Self {
         JwtDecoder {
             key_provider: Arc::new(Mutex::new(GoogleKeyProvider::new().await)),
+            client_id,
         }
     }
 
@@ -44,7 +46,7 @@ impl JwtDecoder {
         let (n, e) = key.components();
         let decoding_key = DecodingKey::from_rsa_components(n, e)?;
         let mut validation = Validation::new(Algorithm::RS256);
-        validation.set_audience(&[CONFIG.client_id.to_owned()]);
+        validation.set_audience(std::slice::from_ref(&self.client_id));
         validation.set_issuer(&[
             "https://accounts.google.com".to_string(),
             "accounts.google.com".to_string(),
@@ -54,9 +56,10 @@ impl JwtDecoder {
     }
 
     #[cfg(test)]
-    pub fn mock(rsa_key: &'static RsaKey) -> Self {
+    pub fn mock(rsa_key: &'static RsaKey, client_id: &str) -> Self {
         JwtDecoder {
             key_provider: Arc::new(Mutex::new(GoogleKeyProvider::mock(rsa_key))),
+            client_id: client_id.to_owned(),
         }
     }
 }
