@@ -61,7 +61,12 @@ export function PlannerPage() {
   const details = userState?.details;
   const registrationState = getRegistrationState(details);
 
-  const courseStatuses = details?.degree_status.course_statuses ?? [];
+  const rawCourseStatuses = details?.degree_status.course_statuses ?? [];
+  const courseStatuses = rawCourseStatuses.map((cs) =>
+    cs.course.credit === 0 && cs.grade === "פטור ללא ניקוד"
+      ? { ...cs, semester: null }
+      : cs
+  );
   const bankNames = details?.catalog?.course_bank_names ?? [];
 
   const hasNullSemester = courseStatuses.some((cs) => cs.semester === null);
