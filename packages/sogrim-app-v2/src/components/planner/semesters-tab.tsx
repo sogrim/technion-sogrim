@@ -12,7 +12,6 @@ import { SemesterPanel } from "./semester-panel";
 import type { CourseStatus } from "@/types/api";
 import type { RowData, SemesterOption } from "@/types/domain";
 
-const SEMESTER_NULL_LABEL = "ללא סמסטר";
 
 interface SemestersTabProps {
   courseStatuses: CourseStatus[];
@@ -83,14 +82,9 @@ export function SemestersTab({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const addMenuRef = useRef<HTMLDivElement>(null);
 
-  const hasNullSemester = courseStatuses.some(
-    (cs) =>
-      cs.semester === null &&
-      (cs.grade === "פטור ללא ניקוד" || cs.grade === "פטור עם ניקוד")
-  );
   const courseSemesters = getAllSemesters(courseStatuses);
   // Merge course-based semesters with extra (empty) semesters from parent
-  const semesters = useMemo(() => {
+  const tabs = useMemo(() => {
     const merged = new Set([...courseSemesters, ...extraSemesters]);
     return Array.from(merged).sort((a, b) => {
       const aNum = parseSemesterOrder(a);
@@ -98,21 +92,7 @@ export function SemestersTab({
       return aNum - bNum;
     });
   }, [courseSemesters, extraSemesters]);
-  const tabs = useMemo(
-    () => (hasNullSemester ? [null, ...semesters] : semesters),
-    [hasNullSemester, semesters]
-  );
   const currentSemester = tabs[currentSemesterIdx] ?? null;
-
-  // Auto-select the first real semester if current selection is the null tab
-  useEffect(() => {
-    if (currentSemester === null && semesters.length > 0) {
-      const firstRealIdx = hasNullSemester ? 1 : 0;
-      if (firstRealIdx < tabs.length) {
-        onSelectSemester(firstRealIdx);
-      }
-    }
-  }, [tabs, currentSemester, semesters.length, hasNullSemester, onSelectSemester]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -131,11 +111,11 @@ export function SemestersTab({
 
   const handleAdd = useCallback(
     (type: SemesterOption) => {
-      const name = getNextSemesterName(semesters, type);
+      const name = getNextSemesterName(tabs, type);
       onAddSemester(name);
       setShowAddMenu(false);
     },
-    [semesters, onAddSemester]
+    [tabs, onAddSemester]
   );
 
   const handleDelete = useCallback(() => {
@@ -147,7 +127,7 @@ export function SemestersTab({
   }, [tabs, currentSemesterIdx, onDeleteSemester]);
 
   // Empty state - no semesters at all
-  if (semesters.length === 0 && !hasNullSemester) {
+  if (tabs.length === 0) {
     return <EmptyState onAddSemester={onAddSemester} />;
   }
 
@@ -173,9 +153,7 @@ export function SemestersTab({
                   : undefined
               }
             >
-              {semester === null
-                ? SEMESTER_NULL_LABEL
-                : formatSemesterName(semester)}
+              {formatSemesterName(semester)}
             </button>
           ))}
         </div>
