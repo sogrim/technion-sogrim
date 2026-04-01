@@ -10,6 +10,19 @@ use crate::db::Resource;
 
 pub type CourseId = String;
 
+const NON_STANDARD_PREFIXES: [&str; 4] = ["51", "52", "61", "97"];
+
+/// Convert a 6-digit course ID to its canonical 8-digit format.
+/// Standard (most courses):     ABCDEF → 0ABC0DEF
+/// Non-standard (faculties 51, 52, 61, 97): ABCDEF → AB0C0DEF
+pub fn to_8digit(id: &str) -> String {
+    if NON_STANDARD_PREFIXES.iter().any(|p| id.starts_with(p)) {
+        format!("{}0{}0{}", &id[..2], &id[2..3], &id[3..])
+    } else {
+        format!("0{}0{}", &id[..3], &id[3..])
+    }
+}
+
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct Course {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
