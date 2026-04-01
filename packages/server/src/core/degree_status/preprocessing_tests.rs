@@ -157,3 +157,148 @@ fn preprocess_removes_irrelevant_courses_from_catalog_mapping() {
     assert!(catalog.course_to_bank.contains_key("dup"));
     assert_eq!(degree_status.course_statuses[0].course.id, "dup");
 }
+
+// ---- 6-digit → 8-digit normalization tests ----
+
+#[test]
+fn preprocess_normalizes_standard_6digit_course_id_to_8digit() {
+    // Standard: ABCDEF → 0ABC0DEF
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![cs(
+            "234107",
+            Some(CourseState::Complete),
+            true,
+            Some("חורף_1"),
+            Some("hova"),
+        )],
+        ..Default::default()
+    };
+    let mut catalog = make_catalog();
+
+    degree_status.preprocess(&mut catalog, &HashMap::new());
+
+    assert_eq!(degree_status.course_statuses[0].course.id, "02340107");
+}
+
+#[test]
+fn preprocess_normalizes_nonstandard_6digit_course_id_to_8digit() {
+    // Non-standard (prefix 51): ABCDEF → AB0C0DEF
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![cs(
+            "514003",
+            Some(CourseState::Complete),
+            true,
+            Some("חורף_1"),
+            Some("hova"),
+        )],
+        ..Default::default()
+    };
+    let mut catalog = make_catalog();
+
+    degree_status.preprocess(&mut catalog, &HashMap::new());
+
+    assert_eq!(degree_status.course_statuses[0].course.id, "51040003");
+}
+
+#[test]
+fn preprocess_does_not_modify_already_8digit_course_id() {
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![cs(
+            "02340107",
+            Some(CourseState::Complete),
+            true,
+            Some("חורף_1"),
+            Some("hova"),
+        )],
+        ..Default::default()
+    };
+    let mut catalog = make_catalog();
+
+    degree_status.preprocess(&mut catalog, &HashMap::new());
+
+    assert_eq!(degree_status.course_statuses[0].course.id, "02340107");
+}
+
+#[test]
+fn preprocess_normalizes_catalog_6digit_keys_to_8digit() {
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![cs(
+            "02340107",
+            Some(CourseState::Complete),
+            true,
+            Some("חורף_1"),
+            Some("hova"),
+        )],
+        ..Default::default()
+    };
+    let mut catalog = make_catalog();
+    catalog
+        .course_to_bank
+        .insert("234107".to_string(), "hova".to_string());
+
+    degree_status.preprocess(&mut catalog, &HashMap::new());
+
+    assert!(!catalog.course_to_bank.contains_key("234107"));
+    assert!(catalog.course_to_bank.contains_key("02340107"));
+}
+
+#[test]
+fn preprocess_normalizes_catalog_replacements_keys_and_values() {
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![cs(
+            "02340107",
+            Some(CourseState::Complete),
+            true,
+            Some("חורף_1"),
+            Some("hova"),
+        )],
+        ..Default::default()
+    };
+    let mut catalog = make_catalog();
+    catalog
+        .catalog_replacements
+        .insert("234107".to_string(), vec!["514003".to_string()]);
+
+    degree_status.preprocess(&mut catalog, &HashMap::new());
+
+    assert!(!catalog.catalog_replacements.contains_key("234107"));
+    let values = catalog.catalog_replacements.get("02340107").unwrap();
+    assert_eq!(values, &vec!["51040003".to_string()]);
+}
+
+#[test]
+fn preprocess_normalizes_all_nonstandard_prefixes() {
+    // Verify each non-standard prefix (52, 61, 97) converts correctly
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![
+            cs("521234", Some(CourseState::Complete), true, Some("חורף_1"), None),
+            cs("611234", Some(CourseState::Complete), true, Some("אביב_1"), None),
+            cs("971234", Some(CourseState::Complete), true, Some("קיץ_1.5"), None),
+        ],
+        ..Default::default()
+    };
+    let mut catalog = make_catalog();
+
+    degree_status.preprocess(&mut catalog, &HashMap::new());
+
+    assert_eq!(degree_status.course_statuses[0].course.id, "52010234");
+    assert_eq!(degree_status.course_statuses[1].course.id, "61010234");
+    assert_eq!(degree_status.course_statuses[2].course.id, "97010234");
+}
+
+#[test]
+fn preprocess_normalizes_mixed_6digit_and_8digit_courses() {
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![
+            cs("234107", Some(CourseState::Complete), true, Some("חורף_1"), None),
+            cs("02360218", Some(CourseState::Complete), true, Some("אביב_1"), None),
+        ],
+        ..Default::default()
+    };
+    let mut catalog = make_catalog();
+
+    degree_status.preprocess(&mut catalog, &HashMap::new());
+
+    assert_eq!(degree_status.course_statuses[0].course.id, "02340107");
+    assert_eq!(degree_status.course_statuses[1].course.id, "02360218");
+}
