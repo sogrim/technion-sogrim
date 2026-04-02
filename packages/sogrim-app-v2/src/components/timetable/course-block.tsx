@@ -30,7 +30,7 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
   }, [event.colorIndex, event.isCustom, event.customColor, isDark]);
 
   const typeLabel = LESSON_TYPE_NAMES[event.type];
-  const groupNum = event.groupId.split("-")[0];
+  const groupNum = event.groupId.split("-")[0].replace(/^0+/, "") || "0";
   const location =
     [event.building, event.room].filter(Boolean).join(" ") || undefined;
 
@@ -50,18 +50,19 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
     <div
       onClick={handleClick}
       className={cn(
-        "rounded-md cursor-pointer h-full overflow-hidden",
-        "flex flex-col items-center justify-center text-center",
-        "transition-all duration-150 px-1",
+        "rounded-sm cursor-pointer h-full overflow-hidden",
+        "flex flex-col items-start justify-start text-start",
+        "transition-all duration-150 p-0.5",
         isPreview
-          ? "border-2 hover:border-[3px]"
-          : "border-2 hover:brightness-95 dark:hover:brightness-110",
+          ? "border hover:border-2"
+          : "border hover:brightness-95 dark:hover:brightness-110",
         event.isCustom && "border-dashed",
         event.hasConflict && "ring-2 ring-destructive ring-offset-1 dark:ring-offset-background",
       )}
       style={{
         ...style,
-        fontSize: compact ? "calc(0.05em + 1vh)" : "calc(0.1em + 1.3vh)",
+        fontSize: compact ? "calc(0.05em + 0.9vh)" : "calc(0.1em + 1.1vh)",
+        lineHeight: 1.2,
         backgroundColor: isPreview
           ? (isDark ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.85)")
           : "var(--course-bg)",
@@ -77,23 +78,28 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
       ].filter(Boolean).join(" · ")}
     >
       {event.isCustom && !compact && (
-        <Star className="absolute top-1 left-1 h-2.5 w-2.5 opacity-60" />
+        <Star className="absolute top-0.5 left-0.5 h-2 w-2 opacity-60" />
       )}
 
-      {/* Course name */}
-      <div className="font-bold leading-tight w-full">
-        {event.courseName}
-      </div>
+      {!event.isCustom ? (
+        <>
+          {/* Line 1: type + group number (e.g. "הרצאה 11" or "נבחרת טניס נשים 17") */}
+          <div className="font-bold w-full break-words">
+            {event.courseName} {groupNum}
+          </div>
 
-      {/* Metadata: type+group, building, instructor */}
-      {!event.isCustom && (
-        <div className={cn(
-          "leading-tight w-full",
-          isPreview ? "font-medium" : "opacity-90",
-        )} style={{ fontSize: "0.85em" }}>
-          <div>{typeLabel} {groupNum}</div>
-          {location && <div>{location}</div>}
-          {event.instructor && <div>{event.instructor}</div>}
+          {/* Line 2+: building+room, instructor */}
+          <div className={cn(
+            "w-full break-words",
+            isPreview ? "font-medium" : "opacity-90",
+          )} style={{ fontSize: "0.85em" }}>
+            {location && <div>{location}</div>}
+            {event.instructor && <div>{event.instructor}</div>}
+          </div>
+        </>
+      ) : (
+        <div className="font-bold w-full break-words">
+          {event.courseName}
         </div>
       )}
     </div>

@@ -6,6 +6,7 @@ import type { CourseSchedule } from "@/types/timetable";
 import type { RowData } from "@/types/domain";
 import { Plus, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dropdown } from "@/components/ui/dropdown";
 import { Toast } from "@/components/ui/toast";
 
 interface PlannerCourseSearchProps {
@@ -144,20 +145,13 @@ export function PlannerCourseSearch({
             ציון
           </label>
           {isSemester0 ? (
-            <select
+            <Dropdown
               value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
-            >
-              <option value="">--</option>
-              {COURSE_GRADE_OPTIONS.filter((opt) =>
+              onChange={setGrade}
+              options={COURSE_GRADE_OPTIONS.filter((opt) =>
                 opt.includes("פטור")
-              ).map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+              ).map((opt) => ({ value: opt, label: opt }))}
+            />
           ) : gradeIsNumeric ? (
             <div className="space-y-0.5">
               <input
@@ -179,18 +173,11 @@ export function PlannerCourseSearch({
             </div>
           ) : (
             <div className="space-y-0.5">
-              <select
+              <Dropdown
                 value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
-              >
-                <option value="">--</option>
-                {COURSE_GRADE_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
+                onChange={setGrade}
+                options={COURSE_GRADE_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
+              />
               <button
                 type="button"
                 onClick={() => { setGradeIsNumeric(true); setGrade(""); }}
@@ -208,18 +195,12 @@ export function PlannerCourseSearch({
             <label className="text-[11px] text-muted-foreground mb-0.5 block">
               קטגוריה
             </label>
-            <select
+            <Dropdown
               value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
-            >
-              <option value="">--</option>
-              {bankNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+              onChange={setType}
+              options={bankNames.map((name) => ({ value: name, label: name }))}
+              placeholder="--"
+            />
           </div>
         )}
 

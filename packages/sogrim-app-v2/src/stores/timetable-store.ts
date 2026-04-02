@@ -284,10 +284,11 @@ export function resolveEvents(
       if (selectedGroupId) {
         const group = typeGroups.find((g) => g.id === selectedGroupId);
         if (!group) continue;
+        const name = group.displayName || course.name;
         for (const lesson of group.lessons) {
           events.push({
             courseId: course.id,
-            courseName: course.name,
+            courseName: name,
             type: group.type,
             groupId: group.id,
             day: lesson.day,
@@ -303,10 +304,11 @@ export function resolveEvents(
 
         if (isPreviewTarget && previewingType === type) {
           for (const altGroup of typeGroups.filter((g) => g.id !== selectedGroupId)) {
+            const altName = altGroup.displayName || course.name;
             for (const lesson of altGroup.lessons) {
               events.push({
                 courseId: course.id,
-                courseName: course.name,
+                courseName: altName,
                 type: altGroup.type,
                 groupId: altGroup.id,
                 day: lesson.day,
@@ -324,10 +326,11 @@ export function resolveEvents(
         }
       } else {
         for (const group of typeGroups) {
+          const name = group.displayName || course.name;
           for (const lesson of group.lessons) {
             events.push({
               courseId: course.id,
-              courseName: course.name,
+              courseName: name,
               type: group.type,
               groupId: group.id,
               day: lesson.day,
