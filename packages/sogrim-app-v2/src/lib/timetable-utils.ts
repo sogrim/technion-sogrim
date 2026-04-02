@@ -27,18 +27,18 @@ export const LESSON_TYPE_NAMES: Record<LessonType, string> = {
   seminar: "סמינר",
 };
 
-/** Grid hours range */
-export const DEFAULT_START_HOUR = 8;
-export const DEFAULT_END_HOUR = 18; // Show up to 17:30 by default
-export const MIN_START_HOUR = 7;    // Can shrink down to 07:00
-export const MAX_END_HOUR = 24;     // Can expand up to midnight
+/** Grid range in hours (can be half-hour values like 8.5 = 08:30).
+ *  Defaults: 08:30 - 18:30. */
+export const DEFAULT_START_HOUR = 8.5;
+export const DEFAULT_END_HOUR = 18.5;
+export const MIN_START_HOUR = 7;     // Can shrink down to 07:00
+export const MAX_END_HOUR = 24;      // Can expand up to midnight
 export const SLOT_MINUTES = 30;
 export const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
 
 /** Compute visible start and end hours based on events.
- *  When there are no events, shows the default range (08:00-18:00).
- *  When there are events, fits to span from 1 hour before the earliest
- *  event to the hour after the latest event, with a minimum 10-hour window. */
+ *  Snaps to 30-min boundaries.
+ *  Returns values like 7.5 = 07:30, 8 = 08:00, 18.5 = 18:30. */
 export function computeVisibleRange(events: { startTime: string; endTime: string }[]): {
   startHour: number;
   endHour: number;
@@ -56,17 +56,17 @@ export function computeVisibleRange(events: { startTime: string; endTime: string
     if (end > latest) latest = end;
   }
 
-  let startHour = Math.max(Math.floor(earliest / 60), MIN_START_HOUR);
-  // Round up so the grid always contains the full last event
-  let endHour = Math.min(Math.ceil(latest / 60), MAX_END_HOUR);
+  // Floor to 30-min for start, ceil to 30-min for end.
+  let startHour = Math.floor(earliest / 30) * 0.5;
+  let endHour = Math.ceil(latest / 30) * 0.5;
 
-  // Ensure a minimum window of 10 hours for visual consistency
-  const minWindow = 10;
-  if (endHour - startHour < minWindow) {
-    const mid = (startHour + endHour) / 2;
-    startHour = Math.max(Math.floor(mid - minWindow / 2), MIN_START_HOUR);
-    endHour = Math.min(startHour + minWindow, MAX_END_HOUR);
-  }
+  // Clamp to bounds
+  startHour = Math.max(startHour, MIN_START_HOUR);
+  endHour = Math.min(endHour, MAX_END_HOUR);
+
+  // Don't shrink beyond defaults
+  startHour = Math.min(startHour, DEFAULT_START_HOUR);
+  endHour = Math.max(endHour, DEFAULT_END_HOUR);
 
   return { startHour, endHour };
 }
@@ -103,19 +103,28 @@ export function timeSpanRows(startTime: string, endTime: string): number {
   return (end - start) / SLOT_MINUTES;
 }
 
-/** Generate time labels for the grid */
+/** Generate time labels for the grid — one per hour, aligned to startHour.
+ *  E.g. if startHour is 7.5: labels are 07:30, 08:30, 09:30, ... */
 export function getTimeLabels(startHour?: number, endHour?: number): string[] {
   const start = startHour ?? DEFAULT_START_HOUR;
   const end = endHour ?? DEFAULT_END_HOUR;
   const labels: string[] = [];
-  for (let h = start; h < end; h++) {
+  for (let h = start; h < end; h += 1) {
     labels.push(formatTime(h * 60));
   }
   return labels;
 }
 
-/** All days in order */
+/** Weekdays Sun-Thu (always shown) */
+export const WEEKDAYS: Day[] = [0, 1, 2, 3, 4];
+
+/** All days including Friday */
 export const DAYS: Day[] = [0, 1, 2, 3, 4, 5];
+
+/** Check whether any events fall on Friday */
+export function hasFridayEvents(events: { day: number }[]): boolean {
+  return events.some((e) => e.day === 5);
+}
 
 /** Generate a unique draft ID */
 export function generateDraftId(): string {

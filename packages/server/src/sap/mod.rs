@@ -28,6 +28,72 @@ const INITIAL_BACKOFF_MS: u64 = 500;
 /// Groups to filter out from the schedule.
 const FILTERED_GROUPS: &[&str] = &["077", "069", "086"];
 
+/// Check if a course is a sport course (03940800-03940999).
+fn is_sport_course(course_id: &str) -> bool {
+    course_id.starts_with("03940")
+        && course_id.len() == 8
+        && matches!(course_id.as_bytes().get(5), Some(b'8' | b'9'))
+}
+
+const HUMANITIES_FACULTY: &str = "המחלקה ללימודים הומניסטיים ואמנות";
+
+/// Non-humanities courses that are explicitly malags.
+const MALAG_EXPLICIT_IDS: &[&str] = &["02140119", "02140120", "02750112"];
+
+/// Name patterns for language courses (not malag).
+const LANGUAGE_KEYWORDS: &[&str] = &[
+    "אנגלית",
+    "עברית",
+    "סינית",
+    "יפנית",
+    "צרפתית",
+    "גרמנית",
+    "רוסית",
+    "ערבית",
+    "ספרדית",
+    "איטלקית",
+    "שיחה ב",
+];
+
+/// Name patterns for art/performance/studio courses (not malag).
+const ART_KEYWORDS: &[&str] = &[
+    "רישום",
+    "ציור",
+    "תזמורת",
+    "כוריאוגרפיה",
+    "סדנת צילום",
+    "מחזה-הצגה",
+    "סטודיו אומן",
+    "עיצוב גרפי",
+];
+
+/// Classify whether a course is a malag (enrichment) course.
+/// Humanities department + 2 credits = malag, unless it's a language,
+/// art/performance, or academic writing course.
+fn classify_malag(id: &str, name: &str, credits: f32, faculty: Option<&str>) -> bool {
+    if MALAG_EXPLICIT_IDS.contains(&id) {
+        return true;
+    }
+
+    if faculty != Some(HUMANITIES_FACULTY) || credits != 2.0 {
+        return false;
+    }
+
+    if LANGUAGE_KEYWORDS.iter().any(|kw| name.contains(kw)) {
+        return false;
+    }
+
+    if ART_KEYWORDS.iter().any(|kw| name.contains(kw)) {
+        return false;
+    }
+
+    if name.contains("כתיבה אקדמית") {
+        return false;
+    }
+
+    true
+}
+
 // ---------------------------------------------------------------------------
 // Error
 // ---------------------------------------------------------------------------
@@ -99,6 +165,12 @@ pub struct CourseDetails {
     pub faculty: Option<String>,
     pub syllabus: Option<String>,
     pub academic_level: Option<String>,
+    /// True if the course is taught in English.
+    pub is_english: bool,
+    /// True if this course qualifies as a malag (enrichment) course.
+    pub is_malag: bool,
+    /// True if this is a sport course (03940800-03940999).
+    pub is_sport: bool,
     pub semester_note: Option<String>,
     pub exams: Vec<Exam>,
     pub relations: Vec<Relation>,
@@ -116,6 +188,9 @@ pub struct Exam {
     pub date: Option<String>,
     pub begin_time: Option<String>,
     pub end_time: Option<String>,
+    /// Exam-specific note (e.g. special seating, group restrictions).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -161,14 +236,17 @@ pub struct OfferedPeriod {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduleGroup {
     pub group: String,
+    /// Group-level name from SAP (e.g. "נבחרת טניס נשים" for sport courses).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     pub events: Vec<ScheduleEvent>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ScheduleEvent {
-    /// e.g. "הרצאה", "תרגול", "מעבדה"
+    /// e.g. "הרצאה", "תרגול", "מעבדה", or sport-specific name like "נבחרת טניס נשים"
     pub kind: String,
-    /// Day of week: 0=Sunday, 1=Monday, ..., 4=Thursday
+    /// Day of week: 0=Sunday, 1=Monday, ..., 5=Friday
     #[serde(skip_serializing_if = "Option::is_none")]
     pub day: Option<u8>,
     /// "HH:MM"
@@ -202,6 +280,7 @@ struct RawCourse {
     study_content_description: Option<String>,
     org_text: Option<String>,
     zz_academic_level_text: Option<String>,
+    zz_sm_language: Option<String>,
     zz_semester_note: Option<String>,
 }
 
@@ -213,6 +292,12 @@ struct RawExam {
     exam_date: Option<String>,
     exam_beg_time: Option<String>,
     exam_end_time: Option<String>,
+    /// Exam-level note/comment from SAP.
+    zz_se_comment: Option<String>,
+    /// GUID for parent/child exam hierarchy.
+    zz_exam_offer_guid: Option<String>,
+    /// Parent GUID — non-empty means this is a sub-exam (e.g. time slot under a date).
+    zz_exam_offer_parent_guid: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -252,8 +337,12 @@ struct RawOfferedPeriod {
 struct RawEObject {
     otjid: String,
     category_text: String,
+    /// Event-level name (e.g. "נבחרת טניס נשים" for sport courses).
+    name: Option<String>,
     schedule_summary: Option<String>,
     room_text: Option<String>,
+    /// Room OData ID for building lookup via GObjectSet.
+    room_id: Option<String>,
     #[serde(default)]
     persons: RawPersons,
 }
@@ -324,6 +413,8 @@ pub struct CachedSapClient {
     semesters: Cache<String, Arc<Vec<Semester>>>,
     course_ids: Cache<String, Arc<Vec<String>>>,
     course_index: Cache<String, Arc<Vec<CourseIndexEntry>>>,
+    /// Cached building names resolved via GObjectSet. Key: room OData ID.
+    buildings: Cache<String, Option<String>>,
     fetch_total: AtomicUsize,
     fetch_done: AtomicUsize,
     /// Total bytes sent to SAP (request bodies)
@@ -358,6 +449,7 @@ impl CachedSapClient {
             semesters: Cache::builder().time_to_live(ttl).max_capacity(1).build(),
             course_ids: Cache::builder().time_to_live(ttl).max_capacity(20).build(),
             course_index: Cache::builder().time_to_live(ttl).max_capacity(20).build(),
+            buildings: Cache::builder().time_to_live(ttl).max_capacity(500).build(),
             fetch_total: AtomicUsize::new(0),
             fetch_done: AtomicUsize::new(0),
             bytes_sent: AtomicUsize::new(0),
@@ -567,11 +659,16 @@ impl CachedSapClient {
                     };
 
                     for (i, course_number) in chunk.iter().enumerate() {
-                        match client.assemble_course(
-                            &detail_results[i],
-                            &sched_persons_results[i],
-                            &sched_times_results[i],
-                        ) {
+                        match client
+                            .assemble_course(
+                                &detail_results[i],
+                                &sched_persons_results[i],
+                                &sched_times_results[i],
+                                &year,
+                                &semester,
+                            )
+                            .await
+                        {
                             Ok(details) => {
                                 let key = format!("{year}/{semester}/{course_number}");
                                 client.courses.insert(key, Arc::new(details)).await;
@@ -683,7 +780,9 @@ impl CachedSapClient {
                             &detail_results[i],
                             &sched_persons_results[i],
                             &sched_times_results[i],
-                        ) {
+                            &year,
+                            &semester,
+                        ).await {
                             Ok(details) => {
                                 let key = format!("{year}/{semester}/{course_number}");
                                 client.courses.insert(key, Arc::new(details)).await;
@@ -807,15 +906,24 @@ impl CachedSapClient {
             self.batch_get(&sched_persons_query),
             self.batch_get(&sched_times_query),
         )?;
-        self.assemble_course(&detail_val, &sched_persons_val, &sched_times_val)
+        self.assemble_course(
+            &detail_val,
+            &sched_persons_val,
+            &sched_times_val,
+            year,
+            semester,
+        )
+        .await
     }
 
     /// Assemble a `CourseDetails` from pre-fetched detail + schedule (persons) + schedule (times).
-    fn assemble_course(
+    async fn assemble_course(
         &self,
         detail_val: &Value,
         sched_persons_val: &Value,
         sched_times_val: &Value,
+        year: &str,
+        semester: &str,
     ) -> Result<CourseDetails, SapError> {
         let mut results = Self::extract_results(detail_val.clone())?;
         let raw = results
@@ -830,7 +938,7 @@ impl CachedSapClient {
             .map(parse_corequisites)
             .unwrap_or_default();
 
-        let exams = Self::dedup_exams(Self::nested_results(&raw, "Exams"));
+        let exams = Self::parse_exams(Self::nested_results(&raw, "Exams"));
         let relations = Self::parse_relations(Self::nested_results(&raw, "SmRelations"));
         let prerequisites = Self::parse_prerequisites(Self::nested_results(&raw, "SmPrereq"));
 
@@ -858,15 +966,32 @@ impl CachedSapClient {
             })
             .collect();
 
-        let schedule = Self::parse_schedule(sched_persons_val, sched_times_val)?;
+        let course_id = sap_id_to_course_number(&course.otjid);
+        let schedule = self
+            .parse_schedule(
+                sched_persons_val,
+                sched_times_val,
+                &course_id,
+                year,
+                semester,
+            )
+            .await?;
+
+        let name = course.name.trim().to_string();
+        let faculty = course.org_text.filter(|s| !s.is_empty());
+        let is_malag = classify_malag(&course_id, &name, credits, faculty.as_deref());
+        let is_sport = is_sport_course(&course_id);
 
         Ok(CourseDetails {
-            id: sap_id_to_course_number(&course.otjid),
-            name: course.name.trim().to_string(),
+            id: course_id,
+            name,
             credits,
-            faculty: course.org_text.filter(|s| !s.is_empty()),
+            faculty,
             syllabus: course.study_content_description.filter(|s| !s.is_empty()),
             academic_level: course.zz_academic_level_text.filter(|s| !s.is_empty()),
+            is_english: course.zz_sm_language.as_deref() == Some("E"),
+            is_malag,
+            is_sport,
             semester_note: course.zz_semester_note.filter(|s| !s.is_empty()),
             exams,
             relations,
@@ -882,24 +1007,32 @@ impl CachedSapClient {
     /// - `persons_val`: SeObjectSet expanded with EObjectSet + EObjectSet/Persons
     /// - `times_val`: SeObjectSet expanded with EObjectSet + EObjectSet/Schedule
     ///   We merge them by matching on EObjectSet Otjid.
-    fn parse_schedule(
+    ///
+    /// `course_id` is the 8-digit course number, used for sport-course name logic.
+    async fn parse_schedule(
+        &self,
         persons_val: &Value,
         times_val: &Value,
+        course_id: &str,
+        year: &str,
+        semester: &str,
     ) -> Result<Vec<ScheduleGroup>, SapError> {
         let persons_groups = Self::extract_results(persons_val.clone())?;
         let times_groups = Self::extract_results(times_val.clone())?;
 
-        type ScheduleTime = (Option<u8>, Option<String>, Option<String>);
-        let mut time_map: HashMap<String, ScheduleTime> = HashMap::new();
+        // Build map: EObject Otjid → all structured time slots.
+        let mut time_map: HashMap<String, Vec<ScheduleTimeSlot>> = HashMap::new();
         for tg in &times_groups {
             for ev in Self::nested_results(tg, "EObjectSet") {
                 if let Ok(te) = serde_json::from_value::<RawEObjectTimes>(ev) {
-                    let time_info = extract_schedule_time(&te.schedule);
-                    time_map.insert(te.otjid, time_info);
+                    let slots = extract_all_schedule_times(&te.schedule);
+                    time_map.insert(te.otjid, slots);
                 }
             }
         }
 
+        let is_sport = is_sport_course(course_id);
+        let se_prefix_re = Regex::new(r"^SE\d+\s*").unwrap();
         let mut groups = Vec::new();
 
         for gv in persons_groups {
@@ -913,6 +1046,13 @@ impl CachedSapClient {
                 continue;
             }
 
+            // Group-level name from SeObjectSet (e.g. "SE11 נבחרת טניס נשים").
+            let group_name_raw = gv
+                .get("Name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+
             let events_raw = Self::nested_results(&gv, "EObjectSet");
             let mut events = Vec::new();
 
@@ -922,37 +1062,161 @@ impl CachedSapClient {
                     Err(_) => continue,
                 };
 
-                let (day, start_time, end_time) = time_map
-                    .get(&e.otjid)
-                    .cloned()
-                    .unwrap_or((None, None, None));
+                // Resolve event kind — for sport courses, use the specific team name.
+                let kind = if is_sport {
+                    resolve_sport_kind(
+                        &e.category_text,
+                        e.name.as_deref(),
+                        &group_name_raw,
+                        course_id,
+                    )
+                } else {
+                    e.category_text.clone()
+                };
 
-                let (building, room) = e
-                    .room_text
-                    .as_deref()
-                    .filter(|r| !r.is_empty())
-                    .map(resolve_room)
-                    .unwrap_or((None, None));
+                // Resolve building/room — prefer RoomId-based lookup, fall back to
+                // code-based resolution from RoomText.
+                let (building, room) = self
+                    .resolve_building_and_room(
+                        e.room_text.as_deref(),
+                        e.room_id.as_deref(),
+                        year,
+                        semester,
+                    )
+                    .await;
 
-                events.push(ScheduleEvent {
-                    kind: e.category_text,
-                    day,
-                    start_time,
-                    end_time,
-                    schedule_text: e.schedule_summary.unwrap_or_default(),
-                    building,
-                    room,
-                    lecturer: format_person(&e.persons.results),
-                });
+                let lecturer = format_person(&e.persons.results);
+                let schedule_text = e.schedule_summary.clone().unwrap_or_default();
+
+                // Expand into one ScheduleEvent per time slot (GAP 6).
+                let slots = time_map.get(&e.otjid);
+                if let Some(slots) = slots.filter(|s| !s.is_empty()) {
+                    for slot in slots {
+                        // Filter out buggy near-zero-duration entries (GAP 11).
+                        if is_buggy_time_slot(slot) {
+                            continue;
+                        }
+                        events.push(ScheduleEvent {
+                            kind: kind.clone(),
+                            day: slot.day,
+                            start_time: slot.start_time.clone(),
+                            end_time: slot.end_time.clone(),
+                            schedule_text: schedule_text.clone(),
+                            building: building.clone(),
+                            room: room.clone(),
+                            lecturer: lecturer.clone(),
+                        });
+                    }
+                } else {
+                    // No structured time data — emit event with None day/times,
+                    // the schedule_text still provides human-readable info.
+                    events.push(ScheduleEvent {
+                        kind,
+                        day: None,
+                        start_time: None,
+                        end_time: None,
+                        schedule_text,
+                        building,
+                        room,
+                        lecturer,
+                    });
+                }
             }
+
+            // Deduplicate events that are identical (can happen with multi-entry schedules).
+            events.dedup();
+
+            // Resolve group-level name for sport courses.
+            let group_display_name = if is_sport {
+                let cleaned = se_prefix_re.replace(&group_name_raw, "").to_string();
+                Some(cleaned).filter(|s| !s.is_empty())
+            } else {
+                None
+            };
 
             groups.push(ScheduleGroup {
                 group: group_number,
+                name: group_display_name,
                 events,
             });
         }
 
         Ok(groups)
+    }
+
+    /// Resolve building name and room number from SAP room data.
+    /// Uses the static building code map first; on miss, queries GObjectSet
+    /// and caches the result for the lifetime of the client.
+    async fn resolve_building_and_room(
+        &self,
+        room_text: Option<&str>,
+        room_id: Option<&str>,
+        year: &str,
+        semester: &str,
+    ) -> (Option<String>, Option<String>) {
+        let room_text = match room_text.filter(|r| !r.is_empty() && *r != "ראה פרטים") {
+            Some(r) => r,
+            None => return (None, None),
+        };
+
+        let parts: Vec<&str> = room_text.split('-').collect();
+        if parts.len() != 2 {
+            return (None, Some(room_text.to_string()));
+        }
+        let building_code = parts[0];
+        let room_number = parts[1].trim_start_matches('0');
+        let room_num = if room_number.is_empty() {
+            parts[1]
+        } else {
+            room_number
+        };
+
+        // Try static map first (fast path, covers most buildings).
+        if let Some(name) = resolve_building_code(building_code) {
+            return (Some(name.to_string()), Some(room_num.to_string()));
+        }
+
+        // Dynamic lookup via GObjectSet, cached per room_id.
+        if let Some(rid) = room_id.filter(|r| !r.is_empty()) {
+            let building = self.get_building_name(rid, year, semester).await;
+            return (building, Some(room_num.to_string()));
+        }
+
+        (None, Some(room_num.to_string()))
+    }
+
+    /// Fetch building name from GObjectSet, with moka cache.
+    async fn get_building_name(&self, room_id: &str, year: &str, semester: &str) -> Option<String> {
+        // Check cache.
+        if let Some(cached) = self.buildings.get(room_id).await {
+            return cached;
+        }
+
+        let query = format!(
+            "GObjectSet(Otjid='{}',Peryr='{year}',Perid='{semester}')?sap-client=700&$select=Building",
+            urlencoding::encode(room_id)
+        );
+
+        let result = match self.batch_get(&query).await {
+            Ok(val) => {
+                let building = val
+                    .get("d")
+                    .and_then(|d| d.get("Building"))
+                    .and_then(|b| b.as_str())
+                    .filter(|s| !s.is_empty())
+                    .map(normalize_building_name);
+                building
+            }
+            Err(e) => {
+                log::debug!(target: "sogrim_server", "GObjectSet lookup failed for {room_id}: {e}");
+                None
+            }
+        };
+
+        self.buildings
+            .insert(room_id.to_string(), result.clone())
+            .await;
+        result
     }
 
     fn detail_query(year: &str, semester: &str, sap_id: &str) -> String {
@@ -961,7 +1225,7 @@ impl CachedSapClient {
              %20and%20Otjid%20eq%20%27{sap_id}%27"
         );
         let select = "Otjid,Points,Name,StudyContentDescription,OrgText,\
-                       ZzAcademicLevel,ZzAcademicLevelText,ZzSemesterNote,\
+                       ZzAcademicLevel,ZzAcademicLevelText,ZzSmLanguage,ZzSemesterNote,\
                        Responsible,Exams,SmRelations,SmPrereq,SmOfferedPeriodSet";
         let expand = "Responsible,Exams,SmRelations,SmPrereq,SmOfferedPeriodSet";
         format!("SmObjectSet?sap-client=700&$filter={filter}&$select={select}&$expand={expand}")
@@ -975,9 +1239,16 @@ impl CachedSapClient {
     }
 
     /// Schedule query expanding Persons (for lecturer names).
+    /// Selects Name at both SeObjectSet and EObjectSet level (for sport course names),
+    /// plus RoomId for building lookup.
     fn schedule_query_persons(year: &str, semester: &str, sap_id: &str) -> String {
         format!(
-            "{}&$expand=EObjectSet,EObjectSet/Persons",
+            "{}&$select=ZzSeSeqnr,Name,\
+             EObjectSet/Otjid,EObjectSet/CategoryText,EObjectSet/Name,\
+             EObjectSet/ScheduleSummary,EObjectSet/ScheduleText,\
+             EObjectSet/RoomText,EObjectSet/RoomId,\
+             EObjectSet/Persons/Title,EObjectSet/Persons/FirstName,EObjectSet/Persons/LastName\
+             &$expand=EObjectSet,EObjectSet/Persons",
             Self::schedule_entity(year, semester, sap_id)
         )
     }
@@ -1180,27 +1451,127 @@ impl CachedSapClient {
     // Data processing
     // -----------------------------------------------------------------------
 
-    fn dedup_exams(raw_exams: Vec<Value>) -> Vec<Exam> {
-        let mut seen = HashSet::new();
-        let mut result = Vec::new();
-        for v in raw_exams {
-            let e: RawExam = match serde_json::from_value(v) {
-                Ok(e) => e,
-                Err(_) => continue,
-            };
+    /// Parse exams with parent/child hierarchy handling.
+    /// SAP returns root exam entries (date only) and child entries (date + time).
+    /// When both exist for the same date, we keep only the child (with time).
+    /// Also handles quiz exams (MI, M2) and exam notes (ZzSeComment).
+    fn parse_exams(raw_exams: Vec<Value>) -> Vec<Exam> {
+        let parsed: Vec<RawExam> = raw_exams
+            .into_iter()
+            .filter_map(|v| serde_json::from_value(v).ok())
+            .collect();
+
+        // Identify root exam GUIDs so we can detect parent vs child.
+        let root_guids: HashSet<&str> = parsed
+            .iter()
+            .filter(|e| {
+                e.zz_exam_offer_parent_guid
+                    .as_deref()
+                    .is_none_or(|s| s.is_empty())
+            })
+            .filter_map(|e| e.zz_exam_offer_guid.as_deref())
+            .filter(|s| !s.is_empty())
+            .collect();
+
+        // Track which (category_code, date, note) combos have a child with time,
+        // so we can suppress the parent's timeless entry.
+        let mut dates_with_time: HashSet<(String, String, String)> = HashSet::new();
+
+        struct ExamEntry {
+            category: String,
+            category_code: String,
+            date: Option<String>,
+            begin_time: Option<String>,
+            end_time: Option<String>,
+            note: Option<String>,
+            is_child: bool,
+        }
+
+        let mut entries: Vec<ExamEntry> = Vec::new();
+
+        for e in &parsed {
             let date = e.exam_date.as_deref().and_then(parse_sap_date_str);
             let begin = e.exam_beg_time.as_deref().and_then(parse_sap_time);
             let end = e.exam_end_time.as_deref().and_then(parse_sap_time);
-            let key = (e.category_code.clone(), date.clone());
-            if seen.insert(key) {
-                result.push(Exam {
-                    category: e.category,
-                    category_code: e.category_code,
-                    date,
-                    begin_time: begin,
-                    end_time: end,
-                });
+            let note = e
+                .zz_se_comment
+                .as_deref()
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string());
+
+            let is_child = e
+                .zz_exam_offer_parent_guid
+                .as_deref()
+                .is_some_and(|p| !p.is_empty() && root_guids.contains(p));
+
+            // Child entries with "00:00 - 00:00" are effectively timeless.
+            let has_real_time = begin.as_deref().is_some_and(|b| b != "00:00")
+                || end.as_deref().is_some_and(|e| e != "00:00");
+
+            let (begin, end) = if is_child && !has_real_time {
+                (None, None)
+            } else {
+                (begin, end)
+            };
+
+            if has_real_time {
+                if let Some(ref d) = date {
+                    dates_with_time.insert((
+                        e.category_code.clone(),
+                        d.clone(),
+                        note.clone().unwrap_or_default(),
+                    ));
+                }
             }
+
+            entries.push(ExamEntry {
+                category: e.category.clone(),
+                category_code: e.category_code.clone(),
+                date,
+                begin_time: begin,
+                end_time: end,
+                note,
+                is_child,
+            });
+        }
+
+        // Deduplicate: suppress parent entries when a child with time exists.
+        let mut seen = HashSet::new();
+        let mut result = Vec::new();
+        for entry in entries {
+            // Skip root entries that have a child with time for the same date.
+            if !entry.is_child
+                && entry.begin_time.is_none()
+                && entry.date.as_ref().is_some_and(|d| {
+                    dates_with_time.contains(&(
+                        entry.category_code.clone(),
+                        d.clone(),
+                        entry.note.clone().unwrap_or_default(),
+                    ))
+                })
+            {
+                continue;
+            }
+
+            let dedup_key = (
+                entry.category_code.clone(),
+                entry.date.clone(),
+                entry.begin_time.clone(),
+                entry.end_time.clone(),
+                entry.note.clone(),
+            );
+            if !seen.insert(dedup_key) {
+                continue;
+            }
+
+            result.push(Exam {
+                category: entry.category,
+                category_code: entry.category_code,
+                date: entry.date,
+                begin_time: entry.begin_time,
+                end_time: entry.end_time,
+                note: entry.note,
+            });
         }
         result
     }
@@ -1259,71 +1630,222 @@ impl CachedSapClient {
 // Utility functions
 // ---------------------------------------------------------------------------
 
-/// Extract structured day/time from EventScheduleSet entries.
-/// Returns (day_of_week, start_time, end_time) from the first entry.
-fn extract_schedule_time(
-    entries: &RawScheduleEntries,
-) -> (Option<u8>, Option<String>, Option<String>) {
-    let Some(first) = entries.results.first() else {
-        return (None, None, None);
-    };
-
-    let day = first.evdat.as_deref().and_then(|d| {
-        let secs = parse_sap_date_epoch(d)?;
-        let dt = chrono::DateTime::from_timestamp(secs, 0)?;
-        // chrono: Mon=0 .. Sun=6. We want Sun=0, Mon=1, ..., Thu=4
-        let weekday = dt.weekday().num_days_from_sunday() as u8;
-        if weekday <= 4 {
-            Some(weekday)
-        } else {
-            None
-        }
-    });
-
-    let start_time = first.beguz.as_deref().and_then(parse_sap_time);
-    let end_time = first.enduz.as_deref().and_then(parse_sap_time);
-
-    (day, start_time, end_time)
+/// A single resolved time slot for a schedule event.
+#[derive(Debug, Clone)]
+struct ScheduleTimeSlot {
+    day: Option<u8>,
+    start_time: Option<String>,
+    end_time: Option<String>,
 }
 
-/// Resolve room text like "069-0001" into (building_name, room_number).
-fn resolve_room(room_text: &str) -> (Option<String>, Option<String>) {
-    // Room text format: "BBB-RRRR" where BBB = building code, RRRR = room number
-    let parts: Vec<&str> = room_text.split('-').collect();
-    if parts.len() != 2 {
-        return (None, Some(room_text.to_string()));
+/// Extract ALL structured day/time slots from EventScheduleSet entries.
+/// Groups identical (weekday, start, end) tuples and only keeps repeating ones
+/// (appearing more than half the expected number of sessions in a semester).
+/// This filters out one-off makeup sessions and keeps the regular weekly schedule.
+fn extract_all_schedule_times(entries: &RawScheduleEntries) -> Vec<ScheduleTimeSlot> {
+    if entries.results.is_empty() {
+        return vec![];
     }
-    let building_code = parts[0];
-    let room_number = parts[1].trim_start_matches('0');
-    let room_num = if room_number.is_empty() {
-        parts[1]
+
+    // Count occurrences of each (weekday, start, end) tuple.
+    type TimeKey = (Option<u8>, Option<String>, Option<String>);
+    let mut counts: HashMap<TimeKey, usize> = HashMap::new();
+
+    for entry in &entries.results {
+        let day = entry.evdat.as_deref().and_then(|d| {
+            let secs = parse_sap_date_epoch(d)?;
+            let dt = chrono::DateTime::from_timestamp(secs, 0)?;
+            let weekday = dt.weekday().num_days_from_sunday() as u8;
+            // Include Sun-Fri, skip Saturday.
+            if weekday <= 5 {
+                Some(weekday)
+            } else {
+                None
+            }
+        });
+
+        let start_time = entry.beguz.as_deref().and_then(parse_sap_time);
+        let end_time = entry.enduz.as_deref().and_then(parse_sap_time);
+
+        // Skip entries where day resolved to None (Saturday) but time exists.
+        if day.is_none() && start_time.is_some() {
+            continue;
+        }
+
+        *counts.entry((day, start_time, end_time)).or_insert(0) += 1;
+    }
+
+    // A regular semester has ~13 weeks, summer ~7. A repeating event should appear
+    // more than half that. Use half the average count as threshold.
+    let total_entries = entries.results.len();
+    let distinct_slots = counts.len().max(1);
+    let avg_count = total_entries / distinct_slots;
+    let min_repeating = avg_count / 2;
+
+    // If there's only one distinct slot, always keep it.
+    // Otherwise, filter to repeating ones.
+    let slots: Vec<ScheduleTimeSlot> = if distinct_slots == 1 {
+        counts
+            .into_keys()
+            .map(|(day, start_time, end_time)| ScheduleTimeSlot {
+                day,
+                start_time,
+                end_time,
+            })
+            .collect()
     } else {
-        room_number
+        counts
+            .into_iter()
+            .filter(|(_, count)| *count > min_repeating)
+            .map(|((day, start_time, end_time), _)| ScheduleTimeSlot {
+                day,
+                start_time,
+                end_time,
+            })
+            .collect()
     };
 
-    let building_name = match building_code {
+    slots
+}
+
+/// Detect buggy near-zero-duration schedule entries.
+/// Filters patterns like "01:01-01:02" or "00:0X-01:00".
+fn is_buggy_time_slot(slot: &ScheduleTimeSlot) -> bool {
+    let (Some(start), Some(end)) = (slot.start_time.as_deref(), slot.end_time.as_deref()) else {
+        return false;
+    };
+    // Parse "HH:MM" to minutes since midnight.
+    let parse_mins = |s: &str| -> Option<u32> {
+        let (h, m) = s.split_once(':')?;
+        Some(h.parse::<u32>().ok()? * 60 + m.parse::<u32>().ok()?)
+    };
+    let (Some(s), Some(e)) = (parse_mins(start), parse_mins(end)) else {
+        return false;
+    };
+    // Events shorter than 15 minutes are almost certainly data bugs.
+    e.saturating_sub(s) < 15
+}
+
+/// Resolve the display name for a sport course event.
+/// Sport courses have generic CategoryText ("ספורט" / "נבחרת ספורט") but
+/// the specific team name is in the EObject Name or SeObject (group) Name.
+fn resolve_sport_kind(
+    category_text: &str,
+    event_name: Option<&str>,
+    group_name_raw: &str,
+    course_id: &str,
+) -> String {
+    let event_name = event_name.unwrap_or("");
+
+    // If the event name is specific (not generic), use it.
+    let is_generic_event_name = event_name.is_empty()
+        || event_name.contains("ספורט חינוך גופני")
+        || event_name == "ספורט נבחרות ספורט"
+        || {
+            // Check if the name just ends with the course number.
+            let num = course_id.trim_start_matches('0');
+            let re = Regex::new(&format!(r"-\s*0*{}$", regex::escape(num))).unwrap();
+            re.is_match(event_name)
+        };
+
+    if !is_generic_event_name {
+        return event_name.to_string();
+    }
+
+    // Fall back to group-level name (strip "SE\d+" prefix).
+    if !group_name_raw.is_empty() {
+        let cleaned = Regex::new(r"^SE\d+\s*")
+            .unwrap()
+            .replace(group_name_raw, "")
+            .to_string();
+        if !cleaned.is_empty() {
+            return cleaned;
+        }
+    }
+
+    // Last resort: use the original category text.
+    category_text.to_string()
+}
+
+/// Static building code → name mapping. Comprehensive list matching
+/// the GObjectSet API results.
+/// When a code is missing, callers get None (still shows the room code).
+fn resolve_building_code(code: &str) -> Option<&'static str> {
+    // This list is derived from GObjectSet results + the SAP
+    // building names normalized the same way he does (strip "בנין"/"בניין" prefix).
+    match code {
         "014" => Some("טאוב"),
+        "015" => Some("אולם צ'רצ'יל"),
+        "016" => Some("הנ' כימית"),
+        "018" => Some("הנ' מכונות"),
+        "019" => Some("מתמטיקה"),
+        "020" => Some("כימיה"),
+        "021" => Some("פיסיקה"),
+        "024" => Some("הנ' תעשיה"),
+        "025" => Some("הנ' חשמל"),
+        "028" => Some("ביולוגיה"),
+        "030" => Some("גולדשטיין-גורן"),
         "032" => Some("אמדו"),
+        "033" => Some("מדעי המזון"),
         "034" => Some("זיסאפל"),
         "037" => Some("ליידי דייוס"),
+        "038" => Some("אודיטוריום"),
+        "039" => Some("ארכיטקטורה"),
+        "040" => Some("ביוטכנולוגיה"),
         "044" => Some("פישבך"),
+        "048" => Some("הנ' ביורפואית"),
         "054" => Some("אולמן"),
+        "056" => Some("מדע החלטות"),
         "058" => Some("סגו"),
+        "060" => Some("ביוטכנולוגיה ומדעי המזון"),
         "069" => Some("דן קהאן"),
+        "071" => Some("ספריה מרכזית"),
         "079" => Some("הנדסת חמרים"),
         "084" => Some("מדעי המחשב"),
+        "088" => Some("אהרונוב"),
+        "090" => Some("מכון נאמן"),
         "093" => Some("בורוביץ הנדסה אזרחית"),
         "095" => Some("הנ' אוירונאוטית"),
+        "096" => Some("רקנאטי"),
         "102" => Some("פקולטה לרפואה"),
         "103" => Some("ננו-אלקטרוניקה"),
         "120" => Some("ספורט"),
+        "121" => Some("בנין ספורט 2"),
+        "126" => Some("מגרש כדורגל"),
+        "127" => Some("מגרש טניס"),
+        "128" => Some("בריכת שחיה"),
+        "129" => Some("סקווש"),
         _ => None,
-    };
+    }
+}
 
-    (
-        building_name.map(|s| s.to_string()),
-        Some(room_num.to_string()),
-    )
+/// Normalize a building name from GObjectSet (e.g. "בנין ע'ש טאוב" → "טאוב").
+/// Matches the normalization used by GObjectSet building names.
+fn normalize_building_name(raw: &str) -> String {
+    let trimmed = Regex::new(r"\s+").unwrap().replace_all(raw.trim(), " ");
+    let mappings: &[(&str, &str)] = &[
+        ("בנין אולמן", "אולמן"),
+        ("בנין בורוביץ הנדסה אזרחית", "בורוביץ הנדסה אזרחית"),
+        ("בנין דן קהאן", "דן קהאן"),
+        ("בנין הנ' אוירונאוטית", "הנ' אוירונאוטית"),
+        ("בנין זיסאפל", "זיסאפל"),
+        ("בנין להנדסת חמרים", "הנדסת חמרים"),
+        ("בנין ליידי דייוס", "ליידי דייוס"),
+        ("בנין למדעי המחשב", "מדעי המחשב"),
+        ("בנין ע'ש אמדו", "אמדו"),
+        ("בנין ע'ש טאוב", "טאוב"),
+        ("בנין ע'ש סגו", "סגו"),
+        ("בנין פישבך", "פישבך"),
+        ("בנין פקולטה לרפואה", "פקולטה לרפואה"),
+        ("בניין ננו-אלקטרוניקה", "ננו-אלקטרוניקה"),
+        ("בניין ספורט", "ספורט"),
+    ];
+    for (prefix, replacement) in mappings {
+        if let Some(rest) = trimmed.strip_prefix(prefix) {
+            return format!("{replacement}{rest}");
+        }
+    }
+    trimmed.to_string()
 }
 
 fn format_person(persons: &[RawPerson]) -> Option<String> {
@@ -1338,7 +1860,7 @@ fn format_person(persons: &[RawPerson]) -> Option<String> {
 }
 
 /// Parse corequisites from semester notes. Looks for lines like:
-/// "מקצוע צמוד: 104031" or "מקצועות צמודים: 104031, 104166"
+/// "מקצוע צמוד: 01040031" or "מקצועות צמודים: 01040031, 01041066"
 fn parse_corequisites(note: &str) -> Vec<String> {
     let re = Regex::new(r"מקצועו?ת? צמודי?ם?:\s*(.+)").unwrap();
     let Some(caps) = re.captures(note) else {
@@ -1348,47 +1870,20 @@ fn parse_corequisites(note: &str) -> Vec<String> {
     let num_re = Regex::new(r"\d{5,8}").unwrap();
     num_re
         .find_iter(content)
-        .map(|m| {
-            let n = m.as_str();
-            if n.len() <= 6 {
-                to_new_course_number(&format!("{n:0>6}"))
-            } else {
-                n.to_string()
-            }
-        })
+        .map(|m| format!("{:0>8}", m.as_str()))
         .collect()
 }
 
-/// Convert a 6-digit Technion course number to the SAP `SM` ID format.
+/// Prepend `SM` to get the SAP OData entity ID.
+/// Course numbers are always 8-digit (e.g. "02340114").
 pub fn course_number_to_sap_id(number: &str) -> String {
-    let padded = format!("{number:0>6}");
-    // Special case: 9730XX → 970300XX
-    if let Some(suffix) = padded.strip_prefix("9730") {
-        return format!("SM970300{suffix}");
-    }
-    format!("SM0{}0{}", &padded[..3], &padded[3..])
+    format!("SM{number}")
 }
 
-/// Extract the 6-digit course number from a SAP ID.
+/// Strip the `SM` prefix from a SAP OData entity ID.
+/// Returns the 8-digit course number (e.g. "02340114").
 pub fn sap_id_to_course_number(sap_id: &str) -> String {
-    let digits = sap_id.trim_start_matches("SM");
-    if digits.len() == 8 {
-        // Check for 970300XX → 9730XX
-        if let Some(suffix) = digits.strip_prefix("970300") {
-            return format!("9730{suffix}");
-        }
-        format!("{}{}", &digits[1..4], &digits[5..8])
-    } else {
-        digits.to_string()
-    }
-}
-
-/// Normalize old course numbers to the new 8-digit format (used for corequisites).
-fn to_new_course_number(course: &str) -> String {
-    if course.starts_with("9730") && course.len() == 6 {
-        return format!("970300{}", &course[4..]);
-    }
-    course.to_string()
+    sap_id.trim_start_matches("SM").to_string()
 }
 
 fn parse_sap_date_epoch(date_str: &str) -> Option<i64> {
@@ -1421,11 +1916,92 @@ mod tests {
 
     #[test]
     fn test_course_number_conversions() {
-        assert_eq!(course_number_to_sap_id("234114"), "SM02340114");
-        assert_eq!(course_number_to_sap_id("104031"), "SM01040031");
-        assert_eq!(course_number_to_sap_id("973012"), "SM97030012");
-        assert_eq!(sap_id_to_course_number("SM02340114"), "234114");
-        assert_eq!(sap_id_to_course_number("SM97030012"), "973012");
+        assert_eq!(course_number_to_sap_id("02340114"), "SM02340114");
+        assert_eq!(course_number_to_sap_id("01040031"), "SM01040031");
+        assert_eq!(sap_id_to_course_number("SM02340114"), "02340114");
+        assert_eq!(sap_id_to_course_number("SM97030012"), "97030012");
+    }
+
+    #[test]
+    fn test_is_sport_course() {
+        assert!(is_sport_course("03940902")); // נבחרות ספורט
+        assert!(is_sport_course("03940800")); // חינוך גופני
+        assert!(is_sport_course("03940999"));
+        assert!(!is_sport_course("03940700")); // not sport range
+        assert!(!is_sport_course("02340114")); // מבוא למדמ"ח
+        assert!(!is_sport_course("01040031")); // infi 1
+    }
+
+    #[test]
+    fn test_classify_malag() {
+        let h = Some(HUMANITIES_FACULTY);
+
+        // Standard malag courses
+        assert!(classify_malag(
+            "03240879",
+            "סוגיות נבחרות בחברה הישראלית",
+            2.0,
+            h
+        ));
+        assert!(classify_malag("03240442", "משפט העבודה בישראל", 2.0, h));
+        assert!(classify_malag("03250010", "מדע דת ופילוסופיה", 2.0, h));
+        assert!(classify_malag(
+            "03260005",
+            "פריצות דרך בתולדות החשיבה המתמטית",
+            2.0,
+            h
+        ));
+
+        // Explicit non-humanities malags
+        assert!(classify_malag(
+            "02140120",
+            "יסודות למידה והוראה",
+            2.0,
+            Some("חינוך למדע וטכנולוגיה")
+        ));
+        assert!(classify_malag(
+            "02750112",
+            "אבולוציה של האדם",
+            2.0,
+            Some("הפקולטה לרפואה")
+        ));
+
+        // Language courses — not malag
+        assert!(!classify_malag("03240692", "סינית למתחילים", 2.0, h));
+        assert!(!classify_malag("03240600", "גרמנית 1", 2.0, h));
+        assert!(!classify_malag("03240685", "שיחה באנגלית למתקדמים", 2.0, h));
+
+        // Art/performance — not malag
+        assert!(!classify_malag("03240481", "רישום למתחילים", 2.0, h));
+        assert!(!classify_malag("03240236", "תזמורת נשיפה", 2.0, h));
+
+        // Academic writing — not malag
+        assert!(!classify_malag(
+            "03240490",
+            "כתיבה אקדמית לתואר ראשון",
+            2.0,
+            h
+        ));
+
+        // Wrong credits — not malag
+        assert!(!classify_malag(
+            "03240033",
+            "אנגלית טכנית-מתקדמים ב'",
+            3.0,
+            h
+        ));
+        assert!(!classify_malag("03240513", "מחזה-הצגה-מופע", 1.5, h));
+
+        // Wrong faculty — not malag
+        assert!(!classify_malag(
+            "02340114",
+            "מבוא למדעי המחשב",
+            2.0,
+            Some("הנדסת חשמל ומחשבים")
+        ));
+
+        // Sport — not malag
+        assert!(!classify_malag("03940902", "נבחרות ספורט", 1.5, h));
     }
 
     #[test]
@@ -1440,10 +2016,10 @@ mod tests {
 
     #[test]
     fn test_parse_corequisites() {
-        assert_eq!(parse_corequisites("מקצוע צמוד: 104031"), vec!["104031"]);
+        assert_eq!(parse_corequisites("מקצוע צמוד: 104031"), vec!["00104031"]);
         assert_eq!(
             parse_corequisites("מקצועות צמודים: 104031, 104166"),
-            vec!["104031", "104166"]
+            vec!["00104031", "00104166"]
         );
         assert_eq!(parse_corequisites("no coreqs here"), Vec::<String>::new());
     }
@@ -1480,7 +2056,7 @@ mod tests {
         let s = &semesters[0];
         let ids = client().get_course_ids(&s.year, &s.semester).await.unwrap();
         assert!(ids.len() > 100);
-        // IDs should be 6-digit course numbers, not SAP format
+        // IDs should be 8-digit course numbers without SM prefix
         assert!(ids.iter().all(|id| !id.starts_with("SM")));
     }
 
@@ -1490,9 +2066,12 @@ mod tests {
         let c = client();
 
         // First fetch — hits SAP
-        let d1 = c.get_course_details("2025", "200", "234114").await.unwrap();
+        let d1 = c
+            .get_course_details("2025", "200", "02340114")
+            .await
+            .unwrap();
         assert_eq!(d1.name, "מבוא למדעי המחשב מ'");
-        assert_eq!(d1.id, "234114");
+        assert_eq!(d1.id, "02340114");
         assert!(d1.credits > 0.0);
         assert!(!d1.exams.is_empty());
         assert!(d1.exams.len() < 10); // deduped
@@ -1501,12 +2080,15 @@ mod tests {
         assert!(!d1.offered_periods.is_empty());
 
         // Second fetch — should be instant (cached)
-        let d2 = c.get_course_details("2025", "200", "234114").await.unwrap();
+        let d2 = c
+            .get_course_details("2025", "200", "02340114")
+            .await
+            .unwrap();
         assert!(Arc::ptr_eq(&d1, &d2)); // same Arc = same cache entry
 
         // Verify JSON serialization works
         let json = serde_json::to_string_pretty(&*d1).unwrap();
-        assert!(json.contains("234114"));
+        assert!(json.contains("02340114"));
         assert!(json.contains("מבוא למדעי המחשב"));
         println!("{json}");
     }
