@@ -1,7 +1,10 @@
 use crate::{
-    core::{credit_transfer_graph::find_traversal_order, types::CreditOverflow},
+    core::{
+        credit_transfer_graph::find_traversal_order,
+        types::{CreditOverflow, Rule},
+    },
     db::Resource,
-    resources::course::CourseBank,
+    resources::course::{to_8digit, CourseBank},
 };
 use bson::{doc, Document};
 use regex::Regex;
@@ -83,6 +86,65 @@ impl Catalog {
 
         for bank in self.course_banks.iter_mut() {
             bank.replace_course(course.clone(), replacement.clone());
+        }
+    }
+
+    /// Normalize all 6-digit course IDs in the catalog to 8-digit format.
+    pub fn normalize_course_ids(&mut self) {
+        fn normalize_id(id: &mut CourseId) {
+            if id.len() == 6 {
+                *id = to_8digit(id);
+            }
+        }
+
+        fn normalize_replacements_map(map: &mut HashMap<CourseId, OptionalReplacements>) {
+            let entries: Vec<_> = map.drain().collect();
+            for (mut key, mut values) in entries {
+                normalize_id(&mut key);
+                for v in values.iter_mut() {
+                    normalize_id(v);
+                }
+                map.insert(key, values);
+            }
+        }
+
+        // course_to_bank keys
+        let entries: Vec<_> = self.course_to_bank.drain().collect();
+        for (mut key, value) in entries {
+            normalize_id(&mut key);
+            self.course_to_bank.insert(key, value);
+        }
+
+        // catalog_replacements and common_replacements (keys + values)
+        normalize_replacements_map(&mut self.catalog_replacements);
+        normalize_replacements_map(&mut self.common_replacements);
+
+        // course_banks rules
+        for bank in self.course_banks.iter_mut() {
+            match &mut bank.rule {
+                Rule::Chains(chains) => {
+                    for chain in chains.iter_mut() {
+                        for id in chain.iter_mut() {
+                            normalize_id(id);
+                        }
+                    }
+                }
+                Rule::SpecializationGroups(groups) => {
+                    for group in groups.groups_list.iter_mut() {
+                        for id in group.course_list.iter_mut() {
+                            normalize_id(id);
+                        }
+                        if let Some(mandatory) = &mut group.mandatory {
+                            for replacements in mandatory.iter_mut() {
+                                for id in replacements.iter_mut() {
+                                    normalize_id(id);
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
         }
     }
 }
