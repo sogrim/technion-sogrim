@@ -2,14 +2,17 @@ import { useMemo, useState, useCallback, useRef } from "react";
 import type { Day, TimetableEvent } from "@/types/timetable";
 import {
   DAY_NAMES,
-  DAYS,
+  WEEKDAYS,
   DEFAULT_START_HOUR,
   DEFAULT_END_HOUR,
+  SLOT_MINUTES,
   getTimeLabels,
   totalSlots,
   computeVisibleRange,
   timeToRow,
   timeSpanRows,
+  parseTime,
+  hasFridayEvents,
 } from "@/lib/timetable-utils";
 import { CourseBlock } from "./course-block";
 import { CustomEventDialog } from "./custom-event-dialog";
@@ -21,13 +24,18 @@ interface WeekGridProps {
 }
 
 export function WeekGrid({ events, compact = false }: WeekGridProps) {
-  // Only expand the visible range, never shrink — prevents grid jumps.
-  // This prevents grid jumps when previews appear/disappear.
-  const rangeRef = useRef({ startHour: DEFAULT_START_HOUR, endHour: DEFAULT_END_HOUR });
-  const computed = computeVisibleRange(events);
-  if (computed.startHour < rangeRef.current.startHour) rangeRef.current.startHour = computed.startHour;
-  if (computed.endHour > rangeRef.current.endHour) rangeRef.current.endHour = computed.endHour;
-  const { startHour, endHour } = rangeRef.current;
+  // Show Friday column only when there are Friday events.
+  const showFriday = useMemo(() => hasFridayEvents(events), [events]);
+  const visibleDays = useMemo(() => showFriday ? [...WEEKDAYS, 5 as Day] : WEEKDAYS, [showFriday]);
+  const dayCount = visibleDays.length;
+
+  // Base range from real (non-preview) events — snaps back when courses are removed.
+  // Preview events can temporarily expand the range but don't persist.
+  const realEvents = useMemo(() => events.filter((e) => !e.isPreview), [events]);
+  const baseRange = useMemo(() => computeVisibleRange(realEvents), [realEvents]);
+  const fullRange = computeVisibleRange(events);
+  const startHour = Math.min(baseRange.startHour, fullRange.startHour);
+  const endHour = Math.max(baseRange.endHour, fullRange.endHour);
   const slotCount = totalSlots(startHour, endHour);
   const timeLabels = useMemo(() => getTimeLabels(startHour, endHour), [startHour, endHour]);
   const [customDialog, setCustomDialog] = useState<{
@@ -49,11 +57,11 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
 
   const eventsByDay = useMemo(() => {
     const map = new Map<Day, TimetableEvent[]>();
-    for (const day of DAYS) {
+    for (const day of visibleDays) {
       map.set(day, events.filter((e) => e.day === day));
     }
     return map;
-  }, [events]);
+  }, [events, visibleDays]);
 
   const handleDragStart = useCallback((day: Day, row: number) => {
     setDragState({ active: true, day, startRow: row, currentRow: row });
@@ -104,15 +112,15 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
           className="grid min-w-0"
           style={{
             gridTemplateColumns: compact
-              ? "36px repeat(5, 1fr)"
-              : "56px repeat(5, 1fr)",
+              ? `36px repeat(${dayCount}, 1fr)`
+              : `56px repeat(${dayCount}, 1fr)`,
             gridTemplateRows: `auto repeat(${slotCount}, minmax(${compact ? "2.5vh" : "4.2vh"}, 1fr))`,
           }}
           dir="rtl"
         >
           {/* Header row */}
           <div className="sticky top-0 z-10 bg-card border-b border-border" />
-          {DAYS.map((day) => (
+          {visibleDays.map((day) => (
             <div
               key={day}
               className={cn(
@@ -125,26 +133,30 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
             </div>
           ))}
 
-          {/* Time labels */}
-          {timeLabels.map((label, i) => (
-            <div
-              key={label}
-              className={cn(
-                "border-t border-border/50 flex items-start justify-center",
-                "text-muted-foreground pt-0.5",
-                compact ? "text-[0.55rem]" : "text-xs",
-              )}
-              style={{
-                gridRow: `${i * 2 + 2} / span 2`,
-                gridColumn: 1,
-              }}
-            >
-              {label}
-            </div>
-          ))}
+          {/* Time labels — one per hour, each spanning 2 grid rows */}
+          {timeLabels.map((label) => {
+            const labelMinutes = parseTime(label);
+            const row = Math.round((labelMinutes - startHour * 60) / SLOT_MINUTES);
+            return (
+              <div
+                key={label}
+                className={cn(
+                  "border-t border-border/50 flex items-start justify-center",
+                  "text-muted-foreground pt-0.5",
+                  compact ? "text-[0.55rem]" : "text-xs",
+                )}
+                style={{
+                  gridRow: `${row + 2} / span 2`,
+                  gridColumn: 1,
+                }}
+              >
+                {label}
+              </div>
+            );
+          })}
 
           {/* Day columns */}
-          {DAYS.map((day) => (
+          {visibleDays.map((day, idx) => (
             <DayColumn
               key={day}
               day={day}
@@ -157,6 +169,7 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
               onDragEnd={handleDragEnd}
               onCustomEventClick={handleCustomEventClick}
               dragState={dragState?.day === day ? dragState : null}
+              colIndex={idx}
             />
           ))}
         </div>
@@ -175,6 +188,75 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
   );
 }
 
+/** Lay out events into non-overlapping columns (like FullCalendar's slotEventOverlap:false).
+ *  Returns positioned events with left/width percentages within the column. */
+function layoutEvents(
+  events: TimetableEvent[],
+  startHour: number,
+  slotCount: number,
+): { event: TimetableEvent; topPct: number; heightPct: number; leftPct: number; widthPct: number }[] {
+  if (events.length === 0) return [];
+
+  // Sort by start time, then by duration (longer first for stable layout).
+  const sorted = [...events].sort((a, b) => {
+    const aStart = parseTime(a.startTime);
+    const bStart = parseTime(b.startTime);
+    if (aStart !== bStart) return aStart - bStart;
+    return parseTime(b.endTime) - parseTime(a.endTime);
+  });
+
+  // Assign each event to a column, tracking end times per column.
+  const columns: number[] = []; // end time (in minutes) of each column
+  const eventCols: number[] = [];
+  const eventGroups: number[] = []; // which overlap group each event belongs to
+  const groupMaxCols: number[] = []; // max columns used per group
+
+  let currentGroupStart = 0;
+  let currentGroupEnd = 0;
+  let groupIndex = -1;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const ev = sorted[i];
+    const evStart = parseTime(ev.startTime);
+    const evEnd = parseTime(ev.endTime);
+
+    // Check if this event starts a new non-overlapping group
+    if (evStart >= currentGroupEnd) {
+      groupIndex++;
+      currentGroupStart = evStart;
+      currentGroupEnd = evEnd;
+      columns.length = 0; // reset columns for new group
+    } else {
+      currentGroupEnd = Math.max(currentGroupEnd, evEnd);
+    }
+
+    // Find first column where the event fits (no overlap)
+    let col = 0;
+    while (col < columns.length && columns[col] > evStart) {
+      col++;
+    }
+    columns[col] = evEnd;
+    eventCols[i] = col;
+    eventGroups[i] = groupIndex;
+    groupMaxCols[groupIndex] = Math.max(groupMaxCols[groupIndex] ?? 0, col + 1);
+  }
+
+  return sorted.map((event, i) => {
+    const row = timeToRow(event.startTime, startHour);
+    const span = timeSpanRows(event.startTime, event.endTime);
+    const totalCols = groupMaxCols[eventGroups[i]];
+    const col = eventCols[i];
+
+    return {
+      event,
+      topPct: (row / slotCount) * 100,
+      heightPct: (span / slotCount) * 100,
+      leftPct: (col / totalCols) * 100,
+      widthPct: (1 / totalCols) * 100,
+    };
+  });
+}
+
 interface DayColumnProps {
   day: Day;
   events: TimetableEvent[];
@@ -186,6 +268,8 @@ interface DayColumnProps {
   onDragEnd: () => void;
   onCustomEventClick: (eventId: string) => void;
   dragState: { startRow: number; currentRow: number } | null;
+  /** 0-based index within the visible day columns */
+  colIndex: number;
 }
 
 function DayColumn({
@@ -199,8 +283,9 @@ function DayColumn({
   onDragEnd,
   onCustomEventClick,
   dragState,
+  colIndex,
 }: DayColumnProps) {
-  const dayCol = day + 2;
+  const dayCol = colIndex + 2; // +1 for 1-based grid, +1 for time label column
   const colRef = useRef<HTMLDivElement>(null);
 
   const getRowFromY = (clientY: number): number => {
@@ -249,12 +334,12 @@ function DayColumn({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      {/* Background grid lines */}
-      {Array.from({ length: slotCount / 2 }, (_, i) => (
+      {/* Background grid lines — every hour (2 slots) */}
+      {Array.from({ length: Math.floor(slotCount / 2) }, (_, i) => (
         <div
           key={i}
           className="absolute inset-x-0 border-t border-border/30 pointer-events-none"
-          style={{ top: `${(i * 2 / slotCount) * 100}%` }}
+          style={{ top: `${((i * 2) / slotCount) * 100}%` }}
         />
       ))}
 
@@ -266,31 +351,26 @@ function DayColumn({
         />
       )}
 
-      {/* Course blocks — absolutely positioned */}
-      {events.map((event) => {
-        const row = timeToRow(event.startTime, startHour);
-        const span = timeSpanRows(event.startTime, event.endTime);
-        const topPct = (row / slotCount) * 100;
-        const heightPct = (span / slotCount) * 100;
-
-        return (
-          <div
-            key={`${event.courseId}-${event.groupId}-${event.startTime}-${event.isPreview}`}
-            className="absolute inset-x-0.5 z-[2]"
-            style={{
-              top: `${topPct}%`,
-              height: `${heightPct}%`,
-            }}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <CourseBlock
-              event={event}
-              compact={compact}
-              onCustomEventClick={onCustomEventClick}
-            />
-          </div>
-        );
-      })}
+      {/* Course blocks — absolutely positioned, with column layout for overlaps */}
+      {layoutEvents(events, startHour, slotCount).map(({ event, topPct, heightPct, leftPct, widthPct }) => (
+        <div
+          key={`${event.courseId}-${event.groupId}-${event.startTime}-${event.isPreview}`}
+          className="absolute z-[2]"
+          style={{
+            top: `${topPct}%`,
+            height: `${heightPct}%`,
+            right: `${leftPct}%`,
+            width: `${widthPct}%`,
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <CourseBlock
+            event={event}
+            compact={compact}
+            onCustomEventClick={onCustomEventClick}
+          />
+        </div>
+      ))}
     </div>
   );
 }

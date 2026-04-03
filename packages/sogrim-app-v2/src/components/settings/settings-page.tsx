@@ -32,7 +32,8 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import type { ComboboxOption } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -83,13 +84,8 @@ export function SettingsPage() {
 
   const currentCatalogId = userState?.details?.catalog?._id?.$oid;
 
-  function handleCatalogChange(
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) {
-    const catalogId = e.target.value;
+  function handleCatalogChange(catalogId: string) {
     if (!catalogId || catalogId === currentCatalogId) return;
-
-    // Show warning before changing catalog
     setPendingCatalogId(catalogId);
     setShowCatalogWarning(true);
   }
@@ -264,34 +260,23 @@ export function SettingsPage() {
             <>
               <div className="space-y-2">
                 <Label htmlFor="catalog-select">מסלול לימודים</Label>
-                <Select
+                <Combobox
                   id="catalog-select"
                   value={currentCatalogId || ""}
                   onChange={handleCatalogChange}
                   disabled={updateCatalog.isPending}
-                >
-                  <option value="" disabled>
-                    בחר קטלוג...
-                  </option>
-                  {Object.entries(grouped).map(
-                    ([faculty, facultyCatalogs]) => (
-                      <optgroup
-                        key={faculty}
-                        label={FACULTY_LABELS[faculty] || faculty}
-                      >
-                        {facultyCatalogs.map((catalog) => (
-                          <option
-                            key={catalog._id.$oid}
-                            value={catalog._id.$oid}
-                          >
-                            {catalog.name} ({catalog.total_credit}{" "}
-                            נ״ז)
-                          </option>
-                        ))}
-                      </optgroup>
-                    )
+                  placeholder="בחר קטלוג..."
+                  searchPlaceholder="חיפוש מסלול או שנה..."
+                  emptyMessage="לא נמצאו מסלולים"
+                  options={Object.entries(grouped).flatMap(
+                    ([faculty, facultyCatalogs]): ComboboxOption[] =>
+                      facultyCatalogs.map((catalog) => ({
+                        value: catalog._id.$oid,
+                        label: `${catalog.name} (${catalog.total_credit} נ״ז)`,
+                        group: FACULTY_LABELS[faculty] || faculty,
+                      }))
                   )}
-                </Select>
+                />
               </div>
 
               {/* Catalog change warning */}

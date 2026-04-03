@@ -37,6 +37,7 @@ interface SapExam {
   date?: string;
   begin_time?: string;
   end_time?: string;
+  note?: string;
 }
 
 interface SapRelation {
@@ -64,6 +65,8 @@ interface SapOfferedPeriod {
 
 interface SapScheduleGroup {
   group: string;
+  /** Group-level name (e.g. "נבחרת טניס נשים" for sport courses). */
+  name?: string;
   events: SapScheduleEvent[];
 }
 
@@ -174,7 +177,12 @@ function toSchedule(sap: SapCourseDetails): CourseSchedule {
     }
 
     for (const [type, lessons] of byKind) {
-      groups.push({ id: `${sapGroup.group}-${type}`, type, lessons });
+      groups.push({
+        id: `${sapGroup.group}-${type}`,
+        type,
+        displayName: sapGroup.name || undefined,
+        lessons,
+      });
     }
   }
 

@@ -1,7 +1,7 @@
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
 import { switchProviderSemester } from "@/hooks/use-api-provider";
-import { cn } from "@/lib/utils";
+import { Dropdown } from "@/components/ui/dropdown";
 
 export function SemesterSelector() {
   const currentSemester = useTimetableStore((s) => s.currentSemester);
@@ -15,24 +15,17 @@ export function SemesterSelector() {
   }
 
   return (
-    <select
+    <Dropdown
       value={currentSemester}
-      onChange={(e) => {
-        setSemester(e.target.value);
-        switchProviderSemester(e.target.value);
+      onChange={(value) => {
+        setSemester(value);
+        switchProviderSemester(value);
       }}
-      className={cn(
-        "bg-secondary text-foreground rounded-lg px-3 py-1.5 text-sm font-medium",
-        "border border-border cursor-pointer",
-        "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
-      )}
-      dir="rtl"
-    >
-      {semesters.map((sem) => (
-        <option key={sem.id} value={sem.id}>
-          {sem.name}
-        </option>
-      ))}
-    </select>
+      options={semesters.map((sem) => ({
+        value: sem.id,
+        label: sem.name,
+      }))}
+      className="w-40"
+    />
   );
 }

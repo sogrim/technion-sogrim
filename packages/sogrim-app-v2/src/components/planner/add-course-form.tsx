@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dropdown } from "@/components/ui/dropdown";
 import { Toast } from "@/components/ui/toast";
 import { useCoursesFilter } from "@/hooks/use-courses-filter";
 import { courseFromUserValidations } from "@/lib/course-validator";
@@ -194,20 +195,13 @@ export function AddCourseForm({
             ציון
           </label>
           {isSemester0 ? (
-            <select
+            <Dropdown
               value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
-            >
-              <option value="">--</option>
-              {COURSE_GRADE_OPTIONS.filter((opt) =>
+              onChange={setGrade}
+              options={COURSE_GRADE_OPTIONS.filter((opt) =>
                 opt.includes("פטור")
-              ).map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+              ).map((opt) => ({ value: opt, label: opt }))}
+            />
           ) : gradeIsNumeric ? (
             <div className="space-y-0.5">
               <input
@@ -229,18 +223,11 @@ export function AddCourseForm({
             </div>
           ) : (
             <div className="space-y-0.5">
-              <select
+              <Dropdown
                 value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
-              >
-                <option value="">--</option>
-                {COURSE_GRADE_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
+                onChange={setGrade}
+                options={COURSE_GRADE_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
+              />
               <button
                 type="button"
                 onClick={() => { setGradeIsNumeric(true); setGrade(""); }}
@@ -258,18 +245,12 @@ export function AddCourseForm({
             <label className="text-[11px] text-muted-foreground mb-0.5 block">
               קטגוריה
             </label>
-            <select
+            <Dropdown
               value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full h-8 rounded border border-border bg-card px-1 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
-            >
-              <option value="">--</option>
-              {bankNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+              onChange={setType}
+              options={bankNames.map((name) => ({ value: name, label: name }))}
+              placeholder="--"
+            />
           </div>
         )}
 
