@@ -68,7 +68,7 @@ fn edge_uses_8_digit_course_ids() {
 }
 
 fn find_course<'a>(courses: &'a [CourseStatus], id: &str) -> Option<&'a CourseStatus> {
-    courses.iter().find(|cs| cs.course.id == id)
+    courses.iter().find(|cs| *cs.course.id == *id)
 }
 
 #[test]
@@ -147,7 +147,7 @@ fn chrome_parses_sport_courses_with_duplicates() {
     assert!(sport.len() >= 4, "Expected at least 4 sport courses");
     let duplicates: Vec<_> = sport
         .iter()
-        .filter(|cs| cs.course.id == "03940803")
+        .filter(|cs| *cs.course.id == *"03940803")
         .collect();
     assert_eq!(duplicates.len(), 2, "Expected 2 instances of 03940803");
 }

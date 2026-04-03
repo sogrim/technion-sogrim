@@ -1,11 +1,11 @@
-use crate::resources::course::CourseState;
+use crate::resources::course::{CourseId, CourseState};
 
 use super::*;
 
 fn cs(id: &str, grade: Grade, semester: &str) -> CourseStatus {
     let mut course_status = CourseStatus {
         course: Course {
-            id: id.to_string(),
+            id: CourseId::new(id),
             credit: 1.0,
             name: id.to_string(),
             tags: None,
@@ -39,7 +39,7 @@ fn parse_course_status_handles_not_complete_m_variant() {
 
     let (course, grade) = parse_course_status_pdf_format(line, false, false).unwrap();
 
-    assert_eq!(course.id, "234111");
+    assert_eq!(*course.id, *"02340111");
     assert_eq!(course.credit, 3.0);
     assert_eq!(course.name, "(מ) מבני נתונים");
     assert_eq!(grade, Some(Grade::NotComplete));

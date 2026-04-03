@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 
 use crate::{
     error::AppError,
-    resources::course::{Course, CourseStatus, Grade},
+    resources::course::{Course, CourseId, CourseStatus, Grade},
 };
 use std::collections::HashMap;
 
@@ -50,7 +50,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         return Err(AppError::Parser("Invalid copy paste data".into()));
     }
 
-    let mut courses = HashMap::<String, CourseStatus>::new();
+    let mut courses = HashMap::<CourseId, CourseStatus>::new();
     let mut asterisk_courses = Vec::<CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
     let mut semester = String::new();
@@ -109,7 +109,7 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
             ..Default::default()
         };
         course_status.set_state();
-        if course_status.course.id.starts_with("394") {
+        if course_status.course.id.starts_with("0394") {
             sport_courses.push(course_status);
             continue;
         }
@@ -239,7 +239,7 @@ fn parse_course_status_pdf_format(
     };
     Ok((
         Course {
-            id,
+            id: CourseId::new(id),
             credit,
             name,
             tags: None,

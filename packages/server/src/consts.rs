@@ -1,7 +1,7 @@
 pub const ADVANCED_B_COURSES_COUNT_DEMAND: usize = 1;
 pub const EXEMPT_COURSES_COUNT_DEMAND: usize = 2;
 pub const MINIMAL_YEAR_FOR_ENGLISH_REQUIREMENT: usize = 2021;
-pub const TECHNICAL_ENGLISH_ADVANCED_B: &str = "324033";
+pub const TECHNICAL_ENGLISH_ADVANCED_B_ID: &str = "324033";
 
 pub mod medicine {
     pub const ALL_BANK_NAME: &str = "חובה";

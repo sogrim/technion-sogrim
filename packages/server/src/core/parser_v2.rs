@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 
 use crate::{
     error::AppError,
-    resources::course::{Course, CourseStatus, Grade},
+    resources::course::{Course, CourseId, CourseStatus, Grade},
 };
 use std::collections::HashMap;
 
@@ -423,7 +423,7 @@ fn assign_semester_numbers(raw_courses: Vec<RawCourse>) -> Result<Vec<CourseStat
 
         let mut cs = CourseStatus {
             course: Course {
-                id: raw.id,
+                id: CourseId::new(raw.id),
                 credit: raw.credit,
                 name: raw.name,
                 tags: None,

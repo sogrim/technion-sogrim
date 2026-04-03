@@ -1,25 +1,83 @@
 use bson::{doc, Document};
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::fmt;
 use std::iter::FromIterator;
+use std::ops::Deref;
 
 use crate::core::types::Rule;
 use crate::db::Resource;
 
-pub type CourseId = String;
-
 const NON_STANDARD_PREFIXES: [&str; 4] = ["51", "52", "61", "97"];
 
-/// Convert a 6-digit course ID to its canonical 8-digit format.
-/// Standard (most courses):     ABCDEF → 0ABC0DEF
-/// Non-standard (faculties 51, 52, 61, 97): ABCDEF → AB0C0DEF
-pub fn to_8digit(id: &str) -> String {
-    if NON_STANDARD_PREFIXES.iter().any(|p| id.starts_with(p)) {
-        format!("{}0{}0{}", &id[..2], &id[2..3], &id[3..])
-    } else {
-        format!("0{}0{}", &id[..3], &id[3..])
+/// A normalized course identifier.
+///
+/// The constructor automatically converts 6-digit IDs to the canonical 8-digit
+/// format, so all downstream code can assume IDs are always 8-digit.
+#[derive(Default, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
+#[serde(transparent)]
+pub struct CourseId {
+    id: String,
+}
+
+impl<'de> Deserialize<'de> for CourseId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Ok(CourseId::new(raw))
+    }
+}
+
+impl CourseId {
+    pub fn new(raw: impl Into<String>) -> Self {
+        let raw: String = raw.into();
+        let id = if raw.len() == 6 {
+            Self::to_8digit(&raw)
+        } else {
+            raw
+        };
+        CourseId { id }
+    }
+
+    /// Convert a 6-digit course ID to its canonical 8-digit format.
+    /// Standard (most courses):     ABCDEF → 0ABC0DEF
+    /// Non-standard (faculties 51, 52, 61, 97): ABCDEF → AB0C0DEF
+    fn to_8digit(id: &str) -> String {
+        if NON_STANDARD_PREFIXES.iter().any(|p| id.starts_with(p)) {
+            format!("{}0{}0{}", &id[..2], &id[2..3], &id[3..])
+        } else {
+            format!("0{}0{}", &id[..3], &id[3..])
+        }
+    }
+}
+
+impl Deref for CourseId {
+    type Target = str;
+    fn deref(&self) -> &str {
+        &self.id
+    }
+}
+
+impl fmt::Display for CourseId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.id)
+    }
+}
+
+impl From<CourseId> for bson::Bson {
+    fn from(id: CourseId) -> bson::Bson {
+        bson::Bson::String(id.id)
+    }
+}
+
+impl Borrow<str> for CourseId {
+    fn borrow(&self) -> &str {
+        &self.id
     }
 }
 
@@ -38,7 +96,7 @@ impl Resource for Course {
         "Courses"
     }
     fn key(&self) -> Document {
-        doc! {"_id": self.id.clone()}
+        doc! {"_id": self.id.to_string()}
     }
 }
 

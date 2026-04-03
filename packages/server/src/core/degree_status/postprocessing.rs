@@ -3,7 +3,7 @@ use crate::{
     core::messages,
     resources::{
         catalog::Catalog,
-        course::{CourseStatus, Grade},
+        course::{CourseId, CourseStatus, Grade},
     },
 };
 
@@ -50,7 +50,7 @@ impl DegreeStatus {
             .count();
 
         let technical_english_advanced_b_course_status =
-            self.get_course_status(TECHNICAL_ENGLISH_ADVANCED_B);
+            self.get_course_status(&CourseId::new(TECHNICAL_ENGLISH_ADVANCED_B_ID));
 
         let Some(technical_english_advanced_b_course_status) =
             technical_english_advanced_b_course_status

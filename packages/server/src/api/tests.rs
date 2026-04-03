@@ -14,7 +14,7 @@ use crate::{
     },
     resources::{
         catalog::{Catalog, DisplayCatalog},
-        course::{Course, CourseStatus},
+        course::{Course, CourseId, CourseStatus},
         user::{Permissions, User, UserDetails},
     },
 };
@@ -311,7 +311,7 @@ async fn test_owner_api_courses() {
     let mut course = courses[0].clone();
 
     // put /courses/{id}
-    course.id = "some-id".into();
+    course.id = CourseId::new("some-id");
     let req = Request::builder()
         .method(Method::PUT)
         .uri(format!("/owners/courses/{}", course.id).as_str())

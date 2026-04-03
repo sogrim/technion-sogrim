@@ -4,7 +4,7 @@ use crate::{
     core::messages,
     resources::{
         catalog::Catalog,
-        course::{to_8digit, Course, CourseId, CourseState},
+        course::{Course, CourseId, CourseState},
     },
 };
 
@@ -78,15 +78,6 @@ impl DegreeStatus {
         self.remove_irrelevant_courses_from_catalog(catalog);
     }
 
-    /// Normalize all 6-digit course IDs to 8-digit format in course_statuses.
-    fn normalize_course_ids(&mut self) {
-        for cs in self.course_statuses.iter_mut() {
-            if cs.course.id.len() == 6 {
-                cs.course.id = to_8digit(&cs.course.id);
-            }
-        }
-    }
-
     fn get_all_student_replacements_and_set_msg(
         &mut self,
         catalog: &Catalog,
@@ -95,7 +86,7 @@ impl DegreeStatus {
         let mut student_replacements = HashMap::new();
         self.course_statuses.iter_mut().for_each(|course_status| {
             let mut find_replacement =
-                |replacements: &HashMap<String, Vec<String>>,
+                |replacements: &HashMap<CourseId, Vec<CourseId>>,
                  replacements_msg: fn(&Course) -> String| {
                     replacements
                         .iter()
@@ -145,10 +136,6 @@ impl DegreeStatus {
     }
 
     pub fn preprocess(&mut self, catalog: &mut Catalog, courses: &HashMap<CourseId, Course>) {
-        // Always normalize both student courses and catalog to 8-digit format
-        self.normalize_course_ids();
-        catalog.normalize_course_ids();
-
         self.reset(catalog);
 
         self.course_statuses.sort_by(|c1, c2| {

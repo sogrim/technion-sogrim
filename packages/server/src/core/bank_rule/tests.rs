@@ -6,86 +6,86 @@ use crate::core::degree_status::DegreeStatus;
 use crate::core::tests::create_degree_status;
 use crate::core::types::{Requirement, SpecializationGroup, SpecializationGroups};
 use crate::create_bank_rule_handler;
-use crate::resources::course::{Course, CourseState, CourseStatus, Grade};
+use crate::resources::course::{Course, CourseId, CourseState, CourseStatus, Grade};
 
-static COURSES: LazyLock<HashMap<String, Course>> = LazyLock::new(|| {
+static COURSES: LazyLock<HashMap<CourseId, Course>> = LazyLock::new(|| {
     HashMap::from([
         (
-            "104031".to_string(),
+            CourseId::new("104031"),
             Course {
-                id: "104031".to_string(),
+                id: CourseId::new("104031"),
                 credit: 5.5,
                 name: "infi1m".to_string(),
                 tags: None,
             },
         ),
         (
-            "104166".to_string(),
+            CourseId::new("104166"),
             Course {
-                id: "104166".to_string(),
+                id: CourseId::new("104166"),
                 credit: 5.5,
                 name: "Algebra alef".to_string(),
                 tags: None,
             },
         ),
         (
-            "114052".to_string(),
+            CourseId::new("114052"),
             Course {
-                id: "114052".to_string(),
+                id: CourseId::new("114052"),
                 credit: 3.5,
                 name: "פיסיקה 2".to_string(),
                 tags: None,
             },
         ),
         (
-            "114054".to_string(),
+            CourseId::new("114054"),
             Course {
-                id: "114054".to_string(),
+                id: CourseId::new("114054"),
                 credit: 3.5,
                 name: "פיסיקה 3".to_string(),
                 tags: None,
             },
         ),
         (
-            "236303".to_string(),
+            CourseId::new("236303"),
             Course {
-                id: "236303".to_string(),
+                id: CourseId::new("236303"),
                 credit: 3.0,
                 name: "project1".to_string(),
                 tags: None,
             },
         ),
         (
-            "236512".to_string(),
+            CourseId::new("236512"),
             Course {
-                id: "236512".to_string(),
+                id: CourseId::new("236512"),
                 credit: 3.0,
                 name: "project2".to_string(),
                 tags: None,
             },
         ),
         (
-            "1".to_string(),
+            CourseId::new("11111111"),
             Course {
-                id: "1".to_string(),
+                id: CourseId::new("11111111"),
                 credit: 1.0,
                 name: "".to_string(),
                 tags: None,
             },
         ),
         (
-            "2".to_string(),
+            CourseId::new("22222222"),
             Course {
-                id: "2".to_string(),
+                id: CourseId::new("22222222"),
                 credit: 2.0,
                 name: "".to_string(),
                 tags: None,
             },
         ),
         (
-            "3".to_string(),
+            CourseId::new("33333333"),
             Course {
-                id: "3".to_string(),
+                id: CourseId::new("33333333"),
                 credit: 3.0,
                 name: "".to_string(),
                 tags: None,
@@ -100,11 +100,11 @@ async fn test_rule_all() {
     let mut degree_status = create_degree_status();
     let bank_name = "hova".to_string();
     let course_list = vec![
-        "104031".to_string(),
-        "104166".to_string(),
-        "1".to_string(),
-        "2".to_string(),
-        "3".to_string(),
+        CourseId::new("104031"),
+        CourseId::new("104166"),
+        CourseId::new("11111111"),
+        CourseId::new("22222222"),
+        CourseId::new("33333333"),
     ];
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
@@ -122,19 +122,19 @@ async fn test_rule_all() {
     );
 
     // check it adds the not completed courses in the hove bank
-    assert_eq!(degree_status.course_statuses[8].course.id, "1".to_string());
+    assert_eq!(*degree_status.course_statuses[8].course.id, *"11111111");
     assert!(matches!(
         degree_status.course_statuses[8].state,
         Some(CourseState::NotComplete)
     ));
 
-    assert_eq!(degree_status.course_statuses[9].course.id, "2".to_string());
+    assert_eq!(*degree_status.course_statuses[9].course.id, *"22222222");
     assert!(matches!(
         degree_status.course_statuses[9].state,
         Some(CourseState::NotComplete)
     ));
 
-    assert_eq!(degree_status.course_statuses[10].course.id, "3".to_string());
+    assert_eq!(*degree_status.course_statuses[10].course.id, *"33333333");
     assert!(matches!(
         degree_status.course_statuses[10].state,
         Some(CourseState::NotComplete)
@@ -149,10 +149,10 @@ async fn test_rule_accumulate_credit() {
     let mut degree_status = create_degree_status();
     let bank_name = "reshima a".to_string();
     let course_list = vec![
-        "236303".to_string(),
-        "236512".to_string(),
-        "1".to_string(),
-        "2".to_string(),
+        CourseId::new("236303"),
+        CourseId::new("236512"),
+        CourseId::new("11111111"),
+        CourseId::new("22222222"),
     ];
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 5.5, 0);
@@ -184,10 +184,10 @@ async fn test_rule_accumulate_courses() {
     let mut degree_status = create_degree_status();
     let bank_name = "Project".to_string();
     let course_list = vec![
-        "236303".to_string(),
-        "236512".to_string(),
-        "1".to_string(),
-        "2".to_string(),
+        CourseId::new("236303"),
+        CourseId::new("236512"),
+        CourseId::new("11111111"),
+        CourseId::new("22222222"),
     ];
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 1);
@@ -222,18 +222,18 @@ async fn test_rule_chain() {
     let mut degree_status = create_degree_status();
     let bank_name = "science chain".to_string();
     let course_list = vec![
-        "1".to_string(),
-        "2".to_string(),
-        "114052".to_string(),
-        "5".to_string(),
-        "114054".to_string(),
-        "111111".to_string(),
+        CourseId::new("11111111"),
+        CourseId::new("22222222"),
+        CourseId::new("114052"),
+        CourseId::new("5"),
+        CourseId::new("114054"),
+        CourseId::new("444444"),
     ];
     let mut chains = vec![
-        vec!["1".to_string(), "2".to_string()],
-        vec!["114052".to_string(), "5".to_string()],
-        vec!["222222".to_string(), "114054".to_string()],
-        vec!["114052".to_string(), "111111".to_string()],
+        vec![CourseId::new("11111111"), CourseId::new("22222222")],
+        vec![CourseId::new("114052"), CourseId::new("5")],
+        vec![CourseId::new("22222222"), CourseId::new("114054")],
+        vec![CourseId::new("114052"), CourseId::new("444444")],
     ];
 
     let mut chain_done = Vec::new();
@@ -252,7 +252,7 @@ async fn test_rule_chain() {
 
     // ---------------------------------------------------------------------------
     degree_status = create_degree_status();
-    chains.push(vec!["114052".to_string(), "114054".to_string()]); // user finished the chain [114052, 114054]
+    chains.push(vec![CourseId::new("114052"), CourseId::new("114054")]); // user finished the chain [114052, 114054]
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let res = handle_bank_rule_processor.chain(&chains, &mut chain_done);
@@ -285,7 +285,7 @@ async fn test_rule_malag() {
     // for debugging
     let mut degree_status = create_degree_status();
     let bank_name = "MALAG".to_string();
-    let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
+    let course_list = vec![CourseId::new("11111111"), CourseId::new("22222222")]; // this list shouldn't affect anything
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let res = handle_bank_rule_processor.malag();
@@ -313,7 +313,7 @@ async fn test_rule_sport() {
     // for debugging
     let mut degree_status = create_degree_status();
     let bank_name = "SPORT".to_string();
-    let course_list = vec!["1".to_string(), "2".to_string()]; // this list shouldn't affect anything
+    let course_list = vec![CourseId::new("11111111"), CourseId::new("22222222")]; // this list shouldn't affect anything
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let res = handle_bank_rule_processor.sport();
@@ -343,7 +343,7 @@ async fn test_specialization_group() {
         course_statuses: vec![
             CourseStatus {
                 course: Course {
-                    id: "236334".to_string(),
+                    id: CourseId::new("236334"),
                     credit: 5.5,
                     name: "".to_string(),
                     tags: None,
@@ -354,7 +354,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "044202".to_string(),
+                    id: CourseId::new("044202"),
                     credit: 5.5,
                     name: "".to_string(),
                     tags: None,
@@ -365,7 +365,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "236374".to_string(),
+                    id: CourseId::new("236374"),
                     credit: 3.5,
                     name: "".to_string(),
                     tags: None,
@@ -376,7 +376,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "044198".to_string(),
+                    id: CourseId::new("044198"),
                     credit: 3.0,
                     name: "".to_string(),
                     tags: None,
@@ -387,7 +387,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "236501".to_string(),
+                    id: CourseId::new("236501"),
                     credit: 3.0,
                     name: "".to_string(),
                     tags: None,
@@ -398,7 +398,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "236329".to_string(),
+                    id: CourseId::new("236329"),
                     credit: 2.0,
                     name: "".to_string(),
                     tags: None,
@@ -409,7 +409,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "234325".to_string(),
+                    id: CourseId::new("234325"),
                     credit: 1.0,
                     name: "".to_string(),
                     tags: None,
@@ -420,7 +420,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "044191".to_string(),
+                    id: CourseId::new("044191"),
                     credit: 1.0,
                     name: "".to_string(),
                     tags: None,
@@ -431,7 +431,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "046206".to_string(),
+                    id: CourseId::new("046206"),
                     credit: 3.5,
                     name: "".to_string(),
                     tags: None,
@@ -442,7 +442,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "236319".to_string(),
+                    id: CourseId::new("236319"),
                     credit: 3.5,
                     name: "".to_string(),
                     tags: None,
@@ -453,7 +453,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "236321".to_string(),
+                    id: CourseId::new("236321"),
                     credit: 3.5,
                     name: "".to_string(),
                     tags: None,
@@ -464,7 +464,7 @@ async fn test_specialization_group() {
             },
             CourseStatus {
                 course: Course {
-                    id: "236322".to_string(),
+                    id: CourseId::new("236322"),
                     credit: 3.5,
                     name: "".to_string(),
                     tags: None,
@@ -479,18 +479,18 @@ async fn test_specialization_group() {
         total_credit: 0.0,
     };
     let course_list = vec![
-        "236334".to_string(),
-        "044202".to_string(),
-        "046206".to_string(),
-        "236374".to_string(),
-        "044198".to_string(),
-        "236501".to_string(),
-        "236329".to_string(),
-        "234325".to_string(),
-        "044191".to_string(),
-        "236319".to_string(),
-        "236321".to_string(),
-        "236322".to_string(),
+        CourseId::new("236334"),
+        CourseId::new("044202"),
+        CourseId::new("046206"),
+        CourseId::new("236374"),
+        CourseId::new("044198"),
+        CourseId::new("236501"),
+        CourseId::new("236329"),
+        CourseId::new("234325"),
+        CourseId::new("044191"),
+        CourseId::new("236319"),
+        CourseId::new("236321"),
+        CourseId::new("236322"),
     ];
     let sgs = SpecializationGroups {
         groups_list: vec![
@@ -503,9 +503,9 @@ async fn test_specialization_group() {
                     "046336", "046265",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["236334".to_string(), "236357".to_string()]]),
+                mandatory: Some(vec![vec![CourseId::new("236334"), CourseId::new("236357")]]),
             },
             SpecializationGroup {
                 name: "תורת התקשורת".to_string(),
@@ -516,11 +516,11 @@ async fn test_specialization_group() {
                     "236520",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![
-                    vec!["044202".to_string()],
-                    vec!["046206".to_string(), "046204".to_string()],
+                    vec![CourseId::new("044202")],
+                    vec![CourseId::new("046206"), CourseId::new("046204")],
                 ]),
             },
             SpecializationGroup {
@@ -531,9 +531,9 @@ async fn test_specialization_group() {
                     "236506", "236525", "236520", "236522", "236719", "236760", "236990",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["236343".to_string()]]),
+                mandatory: Some(vec![vec![CourseId::new("236343")]]),
             },
             SpecializationGroup {
                 name: "עיבוד אותות ותמונות".to_string(),
@@ -544,11 +544,11 @@ async fn test_specialization_group() {
                     "236862",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![
-                    vec!["044198".to_string()],
-                    vec!["044202".to_string(), "236860".to_string()],
+                    vec![CourseId::new("044198")],
+                    vec![CourseId::new("044202"), CourseId::new("236860")],
                 ]),
             },
             SpecializationGroup {
@@ -559,12 +559,12 @@ async fn test_specialization_group() {
                     "236760", "046194", "236329", "236861", "236873", "236941", "236860", "236862",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![
-                    "234325".to_string(),
-                    "236501".to_string(),
-                    "236927".to_string(),
+                    CourseId::new("234325"),
+                    CourseId::new("236501"),
+                    CourseId::new("236927"),
                 ]]),
             },
             SpecializationGroup {
@@ -575,9 +575,12 @@ async fn test_specialization_group() {
                     "046187", "046189", "046773", "046851", "046880",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["044231".to_string()], vec!["046237".to_string()]]),
+                mandatory: Some(vec![
+                    vec![CourseId::new("044231")],
+                    vec![CourseId::new("046237")],
+                ]),
             },
             SpecializationGroup {
                 name: "מערכות תוכנה ותכנות מתקדם".to_string(),
@@ -588,7 +591,7 @@ async fn test_specialization_group() {
                     "046275", "236278",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
                 mandatory: None,
             },
@@ -600,9 +603,9 @@ async fn test_specialization_group() {
                     "236330", "236756", "236927",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["044191".to_string()]]),
+                mandatory: Some(vec![vec![CourseId::new("044191")]]),
             },
             SpecializationGroup {
                 name: "שפות תכנות, שפות פורמליות וטבעיות".to_string(),
@@ -612,9 +615,9 @@ async fn test_specialization_group() {
                     "236780",
                 ]
                 .into_iter()
-                .map(|c| c.to_string())
+                .map(|c| CourseId::new(c))
                 .collect::<Vec<_>>(),
-                mandatory: Some(vec![vec!["234129".to_string()]]),
+                mandatory: Some(vec![vec![CourseId::new("234129")]]),
             },
         ],
         groups_number: 3,

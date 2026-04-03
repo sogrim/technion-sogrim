@@ -5,7 +5,7 @@ use crate::{
     core::{messages, types::Rule},
     resources::{
         catalog::{Catalog, Faculty},
-        course::{Course, CourseBank, CourseState, CourseStatus, Grade, Tag},
+        course::{Course, CourseBank, CourseId, CourseState, CourseStatus, Grade, Tag},
     },
 };
 
@@ -14,7 +14,7 @@ use super::*;
 fn english_course(id: &str, grade: Grade) -> CourseStatus {
     CourseStatus {
         course: Course {
-            id: id.to_string(),
+            id: CourseId::new(id),
             credit: 2.0,
             name: id.to_string(),
             tags: Some(vec![Tag::English]),
@@ -28,7 +28,7 @@ fn english_course(id: &str, grade: Grade) -> CourseStatus {
 fn regular_course(id: &str, bank: &str, grade: Grade, repeats: usize) -> CourseStatus {
     CourseStatus {
         course: Course {
-            id: id.to_string(),
+            id: CourseId::new(id),
             credit: 3.0,
             name: id.to_string(),
             tags: None,
@@ -61,7 +61,7 @@ fn catalog(name: &str, faculty: Faculty, course_banks: Vec<CourseBank>) -> Catal
 fn english_requirement_is_not_checked_for_old_catalog_years() {
     let mut degree_status = DegreeStatus {
         course_statuses: vec![english_course(
-            consts::TECHNICAL_ENGLISH_ADVANCED_B,
+            consts::TECHNICAL_ENGLISH_ADVANCED_B_ID,
             Grade::ExemptionWithCredit,
         )],
         ..Default::default()
@@ -77,7 +77,7 @@ fn english_requirement_is_not_checked_for_old_catalog_years() {
 fn english_requirement_warns_exempt_students_with_missing_english_content() {
     let mut degree_status = DegreeStatus {
         course_statuses: vec![english_course(
-            consts::TECHNICAL_ENGLISH_ADVANCED_B,
+            consts::TECHNICAL_ENGLISH_ADVANCED_B_ID,
             Grade::ExemptionWithoutCredit,
         )],
         ..Default::default()
@@ -97,7 +97,7 @@ fn medicine_postprocessing_reports_zero_average_when_no_numeric_grades() {
     let mut degree_status = DegreeStatus {
         course_statuses: vec![CourseStatus {
             course: Course {
-                id: "med".to_string(),
+                id: CourseId::new("med"),
                 credit: 3.0,
                 name: "med".to_string(),
                 tags: None,
@@ -178,7 +178,7 @@ fn medicine_postprocessing_flags_course_repetition_violations() {
             degree_status
                 .course_statuses
                 .iter()
-                .filter(|cs| cs.course.id == "med-repeat")
+                .filter(|cs| *cs.course.id == *"med-repeat")
                 .collect(),
         )
     }));
