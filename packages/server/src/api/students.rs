@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use axum::{extract::Query, response::IntoResponse, Extension, Json};
 use bson::DateTime;
@@ -8,11 +8,12 @@ use http::StatusCode;
 use crate::{
     core::{degree_status::DegreeStatus, parser_v2},
     db::{Db, FilterOption},
+    disk_cache::DiskCourseCache,
     error::AppError,
     middleware::jwt_decoder::Sub,
     resources::{
         catalog::{Catalog, DisplayCatalog},
-        course::{self, Course, CourseId},
+        course::Course,
         user::{TimetableState, User, UserDetails, UserSettings},
     },
 };
@@ -134,6 +135,7 @@ pub async fn add_courses(
 pub async fn compute_degree_status(
     mut user: User,
     Extension(db): Extension<Db>,
+    Extension(course_cache): Extension<Arc<DiskCourseCache>>,
 ) -> Result<impl IntoResponse, AppError> {
     let display_catalog = user
         .details
@@ -179,25 +181,14 @@ pub async fn compute_degree_status(
 
     user.details.modified = false;
 
-    let courses = db
-        .get_filtered::<Course>(
-            FilterOption::In,
-            "_id",
-            catalog
-                .get_all_course_ids()
-                .into_iter()
-                .chain(
-                    user.details
-                        .degree_status
-                        .course_statuses
-                        .iter()
-                        .map(|cs| cs.course.id.clone()),
-                )
-                .collect::<Vec<CourseId>>(),
-        )
-        .await?;
+    let mut courses = course_cache.get_all_courses().await;
+    // Insert student courses only if not already present in the cache
+    for cs in &user.details.degree_status.course_statuses {
+        courses.entry(cs.course.id.clone()).or_insert_with(|| cs.course.clone());
+    }
 
-    user.details.degree_status.fill_tags(&courses);
+    let courses_vec: Vec<Course> = courses.values().cloned().collect();
+    user.details.degree_status.fill_tags(&courses_vec);
 
     let mut course_list = Vec::new();
     if user.details.compute_in_progress {
@@ -206,7 +197,7 @@ pub async fn compute_degree_status(
 
     user.details
         .degree_status
-        .compute(catalog, course::vec_to_map(courses));
+        .compute(catalog, courses);
 
     if user.details.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);

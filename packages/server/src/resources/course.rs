@@ -10,6 +10,7 @@ use std::ops::Deref;
 
 use crate::core::types::Rule;
 use crate::db::Resource;
+use crate::sap::CourseDetails;
 
 const NON_STANDARD_PREFIXES: [&str; 4] = ["51", "52", "61", "97"];
 
@@ -108,6 +109,27 @@ pub enum Tag {
     SportTeam, // TODO: check if need this
     MedicinePreclinical,
     MedicineClinical,
+}
+
+impl From<&CourseDetails> for Course {
+    fn from(details: &CourseDetails) -> Self {
+        let mut tags = Vec::new();
+        if details.is_english {
+            tags.push(Tag::English);
+        }
+        if details.is_sport {
+            tags.push(Tag::Sport);
+        }
+        if details.is_malag {
+            tags.push(Tag::Malag);
+        }
+        Course {
+            id: details.id.clone(),
+            credit: details.credits,
+            name: details.name.clone(),
+            tags: if tags.is_empty() { None } else { Some(tags) },
+        }
+    }
 }
 
 impl Course {
