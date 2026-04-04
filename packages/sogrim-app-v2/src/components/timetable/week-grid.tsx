@@ -3,8 +3,6 @@ import type { Day, TimetableEvent } from "@/types/timetable";
 import {
   DAY_NAMES,
   WEEKDAYS,
-  DEFAULT_START_HOUR,
-  DEFAULT_END_HOUR,
   SLOT_MINUTES,
   getTimeLabels,
   totalSlots,
@@ -211,7 +209,6 @@ function layoutEvents(
   const eventGroups: number[] = []; // which overlap group each event belongs to
   const groupMaxCols: number[] = []; // max columns used per group
 
-  let currentGroupStart = 0;
   let currentGroupEnd = 0;
   let groupIndex = -1;
 
@@ -223,7 +220,7 @@ function layoutEvents(
     // Check if this event starts a new non-overlapping group
     if (evStart >= currentGroupEnd) {
       groupIndex++;
-      currentGroupStart = evStart;
+      // new group starts at evStart
       currentGroupEnd = evEnd;
       columns.length = 0; // reset columns for new group
     } else {

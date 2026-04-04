@@ -2,6 +2,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use axum::{extract::Query, response::IntoResponse, Extension, Json};
 use bson::DateTime;
+use chrono::Datelike;
 use http::StatusCode;
 
 use crate::{
@@ -134,14 +135,47 @@ pub async fn compute_degree_status(
     mut user: User,
     Extension(db): Extension<Db>,
 ) -> Result<impl IntoResponse, AppError> {
-    let catalog_id = user
+    let display_catalog = user
         .details
         .catalog
         .as_ref()
-        .ok_or_else(|| AppError::InternalServer("No catalog chosen for user".into()))?
-        .id;
+        .ok_or_else(|| AppError::InternalServer("No catalog chosen for user".into()))?;
 
-    let catalog = db.get::<Catalog>(&catalog_id).await?;
+    let catalog_id = display_catalog.id;
+
+    // Extract track name from the display catalog.
+    // Fetch all sibling catalogs (same track, last 6 years) in one query,
+    // then find the chosen catalog among them and merge courses from the recent siblings.
+    let track_name = Catalog::track_name_from_str(&display_catalog.name);
+    let current_year = chrono::Utc::now().year() as usize;
+    let min_year = current_year.saturating_sub(6);
+
+    let (mut catalog, recent_siblings) = if !track_name.is_empty() {
+        let all_catalogs = db
+            .get_filtered::<Catalog>(FilterOption::Regex, "name", &track_name)
+            .await
+            .unwrap_or_default();
+
+        let mut chosen = None;
+        let mut recent: Vec<Catalog> = Vec::new();
+        for catalog in all_catalogs {
+            if catalog.id == catalog_id {
+                chosen = Some(catalog);
+            } else if catalog.year() >= min_year {
+                recent.push(catalog);
+            }
+        }
+
+        match chosen {
+            Some(c) => (c, recent),
+            // Chosen catalog is not among siblings (e.g., older than 6 years) — fetch separately
+            None => (db.get::<Catalog>(&catalog_id).await?, recent),
+        }
+    } else {
+        (db.get::<Catalog>(&catalog_id).await?, Vec::new())
+    };
+
+    catalog.enrich_with_sibling_courses(&recent_siblings);
 
     user.details.modified = false;
 

@@ -1,15 +1,12 @@
 use crate::{
-    core::{
-        credit_transfer_graph::find_traversal_order,
-        types::CreditOverflow,
-    },
+    core::{credit_transfer_graph::find_traversal_order, types::CreditOverflow},
     db::Resource,
     resources::course::CourseBank,
 };
 use bson::{doc, Document};
 use regex::Regex;
 use serde::{self, Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::course::CourseId;
 
@@ -86,6 +83,63 @@ impl Catalog {
 
         for bank in self.course_banks.iter_mut() {
             bank.replace_course(course.clone(), replacement.clone());
+        }
+    }
+
+    /// Returns the track name by stripping the year portion from a catalog name string.
+    /// E.g. "מדמח תלת שנתי 2022-2023" → "מדמח תלת שנתי"
+    pub fn track_name_from_str(name: &str) -> String {
+        Regex::new(r"\s*\d{4}(-\d{4})?\s*")
+            .unwrap()
+            .replace_all(name, "")
+            .trim()
+            .to_string()
+    }
+
+    pub fn track_name(&self) -> String {
+        Self::track_name_from_str(&self.name)
+    }
+
+    /// Enrich this catalog with courses from sibling catalogs (same track, different years).
+    /// Only courses from AccumulateCredit and AccumulateCourses banks are merged.
+    /// The current catalog always takes priority — existing course_to_bank entries are never overridden.
+    pub fn enrich_with_sibling_courses(&mut self, siblings: &[Catalog]) {
+        let accumulate_bank_names: HashSet<&str> = self
+            .course_banks
+            .iter()
+            .filter(|bank| bank.rule.is_accumulate())
+            .map(|bank| bank.name.as_str())
+            .collect();
+
+        for sibling in siblings {
+            if sibling.id == self.id {
+                // Skip current catalog
+                continue;
+            }
+
+            let sibling_accumulate_banks: HashSet<&str> = sibling
+                .course_banks
+                .iter()
+                .filter(|bank| bank.rule.is_accumulate())
+                .map(|bank| bank.name.as_str())
+                .collect();
+
+            for (course_id, sibling_bank_name) in &sibling.course_to_bank {
+                // Current catalog always takes priority
+                if self.course_to_bank.contains_key(course_id) {
+                    continue;
+                }
+                // Only merge from accumulate-type banks in the sibling
+                if !sibling_accumulate_banks.contains(sibling_bank_name.as_str()) {
+                    continue;
+                }
+                // Only merge if we have a matching accumulate bank with this name
+                if !accumulate_bank_names.contains(sibling_bank_name.as_str()) {
+                    continue;
+                }
+                self.course_to_bank
+                    .insert(course_id.clone(), sibling_bank_name.clone());
+            }
         }
     }
 }
