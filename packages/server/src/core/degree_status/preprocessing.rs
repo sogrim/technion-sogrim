@@ -147,6 +147,8 @@ impl DegreeStatus {
         });
 
         self.replace_student_course_with_courses_in_catalog(catalog, courses);
+
+        catalog.enrich_with_prefix_courses(&self.course_statuses);
     }
 }
 

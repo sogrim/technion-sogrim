@@ -8,7 +8,7 @@ use regex::Regex;
 use serde::{self, Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
-use super::course::CourseId;
+use super::course::{CourseId, CourseStatus};
 
 pub(crate) type OptionalReplacements = Vec<CourseId>;
 
@@ -37,7 +37,24 @@ pub struct Catalog {
     pub common_replacements: HashMap<CourseId, OptionalReplacements>, // Common replacement which usually approved by the coordinators
 }
 
+impl Faculty {
+    /// Returns the known course ID prefixes for this faculty.
+    /// Can be extended per-faculty as needed.
+    fn course_prefixes(&self) -> Vec<&str> {
+        match self {
+            Faculty::ComputerScience => vec!["0234", "0236"],
+            _ => vec![],
+        }
+    }
+}
+
 impl Catalog {
+    /// Returns course ID prefixes for this catalog, currently based on faculty.
+    /// Can be extended in the future to also consider the track name.
+    pub fn course_prefixes(&self) -> Vec<&str> {
+        self.faculty.course_prefixes()
+    }
+
     pub fn year(&self) -> usize {
         let default_year = 2018;
         Regex::new(r"(?P<year>\d{4})")
@@ -71,6 +88,27 @@ impl Catalog {
 
     pub fn is_medicine(&self) -> bool {
         matches!(self.faculty, Faculty::Medicine)
+    }
+
+    /// Returns the name of the accumulate bank with the most courses in `course_to_bank`.
+    /// Used to determine where prefix-matched, non-catalog courses should be counted.
+    pub fn default_accumulate_bank(&self) -> Option<String> {
+        let accumulate_bank_names: Vec<&str> = self
+            .course_banks
+            .iter()
+            .filter(|bank| bank.rule.is_accumulate())
+            .map(|bank| bank.name.as_str())
+            .collect();
+
+        accumulate_bank_names
+            .iter()
+            .max_by_key(|&&bank_name| {
+                self.course_to_bank
+                    .values()
+                    .filter(|v| v.as_str() == bank_name)
+                    .count()
+            })
+            .map(|&name| name.to_string())
     }
 
     // Iterate over all banks and replace the course with the replacement
@@ -139,6 +177,31 @@ impl Catalog {
                 }
                 self.course_to_bank
                     .insert(course_id.clone(), sibling_bank_name.clone());
+            }
+        }
+    }
+
+    /// Enrich this catalog with student courses that match the faculty's course prefixes
+    /// but are not already in `course_to_bank`. These courses are assigned to the
+    /// accumulate bank with the most courses (the "default" accumulate bank).
+    pub fn enrich_with_prefix_courses(&mut self, student_courses: &[CourseStatus]) {
+        let prefixes = self.course_prefixes();
+        if prefixes.is_empty() {
+            return;
+        }
+        let prefixes: Vec<String> = prefixes.into_iter().map(String::from).collect();
+        let Some(default_bank) = self.default_accumulate_bank() else {
+            return;
+        };
+
+        for course_status in student_courses {
+            let course_id = &course_status.course.id;
+            if self.course_to_bank.contains_key(course_id) {
+                continue;
+            }
+            if prefixes.iter().any(|prefix| course_id.starts_with(prefix.as_str())) {
+                self.course_to_bank
+                    .insert(course_id.clone(), default_bank.clone());
             }
         }
     }
