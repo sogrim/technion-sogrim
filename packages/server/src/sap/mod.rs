@@ -1776,7 +1776,7 @@ fn resolve_building_code(code: &str) -> Option<&'static str> {
     // This list is derived from GObjectSet results + the SAP
     // building names normalized the same way he does (strip "בנין"/"בניין" prefix).
     match code {
-        "014" => Some("טאוב"),
+        "014" => Some("אולמן"),
         "015" => Some("אולם צ'רצ'יל"),
         "016" => Some("הנ' כימית"),
         "018" => Some("הנ' מכונות"),
@@ -1800,7 +1800,7 @@ fn resolve_building_code(code: &str) -> Option<&'static str> {
         "056" => Some("מדע החלטות"),
         "058" => Some("סגו"),
         "060" => Some("ביוטכנולוגיה ומדעי המזון"),
-        "069" => Some("דן קהאן"),
+        "069" => Some("טאוב"),
         "071" => Some("ספריה מרכזית"),
         "079" => Some("הנדסת חמרים"),
         "084" => Some("מדעי המחשב"),
