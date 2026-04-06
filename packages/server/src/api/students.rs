@@ -99,24 +99,25 @@ pub async fn update_catalog(
 pub async fn get_courses_by_filter(
     _: User,
     Query(params): Query<HashMap<String, String>>,
-    Extension(db): Extension<Db>,
+    Extension(course_cache): Extension<Arc<DiskCourseCache>>,
 ) -> Result<impl IntoResponse, AppError> {
-    match (params.get("name"), params.get("number")) {
+    let all_courses = course_cache.get_all_courses().await;
+    let courses: Vec<Course> = match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
-            let courses = db
-                .get_filtered::<Course>(FilterOption::Regex, "name", name)
-                .await?;
-            Ok(Json(courses))
+            let pattern = name.to_lowercase();
+            all_courses
+                .into_values()
+                .filter(|c| c.name.to_lowercase().contains(&pattern))
+                .collect()
         }
-        (None, Some(number)) => {
-            let courses = db
-                .get_filtered::<Course>(FilterOption::Regex, "_id", number)
-                .await?;
-            Ok(Json(courses))
-        }
-        (Some(_), Some(_)) => Err(AppError::BadRequest("Invalid query params".into())),
-        (None, None) => Err(AppError::BadRequest("Missing query params".into())),
-    }
+        (None, Some(number)) => all_courses
+            .into_values()
+            .filter(|c| c.id.contains(number))
+            .collect(),
+        (Some(_), Some(_)) => return Err(AppError::BadRequest("Invalid query params".into())),
+        (None, None) => return Err(AppError::BadRequest("Missing query params".into())),
+    };
+    Ok(Json(courses))
 }
 
 pub async fn add_courses(
