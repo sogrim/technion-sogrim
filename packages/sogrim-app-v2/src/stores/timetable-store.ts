@@ -10,7 +10,7 @@ import type {
   ViewMode,
 } from "@/types/timetable";
 import { getProvider } from "@/data/course-schedule-provider";
-import { generateDraftId, defaultDraftName } from "@/lib/timetable-utils";
+import { generateDraftId } from "@/lib/timetable-utils";
 import { getConflictingEventKeys, eventKey } from "@/lib/timetable-conflicts";
 
 interface TimetableState {
@@ -26,6 +26,7 @@ interface TimetableState {
   currentSemester: string;
   drafts: TimetableDraft[];
   activeDraftId: string | null;
+  draftCounter: number;
 
   // Sync status
   _loaded: boolean;   // true only after successful backend load
@@ -89,6 +90,7 @@ export const useTimetableStore = create<TimetableState>()(
       currentSemester: "",
       drafts: [],
       activeDraftId: null,
+      draftCounter: 0,
       _loaded: false,
       _syncing: false,
       _lastSaved: 0,
@@ -114,12 +116,12 @@ export const useTimetableStore = create<TimetableState>()(
       createDraft: (semester) => {
         const state = get();
         const sem = semester ?? state.currentSemester;
-        const semDrafts = state.drafts.filter((d) => d.semester === sem);
+        const next = state.draftCounter + 1;
         const id = generateDraftId();
         const now = new Date().toISOString();
         const newDraft: TimetableDraft = {
           id,
-          name: defaultDraftName(semDrafts.length),
+          name: `אפשרות ${next}`,
           semester: sem,
           courses: [],
           customEvents: [],
@@ -130,6 +132,7 @@ export const useTimetableStore = create<TimetableState>()(
         set({
           drafts: [...state.drafts, newDraft],
           activeDraftId: id,
+          draftCounter: next,
         });
         return id;
       },
