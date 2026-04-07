@@ -1,4 +1,6 @@
+use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::{
     api::{
@@ -7,6 +9,7 @@ use crate::{
     },
     core::{degree_status::DegreeStatus, messages},
     db::Db,
+    disk_cache::DiskCourseCache,
     middleware::{
         self, auth,
         jwt_decoder::JwtDecoder,
@@ -27,6 +30,13 @@ use axum::{
 };
 use bson::oid::ObjectId;
 use tower::ServiceExt;
+
+/// Create an empty disk course cache for tests (points at a non-existent directory).
+fn test_course_cache() -> Arc<DiskCourseCache> {
+    Arc::new(DiskCourseCache::new(PathBuf::from(
+        "__test_cache_nonexistent__",
+    )))
+}
 
 use super::admins::{self, ComputeDegreeStatusPayload};
 
@@ -110,7 +120,8 @@ async fn test_students_api_full_flow() {
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))
         .layer(Extension(Permissions::Student))
         .layer(Extension(db.clone()))
-        .layer(Extension(decoder));
+        .layer(Extension(decoder))
+        .layer(Extension(test_course_cache()));
 
     // get /students/login
     let req = Request::builder()
@@ -213,7 +224,8 @@ async fn test_compute_in_progress() {
                 .route("/details", put(students::update_details)),
         )
         .layer(Extension(Permissions::Student))
-        .layer(Extension(db.clone()));
+        .layer(Extension(db.clone()))
+        .layer(Extension(test_course_cache()));
 
     let mut req = Request::builder()
         .method(Method::GET)
@@ -429,7 +441,8 @@ async fn test_students_api_no_catalog() {
             Router::new().route("/degree-status", get(students::compute_degree_status)),
         )
         .layer(Extension(Permissions::Student))
-        .layer(Extension(db.clone()));
+        .layer(Extension(db.clone()))
+        .layer(Extension(test_course_cache()));
 
     let mut req = Request::builder()
         .method(Method::GET)
@@ -466,7 +479,8 @@ async fn test_admins_parse_and_compute_api() {
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))
         .layer(Extension(Permissions::Admin))
         .layer(Extension(db.clone()))
-        .layer(Extension(decoder));
+        .layer(Extension(decoder))
+        .layer(Extension(test_course_cache()));
 
     let copy_paste_data = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
         .expect("Something went wrong reading the file");
@@ -491,9 +505,11 @@ async fn test_admins_parse_and_compute_api() {
         .unwrap();
     let degree_status: DegreeStatus = serde_json::from_slice(&body).unwrap();
     assert_eq!(degree_status.total_credit, 106.5);
+    // With an empty course cache, fill_tags cannot find course tag data,
+    // so 5.0 credits end up as leftovers instead of 0.0.
     assert!(degree_status
         .overflow_msgs
-        .contains(&messages::credit_leftovers_msg(0.0)))
+        .contains(&messages::credit_leftovers_msg(5.0)))
 }
 
 #[tokio::test]
