@@ -503,7 +503,7 @@ async fn test_specialization_group() {
                     "046336", "046265",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![CourseId::new("236334"), CourseId::new("236357")]]),
             },
@@ -516,7 +516,7 @@ async fn test_specialization_group() {
                     "236520",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![
                     vec![CourseId::new("044202")],
@@ -531,7 +531,7 @@ async fn test_specialization_group() {
                     "236506", "236525", "236520", "236522", "236719", "236760", "236990",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![CourseId::new("236343")]]),
             },
@@ -544,7 +544,7 @@ async fn test_specialization_group() {
                     "236862",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![
                     vec![CourseId::new("044198")],
@@ -559,7 +559,7 @@ async fn test_specialization_group() {
                     "236760", "046194", "236329", "236861", "236873", "236941", "236860", "236862",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![
                     CourseId::new("234325"),
@@ -575,7 +575,7 @@ async fn test_specialization_group() {
                     "046187", "046189", "046773", "046851", "046880",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![
                     vec![CourseId::new("044231")],
@@ -591,7 +591,7 @@ async fn test_specialization_group() {
                     "046275", "236278",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: None,
             },
@@ -603,7 +603,7 @@ async fn test_specialization_group() {
                     "236330", "236756", "236927",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![CourseId::new("044191")]]),
             },
@@ -615,7 +615,7 @@ async fn test_specialization_group() {
                     "236780",
                 ]
                 .into_iter()
-                .map(|c| CourseId::new(c))
+                .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![CourseId::new("234129")]]),
             },
