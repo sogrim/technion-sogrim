@@ -337,7 +337,11 @@ fn test_default_accumulate_bank_picks_largest() {
 
 #[test]
 fn test_default_accumulate_bank_no_accumulate_banks() {
-    let catalog = make_catalog("test", vec![("חובה", Rule::All)], vec![("02340001", "חובה")]);
+    let catalog = make_catalog(
+        "test",
+        vec![("חובה", Rule::All)],
+        vec![("02340001", "חובה")],
+    );
     assert_eq!(catalog.default_accumulate_bank(), None);
 }
 
@@ -376,10 +380,7 @@ fn test_enrich_prefix_adds_non_catalog_course() {
 fn test_enrich_prefix_does_not_override_existing() {
     let mut catalog = make_catalog(
         "מדמח 2023",
-        vec![
-            ("חובה", Rule::All),
-            ("רשימה א", Rule::AccumulateCredit),
-        ],
+        vec![("חובה", Rule::All), ("רשימה א", Rule::AccumulateCredit)],
         vec![
             ("02340001", "חובה"), // already mapped to חובה
             ("02340002", "רשימה א"),

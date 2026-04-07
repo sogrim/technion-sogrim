@@ -199,7 +199,10 @@ impl Catalog {
             if self.course_to_bank.contains_key(course_id) {
                 continue;
             }
-            if prefixes.iter().any(|prefix| course_id.starts_with(prefix.as_str())) {
+            if prefixes
+                .iter()
+                .any(|prefix| course_id.starts_with(prefix.as_str()))
+            {
                 self.course_to_bank
                     .insert(course_id.clone(), default_bank.clone());
             }

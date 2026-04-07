@@ -94,7 +94,7 @@ pub async fn test_get_courses_by_filters() {
         .expect("Failed to get courses by name");
 
     assert_eq!(courses.len(), 2); // Since 2024 there are 2 formats for the course id: 6 digit and 8 digit
-    // Both are normalized to 8-digit by CourseId deserialization
+                                  // Both are normalized to 8-digit by CourseId deserialization
     assert!(courses
         .iter()
         .all(|c| *c.id == *"01040031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
@@ -118,10 +118,7 @@ pub async fn test_get_courses_by_filters() {
         .expect("Failed to get courses by number");
 
     assert_eq!(courses.len(), 3);
-    assert!(courses
-        .iter()
-        .filter(|c| *c.id == *"01040031")
-        .count() == 2); // both 6-digit and 8-digit normalize to same id
+    assert!(courses.iter().filter(|c| *c.id == *"01040031").count() == 2); // both 6-digit and 8-digit normalize to same id
     assert!(courses
         .iter()
         .any(|c| *c.id == *"01040166" && c.name == "אלגברה אמ'"));

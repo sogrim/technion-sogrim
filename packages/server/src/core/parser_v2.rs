@@ -423,8 +423,8 @@ fn assign_semester_numbers(raw_courses: Vec<RawCourse>) -> Result<Vec<CourseStat
 
         // 0-credit exemptions (פטור ללא ניקוד) should have no semester,
         // so they are not picked up by bank rules (e.g. elective).
-        let is_zero_credit_exemption = raw.credit == 0.0
-            && matches!(raw.grade, Some(Grade::ExemptionWithoutCredit));
+        let is_zero_credit_exemption =
+            raw.credit == 0.0 && matches!(raw.grade, Some(Grade::ExemptionWithoutCredit));
 
         let mut cs = CourseStatus {
             course: Course {

@@ -34,7 +34,9 @@ pub async fn parse_courses_and_compute_degree_status(
     let mut courses = course_cache.get_all_courses().await;
     // Insert parsed courses only if not already present in the cache
     for cs in &degree_status.course_statuses {
-        courses.entry(cs.course.id.clone()).or_insert_with(|| cs.course.clone());
+        courses
+            .entry(cs.course.id.clone())
+            .or_insert_with(|| cs.course.clone());
     }
 
     let courses_vec: Vec<Course> = courses.values().cloned().collect();

@@ -185,7 +185,9 @@ pub async fn compute_degree_status(
     let mut courses = course_cache.get_all_courses().await;
     // Insert student courses only if not already present in the cache
     for cs in &user.details.degree_status.course_statuses {
-        courses.entry(cs.course.id.clone()).or_insert_with(|| cs.course.clone());
+        courses
+            .entry(cs.course.id.clone())
+            .or_insert_with(|| cs.course.clone());
     }
 
     let courses_vec: Vec<Course> = courses.values().cloned().collect();
@@ -196,9 +198,7 @@ pub async fn compute_degree_status(
         course_list = user.details.degree_status.set_in_progress_to_complete();
     }
 
-    user.details
-        .degree_status
-        .compute(catalog, courses);
+    user.details.degree_status.compute(catalog, courses);
 
     if user.details.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);

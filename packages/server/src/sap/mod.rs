@@ -875,7 +875,11 @@ impl CachedSapClient {
             .collect()
     }
 
-    async fn fetch_course_ids(&self, year: &str, semester: &str) -> Result<Vec<CourseId>, SapError> {
+    async fn fetch_course_ids(
+        &self,
+        year: &str,
+        semester: &str,
+    ) -> Result<Vec<CourseId>, SapError> {
         let query = format!(
             "SmObjectSet?sap-client=700&$skip=0&$top=10000\
              &$filter=Peryr%20eq%20%27{year}%27%20and%20Perid%20eq%20%27{semester}%27\
@@ -2018,7 +2022,10 @@ mod tests {
 
     #[test]
     fn test_parse_corequisites() {
-        assert_eq!(parse_corequisites("מקצוע צמוד: 104031"), vec![CourseId::new("00104031")]);
+        assert_eq!(
+            parse_corequisites("מקצוע צמוד: 104031"),
+            vec![CourseId::new("00104031")]
+        );
         assert_eq!(
             parse_corequisites("מקצועות צמודים: 104031, 104166"),
             vec![CourseId::new("00104031"), CourseId::new("00104166")]

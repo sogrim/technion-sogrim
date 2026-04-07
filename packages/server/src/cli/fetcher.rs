@@ -487,7 +487,8 @@ async fn run_repair(args: &FetcherArgs) {
             continue;
         };
 
-        let phantom_set: std::collections::HashSet<&CourseId> = phantom_ids.iter().copied().collect();
+        let phantom_set: std::collections::HashSet<&CourseId> =
+            phantom_ids.iter().copied().collect();
         let filtered: Vec<&CourseIndexEntry> = index
             .iter()
             .filter(|e| !phantom_set.contains(&e.id))
@@ -827,8 +828,7 @@ pub async fn run(args: FetcherArgs) {
 
         // Rebuild index excluding failed courses
         if !failed_ids.is_empty() {
-            let failed_set: std::collections::HashSet<&CourseId> =
-                failed_ids.iter().collect();
+            let failed_set: std::collections::HashSet<&CourseId> = failed_ids.iter().collect();
             w.course_ids.retain(|id| !failed_set.contains(id));
             let filtered_index: Vec<&CourseIndexEntry> = w
                 .index
