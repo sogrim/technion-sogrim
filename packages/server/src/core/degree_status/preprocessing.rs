@@ -135,7 +135,27 @@ impl DegreeStatus {
             });
     }
 
-    pub fn preprocess(&mut self, catalog: &mut Catalog, courses: &HashMap<CourseId, Course>) {
+    // Merge the student courses with the course list
+    fn merge_courses(&self, courses: &mut HashMap<CourseId, Course>) {
+        for cs in &self.course_statuses {
+            courses
+                .entry(cs.course.id.clone())
+                .or_insert_with(|| cs.course.clone());
+        }
+    }
+
+    // Fill students courses with the relevant tags
+    fn fill_tags(&mut self, courses: &HashMap<CourseId, Course>) {
+        self.course_statuses.iter_mut().for_each(|course_status| {
+            course_status.course.tags = courses
+                .get(&course_status.course.id)
+                .and_then(|course| course.tags.clone());
+        });
+    }
+
+    pub fn preprocess(&mut self, catalog: &mut Catalog, courses: &mut HashMap<CourseId, Course>) {
+        self.merge_courses(courses);
+        self.fill_tags(courses);
         self.reset(catalog);
 
         self.course_statuses.sort_by(|c1, c2| {

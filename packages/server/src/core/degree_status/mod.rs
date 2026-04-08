@@ -67,14 +67,6 @@ impl DegreeStatus {
             })
     }
 
-    pub fn fill_tags(&mut self, courses: &HashMap<CourseId, Course>) {
-        self.course_statuses.iter_mut().for_each(|course_status| {
-            course_status.course.tags = courses
-                .get(&course_status.course.id)
-                .and_then(|course| course.tags.clone());
-        });
-    }
-
     pub fn get_all_taken_courses_for_bank(&self, bank_name: &str) -> Vec<CourseId> {
         self.course_statuses
             .iter()
@@ -126,9 +118,8 @@ impl DegreeStatusHandler<'_> {
 }
 
 impl DegreeStatus {
-    pub fn compute(&mut self, mut catalog: Catalog, courses: HashMap<CourseId, Course>) {
-        // prepare the data for degree status computation
-        self.preprocess(&mut catalog, &courses);
+    pub fn compute(&mut self, mut catalog: Catalog, mut courses: HashMap<CourseId, Course>) {
+        self.preprocess(&mut catalog, &mut courses);
 
         let course_banks = catalog.get_bank_traversal_order();
 

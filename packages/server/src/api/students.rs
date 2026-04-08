@@ -182,15 +182,7 @@ pub async fn compute_degree_status(
 
     user.details.modified = false;
 
-    let mut courses = course_cache.get_all_courses().await;
-    // Insert student courses only if not already present in the cache
-    for cs in &user.details.degree_status.course_statuses {
-        courses
-            .entry(cs.course.id.clone())
-            .or_insert_with(|| cs.course.clone());
-    }
-
-    user.details.degree_status.fill_tags(&courses);
+    let courses = course_cache.get_all_courses().await;
 
     let mut course_list = Vec::new();
     if user.details.compute_in_progress {

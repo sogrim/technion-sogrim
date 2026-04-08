@@ -30,16 +30,7 @@ pub async fn parse_courses_and_compute_degree_status(
         ..Default::default()
     };
 
-    let mut courses = course_cache.get_all_courses().await;
-    // Insert parsed courses only if not already present in the cache
-    for cs in &degree_status.course_statuses {
-        courses
-            .entry(cs.course.id.clone())
-            .or_insert_with(|| cs.course.clone());
-    }
-
-    degree_status.fill_tags(&courses);
-
+    let courses = course_cache.get_all_courses().await;
     degree_status.compute(catalog, courses);
 
     Ok(Json(degree_status))
