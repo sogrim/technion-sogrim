@@ -1876,7 +1876,7 @@ fn parse_corequisites(note: &str) -> Vec<CourseId> {
     let num_re = Regex::new(r"\d{5,8}").unwrap();
     num_re
         .find_iter(content)
-        .map(|m| CourseId::new(format!("{:0>8}", m.as_str())))
+        .map(|m| CourseId::new(m.as_str()))
         .collect()
 }
 
