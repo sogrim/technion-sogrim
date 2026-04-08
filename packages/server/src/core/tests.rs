@@ -8,7 +8,7 @@ use crate::db::Db;
 use crate::resources::catalog::Catalog;
 use crate::resources::course::CourseState::NotComplete;
 use crate::resources::course::Grade::Numeric;
-use crate::resources::course::{self, Course, CourseState, CourseStatus, Grade, Tag};
+use crate::resources::course::{self, Course, CourseId, CourseState, CourseStatus, Grade, Tag};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::LazyLock;
@@ -62,7 +62,7 @@ async fn test_asterisk_course_input_from_edge_browser() {
 
     let course_status = courses_display_from_pdf
         .iter()
-        .find(|c| c.course.id == "094412")
+        .find(|c| *c.course.id == *"00940412")
         .unwrap();
 
     assert_eq!(course_status.grade.as_ref().unwrap(), &Grade::Numeric(92));
@@ -78,7 +78,7 @@ async fn test_asterisk_course_input_from_chrome_browser() {
 
     let course_status = courses_display_from_pdf
         .iter()
-        .find(|c| c.course.id == "234129")
+        .find(|c| *c.course.id == *"02340129")
         .unwrap();
 
     assert_eq!(course_status.grade.as_ref().unwrap(), &Grade::Numeric(67));
@@ -91,7 +91,10 @@ async fn test_parser_copy_paste_from_acrobat_reader() {
         .expect("Something went wrong reading the file");
 
     let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
-    let course_status = courses.iter().find(|c| c.course.id == "234325").unwrap();
+    let course_status = courses
+        .iter()
+        .find(|c| *c.course.id == *"02340325")
+        .unwrap();
 
     assert_eq!(course_status.course.credit, 3.0);
     assert_eq!(course_status.course.name, "גרפיקה ממוחשבת1");
@@ -101,7 +104,10 @@ async fn test_parser_copy_paste_from_acrobat_reader() {
         .expect("Something went wrong reading the file");
 
     let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
-    let course_status = courses.iter().find(|c| c.course.id == "274400").unwrap();
+    let course_status = courses
+        .iter()
+        .find(|c| *c.course.id == *"02740400")
+        .unwrap();
 
     assert_eq!(course_status.course.credit, 20.0);
     assert_eq!(
@@ -117,7 +123,10 @@ async fn test_parser_copy_paste_med_status() {
         .expect("Something went wrong reading the file");
 
     let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
-    let course_status = courses.iter().find(|c| c.course.id == "274400").unwrap();
+    let course_status = courses
+        .iter()
+        .find(|c| *c.course.id == *"02740400")
+        .unwrap();
 
     assert_eq!(course_status.course.credit, 20.0);
     assert_eq!(
@@ -133,9 +142,18 @@ async fn test_parser_course_status_repetitions() {
         .expect("Something went wrong reading the file");
 
     let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
-    let course_status = courses.iter().find(|c| c.course.id == "234247").unwrap();
-    let course_status2 = courses.iter().find(|c| c.course.id == "094591").unwrap();
-    let course_status3 = courses.iter().find(|c| c.course.id == "114052").unwrap();
+    let course_status = courses
+        .iter()
+        .find(|c| *c.course.id == *"02340247")
+        .unwrap();
+    let course_status2 = courses
+        .iter()
+        .find(|c| *c.course.id == *"00940591")
+        .unwrap();
+    let course_status3 = courses
+        .iter()
+        .find(|c| *c.course.id == *"01140052")
+        .unwrap();
 
     assert_eq!(course_status.times_repeated, 1);
     assert_eq!(course_status2.times_repeated, 1);
@@ -144,84 +162,84 @@ async fn test_parser_course_status_repetitions() {
     dbg!(course_status3);
 }
 
-static COURSES: LazyLock<HashMap<String, Course>> = LazyLock::new(|| {
+static COURSES: LazyLock<HashMap<CourseId, Course>> = LazyLock::new(|| {
     HashMap::from([
         (
-            "104031".to_string(),
+            CourseId::new("104031"),
             Course {
-                id: "104031".to_string(),
+                id: CourseId::new("104031"),
                 credit: 5.5,
                 name: "infi1m".to_string(),
                 tags: None,
             },
         ),
         (
-            "104166".to_string(),
+            CourseId::new("104166"),
             Course {
-                id: "104166".to_string(),
+                id: CourseId::new("104166"),
                 credit: 5.5,
                 name: "Algebra alef".to_string(),
                 tags: None,
             },
         ),
         (
-            "114052".to_string(),
+            CourseId::new("114052"),
             Course {
-                id: "114052".to_string(),
+                id: CourseId::new("114052"),
                 credit: 3.5,
                 name: "פיסיקה 2".to_string(),
                 tags: None,
             },
         ),
         (
-            "114054".to_string(),
+            CourseId::new("114054"),
             Course {
-                id: "114054".to_string(),
+                id: CourseId::new("114054"),
                 credit: 3.5,
                 name: "פיסיקה 3".to_string(),
                 tags: None,
             },
         ),
         (
-            "236303".to_string(),
+            CourseId::new("236303"),
             Course {
-                id: "236303".to_string(),
+                id: CourseId::new("236303"),
                 credit: 3.0,
                 name: "project1".to_string(),
                 tags: None,
             },
         ),
         (
-            "236512".to_string(),
+            CourseId::new("236512"),
             Course {
-                id: "236512".to_string(),
+                id: CourseId::new("236512"),
                 credit: 3.0,
                 name: "project2".to_string(),
                 tags: None,
             },
         ),
         (
-            "1".to_string(),
+            CourseId::new("1"),
             Course {
-                id: "1".to_string(),
+                id: CourseId::new("1"),
                 credit: 1.0,
                 name: "".to_string(),
                 tags: None,
             },
         ),
         (
-            "2".to_string(),
+            CourseId::new("2"),
             Course {
-                id: "2".to_string(),
+                id: CourseId::new("2"),
                 credit: 2.0,
                 name: "".to_string(),
                 tags: None,
             },
         ),
         (
-            "3".to_string(),
+            CourseId::new("3"),
             Course {
-                id: "3".to_string(),
+                id: CourseId::new("3"),
                 credit: 3.0,
                 name: "".to_string(),
                 tags: None,
@@ -249,7 +267,7 @@ pub fn create_degree_status() -> DegreeStatus {
         course_statuses: vec![
             CourseStatus {
                 course: Course {
-                    id: "104031".to_string(),
+                    id: CourseId::new("104031"),
                     credit: 5.5,
                     name: "infi1m".to_string(),
                     tags: None,
@@ -260,7 +278,7 @@ pub fn create_degree_status() -> DegreeStatus {
             },
             CourseStatus {
                 course: Course {
-                    id: "104166".to_string(),
+                    id: CourseId::new("104166"),
                     credit: 5.5,
                     name: "Algebra alef".to_string(),
                     tags: None,
@@ -271,7 +289,7 @@ pub fn create_degree_status() -> DegreeStatus {
             },
             CourseStatus {
                 course: Course {
-                    id: "114052".to_string(),
+                    id: CourseId::new("114052"),
                     credit: 3.5,
                     name: "פיסיקה 2".to_string(),
                     tags: None,
@@ -282,7 +300,7 @@ pub fn create_degree_status() -> DegreeStatus {
             },
             CourseStatus {
                 course: Course {
-                    id: "114054".to_string(),
+                    id: CourseId::new("114054"),
                     credit: 3.5,
                     name: "פיסיקה 3".to_string(),
                     tags: None,
@@ -293,7 +311,7 @@ pub fn create_degree_status() -> DegreeStatus {
             },
             CourseStatus {
                 course: Course {
-                    id: "236303".to_string(),
+                    id: CourseId::new("236303"),
                     credit: 3.0,
                     name: "project1".to_string(),
                     tags: None,
@@ -304,7 +322,7 @@ pub fn create_degree_status() -> DegreeStatus {
             },
             CourseStatus {
                 course: Course {
-                    id: "236512".to_string(),
+                    id: CourseId::new("236512"),
                     credit: 3.0,
                     name: "project2".to_string(),
                     tags: None,
@@ -315,7 +333,7 @@ pub fn create_degree_status() -> DegreeStatus {
             },
             CourseStatus {
                 course: Course {
-                    id: "324057".to_string(),
+                    id: CourseId::new("324057"),
                     credit: 2.0,
                     name: "mlg".to_string(),
                     tags: Some(vec![Tag::Malag]),
@@ -326,7 +344,7 @@ pub fn create_degree_status() -> DegreeStatus {
             },
             CourseStatus {
                 course: Course {
-                    id: "394645".to_string(), // Sport
+                    id: CourseId::new("394645"), // Sport
                     credit: 1.0,
                     name: "sport".to_string(),
                     tags: Some(vec![Tag::Sport]),
@@ -348,7 +366,7 @@ async fn test_irrelevant_course() {
     let mut degree_status = create_degree_status();
     degree_status.course_statuses[2].state = Some(CourseState::Irrelevant); // change 114052 to be irrelevant
     let bank_name = "hova".to_string();
-    let course_list = vec!["104031".to_string(), "114052".to_string()];
+    let course_list = vec![CourseId::new("104031"), CourseId::new("114052")];
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
@@ -367,7 +385,7 @@ async fn test_restore_irrelevant_course() {
     .await;
 
     for course_status in degree_status.course_statuses.iter_mut() {
-        if course_status.course.id == "114071" {
+        if *course_status.course.id == *"01140071" {
             // tag פיסיקה1מ as irrelevant
             course_status.state = Some(CourseState::Irrelevant);
         }
@@ -380,7 +398,7 @@ async fn test_restore_irrelevant_course() {
     .await;
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
-            id: "114071".to_string(),
+            id: CourseId::new("114071"),
             credit: 2.5,
             name: "פיסיקה 1מ".to_string(),
             tags: None,
@@ -411,7 +429,7 @@ async fn test_modified() {
     degree_status.course_statuses[0].r#type = Some("reshima alef".to_string()); // the user modified the type of 104031 to be reshima alef
     degree_status.course_statuses[0].modified = true;
     let bank_name = "hova".to_string();
-    let course_list = vec!["104031".to_string(), "104166".to_string()]; // although 104031 is in the list, it shouldn't be taken because the user modified its type
+    let course_list = vec![CourseId::new("104031"), CourseId::new("104166")]; // although 104031 is in the list, it shouldn't be taken because the user modified its type
     let handle_bank_rule_processor =
         create_bank_rule_handler!(&mut degree_status, bank_name, course_list, 0.0, 0);
     let mut missing_credit_dummy = 0.0;
@@ -448,7 +466,7 @@ async fn test_modified() {
     degree_status.course_statuses[3].r#type = Some("reshima alef".to_string()); // the user modified the type of 114054 to be reshima alef
     degree_status.course_statuses[3].modified = true;
     let bank_name = "hova".to_string();
-    let course_list = vec!["104031".to_string(), "104166".to_string()]; // although 114052 is not in the list, it should be taken because the user modified its type
+    let course_list = vec![CourseId::new("104031"), CourseId::new("104166")]; // although 114052 is not in the list, it should be taken because the user modified its type
 
     let handle_bank_rule_processor = create_bank_rule_handler!(
         &mut degree_status,
@@ -498,7 +516,7 @@ async fn test_duplicated_courses() {
     // This code Simulates addition of פיסיקה 1 manually by the user.
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
-            id: "114051".to_string(),
+            id: CourseId::new("114051"),
             credit: 2.5,
             name: "פיסיקה 1".to_string(),
             tags: None,
@@ -531,7 +549,7 @@ async fn test_course_replacement() {
     let mut degree_status = DegreeStatus {
         course_statuses: vec![CourseStatus {
             course: Course {
-                id: "104195".to_string(),
+                id: CourseId::new("104195"),
                 credit: 5.5,
                 name: "אינפי 1".to_string(),
                 tags: None,
@@ -550,11 +568,11 @@ async fn test_course_replacement() {
 
     assert_eq!(
         degree_status
-            .get_course_status("104195")
+            .get_course_status(&CourseId::new("104195"))
             .unwrap()
             .additional_msg,
         Some(messages::common_replacement_msg(&Course {
-            id: "104031".to_string(),
+            id: CourseId::new("104031"),
             credit: 5.5,
             name: "חשבון אינפיניטסימלי 1מ'".to_string(),
             tags: None,
@@ -580,8 +598,8 @@ async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) ->
         .get_all::<Course>()
         .await
         .expect("failed to get all courses");
-    degree_status.fill_tags(&vec_courses);
-    degree_status.compute(catalog, course::vec_to_map(vec_courses));
+    let courses = course::vec_to_map(vec_courses);
+    degree_status.compute(catalog, courses);
     degree_status
 }
 
@@ -733,7 +751,7 @@ async fn test_computer_engineer_itinerary() {
     // Replacement for 236334 that is part of "רשימות ליבה" and "קבוצות התמחות"
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
-            id: "044334".to_string(),
+            id: CourseId::new("044334"),
             credit: 3.0,
             name: "רשתות מחשבים ואינטרנט 1".to_string(),
             tags: None,
@@ -748,7 +766,7 @@ async fn test_computer_engineer_itinerary() {
     // Replacement for 236341 that is part of "קבוצות התמחות"
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
-            id: "046005".to_string(),
+            id: CourseId::new("046005"),
             credit: 3.0,
             name: "רשתות מחשבים ואינטרנט 2".to_string(),
             tags: None,
@@ -763,7 +781,7 @@ async fn test_computer_engineer_itinerary() {
     // This course is part of "קבוצות התמחות" in the catalog
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
-            id: "236357".to_string(),
+            id: CourseId::new("236357"),
             credit: 3.0,
             name: "אלגוריתמים מובזרים א'".to_string(),
             tags: None,
@@ -918,7 +936,9 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| course_status.course.id == consts::TECHNICAL_ENGLISH_ADVANCED_B)
+        .find(|course_status| {
+            course_status.course.id == CourseId::new(consts::TECHNICAL_ENGLISH_ADVANCED_B_ID)
+        })
         .unwrap()
         .grade = Some(Grade::Numeric(80));
 
@@ -937,7 +957,9 @@ async fn test_postprocessing_english_requirement() {
     degree_status
         .course_statuses
         .iter_mut()
-        .find(|course_status| course_status.course.id == consts::TECHNICAL_ENGLISH_ADVANCED_B)
+        .find(|course_status| {
+            course_status.course.id == CourseId::new(consts::TECHNICAL_ENGLISH_ADVANCED_B_ID)
+        })
         .unwrap()
         .state = Some(CourseState::NotComplete);
 
@@ -962,8 +984,12 @@ async fn test_postprocessing_medicine_requirement() {
     // )
     // .expect("Unable to write file");
 
-    let cs1 = degree_status.get_course_status("274109").unwrap();
-    let cs2 = degree_status.get_course_status("274143").unwrap();
+    let cs1 = degree_status
+        .get_course_status(&CourseId::new("274109"))
+        .unwrap();
+    let cs2 = degree_status
+        .get_course_status(&CourseId::new("274143"))
+        .unwrap();
 
     // The student repeated a mandatory course 274109 twice
     assert!(
@@ -1008,7 +1034,7 @@ async fn test_postprocessing_medicine_requirement() {
     degree_status.course_statuses.push(CourseStatus {
         course: Course {
             credit: 1.0,
-            id: "275101".to_string(),
+            id: CourseId::new("275101"),
             name: "".to_string(),
             tags: None,
         },

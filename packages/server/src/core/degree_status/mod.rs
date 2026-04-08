@@ -22,18 +22,18 @@ pub struct DegreeStatus {
 }
 
 impl DegreeStatus {
-    pub fn get_course_status(&self, id: &str) -> Option<&CourseStatus> {
+    pub fn get_course_status(&self, id: &CourseId) -> Option<&CourseStatus> {
         // returns the first course_status with the given id
         self.course_statuses
             .iter()
-            .find(|&course_status| course_status.course.id == id)
+            .find(|&course_status| course_status.course.id == *id)
     }
 
-    pub fn get_mut_course_status(&mut self, id: &str) -> Option<&mut CourseStatus> {
+    pub fn get_mut_course_status(&mut self, id: &CourseId) -> Option<&mut CourseStatus> {
         // returns the first course_status with the given id
         self.course_statuses
             .iter_mut()
-            .find(|course_status| course_status.course.id == id)
+            .find(|course_status| course_status.course.id == *id)
     }
 
     // This function sets the state for all courses where their state is "in progress" to "complete"
@@ -65,15 +65,6 @@ impl DegreeStatus {
             .for_each(|course_status| {
                 course_status.state = Some(CourseState::InProgress);
             })
-    }
-
-    pub fn fill_tags(&mut self, courses: &[Course]) {
-        self.course_statuses.iter_mut().for_each(|course_status| {
-            course_status.course.tags = courses
-                .iter()
-                .find(|course| course.id == course_status.course.id)
-                .and_then(|course| course.tags.clone());
-        });
     }
 
     pub fn get_all_taken_courses_for_bank(&self, bank_name: &str) -> Vec<CourseId> {
@@ -127,9 +118,8 @@ impl DegreeStatusHandler<'_> {
 }
 
 impl DegreeStatus {
-    pub fn compute(&mut self, mut catalog: Catalog, courses: HashMap<CourseId, Course>) {
-        // prepare the data for degree status computation
-        self.preprocess(&mut catalog, &courses);
+    pub fn compute(&mut self, mut catalog: Catalog, mut courses: HashMap<CourseId, Course>) {
+        self.preprocess(&mut catalog, &mut courses);
 
         let course_banks = catalog.get_bank_traversal_order();
 

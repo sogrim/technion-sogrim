@@ -282,7 +282,7 @@ export class ApiProvider implements CourseScheduleProvider {
       .filter((s) => ["200", "201", "202"].includes(s.semester))
       .map((s) => ({
         id: `${s.year}-${s.semester}`,
-        name: `${semesterCodeToName(s.semester)} ${parseInt(s.year) + 1}`,
+        name: `${semesterCodeToName(s.semester)} ${parseInt(s.year) + (s.semester === "200" ? 0 : 1)}`,
         year: parseInt(s.year),
         season: semesterCodeToSeason(s.semester),
       }));

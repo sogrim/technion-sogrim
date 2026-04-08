@@ -68,7 +68,7 @@ fn edge_uses_8_digit_course_ids() {
 }
 
 fn find_course<'a>(courses: &'a [CourseStatus], id: &str) -> Option<&'a CourseStatus> {
-    courses.iter().find(|cs| cs.course.id == id)
+    courses.iter().find(|cs| *cs.course.id == *id)
 }
 
 #[test]
@@ -99,6 +99,19 @@ fn chrome_parses_exemption_without_credit() {
 }
 
 #[test]
+fn chrome_exemption_without_credit_has_no_semester() {
+    let data = get_chrome_data();
+    let courses = parse_copy_paste_data(&data).unwrap();
+    let cs = find_course(&courses, "01030015").expect("Course 01030015 not found");
+    assert_eq!(cs.grade, Some(Grade::ExemptionWithoutCredit));
+    assert_eq!(cs.course.credit, 0.0);
+    assert_eq!(
+        cs.semester, None,
+        "0-credit exemption courses should have no semester"
+    );
+}
+
+#[test]
 fn chrome_exemption_without_credit_has_zero_credit() {
     let data = get_chrome_data();
     let courses = parse_copy_paste_data(&data).unwrap();
@@ -115,6 +128,18 @@ fn edge_exemption_without_credit_has_zero_credit() {
     let cs = find_course(&courses, "03240053").expect("Course 03240053 not found");
     assert_eq!(cs.grade, Some(Grade::ExemptionWithoutCredit));
     assert_eq!(cs.course.credit, 0.0);
+}
+
+#[test]
+fn edge_exemption_without_credit_has_no_semester() {
+    let data = get_edge_data();
+    let courses = parse_copy_paste_data(&data).unwrap();
+    let cs = find_course(&courses, "03240053").expect("Course 03240053 not found");
+    assert_eq!(cs.grade, Some(Grade::ExemptionWithoutCredit));
+    assert_eq!(
+        cs.semester, None,
+        "0-credit exemption courses should have no semester"
+    );
 }
 
 #[test]
@@ -147,7 +172,7 @@ fn chrome_parses_sport_courses_with_duplicates() {
     assert!(sport.len() >= 4, "Expected at least 4 sport courses");
     let duplicates: Vec<_> = sport
         .iter()
-        .filter(|cs| cs.course.id == "03940803")
+        .filter(|cs| *cs.course.id == *"03940803")
         .collect();
     assert_eq!(duplicates.len(), 2, "Expected 2 instances of 03940803");
 }
@@ -157,6 +182,15 @@ fn chrome_assigns_semester_numbers() {
     let data = get_chrome_data();
     let courses = parse_copy_paste_data(&data).unwrap();
     for cs in &courses {
+        // 0-credit exemptions have no semester by design
+        if cs.course.credit == 0.0 && cs.grade == Some(Grade::ExemptionWithoutCredit) {
+            assert!(
+                cs.semester.is_none(),
+                "0-credit exemption course {} should have no semester",
+                cs.course.id
+            );
+            continue;
+        }
         assert!(
             cs.semester.is_some(),
             "Course {} has no semester",

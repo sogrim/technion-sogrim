@@ -7,12 +7,7 @@ export function SemesterSelector() {
   const currentSemester = useTimetableStore((s) => s.currentSemester);
   const setSemester = useTimetableStore((s) => s.setSemester);
 
-  let semesters: { id: string; name: string }[] = [];
-  try {
-    semesters = getProvider().getSemesters();
-  } catch {
-    semesters = [{ id: "spring-2026", name: "אביב 2026" }];
-  }
+  let semesters = getProvider().getSemesters();
 
   return (
     <Dropdown

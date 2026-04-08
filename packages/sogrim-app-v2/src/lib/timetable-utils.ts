@@ -131,9 +131,3 @@ export function generateDraftId(): string {
   return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-/** Hebrew draft name by index */
-const DRAFT_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח"];
-export function defaultDraftName(index: number): string {
-  const letter = DRAFT_LETTERS[index] ?? String(index + 1);
-  return `אפשרות ${letter}׳`;
-}

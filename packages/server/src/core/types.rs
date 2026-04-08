@@ -41,6 +41,12 @@ pub enum Rule {
     Wildcard(bool), // קלף משוגע עבור להתמודד עם
 }
 
+impl Rule {
+    pub fn is_accumulate(&self) -> bool {
+        matches!(self, Rule::AccumulateCredit | Rule::AccumulateCourses(_))
+    }
+}
+
 impl fmt::Display for Rule {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = match self {

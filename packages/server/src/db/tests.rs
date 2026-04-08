@@ -1,6 +1,6 @@
 use crate::{
     db::{Db, FilterOption},
-    resources::course::Course,
+    resources::course::{Course, CourseId},
 };
 use axum::{http::StatusCode, response::IntoResponse};
 
@@ -45,13 +45,13 @@ pub async fn test_db_internal_error() {
             .expect_err("Expected error"),
         db.get_all::<Course>().await.expect_err("Expected error"),
         db.create_or_update::<Course>(Course {
-            id: "124400".into(),
+            id: CourseId::new("124400"),
             ..Default::default()
         })
         .await
         .expect_err("Expected error"),
         db.update::<Course>(Course {
-            id: "124400".into(),
+            id: CourseId::new("124400"),
             ..Default::default()
         })
         .await
@@ -94,12 +94,10 @@ pub async fn test_get_courses_by_filters() {
         .expect("Failed to get courses by name");
 
     assert_eq!(courses.len(), 2); // Since 2024 there are 2 formats for the course id: 6 digit and 8 digit
+                                  // Both are normalized to 8-digit by CourseId deserialization
     assert!(courses
         .iter()
-        .any(|c| c.id == "104031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
-    assert!(courses
-        .iter()
-        .any(|c| c.id == "01040031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
+        .all(|c| *c.id == *"01040031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
 
     let courses = db
         .get_filtered::<Course>(FilterOption::Regex, "_id", "104031")
@@ -108,7 +106,7 @@ pub async fn test_get_courses_by_filters() {
 
     assert_eq!(courses.len(), 1);
     assert_eq!(courses[0].name, "חשבון אינפיניטסימלי 1מ'");
-    assert_eq!(courses[0].id, "104031");
+    assert_eq!(*courses[0].id, *"01040031"); // normalized from "104031"
 
     let courses = db
         .get_filtered::<Course>(
@@ -120,13 +118,8 @@ pub async fn test_get_courses_by_filters() {
         .expect("Failed to get courses by number");
 
     assert_eq!(courses.len(), 3);
+    assert!(courses.iter().filter(|c| *c.id == *"01040031").count() == 2); // both 6-digit and 8-digit normalize to same id
     assert!(courses
         .iter()
-        .any(|c| c.id == "104031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
-    assert!(courses
-        .iter()
-        .any(|c| c.id == "01040031" && c.name == "חשבון אינפיניטסימלי 1מ'"));
-    assert!(courses
-        .iter()
-        .any(|c| c.id == "104166" && c.name == "אלגברה אמ'"));
+        .any(|c| *c.id == *"01040166" && c.name == "אלגברה אמ'"));
 }

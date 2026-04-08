@@ -7,6 +7,7 @@
 //!   {cache_dir}/{year}/{semester}/_index.json
 //!   {cache_dir}/{year}/{semester}/{course_id}.json
 
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -14,7 +15,9 @@ use std::time::Duration;
 
 use moka::future::Cache;
 use serde::Serialize;
+use tokio::sync::RwLock;
 
+use sogrim_server::resources::course::{Course, CourseId};
 use sogrim_server::sap::{CourseDetails, CourseIndexEntry};
 
 const CACHE_TTL_HOURS: u64 = 6;
@@ -33,6 +36,9 @@ pub struct DiskCourseCache {
     cache_dir: PathBuf,
     courses: Cache<String, Arc<CourseDetails>>,
     indexes: Cache<String, Arc<Vec<CourseIndexEntry>>>,
+    /// Flat deduplicated course list built from all semesters.
+    /// Most recent semester takes precedence for each course id.
+    all_courses: RwLock<HashMap<CourseId, Course>>,
 }
 
 impl DiskCourseCache {
@@ -45,6 +51,7 @@ impl DiskCourseCache {
                 .max_capacity(20_000)
                 .build(),
             indexes: Cache::builder().time_to_live(ttl).max_capacity(20).build(),
+            all_courses: RwLock::new(HashMap::new()),
         }
     }
 
@@ -142,7 +149,9 @@ impl DiskCourseCache {
     pub async fn load_all(&self) {
         let semesters = self.discover_semesters();
         let mut total = 0usize;
-        for sem in &semesters {
+        // Build the flat course map: iterate oldest-first so newer semesters overwrite
+        let mut flat_courses: HashMap<CourseId, Course> = HashMap::new();
+        for sem in semesters.iter().rev() {
             let sem_dir = self.cache_dir.join(&sem.year).join(&sem.semester);
             let Ok(entries) = fs::read_dir(&sem_dir) else {
                 continue;
@@ -156,6 +165,7 @@ impl DiskCourseCache {
                 let key = format!("{}/{}/{}", sem.year, sem.semester, course_id);
                 if let Ok(data) = fs::read_to_string(entry.path()) {
                     if let Ok(details) = serde_json::from_str::<CourseDetails>(&data) {
+                        flat_courses.insert(details.id.clone(), Course::from(&details));
                         self.courses.insert(key, Arc::new(details)).await;
                         total += 1;
                     }
@@ -164,12 +174,34 @@ impl DiskCourseCache {
             // Also load the index
             let _ = self.get_index(&sem.year, &sem.semester).await;
         }
+        *self.all_courses.write().await = flat_courses;
         log::info!(
             target: "sogrim_server",
-            "Loaded {} courses from {} semesters into memory",
+            "Loaded {} courses from {} semesters into memory ({} unique courses in flat list)",
             total,
-            semesters.len()
+            semesters.len(),
+            self.all_courses.read().await.len(),
         );
+    }
+
+    /// Return all courses from the flat deduplicated list as a map keyed by course ID.
+    pub async fn get_all_courses(&self) -> HashMap<CourseId, Course> {
+        self.all_courses.read().await.clone()
+    }
+
+    /// Create a cache pre-populated with the given courses (for tests only).
+    #[cfg(test)]
+    pub fn with_courses(courses: HashMap<CourseId, Course>) -> Self {
+        let ttl = Duration::from_secs(CACHE_TTL_HOURS * 3600);
+        Self {
+            cache_dir: PathBuf::new(),
+            courses: Cache::builder()
+                .time_to_live(ttl)
+                .max_capacity(20_000)
+                .build(),
+            indexes: Cache::builder().time_to_live(ttl).max_capacity(20).build(),
+            all_courses: RwLock::new(courses),
+        }
     }
 }
 

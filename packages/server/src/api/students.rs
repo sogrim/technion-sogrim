@@ -1,17 +1,19 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use axum::{extract::Query, response::IntoResponse, Extension, Json};
 use bson::DateTime;
+use chrono::Datelike;
 use http::StatusCode;
 
 use crate::{
     core::{degree_status::DegreeStatus, parser_v2},
     db::{Db, FilterOption},
+    disk_cache::DiskCourseCache,
     error::AppError,
     middleware::jwt_decoder::Sub,
     resources::{
         catalog::{Catalog, DisplayCatalog},
-        course::{self, Course, CourseId},
+        course::Course,
         user::{TimetableState, User, UserDetails, UserSettings},
     },
 };
@@ -97,24 +99,25 @@ pub async fn update_catalog(
 pub async fn get_courses_by_filter(
     _: User,
     Query(params): Query<HashMap<String, String>>,
-    Extension(db): Extension<Db>,
+    Extension(course_cache): Extension<Arc<DiskCourseCache>>,
 ) -> Result<impl IntoResponse, AppError> {
-    match (params.get("name"), params.get("number")) {
+    let all_courses = course_cache.get_all_courses().await;
+    let courses: Vec<Course> = match (params.get("name"), params.get("number")) {
         (Some(name), None) => {
-            let courses = db
-                .get_filtered::<Course>(FilterOption::Regex, "name", name)
-                .await?;
-            Ok(Json(courses))
+            let pattern = name.to_lowercase();
+            all_courses
+                .into_values()
+                .filter(|c| c.name.to_lowercase().contains(&pattern))
+                .collect()
         }
-        (None, Some(number)) => {
-            let courses = db
-                .get_filtered::<Course>(FilterOption::Regex, "_id", number)
-                .await?;
-            Ok(Json(courses))
-        }
-        (Some(_), Some(_)) => Err(AppError::BadRequest("Invalid query params".into())),
-        (None, None) => Err(AppError::BadRequest("Missing query params".into())),
-    }
+        (None, Some(number)) => all_courses
+            .into_values()
+            .filter(|c| c.id.contains(number))
+            .collect(),
+        (Some(_), Some(_)) => return Err(AppError::BadRequest("Invalid query params".into())),
+        (None, None) => return Err(AppError::BadRequest("Missing query params".into())),
+    };
+    Ok(Json(courses))
 }
 
 pub async fn add_courses(
@@ -133,46 +136,66 @@ pub async fn add_courses(
 pub async fn compute_degree_status(
     mut user: User,
     Extension(db): Extension<Db>,
+    Extension(course_cache): Extension<Arc<DiskCourseCache>>,
 ) -> Result<impl IntoResponse, AppError> {
-    let catalog_id = user
+    let display_catalog = user
         .details
         .catalog
         .as_ref()
-        .ok_or_else(|| AppError::InternalServer("No catalog chosen for user".into()))?
-        .id;
+        .ok_or_else(|| AppError::InternalServer("No catalog chosen for user".into()))?;
 
-    let catalog = db.get::<Catalog>(&catalog_id).await?;
+    let catalog_id = display_catalog.id;
+
+    // Extract track name from the display catalog.
+    // Fetch all sibling catalogs (same track, last 6 years) in one query,
+    // then find the chosen catalog among them and merge courses from the recent siblings.
+    let track_name = regex::escape(&Catalog::track_name_from_str(&display_catalog.name));
+    let current_year = chrono::Utc::now().year() as usize;
+    let min_year = current_year.saturating_sub(6);
+
+    let (mut catalog, recent_siblings) = if !track_name.is_empty() {
+        let all_catalogs = match db
+            .get_filtered::<Catalog>(FilterOption::Regex, "name", &track_name)
+            .await
+        {
+            Ok(catalogs) => catalogs,
+            Err(e) => {
+                log::warn!(target: "sogrim_server", "Failed to fetch sibling catalogs: {e}");
+                Vec::new()
+            }
+        };
+
+        let mut chosen = None;
+        let mut recent: Vec<Catalog> = Vec::new();
+        for catalog in all_catalogs {
+            if catalog.id == catalog_id {
+                chosen = Some(catalog);
+            } else if catalog.year() >= min_year {
+                recent.push(catalog);
+            }
+        }
+
+        match chosen {
+            Some(c) => (c, recent),
+            // Chosen catalog is not among siblings (e.g., older than 6 years) — fetch separately
+            None => (db.get::<Catalog>(&catalog_id).await?, recent),
+        }
+    } else {
+        (db.get::<Catalog>(&catalog_id).await?, Vec::new())
+    };
+
+    catalog.enrich_with_sibling_courses(&recent_siblings);
 
     user.details.modified = false;
 
-    let courses = db
-        .get_filtered::<Course>(
-            FilterOption::In,
-            "_id",
-            catalog
-                .get_all_course_ids()
-                .into_iter()
-                .chain(
-                    user.details
-                        .degree_status
-                        .course_statuses
-                        .iter()
-                        .map(|cs| cs.course.id.clone()),
-                )
-                .collect::<Vec<CourseId>>(),
-        )
-        .await?;
-
-    user.details.degree_status.fill_tags(&courses);
+    let courses = course_cache.get_all_courses().await;
 
     let mut course_list = Vec::new();
     if user.details.compute_in_progress {
         course_list = user.details.degree_status.set_in_progress_to_complete();
     }
 
-    user.details
-        .degree_status
-        .compute(catalog, course::vec_to_map(courses));
+    user.details.degree_status.compute(catalog, courses);
 
     if user.details.compute_in_progress {
         user.details.degree_status.set_to_in_progress(course_list);

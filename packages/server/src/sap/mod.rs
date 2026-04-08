@@ -16,6 +16,8 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::resources::course::CourseId;
+
 const SAP_BASE_URL: &str =
     "https://portalex.technion.ac.il/sap/opu/odata/sap/Z_CM_EV_CDIR_DATA_SRV";
 const BATCH_BOUNDARY: &str = "batch_1d12-afbf-e3c7";
@@ -159,7 +161,7 @@ pub struct Semester {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CourseDetails {
-    pub id: String,
+    pub id: CourseId,
     pub name: String,
     pub credits: f32,
     pub faculty: Option<String>,
@@ -175,7 +177,7 @@ pub struct CourseDetails {
     pub exams: Vec<Exam>,
     pub relations: Vec<Relation>,
     pub prerequisites: Vec<PrereqToken>,
-    pub corequisites: Vec<String>,
+    pub corequisites: Vec<CourseId>,
     pub responsible: Vec<Person>,
     pub offered_periods: Vec<OfferedPeriod>,
     pub schedule: Vec<ScheduleGroup>,
@@ -195,7 +197,7 @@ pub struct Exam {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Relation {
-    pub course_id: String,
+    pub course_id: CourseId,
     #[serde(rename = "type")]
     pub relation_type: RelationType,
 }
@@ -390,7 +392,7 @@ struct RawPerson {
 /// Lightweight course entry for the search index.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CourseIndexEntry {
-    pub id: String,
+    pub id: CourseId,
     pub name: String,
     pub faculty: Option<String>,
     pub credits: f32,
@@ -411,7 +413,7 @@ pub struct CachedSapClient {
     proxy_url: Option<String>,
     courses: Cache<String, Arc<CourseDetails>>,
     semesters: Cache<String, Arc<Vec<Semester>>>,
-    course_ids: Cache<String, Arc<Vec<String>>>,
+    course_ids: Cache<String, Arc<Vec<CourseId>>>,
     course_index: Cache<String, Arc<Vec<CourseIndexEntry>>>,
     /// Cached building names resolved via GObjectSet. Key: room OData ID.
     buildings: Cache<String, Option<String>>,
@@ -598,7 +600,7 @@ impl CachedSapClient {
         let semester = &current.semester;
 
         let semaphore = Arc::new(Semaphore::new(PREWARM_CONCURRENCY));
-        let chunks: Vec<Vec<String>> = ids.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
+        let chunks: Vec<Vec<CourseId>> = ids.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
 
         let handles: Vec<_> = chunks
             .into_iter()
@@ -716,7 +718,7 @@ impl CachedSapClient {
         self.fetch_total.fetch_add(ids.len(), Ordering::Relaxed);
 
         let semaphore = Arc::new(Semaphore::new(concurrency));
-        let chunks: Vec<Vec<String>> = ids.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
+        let chunks: Vec<Vec<CourseId>> = ids.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
 
         let handles: Vec<_> = chunks
             .into_iter()
@@ -842,7 +844,7 @@ impl CachedSapClient {
         &self,
         year: &str,
         semester: &str,
-    ) -> Result<Arc<Vec<String>>, SapError> {
+    ) -> Result<Arc<Vec<CourseId>>, SapError> {
         let key = format!("{year}/{semester}");
         if let Some(cached) = self.course_ids.get(&key).await {
             return Ok(cached);
@@ -873,7 +875,11 @@ impl CachedSapClient {
             .collect()
     }
 
-    async fn fetch_course_ids(&self, year: &str, semester: &str) -> Result<Vec<String>, SapError> {
+    async fn fetch_course_ids(
+        &self,
+        year: &str,
+        semester: &str,
+    ) -> Result<Vec<CourseId>, SapError> {
         let query = format!(
             "SmObjectSet?sap-client=700&$skip=0&$top=10000\
              &$filter=Peryr%20eq%20%27{year}%27%20and%20Perid%20eq%20%27{semester}%27\
@@ -1774,7 +1780,7 @@ fn resolve_building_code(code: &str) -> Option<&'static str> {
     // This list is derived from GObjectSet results + the SAP
     // building names normalized the same way he does (strip "בנין"/"בניין" prefix).
     match code {
-        "014" => Some("טאוב"),
+        "014" => Some("אולמן"),
         "015" => Some("אולם צ'רצ'יל"),
         "016" => Some("הנ' כימית"),
         "018" => Some("הנ' מכונות"),
@@ -1798,7 +1804,7 @@ fn resolve_building_code(code: &str) -> Option<&'static str> {
         "056" => Some("מדע החלטות"),
         "058" => Some("סגו"),
         "060" => Some("ביוטכנולוגיה ומדעי המזון"),
-        "069" => Some("דן קהאן"),
+        "069" => Some("טאוב"),
         "071" => Some("ספריה מרכזית"),
         "079" => Some("הנדסת חמרים"),
         "084" => Some("מדעי המחשב"),
@@ -1861,7 +1867,7 @@ fn format_person(persons: &[RawPerson]) -> Option<String> {
 
 /// Parse corequisites from semester notes. Looks for lines like:
 /// "מקצוע צמוד: 01040031" or "מקצועות צמודים: 01040031, 01041066"
-fn parse_corequisites(note: &str) -> Vec<String> {
+fn parse_corequisites(note: &str) -> Vec<CourseId> {
     let re = Regex::new(r"מקצועו?ת? צמודי?ם?:\s*(.+)").unwrap();
     let Some(caps) = re.captures(note) else {
         return vec![];
@@ -1870,7 +1876,7 @@ fn parse_corequisites(note: &str) -> Vec<String> {
     let num_re = Regex::new(r"\d{5,8}").unwrap();
     num_re
         .find_iter(content)
-        .map(|m| format!("{:0>8}", m.as_str()))
+        .map(|m| CourseId::new(m.as_str()))
         .collect()
 }
 
@@ -1882,8 +1888,8 @@ pub fn course_number_to_sap_id(number: &str) -> String {
 
 /// Strip the `SM` prefix from a SAP OData entity ID.
 /// Returns the 8-digit course number (e.g. "02340114").
-pub fn sap_id_to_course_number(sap_id: &str) -> String {
-    sap_id.trim_start_matches("SM").to_string()
+pub fn sap_id_to_course_number(sap_id: &str) -> CourseId {
+    CourseId::new(sap_id.trim_start_matches("SM"))
 }
 
 fn parse_sap_date_epoch(date_str: &str) -> Option<i64> {
@@ -1918,8 +1924,8 @@ mod tests {
     fn test_course_number_conversions() {
         assert_eq!(course_number_to_sap_id("02340114"), "SM02340114");
         assert_eq!(course_number_to_sap_id("01040031"), "SM01040031");
-        assert_eq!(sap_id_to_course_number("SM02340114"), "02340114");
-        assert_eq!(sap_id_to_course_number("SM97030012"), "97030012");
+        assert_eq!(*sap_id_to_course_number("SM02340114"), *"02340114");
+        assert_eq!(*sap_id_to_course_number("SM97030012"), *"97030012");
     }
 
     #[test]
@@ -2016,12 +2022,15 @@ mod tests {
 
     #[test]
     fn test_parse_corequisites() {
-        assert_eq!(parse_corequisites("מקצוע צמוד: 104031"), vec!["00104031"]);
+        assert_eq!(
+            parse_corequisites("מקצוע צמוד: 104031"),
+            vec![CourseId::new("104031")]
+        );
         assert_eq!(
             parse_corequisites("מקצועות צמודים: 104031, 104166"),
-            vec!["00104031", "00104166"]
+            vec![CourseId::new("104031"), CourseId::new("104166")]
         );
-        assert_eq!(parse_corequisites("no coreqs here"), Vec::<String>::new());
+        assert_eq!(parse_corequisites("no coreqs here"), Vec::<CourseId>::new());
     }
 
     // Integration tests below require SAP API access.
@@ -2071,7 +2080,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(d1.name, "מבוא למדעי המחשב מ'");
-        assert_eq!(d1.id, "02340114");
+        assert_eq!(*d1.id, *"02340114");
         assert!(d1.credits > 0.0);
         assert!(!d1.exams.is_empty());
         assert!(d1.exams.len() < 10); // deduped

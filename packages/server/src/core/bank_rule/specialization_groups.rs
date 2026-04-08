@@ -203,9 +203,7 @@ impl BankRuleHandler<'_> {
         // we will simply re-assign the specialization group name.
         for sg in sgs.groups_list.iter() {
             for course_id in sg.course_list.iter() {
-                if let Some(course_status) =
-                    self.degree_status.get_mut_course_status(course_id.as_str())
-                {
+                if let Some(course_status) = self.degree_status.get_mut_course_status(course_id) {
                     course_status.set_specialization_group_name(&sg.name);
                 }
             }

@@ -262,7 +262,7 @@ export function SettingsPage() {
                 <Label htmlFor="catalog-select">מסלול לימודים</Label>
                 <Combobox
                   id="catalog-select"
-                  value={currentCatalogId || ""}
+                  value={pendingCatalogId || currentCatalogId || ""}
                   onChange={handleCatalogChange}
                   disabled={updateCatalog.isPending}
                   placeholder="בחר קטלוג..."

@@ -9,6 +9,7 @@ use chrono::Local;
 use env_logger::Builder;
 use log::LevelFilter;
 
+use crate::resources::course::CourseId;
 use crate::sap::{CachedSapClient, CourseIndexEntry};
 
 #[derive(Clone, clap::ValueEnum)]
@@ -277,7 +278,7 @@ fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
 struct MissingCourse {
     year: String,
     semester: String,
-    course_id: String,
+    course_id: CourseId,
     sem_dir: PathBuf,
 }
 
@@ -354,7 +355,7 @@ async fn run_repair(args: &FetcherArgs) {
     }
 
     // Group by semester for display
-    let mut by_sem: std::collections::BTreeMap<String, Vec<&str>> =
+    let mut by_sem: std::collections::BTreeMap<String, Vec<&CourseId>> =
         std::collections::BTreeMap::new();
     for m in &missing {
         by_sem
@@ -463,7 +464,7 @@ async fn run_repair(args: &FetcherArgs) {
         .collect();
 
     // Group phantoms by semester
-    let mut phantoms_by_sem: std::collections::BTreeMap<String, Vec<&str>> =
+    let mut phantoms_by_sem: std::collections::BTreeMap<String, Vec<&CourseId>> =
         std::collections::BTreeMap::new();
     for p in &phantoms {
         phantoms_by_sem
@@ -486,10 +487,11 @@ async fn run_repair(args: &FetcherArgs) {
             continue;
         };
 
-        let phantom_set: std::collections::HashSet<&str> = phantom_ids.iter().copied().collect();
+        let phantom_set: std::collections::HashSet<&CourseId> =
+            phantom_ids.iter().copied().collect();
         let filtered: Vec<&CourseIndexEntry> = index
             .iter()
-            .filter(|e| !phantom_set.contains(e.id.as_str()))
+            .filter(|e| !phantom_set.contains(&e.id))
             .collect();
 
         let before = index.len();
@@ -699,7 +701,7 @@ pub async fn run(args: FetcherArgs) {
         semester: String,
         label: String,
         sem_dir: PathBuf,
-        course_ids: Vec<String>,
+        course_ids: Vec<CourseId>,
         index: Vec<CourseIndexEntry>,
     }
     let mut work: Vec<SemesterWork> = Vec::new();
@@ -726,7 +728,7 @@ pub async fn run(args: FetcherArgs) {
         };
         let index_json = serde_json::to_string_pretty(&*index).expect("failed to serialize index");
         let _ = atomic_write(&sem_dir.join("_index.json"), index_json.as_bytes());
-        let course_ids: Vec<String> = index.iter().map(|entry| entry.id.clone()).collect();
+        let course_ids: Vec<CourseId> = index.iter().map(|entry| entry.id.clone()).collect();
         print_spinner_done(
             interactive,
             &format!("[{label}] fetching index ({} courses)", course_ids.len()),
@@ -794,7 +796,7 @@ pub async fn run(args: FetcherArgs) {
     for w in &mut work {
         let mut written = 0usize;
         let mut errors = 0usize;
-        let mut failed_ids: Vec<String> = Vec::new();
+        let mut failed_ids: Vec<CourseId> = Vec::new();
         for course_id in &w.course_ids {
             match client
                 .get_course_details(&w.year, &w.semester, course_id)
@@ -826,13 +828,12 @@ pub async fn run(args: FetcherArgs) {
 
         // Rebuild index excluding failed courses
         if !failed_ids.is_empty() {
-            let failed_set: std::collections::HashSet<&str> =
-                failed_ids.iter().map(|s| s.as_str()).collect();
-            w.course_ids.retain(|id| !failed_set.contains(id.as_str()));
+            let failed_set: std::collections::HashSet<&CourseId> = failed_ids.iter().collect();
+            w.course_ids.retain(|id| !failed_set.contains(id));
             let filtered_index: Vec<&CourseIndexEntry> = w
                 .index
                 .iter()
-                .filter(|e| !failed_set.contains(e.id.as_str()))
+                .filter(|e| !failed_set.contains(&e.id))
                 .collect();
             let index_json =
                 serde_json::to_string_pretty(&filtered_index).expect("failed to serialize index");

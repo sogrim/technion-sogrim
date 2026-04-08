@@ -1,4 +1,8 @@
+use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Arc;
+
+use std::collections::HashMap;
 
 use crate::{
     api::{
@@ -7,6 +11,7 @@ use crate::{
     },
     core::{degree_status::DegreeStatus, messages},
     db::Db,
+    disk_cache::DiskCourseCache,
     middleware::{
         self, auth,
         jwt_decoder::JwtDecoder,
@@ -14,7 +19,7 @@ use crate::{
     },
     resources::{
         catalog::{Catalog, DisplayCatalog},
-        course::{Course, CourseStatus},
+        course::{Course, CourseId, CourseStatus, Tag},
         user::{Permissions, User, UserDetails},
     },
 };
@@ -27,6 +32,43 @@ use axum::{
 };
 use bson::oid::ObjectId;
 use tower::ServiceExt;
+
+/// Create an empty disk course cache for tests (points at a non-existent directory).
+fn test_course_cache() -> Arc<DiskCourseCache> {
+    Arc::new(DiskCourseCache::new(PathBuf::from(
+        "__test_cache_nonexistent__",
+    )))
+}
+
+/// Build a tagged course entry for the test fixture.
+fn tagged(id: &str, credit: f32, tags: Vec<Tag>) -> (CourseId, Course) {
+    let cid = CourseId::new(id);
+    (
+        cid.clone(),
+        Course {
+            id: cid,
+            credit,
+            name: String::new(),
+            tags: Some(tags),
+        },
+    )
+}
+
+/// Create a course cache pre-populated with tagged courses from the grade sheet.
+/// Only courses that carry tags (English / Malag / Sport) are needed — the rest
+/// are added by `merge_courses` during preprocessing.
+fn test_course_cache_with_tagged_courses() -> Arc<DiskCourseCache> {
+    let courses: HashMap<CourseId, Course> = HashMap::from([
+        tagged("324033", 3.0, vec![Tag::English]),
+        tagged("324395", 2.0, vec![Tag::Malag]),
+        tagged("324524", 2.0, vec![Tag::Malag]),
+        tagged("324298", 2.0, vec![Tag::Malag]),
+        tagged("324257", 2.0, vec![Tag::Malag]),
+        tagged("394802", 1.0, vec![Tag::Sport]),
+        tagged("394804", 1.0, vec![Tag::Sport]),
+    ]);
+    Arc::new(DiskCourseCache::with_courses(courses))
+}
 
 use super::admins::{self, ComputeDegreeStatusPayload};
 
@@ -110,7 +152,8 @@ async fn test_students_api_full_flow() {
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))
         .layer(Extension(Permissions::Student))
         .layer(Extension(db.clone()))
-        .layer(Extension(decoder));
+        .layer(Extension(decoder))
+        .layer(Extension(test_course_cache()));
 
     // get /students/login
     let req = Request::builder()
@@ -213,7 +256,8 @@ async fn test_compute_in_progress() {
                 .route("/details", put(students::update_details)),
         )
         .layer(Extension(Permissions::Student))
-        .layer(Extension(db.clone()));
+        .layer(Extension(db.clone()))
+        .layer(Extension(test_course_cache()));
 
     let mut req = Request::builder()
         .method(Method::GET)
@@ -311,7 +355,7 @@ async fn test_owner_api_courses() {
     let mut course = courses[0].clone();
 
     // put /courses/{id}
-    course.id = "some-id".into();
+    course.id = CourseId::new("some-id");
     let req = Request::builder()
         .method(Method::PUT)
         .uri(format!("/owners/courses/{}", course.id).as_str())
@@ -429,7 +473,8 @@ async fn test_students_api_no_catalog() {
             Router::new().route("/degree-status", get(students::compute_degree_status)),
         )
         .layer(Extension(Permissions::Student))
-        .layer(Extension(db.clone()));
+        .layer(Extension(db.clone()))
+        .layer(Extension(test_course_cache()));
 
     let mut req = Request::builder()
         .method(Method::GET)
@@ -466,7 +511,8 @@ async fn test_admins_parse_and_compute_api() {
         .layer(axum::middleware::from_fn(middleware::auth::authenticate))
         .layer(Extension(Permissions::Admin))
         .layer(Extension(db.clone()))
-        .layer(Extension(decoder));
+        .layer(Extension(decoder))
+        .layer(Extension(test_course_cache_with_tagged_courses()));
 
     let copy_paste_data = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
         .expect("Something went wrong reading the file");

@@ -78,21 +78,6 @@ impl DegreeStatus {
         self.remove_irrelevant_courses_from_catalog(catalog);
     }
 
-    /// Convert a 6-digit course ID to 8-digit format by prepending "0" to each 3-digit half.
-    /// e.g. "114075" -> "01140075", "234114" -> "02340114"
-    fn to_8digit(id: &str) -> String {
-        format!("0{}0{}", &id[..3], &id[3..])
-    }
-
-    /// Normalize all 6-digit course IDs to 8-digit format in course_statuses.
-    fn normalize_course_ids(&mut self) {
-        for cs in self.course_statuses.iter_mut() {
-            if cs.course.id.len() == 6 && cs.course.id.chars().all(|c| c.is_ascii_digit()) {
-                cs.course.id = Self::to_8digit(&cs.course.id);
-            }
-        }
-    }
-
     fn get_all_student_replacements_and_set_msg(
         &mut self,
         catalog: &Catalog,
@@ -101,7 +86,7 @@ impl DegreeStatus {
         let mut student_replacements = HashMap::new();
         self.course_statuses.iter_mut().for_each(|course_status| {
             let mut find_replacement =
-                |replacements: &HashMap<String, Vec<String>>,
+                |replacements: &HashMap<CourseId, Vec<CourseId>>,
                  replacements_msg: fn(&Course) -> String| {
                     replacements
                         .iter()
@@ -150,10 +135,27 @@ impl DegreeStatus {
             });
     }
 
-    pub fn preprocess(&mut self, catalog: &mut Catalog, courses: &HashMap<CourseId, Course>) {
-        if catalog.year() >= 2024 {
-            self.normalize_course_ids();
+    // Merge the student courses with the course list
+    fn merge_courses(&self, courses: &mut HashMap<CourseId, Course>) {
+        for cs in &self.course_statuses {
+            courses
+                .entry(cs.course.id.clone())
+                .or_insert_with(|| cs.course.clone());
         }
+    }
+
+    // Fill students courses with the relevant tags
+    fn fill_tags(&mut self, courses: &HashMap<CourseId, Course>) {
+        self.course_statuses.iter_mut().for_each(|course_status| {
+            course_status.course.tags = courses
+                .get(&course_status.course.id)
+                .and_then(|course| course.tags.clone());
+        });
+    }
+
+    pub fn preprocess(&mut self, catalog: &mut Catalog, courses: &mut HashMap<CourseId, Course>) {
+        self.merge_courses(courses);
+        self.fill_tags(courses);
         self.reset(catalog);
 
         self.course_statuses.sort_by(|c1, c2| {
@@ -165,6 +167,8 @@ impl DegreeStatus {
         });
 
         self.replace_student_course_with_courses_in_catalog(catalog, courses);
+
+        catalog.enrich_with_prefix_courses(&self.course_statuses);
     }
 }
 
