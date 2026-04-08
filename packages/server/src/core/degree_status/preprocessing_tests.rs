@@ -78,7 +78,7 @@ fn preprocess_removes_irrelevant_duplicate_when_user_added_same_course() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert_eq!(degree_status.course_statuses.len(), 1);
     assert_eq!(*degree_status.course_statuses[0].course.id, *"dup");
@@ -118,7 +118,7 @@ fn preprocess_clears_type_for_unmodified_and_irrelevant_courses() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert_eq!(
         degree_status
@@ -166,7 +166,7 @@ fn preprocess_removes_irrelevant_courses_from_catalog_mapping() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert!(!catalog.course_to_bank.contains_key("alg"));
     assert!(catalog.course_to_bank.contains_key("dup"));
@@ -190,7 +190,7 @@ fn preprocess_normalizes_standard_6digit_course_id_to_8digit() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert_eq!(*degree_status.course_statuses[0].course.id, *"02340107");
 }
@@ -210,7 +210,7 @@ fn preprocess_normalizes_nonstandard_6digit_course_id_to_8digit() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert_eq!(*degree_status.course_statuses[0].course.id, *"51040003");
 }
@@ -229,7 +229,7 @@ fn preprocess_does_not_modify_already_8digit_course_id() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert_eq!(*degree_status.course_statuses[0].course.id, *"02340107");
 }
@@ -251,7 +251,7 @@ fn preprocess_normalizes_catalog_6digit_keys_to_8digit() {
         .course_to_bank
         .insert(CourseId::new("234107"), "hova".to_string());
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert!(!catalog.course_to_bank.contains_key("234107"));
     assert!(catalog.course_to_bank.contains_key("02340107"));
@@ -274,7 +274,7 @@ fn preprocess_normalizes_catalog_replacements_keys_and_values() {
         .catalog_replacements
         .insert(CourseId::new("234107"), vec![CourseId::new("514003")]);
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert!(!catalog.catalog_replacements.contains_key("234107"));
     let values = catalog.catalog_replacements.get("02340107").unwrap();
@@ -312,7 +312,7 @@ fn preprocess_normalizes_all_nonstandard_prefixes() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert_eq!(*degree_status.course_statuses[0].course.id, *"52010234");
     assert_eq!(*degree_status.course_statuses[1].course.id, *"61010234");
@@ -342,7 +342,7 @@ fn preprocess_normalizes_mixed_6digit_and_8digit_courses() {
     };
     let mut catalog = make_catalog();
 
-    degree_status.preprocess(&mut catalog, &HashMap::new());
+    degree_status.preprocess(&mut catalog, &mut HashMap::new());
 
     assert_eq!(*degree_status.course_statuses[0].course.id, *"02340107");
     assert_eq!(*degree_status.course_statuses[1].course.id, *"02360218");
