@@ -598,8 +598,9 @@ async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) ->
         .get_all::<Course>()
         .await
         .expect("failed to get all courses");
-    degree_status.fill_tags(&vec_courses);
-    degree_status.compute(catalog, course::vec_to_map(vec_courses));
+    let courses = course::vec_to_map(vec_courses);
+    degree_status.fill_tags(&courses);
+    degree_status.compute(catalog, courses);
     degree_status
 }
 

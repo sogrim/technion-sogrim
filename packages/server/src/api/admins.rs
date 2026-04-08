@@ -6,7 +6,6 @@ use crate::db::Db;
 use crate::disk_cache::DiskCourseCache;
 use crate::error::AppError;
 use crate::resources::catalog::Catalog;
-use crate::resources::course::Course;
 use crate::resources::user::User;
 use axum::{response::IntoResponse, Extension, Json};
 use serde::{Deserialize, Serialize};
@@ -39,8 +38,7 @@ pub async fn parse_courses_and_compute_degree_status(
             .or_insert_with(|| cs.course.clone());
     }
 
-    let courses_vec: Vec<Course> = courses.values().cloned().collect();
-    degree_status.fill_tags(&courses_vec);
+    degree_status.fill_tags(&courses);
 
     degree_status.compute(catalog, courses);
 

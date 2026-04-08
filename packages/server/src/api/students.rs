@@ -190,8 +190,7 @@ pub async fn compute_degree_status(
             .or_insert_with(|| cs.course.clone());
     }
 
-    let courses_vec: Vec<Course> = courses.values().cloned().collect();
-    user.details.degree_status.fill_tags(&courses_vec);
+    user.details.degree_status.fill_tags(&courses);
 
     let mut course_list = Vec::new();
     if user.details.compute_in_progress {
