@@ -154,10 +154,16 @@ pub async fn compute_degree_status(
     let min_year = current_year.saturating_sub(6);
 
     let (mut catalog, recent_siblings) = if !track_name.is_empty() {
-        let all_catalogs = db
+        let all_catalogs = match db
             .get_filtered::<Catalog>(FilterOption::Regex, "name", &track_name)
             .await
-            .unwrap_or_default();
+        {
+            Ok(catalogs) => catalogs,
+            Err(e) => {
+                log::warn!(target: "sogrim_server", "Failed to fetch sibling catalogs: {e}");
+                Vec::new()
+            }
+        };
 
         let mut chosen = None;
         let mut recent: Vec<Catalog> = Vec::new();
