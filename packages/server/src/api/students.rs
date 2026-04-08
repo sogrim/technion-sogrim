@@ -149,7 +149,7 @@ pub async fn compute_degree_status(
     // Extract track name from the display catalog.
     // Fetch all sibling catalogs (same track, last 6 years) in one query,
     // then find the chosen catalog among them and merge courses from the recent siblings.
-    let track_name = Catalog::track_name_from_str(&display_catalog.name);
+    let track_name = regex::escape(&Catalog::track_name_from_str(&display_catalog.name));
     let current_year = chrono::Utc::now().year() as usize;
     let min_year = current_year.saturating_sub(6);
 
