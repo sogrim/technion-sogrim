@@ -7,6 +7,12 @@ use bson::{doc, Document};
 use regex::Regex;
 use serde::{self, Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::sync::LazyLock;
+
+static YEAR_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?P<year>\d{4})").unwrap());
+static TRACK_NAME_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\s*\d{4}(-\d{4})?\s*").unwrap());
 
 use super::course::{CourseId, CourseStatus};
 
@@ -57,8 +63,7 @@ impl Catalog {
 
     pub fn year(&self) -> usize {
         let default_year = 2018;
-        Regex::new(r"(?P<year>\d{4})")
-            .unwrap()
+        YEAR_RE
             .captures(&self.name)
             .map(|cap| cap["year"].parse::<usize>().unwrap_or(default_year))
             .unwrap_or(default_year)
@@ -127,8 +132,7 @@ impl Catalog {
     /// Returns the track name by stripping the year portion from a catalog name string.
     /// E.g. "מדמח תלת שנתי 2022-2023" → "מדמח תלת שנתי"
     pub fn track_name_from_str(name: &str) -> String {
-        Regex::new(r"\s*\d{4}(-\d{4})?\s*")
-            .unwrap()
+        TRACK_NAME_RE
             .replace_all(name, "")
             .trim()
             .to_string()
