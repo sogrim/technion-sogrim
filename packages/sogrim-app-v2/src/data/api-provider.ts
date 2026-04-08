@@ -136,6 +136,13 @@ function semesterCodeToName(code: string): string {
   return "קיץ";
 }
 
+function semesterDisplayName(code: string, acYear: number): string {
+  const label = semesterCodeToName(code);
+  if (code === "200") return `${label} ${acYear}-${acYear + 1}`;
+  // Spring and summer both use acYear+1 (summer 2024/202 = קיץ 2025)
+  return `${label} ${acYear + 1}`;
+}
+
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
   return h * 60 + m;
@@ -154,19 +161,28 @@ function computeHours(groups: LessonGroup[], type: LessonType): number | undefin
 // Convert SAP response → frontend CourseSchedule
 // ---------------------------------------------------------------------------
 
+/** Hash a set of lessons for deduplication. Same kind+day+time+building+room = same event. */
+function lessonsHash(lessons: Lesson[]): string {
+  return lessons
+    .map((l) => `${l.day}|${l.startTime}|${l.endTime}|${l.building ?? ""}|${l.room ?? ""}`)
+    .sort()
+    .join(";");
+}
+
 function toSchedule(sap: SapCourseDetails): CourseSchedule {
-  const groups: LessonGroup[] = [];
+  // First pass: build per-SAP-group lesson groups.
+  const rawGroups: { groupNum: string; type: LessonType; rawKind: string; lessons: Lesson[] }[] = [];
 
   for (const sapGroup of sap.schedule) {
-    const byKind = new Map<LessonType, Lesson[]>();
+    const byKind = new Map<LessonType, { lessons: Lesson[]; rawKind: string }>();
 
     for (const event of sapGroup.events) {
       if (event.day == null || !event.start_time || !event.end_time) continue;
-      if (event.day > 5) continue; // Skip Saturday
+      if (event.day > 5) continue;
 
-      const kind = mapKind(event.kind);
-      if (!byKind.has(kind)) byKind.set(kind, []);
-      byKind.get(kind)!.push({
+      const type = mapKind(event.kind);
+      if (!byKind.has(type)) byKind.set(type, { lessons: [], rawKind: event.kind });
+      byKind.get(type)!.lessons.push({
         day: event.day as Day,
         startTime: event.start_time,
         endTime: event.end_time,
@@ -176,14 +192,29 @@ function toSchedule(sap: SapCourseDetails): CourseSchedule {
       });
     }
 
-    for (const [type, lessons] of byKind) {
-      groups.push({
-        id: `${sapGroup.group}-${type}`,
-        type,
-        displayName: sapGroup.name || undefined,
-        lessons,
-      });
+    for (const [type, { lessons, rawKind }] of byKind) {
+      rawGroups.push({ groupNum: sapGroup.group, type, rawKind, lessons });
     }
+  }
+
+  // Second pass: deduplicate groups that share identical lessons (e.g. shared lectures).
+  // Groups with the same type + lessons hash are merged into one group with combined ID.
+  const deduped = new Map<string, { groupNums: string[]; type: LessonType; rawKind: string; lessons: Lesson[] }>();
+
+  for (const g of rawGroups) {
+    const key = `${g.type}:${lessonsHash(g.lessons)}`;
+    const existing = deduped.get(key);
+    if (existing) {
+      existing.groupNums.push(g.groupNum);
+    } else {
+      deduped.set(key, { groupNums: [g.groupNum], type: g.type, rawKind: g.rawKind, lessons: g.lessons });
+    }
+  }
+
+  const groups: LessonGroup[] = [];
+  for (const { groupNums, type, rawKind, lessons } of deduped.values()) {
+    const id = groupNums.join("/") + `-${type}`;
+    groups.push({ id, type, kindLabel: rawKind, lessons });
   }
 
   const examA = sap.exams.find((e) => e.category_code === "FI");
@@ -211,10 +242,12 @@ function toSchedule(sap: SapCourseDetails): CourseSchedule {
     examB: examB?.date ? sapDateToISO(examB.date) : undefined,
     examATime:
       examA?.begin_time && examA?.end_time
+      && (examA.begin_time !== "00:00" || examA.end_time !== "00:00")
         ? `${examA.begin_time} - ${examA.end_time}`
         : undefined,
     examBTime:
       examB?.begin_time && examB?.end_time
+      && (examB.begin_time !== "00:00" || examB.end_time !== "00:00")
         ? `${examB.begin_time} - ${examB.end_time}`
         : undefined,
     lectureHours: computeHours(groups, "lecture"),
@@ -282,7 +315,7 @@ export class ApiProvider implements CourseScheduleProvider {
       .filter((s) => ["200", "201", "202"].includes(s.semester))
       .map((s) => ({
         id: `${s.year}-${s.semester}`,
-        name: `${semesterCodeToName(s.semester)} ${parseInt(s.year) + (s.semester === "200" ? 0 : 1)}`,
+        name: semesterDisplayName(s.semester, parseInt(s.year)),
         year: parseInt(s.year),
         season: semesterCodeToSeason(s.semester),
       }));

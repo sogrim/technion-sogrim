@@ -15,8 +15,8 @@ export interface Lesson {
 export interface LessonGroup {
   id: string; // e.g. "11", "12"
   type: LessonType;
-  /** Display name for sport groups (e.g. "נבחרת טניס נשים"). */
-  displayName?: string;
+  /** Raw kind label from SAP (e.g. "הרצאה", "תרגול", or "נבחרת טניס נשים"). */
+  kindLabel: string;
   lessons: Lesson[];
 }
 
@@ -71,6 +71,8 @@ export interface TimetableEvent {
   courseId: string;
   courseName: string;
   type: LessonType;
+  /** Raw kind label (e.g. "הרצאה", "תרגול", or "נבחרת טניס נשים 17"). */
+  kindLabel: string;
   groupId: string;
   day: Day;
   startTime: string;

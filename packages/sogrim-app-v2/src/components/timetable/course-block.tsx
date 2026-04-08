@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import type { TimetableEvent } from "@/types/timetable";
 import { getCourseColorVars } from "@/lib/timetable-colors";
-import { LESSON_TYPE_NAMES } from "@/lib/timetable-utils";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { useUiStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
@@ -29,8 +28,6 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
     return getCourseColorVars(event.colorIndex, isDark);
   }, [event.colorIndex, event.isCustom, event.customColor, isDark]);
 
-  const typeLabel = LESSON_TYPE_NAMES[event.type];
-  const groupNum = event.groupId.split("-")[0].replace(/^0+/, "") || "0";
   const location =
     [event.building, event.room].filter(Boolean).join(" ") || undefined;
 
@@ -71,7 +68,7 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
       }}
       title={[
         event.courseName,
-        !event.isCustom && `${typeLabel} ${groupNum}`,
+        !event.isCustom && event.kindLabel,
         location,
         event.instructor,
         isPreview && "לחצו לבחור",
@@ -82,21 +79,12 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
       )}
 
       {!event.isCustom ? (
-        <>
-          {/* Line 1: type + group number (e.g. "הרצאה 11" or "נבחרת טניס נשים 17") */}
-          <div className="font-bold w-full break-words">
-            {event.courseName} {groupNum}
-          </div>
-
-          {/* Line 2+: building+room, instructor */}
-          <div className={cn(
-            "w-full break-words",
-            isPreview ? "font-medium" : "opacity-90",
-          )} style={{ fontSize: "0.85em" }}>
-            {location && <div>{location}</div>}
-            {event.instructor && <div>{event.instructor}</div>}
-          </div>
-        </>
+        <div className="w-full break-words">
+          <div className="font-bold">{event.courseName}</div>
+          {location && <div>{location}</div>}
+          {event.instructor && <div>{event.instructor}</div>}
+          <div>{event.kindLabel}</div>
+        </div>
       ) : (
         <div className="font-bold w-full break-words">
           {event.courseName}

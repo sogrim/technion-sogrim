@@ -14,6 +14,8 @@ interface ExamInfo {
   dateB?: Date;
   dateAStr?: string;
   dateBStr?: string;
+  timeA?: string;
+  timeB?: string;
 }
 
 function parseExamDate(str?: string): Date | undefined {
@@ -72,11 +74,16 @@ export function ExamTimeline() {
         dateB,
         dateAStr: course.examA,
         dateBStr: course.examB,
+        timeA: course.examATime,
+        timeB: course.examBTime,
       });
     });
 
     // Build sorted timeline for מועד א and מועד ב
-    const buildTimeline = (getDate: (e: ExamInfo) => Date | undefined) => {
+    const buildTimeline = (
+      getDate: (e: ExamInfo) => Date | undefined,
+      getTime: (e: ExamInfo) => string | undefined,
+    ) => {
       const withDates = infos
         .filter((e) => getDate(e) != null)
         .sort((a, b) => getDate(a)!.getTime() - getDate(b)!.getTime());
@@ -84,6 +91,7 @@ export function ExamTimeline() {
       const items: {
         exam: ExamInfo;
         date: Date;
+        time?: string;
         gapDays?: number;
         gapSeverity?: "ok" | "warning" | "danger";
       }[] = [];
@@ -99,7 +107,7 @@ export function ExamTimeline() {
           gapSeverity = getDayLabel(gapDays).severity;
         }
 
-        items.push({ exam: withDates[i], date, gapDays, gapSeverity });
+        items.push({ exam: withDates[i], date, time: getTime(withDates[i]), gapDays, gapSeverity });
       }
 
       return items;
@@ -107,8 +115,8 @@ export function ExamTimeline() {
 
     return {
       examInfos: infos,
-      timelineA: buildTimeline((e) => e.dateA),
-      timelineB: buildTimeline((e) => e.dateB),
+      timelineA: buildTimeline((e) => e.dateA, (e) => e.timeA),
+      timelineB: buildTimeline((e) => e.dateB, (e) => e.timeB),
     };
   }, [draft]);
 
@@ -146,6 +154,7 @@ function ExamSession({
   timeline: {
     exam: ExamInfo;
     date: Date;
+    time?: string;
     gapDays?: number;
     gapSeverity?: "ok" | "warning" | "danger";
   }[];
@@ -225,8 +234,15 @@ function ExamSession({
                   <div className="text-xs font-medium truncate">{item.exam.courseName}</div>
                   <div className="text-[0.65rem] text-muted-foreground">{item.exam.courseId}</div>
                 </div>
-                <div className="text-sm font-mono font-semibold shrink-0">
-                  {formatDate(item.date)}
+                <div className="text-end shrink-0">
+                  <div className="text-sm font-mono font-semibold">
+                    {formatDate(item.date)}
+                  </div>
+                  {item.time && (
+                    <div className="text-[0.65rem] font-mono text-muted-foreground">
+                      {item.time}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

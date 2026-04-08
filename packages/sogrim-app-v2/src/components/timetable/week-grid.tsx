@@ -220,7 +220,6 @@ function layoutEvents(
     // Check if this event starts a new non-overlapping group
     if (evStart >= currentGroupEnd) {
       groupIndex++;
-      // new group starts at evStart
       currentGroupEnd = evEnd;
       columns.length = 0; // reset columns for new group
     } else {
