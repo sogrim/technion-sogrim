@@ -287,12 +287,13 @@ export function resolveEvents(
       if (selectedGroupId) {
         const group = typeGroups.find((g) => g.id === selectedGroupId);
         if (!group) continue;
-        const name = group.displayName || course.name;
+        const kindLabel = `${group.kindLabel} ${group.id.split("-")[0].split("/").map((n) => n.replace(/^0+/, "") || "0").join("/")}`;
         for (const lesson of group.lessons) {
           events.push({
             courseId: course.id,
-            courseName: name,
+            courseName: course.name,
             type: group.type,
+            kindLabel,
             groupId: group.id,
             day: lesson.day,
             startTime: lesson.startTime,
@@ -307,12 +308,13 @@ export function resolveEvents(
 
         if (isPreviewTarget && previewingType === type) {
           for (const altGroup of typeGroups.filter((g) => g.id !== selectedGroupId)) {
-            const altName = altGroup.displayName || course.name;
+            const altKindLabel = `${altGroup.kindLabel} ${altGroup.id.split("-")[0].split("/").map((n) => n.replace(/^0+/, "") || "0").join("/")}`;
             for (const lesson of altGroup.lessons) {
               events.push({
                 courseId: course.id,
-                courseName: altName,
+                courseName: course.name,
                 type: altGroup.type,
+                kindLabel: altKindLabel,
                 groupId: altGroup.id,
                 day: lesson.day,
                 startTime: lesson.startTime,
@@ -329,12 +331,13 @@ export function resolveEvents(
         }
       } else {
         for (const group of typeGroups) {
-          const name = group.displayName || course.name;
+          const kindLabel = `${group.kindLabel} ${group.id.split("-")[0].split("/").map((n) => n.replace(/^0+/, "") || "0").join("/")}`;
           for (const lesson of group.lessons) {
             events.push({
               courseId: course.id,
-              courseName: name,
+              courseName: course.name,
               type: group.type,
+              kindLabel,
               groupId: group.id,
               day: lesson.day,
               startTime: lesson.startTime,
@@ -359,6 +362,7 @@ export function resolveEvents(
       courseId: ce.id,
       courseName: ce.title,
       type: "lecture",
+      kindLabel: "",
       groupId: "",
       day: ce.day,
       startTime: ce.startTime,

@@ -1169,7 +1169,6 @@ impl CachedSapClient {
         if parts.len() != 2 {
             return (None, Some(room_text.to_string()));
         }
-        let building_code = parts[0];
         let room_number = parts[1].trim_start_matches('0');
         let room_num = if room_number.is_empty() {
             parts[1]
@@ -1177,12 +1176,7 @@ impl CachedSapClient {
             room_number
         };
 
-        // Try static map first (fast path, covers most buildings).
-        if let Some(name) = resolve_building_code(building_code) {
-            return (Some(name.to_string()), Some(room_num.to_string()));
-        }
-
-        // Dynamic lookup via GObjectSet, cached per room_id.
+        // Resolve building name via GObjectSet API, cached per room_id.
         if let Some(rid) = room_id.filter(|r| !r.is_empty()) {
             let building = self.get_building_name(rid, year, semester).await;
             return (building, Some(room_num.to_string()));
@@ -1214,7 +1208,7 @@ impl CachedSapClient {
                 building
             }
             Err(e) => {
-                log::debug!(target: "sogrim_server", "GObjectSet lookup failed for {room_id}: {e}");
+                log::warn!(target: "sogrim_server", "GObjectSet lookup failed for {room_id}: {e}");
                 None
             }
         };
@@ -1248,14 +1242,27 @@ impl CachedSapClient {
     /// Selects Name at both SeObjectSet and EObjectSet level (for sport course names),
     /// plus RoomId for building lookup.
     fn schedule_query_persons(year: &str, semester: &str, sap_id: &str) -> String {
+        let select = [
+            "ZzSeSeqnr",
+            "Name",
+            "EObjectSet/Otjid",
+            "EObjectSet/CategoryText",
+            "EObjectSet/Name",
+            "EObjectSet/ScheduleSummary",
+            "EObjectSet/ScheduleText",
+            "EObjectSet/RoomText",
+            "EObjectSet/RoomId",
+            "EObjectSet/Persons/Title",
+            "EObjectSet/Persons/FirstName",
+            "EObjectSet/Persons/LastName",
+        ]
+        .join(",");
+        let expand = ["EObjectSet", "EObjectSet/Persons"].join(",");
         format!(
-            "{}&$select=ZzSeSeqnr,Name,\
-             EObjectSet/Otjid,EObjectSet/CategoryText,EObjectSet/Name,\
-             EObjectSet/ScheduleSummary,EObjectSet/ScheduleText,\
-             EObjectSet/RoomText,EObjectSet/RoomId,\
-             EObjectSet/Persons/Title,EObjectSet/Persons/FirstName,EObjectSet/Persons/LastName\
-             &$expand=EObjectSet,EObjectSet/Persons",
-            Self::schedule_entity(year, semester, sap_id)
+            "{}&$select={}&$expand={}",
+            Self::schedule_entity(year, semester, sap_id),
+            urlencoding::encode(&select),
+            urlencoding::encode(&expand),
         )
     }
 
@@ -1771,58 +1778,6 @@ fn resolve_sport_kind(
 
     // Last resort: use the original category text.
     category_text.to_string()
-}
-
-/// Static building code → name mapping. Comprehensive list matching
-/// the GObjectSet API results.
-/// When a code is missing, callers get None (still shows the room code).
-fn resolve_building_code(code: &str) -> Option<&'static str> {
-    // This list is derived from GObjectSet results + the SAP
-    // building names normalized the same way he does (strip "בנין"/"בניין" prefix).
-    match code {
-        "014" => Some("אולמן"),
-        "015" => Some("אולם צ'רצ'יל"),
-        "016" => Some("הנ' כימית"),
-        "018" => Some("הנ' מכונות"),
-        "019" => Some("מתמטיקה"),
-        "020" => Some("כימיה"),
-        "021" => Some("פיסיקה"),
-        "024" => Some("הנ' תעשיה"),
-        "025" => Some("הנ' חשמל"),
-        "028" => Some("ביולוגיה"),
-        "030" => Some("גולדשטיין-גורן"),
-        "032" => Some("אמדו"),
-        "033" => Some("מדעי המזון"),
-        "034" => Some("זיסאפל"),
-        "037" => Some("ליידי דייוס"),
-        "038" => Some("אודיטוריום"),
-        "039" => Some("ארכיטקטורה"),
-        "040" => Some("ביוטכנולוגיה"),
-        "044" => Some("פישבך"),
-        "048" => Some("הנ' ביורפואית"),
-        "054" => Some("אולמן"),
-        "056" => Some("מדע החלטות"),
-        "058" => Some("סגו"),
-        "060" => Some("ביוטכנולוגיה ומדעי המזון"),
-        "069" => Some("טאוב"),
-        "071" => Some("ספריה מרכזית"),
-        "079" => Some("הנדסת חמרים"),
-        "084" => Some("מדעי המחשב"),
-        "088" => Some("אהרונוב"),
-        "090" => Some("מכון נאמן"),
-        "093" => Some("בורוביץ הנדסה אזרחית"),
-        "095" => Some("הנ' אוירונאוטית"),
-        "096" => Some("רקנאטי"),
-        "102" => Some("פקולטה לרפואה"),
-        "103" => Some("ננו-אלקטרוניקה"),
-        "120" => Some("ספורט"),
-        "121" => Some("בנין ספורט 2"),
-        "126" => Some("מגרש כדורגל"),
-        "127" => Some("מגרש טניס"),
-        "128" => Some("בריכת שחיה"),
-        "129" => Some("סקווש"),
-        _ => None,
-    }
 }
 
 /// Normalize a building name from GObjectSet (e.g. "בנין ע'ש טאוב" → "טאוב").

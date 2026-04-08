@@ -300,16 +300,19 @@ function ScheduleSection({
               {groups.length > 1 && ` (${groups.length} קבוצות)`}
             </div>
             <div className="space-y-1">
-              {groups.map((group) => (
+              {groups.map((group) => {
+                const rawNums = group.id.split("-")[0];
+                const label = rawNums.split("/").map((n) => n.replace(/^0+/, "") || "0").join("/");
+                return (
                 <div
                   key={group.id}
                   className="flex items-center gap-3 p-2 rounded-lg bg-secondary/30 text-sm"
                 >
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
+                    className="min-w-8 h-8 px-2 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0 order-last"
                     style={{ backgroundColor: accentBg }}
                   >
-                    {group.id.split("-")[0]}
+                    {label}
                   </div>
                   <div className="flex-1 min-w-0">
                     {group.lessons.map((lesson, li) => (
@@ -336,7 +339,8 @@ function ScheduleSection({
                     ))}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}
