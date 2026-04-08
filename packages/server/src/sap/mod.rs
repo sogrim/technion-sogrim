@@ -2024,11 +2024,11 @@ mod tests {
     fn test_parse_corequisites() {
         assert_eq!(
             parse_corequisites("מקצוע צמוד: 104031"),
-            vec![CourseId::new("00104031")]
+            vec![CourseId::new("104031")]
         );
         assert_eq!(
             parse_corequisites("מקצועות צמודים: 104031, 104166"),
-            vec![CourseId::new("00104031"), CourseId::new("00104166")]
+            vec![CourseId::new("104031"), CourseId::new("104166")]
         );
         assert_eq!(parse_corequisites("no coreqs here"), Vec::<CourseId>::new());
     }

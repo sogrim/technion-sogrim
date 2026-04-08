@@ -9,8 +9,7 @@ use serde::{self, Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
 
-static YEAR_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?P<year>\d{4})").unwrap());
+static YEAR_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?P<year>\d{4})").unwrap());
 static TRACK_NAME_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\s*\d{4}(-\d{4})?\s*").unwrap());
 
@@ -132,10 +131,7 @@ impl Catalog {
     /// Returns the track name by stripping the year portion from a catalog name string.
     /// E.g. "מדמח תלת שנתי 2022-2023" → "מדמח תלת שנתי"
     pub fn track_name_from_str(name: &str) -> String {
-        TRACK_NAME_RE
-            .replace_all(name, "")
-            .trim()
-            .to_string()
+        TRACK_NAME_RE.replace_all(name, "").trim().to_string()
     }
 
     pub fn track_name(&self) -> String {
