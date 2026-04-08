@@ -188,6 +188,21 @@ impl DiskCourseCache {
     pub async fn get_all_courses(&self) -> HashMap<CourseId, Course> {
         self.all_courses.read().await.clone()
     }
+
+    /// Create a cache pre-populated with the given courses (for tests only).
+    #[cfg(test)]
+    pub fn with_courses(courses: HashMap<CourseId, Course>) -> Self {
+        let ttl = Duration::from_secs(CACHE_TTL_HOURS * 3600);
+        Self {
+            cache_dir: PathBuf::new(),
+            courses: Cache::builder()
+                .time_to_live(ttl)
+                .max_capacity(20_000)
+                .build(),
+            indexes: Cache::builder().time_to_live(ttl).max_capacity(20).build(),
+            all_courses: RwLock::new(courses),
+        }
+    }
 }
 
 fn semester_display_name(year: &str, semester: &str) -> String {
