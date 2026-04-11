@@ -7,6 +7,12 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import {
@@ -146,8 +152,24 @@ export function ReservedCreditsPanel() {
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-blue-500" />
           <span className="font-medium text-foreground">
-            {"הקצאת נקודות מילואים"}
+            {"הקצאת נקודות זיכוי"}
           </span>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex cursor-help">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-right">
+                <p>
+                  {
+                    "הקצאת נקודות זיכוי שקיבלת לבנקים השונים - כולל נקודות מילואים, פעילויות חברתיות וזיכויים נוספים"
+                  }
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         {open ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -163,7 +185,7 @@ export function ReservedCreditsPanel() {
             <span
               className={`font-medium ${isOverAllocated ? "text-destructive" : "text-foreground"}`}
             >
-              {"נקודות מילואים שלא נוצלו: "}
+              {"נקודות זיכוי שלא נוצלו: "}
               {Math.max(0, remaining)}
               {" נקודות"}
             </span>
@@ -172,7 +194,7 @@ export function ReservedCreditsPanel() {
           {isOverAllocated && (
             <div className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertTriangle className="h-3.5 w-3.5" />
-              <span>{"הוקצו יותר נקודות מילואים ממה שאותר במערכת"}</span>
+              <span>{"הוקצו יותר נקודות זיכוי ממה שאותר במערכת"}</span>
             </div>
           )}
 
