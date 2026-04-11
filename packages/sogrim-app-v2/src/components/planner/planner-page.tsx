@@ -240,14 +240,13 @@ export function PlannerPage() {
   // --- Ready state: full planner ---
   return (
     <div className="space-y-0">
-      {/* Modified Toast - shown when data has been changed but not recomputed */}
-      {isModified && <ModifiedToast />}
+      {/* Modified Toast - always reserves space, content shown when modified */}
+      <ModifiedToast visible={isModified} />
 
       {/* Top Banner */}
       <Banner
         degreeStatus={details!.degree_status}
         catalog={details!.catalog}
-        hasModifiedToast={isModified}
         includeInProgress={includeInProgress}
         onToggleInProgress={setIncludeInProgress}
       />

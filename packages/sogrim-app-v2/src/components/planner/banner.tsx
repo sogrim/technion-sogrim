@@ -7,12 +7,11 @@ import type { DegreeStatus, Catalog } from "@/types/api";
 interface BannerProps {
   degreeStatus: DegreeStatus;
   catalog?: Catalog;
-  hasModifiedToast?: boolean;
   includeInProgress: boolean;
   onToggleInProgress: (v: boolean) => void;
 }
 
-export function Banner({ degreeStatus, catalog, hasModifiedToast, includeInProgress, onToggleInProgress }: BannerProps) {
+export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInProgress }: BannerProps) {
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const { course_bank_requirements, course_statuses, total_credit } = degreeStatus;
@@ -45,10 +44,7 @@ export function Banner({ degreeStatus, catalog, hasModifiedToast, includeInProgr
 
   return (
     <div
-      className={cn(
-        "md:-mx-6 md:px-6 md:py-5",
-        !hasModifiedToast && "md:-mt-6"
-      )}
+      className="md:-mx-6 md:px-6 md:py-5"
       style={{ backgroundColor: "#24333c" }}
     >
       {/* ===== MOBILE: Compact summary strip ===== */}
