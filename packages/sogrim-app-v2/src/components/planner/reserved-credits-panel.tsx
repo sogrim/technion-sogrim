@@ -163,16 +163,16 @@ export function ReservedCreditsPanel() {
             <span
               className={`font-medium ${isOverAllocated ? "text-destructive" : "text-foreground"}`}
             >
-              {'נק"ז מילואים שלא נוצלו: '}
+              {"נקודות מילואים שלא נוצלו: "}
               {remaining}
-              {' נק"ז'}
+              {" נקודות"}
             </span>
           </div>
 
           {isOverAllocated && (
             <div className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertTriangle className="h-3.5 w-3.5" />
-              <span>{'הוקצו יותר נק"ז מילואים ממה שאותר במערכת'}</span>
+              <span>{"הוקצו יותר נקודות מילואים ממה שאותר במערכת"}</span>
             </div>
           )}
 
@@ -192,7 +192,7 @@ export function ReservedCreditsPanel() {
                     <button
                       onClick={() => handleDelta(bankName, CREDIT_STEP)}
                       className="w-7 h-7 flex items-center justify-center rounded border text-muted-foreground hover:text-foreground hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={'הוסף נק"ז'}
+                      title={"הוסף נקודות"}
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </button>
