@@ -164,7 +164,7 @@ export function ReservedCreditsPanel() {
               className={`font-medium ${isOverAllocated ? "text-destructive" : "text-foreground"}`}
             >
               {"נקודות מילואים שלא נוצלו: "}
-              {remaining}
+              {Math.max(0, remaining)}
               {" נקודות"}
             </span>
           </div>
@@ -205,7 +205,7 @@ export function ReservedCreditsPanel() {
                       onClick={() => handleDelta(bankName, -CREDIT_STEP)}
                       disabled={allocated <= 0}
                       className="w-7 h-7 flex items-center justify-center rounded border text-muted-foreground hover:text-foreground hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={'הפחת נק"ז'}
+                      title={"הפחת נקודות"}
                     >
                       <Minus className="h-3.5 w-3.5" />
                     </button>
