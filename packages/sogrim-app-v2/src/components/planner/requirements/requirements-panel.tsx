@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { BankRequirementCard } from "./bank-requirement-card";
 import { MessagesPanel } from "../messages-panel";
+import { ReservedCreditsPanel } from "../reserved-credits-panel";
 import type { DegreeStatus } from "@/types/api";
 
 interface RequirementsPanelProps {
@@ -44,6 +45,7 @@ export function RequirementsPanel({ degreeStatus, onIgnoreCourse, includeInProgr
           {"\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA"}
         </h3>
         <MessagesPanel degreeStatus={degreeStatus} />
+        <ReservedCreditsPanel />
       </div>
     </div>
   );

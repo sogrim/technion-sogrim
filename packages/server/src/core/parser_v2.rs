@@ -442,6 +442,10 @@ fn assign_semester_numbers(raw_courses: Vec<RawCourse>) -> Result<Vec<CourseStat
             ..Default::default()
         };
         cs.set_state();
+        // "פעילות חברתית" courses grant reserved credits — move them to פטורים וזיכויים
+        if cs.course.name.contains("פעילות חברתית") {
+            cs.semester = None;
+        }
         result.push(cs);
     }
 

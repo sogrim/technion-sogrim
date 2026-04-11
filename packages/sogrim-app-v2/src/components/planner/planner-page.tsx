@@ -303,7 +303,7 @@ export function PlannerPage() {
         )}
 
         {activeTab === "exemptions" && (
-          <ExemptionsTab courseStatuses={courseStatuses} />
+          <ExemptionsTab courseStatuses={courseStatuses} onAddCourse={handleAddCourse} onDeleteCourse={handleDeleteCourse} />
         )}
       </div>
 
