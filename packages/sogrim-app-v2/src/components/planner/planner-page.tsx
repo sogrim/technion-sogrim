@@ -55,7 +55,9 @@ export function PlannerPage() {
     type: "error" | "success";
   } | null>(null);
   const [activeTab, setActiveTab] = useState<PlannerTab>("requirements");
-  const [includeInProgress, setIncludeInProgress] = useState(false);
+  const [includeInProgress, setIncludeInProgress] = useState(
+    () => userState?.details?.compute_in_progress ?? false
+  );
   const [extraSemesters, setExtraSemesters] = useState<string[]>([]);
 
   const details = userState?.details;
@@ -250,7 +252,17 @@ export function PlannerPage() {
         includeInProgress={includeInProgress}
         onToggleInProgress={(val) => {
           setIncludeInProgress(val);
-          sendUpdate(courseStatuses);
+          if (!details) return;
+          const updatedDetails: UserDetails = {
+            ...details,
+            degree_status: {
+              ...details.degree_status,
+              course_statuses: courseStatuses,
+            },
+            compute_in_progress: val,
+            modified: true,
+          };
+          updateMutation.mutate(updatedDetails);
         }}
       />
 
