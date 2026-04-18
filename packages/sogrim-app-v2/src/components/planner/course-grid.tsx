@@ -186,7 +186,7 @@ export function CourseGrid({
         cellClass: "ag-cell-center",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: {
-          values: ["", ...bankNames],
+          values: bankNames,
         },
       },
       {
