@@ -66,6 +66,7 @@ function CreditInput({
         }}
         className="w-12 h-7 text-center text-sm font-bold border rounded bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         autoFocus
+        onFocus={(e) => e.target.select()}
       />
     );
   }
@@ -96,6 +97,7 @@ export function ReservedCreditsPanel() {
     [courseStatuses],
   );
   const [open, setOpen] = useState(hasCredits);
+  useEffect(() => setOpen(hasCredits), [hasCredits]);
   const bankNames = details?.catalog?.course_bank_names ?? [];
 
   const totalAvailable = useMemo(
