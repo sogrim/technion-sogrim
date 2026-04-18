@@ -248,7 +248,10 @@ export function PlannerPage() {
         degreeStatus={details!.degree_status}
         catalog={details!.catalog}
         includeInProgress={includeInProgress}
-        onToggleInProgress={setIncludeInProgress}
+        onToggleInProgress={(val) => {
+          setIncludeInProgress(val);
+          sendUpdate(courseStatuses);
+        }}
       />
 
       {/* 3 Tabs - centered, large text */}
