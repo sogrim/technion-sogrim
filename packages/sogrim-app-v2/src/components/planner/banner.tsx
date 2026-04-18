@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ComputeButton } from "./compute-button";
-import { isReservedCourse } from "@/lib/reserved-credits";
+import { isReservedCourse, getTotalAllocatedReservedCredits } from "@/lib/reserved-credits";
 import type { DegreeStatus, Catalog } from "@/types/api";
 
 interface BannerProps {
@@ -26,7 +26,8 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
     (sum, cs) => ((cs.state === "הושלם" || cs.state === "בתהליך") && !isReservedCourse(cs) ? sum + cs.course.credit : sum),
     0
   );
-  const effectiveCredit = Math.max(inProgressCredit, total_credit);
+  const allocatedCredit = getTotalAllocatedReservedCredits(course_statuses);
+  const effectiveCredit = Math.max(inProgressCredit, total_credit) + allocatedCredit;
   const displayedCredit = includeInProgress ? effectiveCredit : completedCredit;
   const pct = totalRequired > 0 ? Math.min(100, Math.round((displayedCredit / totalRequired) * 100)) : 0;
 
