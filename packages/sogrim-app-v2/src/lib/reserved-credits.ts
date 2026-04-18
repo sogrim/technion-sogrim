@@ -16,6 +16,10 @@ export function isReservedCourse(cs: CourseStatus): boolean {
   return cs.course._id.startsWith(RESERVED_PREFIX);
 }
 
+export function isSocialActivityCourse(cs: CourseStatus): boolean {
+  return cs.course.name.includes("פעילות חברתית");
+}
+
 export function getReservedCreditCourses(
   courseStatuses: CourseStatus[],
 ): CourseStatus[] {
