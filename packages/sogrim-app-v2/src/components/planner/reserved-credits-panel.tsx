@@ -88,10 +88,14 @@ function CreditInput({
 export function ReservedCreditsPanel() {
   const { data: userState } = useUserState();
   const updateMutation = useUpdateUserState();
-  const [open, setOpen] = useState(true);
-
   const details = userState?.details;
   const courseStatuses = details?.degree_status.course_statuses ?? [];
+
+  const hasCredits = useMemo(
+    () => getTotalReservedCredits(courseStatuses) > 0,
+    [courseStatuses],
+  );
+  const [open, setOpen] = useState(hasCredits);
   const bankNames = details?.catalog?.course_bank_names ?? [];
 
   const totalAvailable = useMemo(
@@ -141,8 +145,6 @@ export function ReservedCreditsPanel() {
     [courseStatuses, mutate],
   );
 
-  if (totalAvailable <= 0) return null;
-
   return (
     <div className="rounded-lg border bg-card shadow-sm">
       <button
@@ -150,9 +152,9 @@ export function ReservedCreditsPanel() {
         className="flex w-full items-center justify-between p-4 text-right"
       >
         <div className="flex items-center gap-2">
-          <Info className="h-4 w-4 text-blue-500" />
+          <span className="text-base">🎖️</span>
           <span className="font-medium text-foreground">
-            {"הקצאת נקודות זיכוי"}
+            {"נקודות זיכוי ומילואים"}
           </span>
           <TooltipProvider delayDuration={200}>
             <Tooltip>
