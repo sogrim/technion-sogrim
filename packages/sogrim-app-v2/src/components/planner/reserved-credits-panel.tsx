@@ -97,7 +97,6 @@ export function ReservedCreditsPanel() {
     [courseStatuses],
   );
   const [open, setOpen] = useState(hasCredits);
-  useEffect(() => setOpen(hasCredits), [hasCredits]);
   const bankNames = details?.catalog?.course_bank_names ?? [];
 
   const totalAvailable = useMemo(
