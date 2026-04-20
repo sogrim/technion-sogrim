@@ -392,7 +392,7 @@ fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), St
         .map(|c| (c.semester_year.clone(), c.semester_term.clone()))
         .collect();
     unique_semesters
-        .sort_by(|a, b| semester_sort_key(&a.0, &a.1).cmp(&semester_sort_key(&b.0, &b.1)));
+        .sort_by_key(|a| semester_sort_key(&a.0, &a.1));
     unique_semesters.dedup();
 
     let mut semester_map = HashMap::new();
