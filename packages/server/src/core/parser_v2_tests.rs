@@ -191,6 +191,17 @@ fn chrome_assigns_semester_numbers() {
             );
             continue;
         }
+        if cs.course.credit != 0.0
+            && cs.grade == Some(Grade::ExemptionWithCredit)
+            && cs.course.name.contains("פעילות חברתית")
+        {
+            assert!(
+                cs.semester.is_none(),
+                "Social activity course {} should have no semester",
+                cs.course.id
+            );
+            continue;
+        }
         assert!(
             cs.semester.is_some(),
             "Course {} has no semester",

@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { CourseBankReq, CourseStatus } from "@/types/api";
+import { isReservedCourse } from "@/lib/reserved-credits";
 
 interface BankRequirementCardProps {
   bank: CourseBankReq;
@@ -26,7 +27,9 @@ export function BankRequirementCard({
 
   const isAllBank = bank.bank_rule_name === "all";
 
-  const bankCourses = courses.filter((cs) => cs.type === bank.course_bank_name);
+  const bankCourses = courses.filter(
+    (cs) => cs.type === bank.course_bank_name && !isReservedCourse(cs)
+  );
 
   // When includeInProgress, add in-progress courses' credits/count to the backend totals
   const inProgressExtra = includeInProgress

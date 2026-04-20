@@ -285,6 +285,10 @@ impl CourseStatus {
         self
     }
 
+    pub fn is_social(&self) -> bool {
+        self.course.name.contains("פעילות חברתית")
+    }
+
     pub fn set_msg(&mut self, msg: impl AsRef<str>) -> &mut Self {
         self.additional_msg = Some(msg.as_ref().to_owned());
         self

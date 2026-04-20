@@ -391,8 +391,7 @@ fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), St
         .iter()
         .map(|c| (c.semester_year.clone(), c.semester_term.clone()))
         .collect();
-    unique_semesters
-        .sort_by(|a, b| semester_sort_key(&a.0, &a.1).cmp(&semester_sort_key(&b.0, &b.1)));
+    unique_semesters.sort_by_key(|a| semester_sort_key(&a.0, &a.1));
     unique_semesters.dedup();
 
     let mut semester_map = HashMap::new();
@@ -442,6 +441,10 @@ fn assign_semester_numbers(raw_courses: Vec<RawCourse>) -> Result<Vec<CourseStat
             ..Default::default()
         };
         cs.set_state();
+        // "פעילות חברתית" courses grant reserved credits — move them to פטורים וזיכויים
+        if cs.course.name.contains("פעילות חברתית") {
+            cs.semester = None;
+        }
         result.push(cs);
     }
 

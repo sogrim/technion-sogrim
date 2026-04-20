@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useComputeDegreeStatus } from "@/hooks/use-mutations";
 
-export function ModifiedToast() {
+export function ModifiedToast({ visible = true }: { visible?: boolean }) {
   const { mutate, isPending } = useComputeDegreeStatus();
   const [showInfo, setShowInfo] = useState(false);
 
   return (
     <div
-      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg mb-2 md:rounded-none md:-mx-6 md:-mt-6 md:px-6 md:mb-0 bg-[#e8dff5] text-[#3b2069] dark:bg-[#2d1f4e] dark:text-[#d4c4f0]"
+      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg mb-2 md:rounded-none md:-mx-6 md:px-6 md:mb-0 md:-mt-6 md:-mb-3 relative z-10 bg-[#e8dff5] text-[#3b2069] dark:bg-[#2d1f4e] dark:text-[#d4c4f0]"
+      style={{ visibility: visible ? "visible" : "hidden" }}
     >
       <span className="text-center font-medium text-xs md:text-sm">
         {"סטטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר."}

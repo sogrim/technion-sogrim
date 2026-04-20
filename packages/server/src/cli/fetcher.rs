@@ -122,11 +122,7 @@ impl ProgressBar {
             return;
         }
         let done = self.current.load(Ordering::Relaxed).min(self.total);
-        let pct = if self.total == 0 {
-            100usize
-        } else {
-            (done * 100) / self.total
-        };
+        let pct = (done * 100).checked_div(self.total).unwrap_or(100);
         let bar_width = 30usize;
         let filled = (pct * bar_width) / 100;
         let empty = bar_width.saturating_sub(filled);

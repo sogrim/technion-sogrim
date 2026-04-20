@@ -55,7 +55,9 @@ export function PlannerPage() {
     type: "error" | "success";
   } | null>(null);
   const [activeTab, setActiveTab] = useState<PlannerTab>("requirements");
-  const [includeInProgress, setIncludeInProgress] = useState(false);
+  const [includeInProgress, setIncludeInProgress] = useState(
+    () => userState?.details?.compute_in_progress ?? false
+  );
   const [extraSemesters, setExtraSemesters] = useState<string[]>([]);
 
   const details = userState?.details;
@@ -240,16 +242,28 @@ export function PlannerPage() {
   // --- Ready state: full planner ---
   return (
     <div className="space-y-0">
-      {/* Modified Toast - shown when data has been changed but not recomputed */}
-      {isModified && <ModifiedToast />}
+      {/* Modified Toast - always reserves space, content shown when modified */}
+      <ModifiedToast visible={isModified} />
 
       {/* Top Banner */}
       <Banner
         degreeStatus={details!.degree_status}
         catalog={details!.catalog}
-        hasModifiedToast={isModified}
         includeInProgress={includeInProgress}
-        onToggleInProgress={setIncludeInProgress}
+        onToggleInProgress={(val) => {
+          setIncludeInProgress(val);
+          if (!details) return;
+          const updatedDetails: UserDetails = {
+            ...details,
+            degree_status: {
+              ...details.degree_status,
+              course_statuses: courseStatuses,
+            },
+            compute_in_progress: val,
+            modified: true,
+          };
+          updateMutation.mutate(updatedDetails);
+        }}
       />
 
       {/* 3 Tabs - centered, large text */}
@@ -303,7 +317,7 @@ export function PlannerPage() {
         )}
 
         {activeTab === "exemptions" && (
-          <ExemptionsTab courseStatuses={courseStatuses} />
+          <ExemptionsTab courseStatuses={courseStatuses} onAddCourse={handleAddCourse} onDeleteCourse={handleDeleteCourse} />
         )}
       </div>
 

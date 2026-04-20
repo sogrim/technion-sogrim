@@ -17,6 +17,7 @@ import {
 import type { RowData } from "@/types/domain";
 import type { CourseStatus } from "@/types/api";
 import { useUiStore } from "@/stores/ui-store";
+import { isReservedCourse } from "@/lib/reserved-credits";
 
 /* ------------------------------------------------------------------ */
 /* Custom AG Grid theme — adapts to light/dark via CSS color-scheme   */
@@ -108,6 +109,7 @@ export function CourseGrid({
   const semesterCourses = useMemo(
     () =>
       courseStatuses.filter((cs) => {
+        if (isReservedCourse(cs)) return false;
         if (cs.semester !== semester) return false;
         if (semester === null) {
           return (
@@ -184,7 +186,7 @@ export function CourseGrid({
         cellClass: "ag-cell-center",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: {
-          values: ["", ...bankNames],
+          values: bankNames,
         },
       },
       {
@@ -291,18 +293,9 @@ export function CourseGrid({
     []
   );
 
-  // Compute height: header(40) + rows * rowHeight(40) + 2px border
-  const gridHeight = Math.max(
-    120,
-    Math.min(600, semesterCourses.length * 40 + 42)
-  );
-
   return (
     <div className="space-y-0">
-      <div
-        className="w-full overflow-hidden rounded-t-lg border"
-        style={{ height: gridHeight }}
-      >
+      <div className="w-full overflow-hidden rounded-t-lg border [&_.ag-center-cols-viewport]:!min-h-0 [&_.ag-body-viewport]:!min-h-0">
         <AgGridReact<RowData>
           ref={gridRef}
           theme={isDark ? sogrimGridThemeDark : sogrimGridThemeLight}
@@ -314,7 +307,7 @@ export function CourseGrid({
           singleClickEdit={true}
           stopEditingWhenCellsLoseFocus={true}
           onCellValueChanged={onCellValueChanged}
-          domLayout="normal"
+          domLayout="autoHeight"
           animateRows={true}
           headerHeight={38}
           rowHeight={40}

@@ -118,8 +118,22 @@ impl DegreeStatusHandler<'_> {
 }
 
 impl DegreeStatus {
+    /// Collect social courses ("פעילות חברתית") from course_statuses.
+    /// Social courses are used to let the user allocate the extra credit they have.
+    fn extract_social_courses(&self) -> Vec<CourseStatus> {
+        self.course_statuses
+            .iter()
+            .filter(|cs| cs.is_social())
+            .cloned()
+            .collect()
+    }
+
     pub fn compute(&mut self, mut catalog: Catalog, mut courses: HashMap<CourseId, Course>) {
         self.preprocess(&mut catalog, &mut courses);
+
+        // Extract social courses, then remove them so they don't affect the compute status logic
+        let social_courses = self.extract_social_courses();
+        self.course_statuses.retain(|cs| !cs.is_social());
 
         let course_banks = catalog.get_bank_traversal_order();
 
@@ -133,6 +147,9 @@ impl DegreeStatus {
             courses_overflow_map: HashMap::new(),
         }
         .compute_status();
+
+        // Restore social courses so the frontend can display them
+        self.course_statuses.extend(social_courses);
 
         // process the data after degree status computation
         self.postprocess(&catalog);

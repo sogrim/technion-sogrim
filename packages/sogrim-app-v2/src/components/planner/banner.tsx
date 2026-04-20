@@ -2,28 +2,28 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ComputeButton } from "./compute-button";
+import { isSocialActivityCourse } from "@/lib/reserved-credits";
 import type { DegreeStatus, Catalog } from "@/types/api";
 
 interface BannerProps {
   degreeStatus: DegreeStatus;
   catalog?: Catalog;
-  hasModifiedToast?: boolean;
   includeInProgress: boolean;
   onToggleInProgress: (v: boolean) => void;
 }
 
-export function Banner({ degreeStatus, catalog, hasModifiedToast, includeInProgress, onToggleInProgress }: BannerProps) {
+export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInProgress }: BannerProps) {
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const { course_bank_requirements, course_statuses, total_credit } = degreeStatus;
 
   const totalRequired = catalog?.total_credit ?? 0;
   const completedCredit = course_statuses.reduce(
-    (sum, cs) => (cs.state === "הושלם" ? sum + cs.course.credit : sum),
+    (sum, cs) => (cs.state === "הושלם" && !isSocialActivityCourse(cs) ? sum + cs.course.credit : sum),
     0
   );
   const inProgressCredit = course_statuses.reduce(
-    (sum, cs) => (cs.state === "הושלם" || cs.state === "בתהליך" ? sum + cs.course.credit : sum),
+    (sum, cs) => ((cs.state === "הושלם" || cs.state === "בתהליך") && !isSocialActivityCourse(cs) ? sum + cs.course.credit : sum),
     0
   );
   const effectiveCredit = Math.max(inProgressCredit, total_credit);
@@ -45,10 +45,7 @@ export function Banner({ degreeStatus, catalog, hasModifiedToast, includeInProgr
 
   return (
     <div
-      className={cn(
-        "md:-mx-6 md:px-6 md:py-5",
-        !hasModifiedToast && "md:-mt-6"
-      )}
+      className="md:-mx-6 md:px-6 md:py-5"
       style={{ backgroundColor: "#24333c" }}
     >
       {/* ===== MOBILE: Compact summary strip ===== */}
