@@ -7,6 +7,7 @@ import {
   formatSemesterName,
   getNextSemesterName,
   parseSemesterOrder,
+  getCurrentAcademicYear,
 } from "@/lib/semester-utils";
 import { SemesterPanel } from "./semester-panel";
 import type { CourseStatus } from "@/types/api";
@@ -37,6 +38,7 @@ function EmptyState({
 }: {
   onAddSemester: (semesterName: string) => void;
 }) {
+  const academicYear = getCurrentAcademicYear();
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <h3 className="text-xl font-medium text-foreground mb-6">
@@ -47,7 +49,7 @@ function EmptyState({
           variant="outline"
           size="lg"
           className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
-          onClick={() => onAddSemester("חורף_1")}
+          onClick={() => onAddSemester(`חורף_${academicYear}`)}
         >
           <Snowflake className="h-5 w-5" />
           {"חורף"}
@@ -56,7 +58,7 @@ function EmptyState({
           variant="outline"
           size="lg"
           className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
-          onClick={() => onAddSemester("אביב_1")}
+          onClick={() => onAddSemester(`אביב_${academicYear}`)}
         >
           <Sun className="h-5 w-5" />
           {"אביב"}
