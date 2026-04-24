@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
+import { useProviderUpdates } from "@/hooks/use-api-provider";
 import { getCourseColor } from "@/lib/timetable-colors";
 import { useUiStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ export function ExamTimeline() {
   const isDark = theme === "dark";
 
   const draft = drafts.find((d) => d.id === activeDraftId);
+  const providerVersion = useProviderUpdates();
 
   const { examInfos, timelineA, timelineB } = useMemo(() => {
     if (!draft) return { examInfos: [], timelineA: [], timelineB: [] };
@@ -118,7 +120,7 @@ export function ExamTimeline() {
       timelineA: buildTimeline((e) => e.dateA, (e) => e.timeA),
       timelineB: buildTimeline((e) => e.dateB, (e) => e.timeB),
     };
-  }, [draft]);
+  }, [draft, providerVersion]);
 
   if (examInfos.length === 0) return null;
 

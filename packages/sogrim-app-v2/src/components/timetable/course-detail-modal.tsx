@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
+import { useProviderUpdates } from "@/hooks/use-api-provider";
 import { getCourseColor } from "@/lib/timetable-colors";
 import { LESSON_TYPE_NAMES, DAY_NAMES } from "@/lib/timetable-utils";
 import { useUiStore } from "@/stores/ui-store";
@@ -27,13 +28,14 @@ export function CourseDetailModal() {
   const isDark = theme === "dark";
 
   const draft = drafts.find((d) => d.id === activeDraftId);
+  const providerVersion = useProviderUpdates();
 
   const { course, colorIndex } = useMemo(() => {
     if (!detailCourseId) return { course: undefined, colorIndex: 0 };
     const course = getProvider().getCourse(detailCourseId);
     const idx = draft?.courses.findIndex((c) => c.courseId === detailCourseId) ?? -1;
     return { course, colorIndex: idx >= 0 ? idx : 0 };
-  }, [detailCourseId, draft]);
+  }, [detailCourseId, draft, providerVersion]);
 
   // Close on Escape
   useEffect(() => {
