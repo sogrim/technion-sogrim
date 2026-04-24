@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
-import { Toast } from "@/components/ui/toast";
 import { useCoursesFilter } from "@/hooks/use-courses-filter";
 import { courseFromUserValidations } from "@/lib/course-validator";
 import { COURSE_GRADE_OPTIONS } from "@/types/domain";
@@ -32,14 +31,22 @@ export function AddCourseForm({
   const [gradeIsNumeric, setGradeIsNumeric] = useState(true);
   const [type, setType] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [numberSearchTerm, setNumberSearchTerm] = useState("");
+  const [debouncedNumberSearch, setDebouncedNumberSearch] = useState("");
+  const [showNumberSuggestions, setShowNumberSuggestions] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: "error";
   } | null>(null);
 
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const numberSuggestionsRef = useRef<HTMLDivElement>(null);
 
   const { data: courses } = useCoursesFilter("name", debouncedSearch);
+  const { data: numberCourses } = useCoursesFilter(
+    "number",
+    debouncedNumberSearch,
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -49,12 +56,25 @@ export function AddCourseForm({
   }, [searchTerm]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedNumberSearch(numberSearchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [numberSearchTerm]);
+
+  useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
         suggestionsRef.current &&
         !suggestionsRef.current.contains(e.target as Node)
       ) {
         setShowSuggestions(false);
+      }
+      if (
+        numberSuggestionsRef.current &&
+        !numberSuggestionsRef.current.contains(e.target as Node)
+      ) {
+        setShowNumberSuggestions(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -66,11 +86,14 @@ export function AddCourseForm({
     setCourseName(course.name);
     setCredit(String(course.credit));
     setSearchTerm(course.name);
+    setNumberSearchTerm(course._id);
     setShowSuggestions(false);
+    setShowNumberSuggestions(false);
   }, []);
 
   function resetForm() {
     setSearchTerm("");
+    setNumberSearchTerm("");
     setCourseNumber("");
     setCourseName("");
     setCredit("");
@@ -80,8 +103,17 @@ export function AddCourseForm({
   }
 
   function handleSubmit() {
+    const name = courseName || searchTerm;
+    if (!name.trim() || !courseNumber.trim() || !credit.trim()) {
+      setToast({
+        message: "יש למלא שם קורס, מספר קורס ונקודות זכות",
+        type: "error",
+      });
+      return;
+    }
+
     const row: RowData = {
-      name: courseName || searchTerm,
+      name,
       courseNumber,
       credit: credit || "0",
       grade: grade || undefined,
@@ -109,7 +141,7 @@ export function AddCourseForm({
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setExpanded(true)}
+        onClick={() => { setToast(null); setExpanded(true); }}
         className="border-foreground/30 text-foreground hover:bg-foreground hover:text-background"
       >
         <Plus className="h-4 w-4" />
@@ -123,9 +155,9 @@ export function AddCourseForm({
       {/* Compact inline row form */}
       <div className="flex items-end gap-1.5 flex-wrap rounded-lg border bg-muted/50 p-3">
         {/* Course name with autocomplete */}
-        <div className="relative flex-[2] min-w-[160px]">
+        <div className="relative flex-[1.2] min-w-[110px]">
           <label className="text-[11px] text-muted-foreground mb-0.5 block">
-            שם הקורס
+            שם הקורס<span className="text-red-500 ms-0.5">*</span>
           </label>
           <div className="relative">
             <Search className="absolute start-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
@@ -152,7 +184,9 @@ export function AddCourseForm({
                   className="block w-full px-3 py-2 text-start text-sm hover:bg-muted transition-colors"
                 >
                   <span className="font-medium">{course._id}</span>
-                  <span className="text-muted-foreground ms-1">- {course.name}</span>
+                  <span className="text-muted-foreground ms-1">
+                    - {course.name}
+                  </span>
                 </button>
               ))}
             </div>
@@ -160,23 +194,51 @@ export function AddCourseForm({
         </div>
 
         {/* Course number */}
-        <div className="min-w-[100px] flex-1">
+        <div
+          className="min-w-[80px] flex-1 relative"
+          ref={numberSuggestionsRef}
+        >
           <label className="text-[11px] text-muted-foreground mb-0.5 block">
-            מס׳ הקורס
+            מס׳ הקורס<span className="text-red-500 ms-0.5">*</span>
           </label>
           <input
             value={courseNumber}
-            onChange={(e) => setCourseNumber(e.target.value)}
-            placeholder="123456"
+            onChange={(e) => {
+              setCourseNumber(e.target.value);
+              setNumberSearchTerm(e.target.value);
+              setShowNumberSuggestions(true);
+            }}
+            onFocus={() =>
+              numberCourses?.length && setShowNumberSuggestions(true)
+            }
+            placeholder="12345678"
             dir="ltr"
             className="w-full h-8 rounded border border-border bg-card px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-foreground/30"
           />
+          {showNumberSuggestions &&
+            numberCourses &&
+            numberCourses.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border bg-popover shadow-lg">
+                {numberCourses.map((course) => (
+                  <button
+                    key={course._id}
+                    onClick={() => handleSelectCourse(course)}
+                    className="block w-full px-3 py-2 text-start text-sm hover:bg-muted transition-colors"
+                  >
+                    <span className="font-medium">{course._id}</span>
+                    <span className="text-muted-foreground ms-1">
+                      - {course.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
         </div>
 
         {/* Credits */}
         <div className="min-w-[60px] w-[70px]">
           <label className="text-[11px] text-muted-foreground mb-0.5 block">
-            נק״ז
+            נק״ז<span className="text-red-500 ms-0.5">*</span>
           </label>
           <input
             value={credit}
@@ -190,7 +252,7 @@ export function AddCourseForm({
         </div>
 
         {/* Grade */}
-        <div className="min-w-[100px] w-[120px]">
+        <div className="min-w-[140px] w-[180px]">
           <label className="text-[11px] text-muted-foreground mb-0.5 block">
             ציון
           </label>
@@ -199,11 +261,11 @@ export function AddCourseForm({
               value={grade}
               onChange={setGrade}
               options={COURSE_GRADE_OPTIONS.filter((opt) =>
-                opt.includes("פטור")
+                opt.includes("פטור"),
               ).map((opt) => ({ value: opt, label: opt }))}
             />
           ) : gradeIsNumeric ? (
-            <div className="space-y-0.5">
+            <div className="flex items-center gap-1">
               <input
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
@@ -211,27 +273,38 @@ export function AddCourseForm({
                 type="number"
                 min="0"
                 max="100"
-                className="w-full h-8 rounded border border-border bg-card px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-foreground/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="flex-1 h-8 rounded border border-border bg-card px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-foreground/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 type="button"
-                onClick={() => { setGradeIsNumeric(false); setGrade(""); }}
-                className="text-[10px] text-blue-500 hover:underline"
+                onClick={() => {
+                  setGradeIsNumeric(false);
+                  setGrade("");
+                }}
+                className="text-[10px] text-blue-500 hover:underline whitespace-nowrap"
               >
                 ציון לא מספרי
               </button>
             </div>
           ) : (
-            <div className="space-y-0.5">
-              <Dropdown
-                value={grade}
-                onChange={setGrade}
-                options={COURSE_GRADE_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
-              />
+            <div className="flex items-center gap-1">
+              <div className="flex-1">
+                <Dropdown
+                  value={grade}
+                  onChange={setGrade}
+                  options={COURSE_GRADE_OPTIONS.map((opt) => ({
+                    value: opt,
+                    label: opt,
+                  }))}
+                />
+              </div>
               <button
                 type="button"
-                onClick={() => { setGradeIsNumeric(true); setGrade(""); }}
-                className="text-[10px] text-blue-500 hover:underline"
+                onClick={() => {
+                  setGradeIsNumeric(true);
+                  setGrade("");
+                }}
+                className="text-[10px] text-blue-500 hover:underline whitespace-nowrap"
               >
                 ציון מספרי
               </button>
@@ -241,7 +314,7 @@ export function AddCourseForm({
 
         {/* Category */}
         {!isSemester0 && (
-          <div className="min-w-[120px] flex-1">
+          <div className="min-w-[120px] w-[160px]">
             <label className="text-[11px] text-muted-foreground mb-0.5 block">
               קטגוריה
             </label>
@@ -266,6 +339,7 @@ export function AddCourseForm({
           <button
             onClick={() => {
               resetForm();
+              setToast(null);
               setExpanded(false);
             }}
             className="flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
@@ -277,11 +351,15 @@ export function AddCourseForm({
       </div>
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <div className="flex items-center gap-2 px-2 py-1 text-sm text-red-600">
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="text-red-400 hover:text-red-600 text-xs"
+          >
+            ✕
+          </button>
+        </div>
       )}
     </div>
   );
