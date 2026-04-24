@@ -96,7 +96,7 @@ function TimetableContent() {
         </div>
 
         {/* Selected courses sidebar — always visible */}
-        <div className="lg:w-72 shrink-0">
+        <div className="lg:w-80 shrink-0">
           <SelectedCoursesPanel />
         </div>
       </div>
