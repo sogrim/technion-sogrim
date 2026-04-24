@@ -47,8 +47,6 @@ export function parseSemesterOrder(semester: string): number {
 
 export function formatSemesterName(semester: string): string {
   const name = semester.replace("_", " ");
-  const parts = name.split(" ");
-  if (parts[0] === "קיץ") return parts[0];
   return name;
 }
 
