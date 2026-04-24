@@ -88,7 +88,15 @@ export function ExamTimeline() {
     ) => {
       const withDates = infos
         .filter((e) => getDate(e) != null)
-        .sort((a, b) => getDate(a)!.getTime() - getDate(b)!.getTime());
+        .sort((a, b) => {
+          const dateDiff = getDate(a)!.getTime() - getDate(b)!.getTime();
+          
+          // Secondary sort by start time when dates are equal
+          const timeA = getTime(a)?.split(" - ")[0] ?? "";
+          const timeB = getTime(b)?.split(" - ")[0] ?? "";
+
+          return dateDiff || timeA.localeCompare(timeB);
+        });
 
       const items: {
         exam: ExamInfo;
@@ -241,7 +249,7 @@ function ExamSession({
                     {formatDate(item.date)}
                   </div>
                   {item.time && (
-                    <div className="text-[0.65rem] font-mono text-muted-foreground">
+                    <div className="text-[0.65rem] font-mono text-muted-foreground" dir="ltr">
                       {item.time}
                     </div>
                   )}
