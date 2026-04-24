@@ -50,6 +50,19 @@ export function formatSemesterName(semester: string): string {
   return name;
 }
 
+/** Split a semester key into season label and optional year. */
+export function parseSemesterDisplay(semester: string): {
+  season: string;
+  year: string | null;
+} {
+  const parts = semester.split("_");
+  const season = parts[0];
+  const rest = parts.length > 1 ? parts.slice(1).join("_") : null;
+  // Show year only for year-range format (e.g. "2024-2025"), not legacy numeric
+  const year = rest && rest.includes("-") ? rest : null;
+  return { season, year };
+}
+
 /**
  * Returns the current Technion academic year range (e.g., "2024-2025").
  * Academic year starts in October.

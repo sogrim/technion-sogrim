@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import {
   getAllSemesters,
   formatSemesterName,
+  parseSemesterDisplay,
   getNextSemesterName,
   parseSemesterOrder,
   getCurrentAcademicYear,
@@ -139,12 +140,14 @@ export function SemestersTab({
       <div className="flex items-center gap-2 flex-wrap">
         {/* Semester pill buttons */}
         <div className="flex items-center gap-1.5 flex-wrap flex-1">
-          {tabs.map((semester, idx) => (
+          {tabs.map((semester, idx) => {
+            const { season, year } = parseSemesterDisplay(semester);
+            return (
             <button
               key={semester ?? "__null"}
               onClick={() => onSelectSemester(idx)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border",
+                "shrink-0 rounded-xl px-4 py-1.5 text-sm transition-colors border text-center leading-tight",
                 idx === currentSemesterIdx
                   ? "text-white border-transparent shadow-sm"
                   : "bg-card text-foreground border-foreground/30 hover:bg-muted"
@@ -155,9 +158,16 @@ export function SemestersTab({
                   : undefined
               }
             >
-              {formatSemesterName(semester)}
+              <span className="font-bold">{season}</span>
+              {year && (
+                <>
+                  <br />
+                  <span className="text-xs opacity-80">{year}</span>
+                </>
+              )}
             </button>
-          ))}
+            );
+          })}
         </div>
 
         {/* Add + Delete buttons */}
