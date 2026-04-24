@@ -109,22 +109,9 @@ export function GradeEditor(
     );
   }
 
-  // Regular semester: single row [toggle-icon] [input/select] [label]
+  // Regular semester: single row [input/select] [label]
   return (
-    <div className="flex items-center h-full gap-1.5 px-2 bg-card">
-      {/* Toggle icon - wand */}
-      <button
-        type="button"
-        onMouseDown={toggle}
-        className="shrink-0 text-muted-foreground hover:text-blue-500 transition-colors"
-        title={isNumeric ? "ציון לא מספרי" : "ציון מספרי"}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72" />
-          <path d="m14 7 3 3" />
-        </svg>
-      </button>
-
+    <div className="flex items-center h-full gap-1.5 px-2 bg-card w-[200px]">
       {/* Input or select */}
       {isNumeric ? (
         <input
@@ -136,14 +123,14 @@ export function GradeEditor(
           onChange={onNum}
           onKeyDown={(e) => { if (e.key === "Enter") stopEditing(); }}
           placeholder="0-100"
-          className="w-16 h-7 px-1 text-sm text-center border border-border rounded bg-card focus:outline-none focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="flex-1 min-w-0 h-7 px-1 text-sm text-center border border-border rounded bg-card focus:outline-none focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       ) : (
         <select
           ref={selectRef}
           value={selVal}
           onChange={onSel}
-          className="flex-1 h-7 px-1 text-sm border border-border rounded bg-card focus:outline-none focus:border-blue-400"
+          className="flex-1 min-w-0 h-7 px-1 text-sm border border-border rounded bg-card focus:outline-none focus:border-blue-400"
         >
           <option value="">--</option>
           {opts.map((o) => (
