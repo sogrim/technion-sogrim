@@ -138,43 +138,75 @@ export function PlannerPage() {
   );
 
   const handleAddSemester = useCallback(
-    (semesterName: string) => {
-      // Adding a semester is UI-only (no server call needed since no courses yet).
-      // Track the new semester in extraSemesters so SemestersTab can render it.
-      const existingSemesters = getAllSemesters(courseStatuses);
-      if (!existingSemesters.includes(semesterName)) {
-        setExtraSemesters((prev) =>
-          prev.includes(semesterName) ? prev : [...prev, semesterName]
-        );
-      }
-      const allSemesters = existingSemesters.includes(semesterName)
-        ? existingSemesters
-        : [...existingSemesters, semesterName].sort();
-      const allTabs = hasNullSemester
-        ? [null, ...allSemesters]
-        : allSemesters;
+    (semesterName: string, renames: Record<string, string> = {}) => {
+      // Apply renames to extraSemesters AND add the new name in one update.
+      setExtraSemesters((prev) => {
+        const renamed = prev.map((s) => renames[s] ?? s);
+        const existing = getAllSemesters(courseStatuses).map((s) => renames[s] ?? s);
+        if (existing.includes(semesterName) || renamed.includes(semesterName)) {
+          return renamed;
+        }
+        return [...renamed, semesterName];
+      });
 
+      // Apply renames to course statuses (server-state) — only if any course
+      // is actually affected.
+      const renameKeys = Object.keys(renames);
+      if (renameKeys.length > 0) {
+        const renamedStatuses = courseStatuses.map((cs) => {
+          const newSem = cs.semester != null ? renames[cs.semester] : undefined;
+          return newSem ? { ...cs, semester: newSem, modified: true } : cs;
+        });
+        const changed = renamedStatuses.some(
+          (cs, i) => cs.semester !== courseStatuses[i].semester,
+        );
+        if (changed) sendUpdate(renamedStatuses);
+      }
+
+      // Switch to the newly-added semester tab.
+      const renamedExisting = getAllSemesters(courseStatuses).map(
+        (s) => renames[s] ?? s,
+      );
+      const allSemesters = renamedExisting.includes(semesterName)
+        ? renamedExisting
+        : [...renamedExisting, semesterName].sort();
+      const allTabs = hasNullSemester ? [null, ...allSemesters] : allSemesters;
       const idx = allTabs.findIndex((t) => t === semesterName);
       if (idx >= 0) {
         setCurrentSemester(idx);
       }
     },
-    [courseStatuses, hasNullSemester, setCurrentSemester]
+    [courseStatuses, hasNullSemester, sendUpdate, setCurrentSemester],
   );
 
   const handleDeleteSemester = useCallback(
-    (semesterName: string) => {
-      // Remove extra semester tracking
-      setExtraSemesters((prev) => prev.filter((s) => s !== semesterName));
-
-      // Filter out all courses belonging to this semester
-      const semesterHasCourses = courseStatuses.some(
-        (cs) => cs.semester === semesterName
+    (semesterName: string, renames: Record<string, string> = {}) => {
+      // Drop the deleted name AND apply renames to extraSemesters in one update.
+      setExtraSemesters((prev) =>
+        prev
+          .filter((s) => s !== semesterName)
+          .map((s) => renames[s] ?? s),
       );
-      if (semesterHasCourses) {
-        const updatedStatuses = courseStatuses.filter(
-          (cs) => cs.semester !== semesterName
+
+      // Build the new course-statuses: drop deleted, rename survivors, mark
+      // affected rows modified. Push to the backend if anything actually
+      // changed.
+      const renameKeys = Object.keys(renames);
+      const semesterHasCourses = courseStatuses.some(
+        (cs) => cs.semester === semesterName,
+      );
+      const someRenamed =
+        renameKeys.length > 0 &&
+        courseStatuses.some(
+          (cs) => cs.semester != null && renames[cs.semester] !== undefined,
         );
+      if (semesterHasCourses || someRenamed) {
+        const updatedStatuses = courseStatuses
+          .filter((cs) => cs.semester !== semesterName)
+          .map((cs) => {
+            const newSem = cs.semester != null ? renames[cs.semester] : undefined;
+            return newSem ? { ...cs, semester: newSem, modified: true } : cs;
+          });
         sendUpdate(updatedStatuses);
       }
 
@@ -183,7 +215,7 @@ export function PlannerPage() {
         setCurrentSemester(currentSemesterIdx - 1);
       }
     },
-    [courseStatuses, currentSemesterIdx, sendUpdate, setCurrentSemester]
+    [courseStatuses, currentSemesterIdx, sendUpdate, setCurrentSemester],
   );
 
   const handleIgnoreCourse = useCallback(
