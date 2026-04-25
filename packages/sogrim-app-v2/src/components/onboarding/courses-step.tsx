@@ -75,7 +75,7 @@ export function CoursesStep({
           </div>
           <h2 className="text-2xl font-bold">ייבוא גיליון ציונים</h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            היכנס למערכת UG, העתק את גיליון הציונים המלא והדבק כאן.
+            היכנס למערכת SAP, הפק גיליון ציונים, העתק את כל הטקסט והדבק כאן.
             המערכת תנתח את הנתונים ותייבא את הקורסים שלך.
           </p>
         </div>
@@ -113,17 +113,18 @@ export function CoursesStep({
               <li>
                 היכנס ל-
                 <a
-                  href="https://ug3.technion.ac.il"
+                  href="https://portalex.technion.ac.il/irj/portal/external/CampusMob"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  מערכת UG
+                  מערכת SAP
                 </a>
               </li>
-              <li>עבור לעמוד גיליון הציונים</li>
+              <li>לחץ על &quot;בקשות שלי והפקת תדפיסים ואישורים&quot; ← &quot;צור בקשה&quot; ← &quot;בקשות לאישורים ותדפיס ציונים&quot;</li>
+              <li>פתח את גיליון הציונים בדפדפן Edge או Chrome</li>
               <li>
-                סמן את כל הטקסט בעמוד (Ctrl+A / Cmd+A)
+                סמן את כל הטקסט (Ctrl+A / Cmd+A)
               </li>
               <li>העתק (Ctrl+C / Cmd+C)</li>
               <li>חזור לכאן והדבק (Ctrl+V / Cmd+V) או לחץ על &quot;הדבק מהלוח&quot;</li>

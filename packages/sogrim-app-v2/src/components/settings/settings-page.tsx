@@ -398,7 +398,7 @@ export function SettingsPage() {
               id="settings-ug-data"
               value={ugData}
               onChange={(e) => setUgData(e.target.value)}
-              placeholder="הדבק כאן את גיליון הציונים מ-UG..."
+              placeholder="הדבק כאן את גיליון הציונים מ-SAP..."
               className="flex min-h-[160px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y font-mono"
               dir="ltr"
               disabled={importMutation.isPending}
@@ -409,15 +409,15 @@ export function SettingsPage() {
             <p className="text-xs text-muted-foreground">
               היכנס ל-
               <a
-                href="https://ug3.technion.ac.il"
+                href="https://portalex.technion.ac.il/irj/portal/external/CampusMob"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                מערכת UG
+                מערכת SAP
               </a>
-              , סמן את כל הטקסט בגיליון הציונים (Ctrl+A), העתק
-              (Ctrl+C) והדבק כאן.
+              , לחץ על &quot;בקשות שלי והפקת תדפיסים ואישורים&quot; ← &quot;צור בקשה&quot; ← &quot;בקשות לאישורים ותדפיס ציונים&quot;, פתח את גיליון הציונים בדפדפן, סמן הכל
+              (Ctrl+A), העתק (Ctrl+C) והדבק כאן.
             </p>
           </div>
 
