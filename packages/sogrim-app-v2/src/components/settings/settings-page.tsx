@@ -8,7 +8,7 @@ import {
   Sun,
   FileText,
   Upload,
-  ClipboardPaste,
+
   Loader2,
   AlertTriangle,
   Trash2,
@@ -46,6 +46,7 @@ const FACULTY_LABELS: Record<string, string> = {
   ComputerScience: "מדעי המחשב",
   DataAndDecisionScience: "מדעי הנתונים וקבלת החלטות",
   Medicine: "רפואה",
+  ElectricalEngineering: "הנדסת חשמל",
   Unknown: "כללי",
 };
 
@@ -57,6 +58,11 @@ function groupByFaculty(
     const faculty = catalog.faculty || "Unknown";
     if (!grouped[faculty]) grouped[faculty] = [];
     grouped[faculty].push(catalog);
+  }
+  for (const faculty of Object.keys(grouped)) {
+    grouped[faculty].sort(
+      (a, b) => a.year - b.year || a.name.localeCompare(b.name)
+    );
   }
   return grouped;
 }
@@ -132,17 +138,6 @@ export function SettingsPage() {
     );
   }
 
-  async function handlePasteFromClipboard() {
-    try {
-      const text = await navigator.clipboard.readText();
-      setUgData(text);
-    } catch {
-      setToast({
-        message: "לא ניתן לגשת ללוח ההעתקה. אנא הדבק ידנית.",
-        type: "error",
-      });
-    }
-  }
 
   function handleImportSubmit() {
     if (!ugData.trim()) {
@@ -274,6 +269,10 @@ export function SettingsPage() {
                         value: catalog._id.$oid,
                         label: `${catalog.name} (${catalog.total_credit} נ״ז)`,
                         group: FACULTY_LABELS[faculty] || faculty,
+                        keywords: [
+                          String(catalog.year),
+                          FACULTY_LABELS[faculty] || faculty,
+                        ],
                       }))
                   )}
                 />
@@ -370,25 +369,14 @@ export function SettingsPage() {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="settings-ug-data">
-                גיליון ציונים
-              </Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handlePasteFromClipboard}
-                type="button"
-              >
-                <ClipboardPaste className="h-4 w-4" />
-                הדבק מהלוח
-              </Button>
-            </div>
+            <Label htmlFor="settings-ug-data">
+              גיליון ציונים
+            </Label>
             <textarea
               id="settings-ug-data"
               value={ugData}
               onChange={(e) => setUgData(e.target.value)}
-              placeholder="הדבק כאן את גיליון הציונים מ-UG..."
+              placeholder="הדבק כאן את גיליון הציונים מ-SAP..."
               className="flex min-h-[160px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y font-mono"
               dir="ltr"
               disabled={importMutation.isPending}
@@ -399,15 +387,15 @@ export function SettingsPage() {
             <p className="text-xs text-muted-foreground">
               היכנס ל-
               <a
-                href="https://ug3.technion.ac.il"
+                href="https://portalex.technion.ac.il/irj/portal/external/CampusMob"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                מערכת UG
+                מערכת SAP
               </a>
-              , סמן את כל הטקסט בגיליון הציונים (Ctrl+A), העתק
-              (Ctrl+C) והדבק כאן.
+              , לחץ על &quot;בקשות שלי והפקת תדפיסים ואישורים&quot; ← &quot;צור בקשה&quot; ← &quot;בקשות לאישורים ותדפיס ציונים&quot;, פתח את גיליון הציונים בדפדפן, סמן הכל
+              (Ctrl+A), העתק (Ctrl+C) והדבק כאן.
             </p>
           </div>
 

@@ -6,27 +6,28 @@ import { cn } from "@/lib/utils";
 const FACULTIES: {
   key: Faculty;
   label: string;
-  description: string;
   icon: typeof Monitor;
 }[] = [
   {
     key: Faculty.ComputerScience,
     label: "מדעי המחשב",
-    description: "הפקולטה למדעי המחשב ע\"ש טאוב",
     icon: Monitor,
   },
   {
     key: Faculty.DataAndDecisionScience,
-    label: "מדעי הנתונים וקבלת החלטות",
-    description: "הפקולטה להנדסת תעשייה וניהול - מסלול מדעי הנתונים",
+    label: "הנדסת תעשייה וניהול",
     icon: BarChart3,
   },
   {
     key: Faculty.Medicine,
     label: "רפואה",
-    description: "הפקולטה לרפואה ע\"ש רפפורט",
     icon: Stethoscope,
   },
+  {
+    key: Faculty.ElectricalEngineering,
+    label: "הנדסת חשמל",
+    icon: Monitor,
+  }
 ];
 
 interface FacultyStepProps {
@@ -73,9 +74,6 @@ export function FacultyStep({ onSelect }: FacultyStepProps) {
                       <CardTitle className="text-lg">
                         {faculty.label}
                       </CardTitle>
-                      <CardDescription>
-                        {faculty.description}
-                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
