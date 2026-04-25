@@ -3,6 +3,7 @@ export const Faculty = {
   ComputerScience: "ComputerScience",
   DataAndDecisionScience: "DataAndDecisionScience",
   Medicine: "Medicine",
+  ElectricalEngineering: "ElectricalEngineering",
 } as const;
 export type Faculty = (typeof Faculty)[keyof typeof Faculty];
 
@@ -69,6 +70,7 @@ export interface Catalog {
   description: string;
   _id: { $oid: string };
   course_bank_names: string[];
+  year: number;
 }
 
 export interface UserDetails {
