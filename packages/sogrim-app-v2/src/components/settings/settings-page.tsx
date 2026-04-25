@@ -46,7 +46,6 @@ const FACULTY_LABELS: Record<string, string> = {
   ComputerScience: "מדעי המחשב",
   DataAndDecisionScience: "מדעי הנתונים וקבלת החלטות",
   Medicine: "רפואה",
-  ElectricalEngineering: "הנדסת חשמל",
   Unknown: "כללי",
 };
 
@@ -58,11 +57,6 @@ function groupByFaculty(
     const faculty = catalog.faculty || "Unknown";
     if (!grouped[faculty]) grouped[faculty] = [];
     grouped[faculty].push(catalog);
-  }
-  for (const faculty of Object.keys(grouped)) {
-    grouped[faculty].sort(
-      (a, b) => a.year - b.year || a.name.localeCompare(b.name)
-    );
   }
   return grouped;
 }

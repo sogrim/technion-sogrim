@@ -228,13 +228,10 @@ pub struct DisplayCatalog {
     pub total_credit: f64,
     pub description: String,
     pub course_bank_names: Vec<String>,
-    #[serde(default)]
-    pub year: usize,
 }
 
 impl From<Catalog> for DisplayCatalog {
     fn from(catalog: Catalog) -> Self {
-        let year = catalog.year();
         DisplayCatalog {
             id: catalog.id,
             name: catalog.name,
@@ -246,7 +243,6 @@ impl From<Catalog> for DisplayCatalog {
                 .into_iter()
                 .map(|bank| bank.name)
                 .collect(),
-            year,
         }
     }
 }

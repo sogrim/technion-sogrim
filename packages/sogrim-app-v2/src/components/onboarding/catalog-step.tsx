@@ -43,9 +43,7 @@ export function CatalogStep({
     });
   }
 
-  const filteredCatalogs: Catalog[] = [...(catalogs ?? [])].sort(
-    (a, b) => a.year - b.year || a.name.localeCompare(b.name)
-  );
+  const filteredCatalogs: Catalog[] = catalogs ?? [];
 
   if (isLoading) {
     return (
