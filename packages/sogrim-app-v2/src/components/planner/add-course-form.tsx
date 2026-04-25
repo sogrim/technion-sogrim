@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Plus, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
-import { useCoursesFilter } from "@/hooks/use-courses-filter";
 import { courseFromUserValidations } from "@/lib/course-validator";
 import { COURSE_GRADE_OPTIONS } from "@/types/domain";
 import type { RowData } from "@/types/domain";
-import type { Course } from "@/types/api";
+import { getProvider } from "@/data/course-schedule-provider";
+import { switchProviderSemester, useProviderUpdates } from "@/hooks/use-api-provider";
+import { plannerSemesterToApiId } from "@/lib/semester-utils";
+import type { CourseSchedule } from "@/types/timetable";
 
 interface AddCourseFormProps {
   semester: string | null;
@@ -42,11 +44,36 @@ export function AddCourseForm({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const numberSuggestionsRef = useRef<HTMLDivElement>(null);
 
-  const { data: courses } = useCoursesFilter("name", debouncedSearch);
-  const { data: numberCourses } = useCoursesFilter(
-    "number",
-    debouncedNumberSearch,
-  );
+  // Map planner semester to timetable API semester and switch provider
+  const apiSemesterId = semester ? plannerSemesterToApiId(semester) : null;
+
+  useEffect(() => {
+    if (expanded && apiSemesterId) {
+      switchProviderSemester(apiSemesterId);
+    }
+  }, [expanded, apiSemesterId]);
+
+  // Subscribe to provider updates for reactive search results
+  const providerVersion = useProviderUpdates();
+
+  // Search courses from the timetable provider (semester-specific)
+  const courses = useMemo(() => {
+    if (!debouncedSearch || !apiSemesterId) return [];
+    try {
+      return getProvider().searchCourses(debouncedSearch).slice(0, 50);
+    } catch {
+      return [];
+    }
+  }, [debouncedSearch, apiSemesterId, providerVersion]);
+
+  const numberCourses = useMemo(() => {
+    if (!debouncedNumberSearch || !apiSemesterId) return [];
+    try {
+      return getProvider().searchCourses(debouncedNumberSearch).slice(0, 50);
+    } catch {
+      return [];
+    }
+  }, [debouncedNumberSearch, apiSemesterId, providerVersion]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -81,12 +108,12 @@ export function AddCourseForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelectCourse = useCallback((course: Course) => {
-    setCourseNumber(course._id);
+  const handleSelectCourse = useCallback((course: CourseSchedule) => {
+    setCourseNumber(course.id);
     setCourseName(course.name);
     setCredit(String(course.credit));
     setSearchTerm(course.name);
-    setNumberSearchTerm(course._id);
+    setNumberSearchTerm(course.id);
     setShowSuggestions(false);
     setShowNumberSuggestions(false);
   }, []);
@@ -172,18 +199,18 @@ export function AddCourseForm({
               className="w-full h-8 rounded border border-border bg-card ps-7 pe-2 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30"
             />
           </div>
-          {showSuggestions && courses && courses.length > 0 && (
+          {showSuggestions && courses.length > 0 && (
             <div
               ref={suggestionsRef}
               className="absolute z-20 top-full start-0 end-0 mt-1 max-h-48 overflow-y-auto rounded-md border bg-card shadow-lg"
             >
               {courses.map((course) => (
                 <button
-                  key={course._id}
+                  key={course.id}
                   onClick={() => handleSelectCourse(course)}
                   className="block w-full px-3 py-2 text-start text-sm hover:bg-muted transition-colors"
                 >
-                  <span className="font-medium">{course._id}</span>
+                  <span className="font-medium">{course.id}</span>
                   <span className="text-muted-foreground ms-1">
                     - {course.name}
                   </span>
@@ -209,23 +236,22 @@ export function AddCourseForm({
               setShowNumberSuggestions(true);
             }}
             onFocus={() =>
-              numberCourses?.length && setShowNumberSuggestions(true)
+              numberCourses.length > 0 && setShowNumberSuggestions(true)
             }
             placeholder="12345678"
             dir="ltr"
             className="w-full h-8 rounded border border-border bg-card px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-foreground/30"
           />
           {showNumberSuggestions &&
-            numberCourses &&
             numberCourses.length > 0 && (
               <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border bg-popover shadow-lg">
                 {numberCourses.map((course) => (
                   <button
-                    key={course._id}
+                    key={course.id}
                     onClick={() => handleSelectCourse(course)}
                     className="block w-full px-3 py-2 text-start text-sm hover:bg-muted transition-colors"
                   >
-                    <span className="font-medium">{course._id}</span>
+                    <span className="font-medium">{course.id}</span>
                     <span className="text-muted-foreground ms-1">
                       - {course.name}
                     </span>

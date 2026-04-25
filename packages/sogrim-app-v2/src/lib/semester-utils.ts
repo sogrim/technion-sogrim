@@ -133,3 +133,26 @@ export function getNextSemesterName(
   const newName = fallbackSemester.includes("חורף") ? "אביב" : "חורף";
   return `${newName}_${num + 1}`;
 }
+
+const SEASON_TO_CODE: Record<string, string> = {
+  "חורף": "200",
+  "אביב": "201",
+  "קיץ": "202",
+};
+
+/**
+ * Convert a planner semester string (e.g. "אביב_2024-2025") to a timetable
+ * API semester ID (e.g. "2024-201").
+ * Returns null for legacy-format semesters that can't be mapped.
+ */
+export function plannerSemesterToApiId(semester: string): string | null {
+  const parts = semester.split("_");
+  if (parts.length < 2) return null;
+  const season = parts[0];
+  const rest = parts[1];
+  const code = SEASON_TO_CODE[season];
+  if (!code) return null;
+  const yearMatch = rest.match(/^(\d{4})-\d{4}$/);
+  if (!yearMatch) return null;
+  return `${yearMatch[1]}-${code}`;
+}
