@@ -7,6 +7,7 @@ export interface ComboboxOption {
   value: string;
   label: string;
   group?: string;
+  keywords?: string[];
 }
 
 interface ComboboxProps {
@@ -78,7 +79,14 @@ export function Combobox({
 
       {open && (
         <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover shadow-lg animate-in fade-in-0 zoom-in-95">
-          <Command>
+          <Command
+            filter={(value, search, keywords) => {
+              const haystack = [value, ...(keywords ?? [])]
+                .join(" ")
+                .toLowerCase();
+              return haystack.includes(search.toLowerCase()) ? 1 : 0;
+            }}
+          >
             <CommandInput placeholder={searchPlaceholder} />
             <CommandList>
               <CommandEmpty>{emptyMessage}</CommandEmpty>
@@ -89,6 +97,7 @@ export function Combobox({
                       <CommandItem
                         key={opt.value}
                         value={`${opt.label} ${opt.value}`}
+                        keywords={opt.keywords}
                         onSelect={() => {
                           onChange(opt.value);
                           setOpen(false);
@@ -111,6 +120,7 @@ export function Combobox({
                     <CommandItem
                       key={opt.value}
                       value={`${opt.label} ${opt.value}`}
+                      keywords={opt.keywords}
                       onSelect={() => {
                         onChange(opt.value);
                         setOpen(false);

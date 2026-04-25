@@ -280,6 +280,10 @@ export function SettingsPage() {
                         value: catalog._id.$oid,
                         label: `${catalog.name} (${catalog.total_credit} נ״ז)`,
                         group: FACULTY_LABELS[faculty] || faculty,
+                        keywords: [
+                          String(catalog.year),
+                          FACULTY_LABELS[faculty] || faculty,
+                        ],
                       }))
                   )}
                 />
