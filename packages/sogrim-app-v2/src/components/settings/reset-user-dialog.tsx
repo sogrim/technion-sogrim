@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import { Button } from "@/components/ui/button";
 import type { UserDetails } from "@/types/api";
+import { putTimetable } from "@/lib/api";
+import { useTimetableStore } from "@/stores/timetable-store";
 
 const emptyDetails: UserDetails = {
   degree_status: {
@@ -32,12 +35,33 @@ export function ResetUserDialog({
 }: ResetUserDialogProps) {
   const [confirming, setConfirming] = useState(false);
   const updateUserState = useUpdateUserState();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  const emptyTimetable = {
+    current_semester: null,
+    active_draft_id: null,
+    drafts: [],
+  };
 
   function handleConfirm() {
     setConfirming(true);
     updateUserState.mutate(emptyDetails, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        try {
+          await putTimetable(emptyTimetable);
+          useTimetableStore.setState({
+            currentSemester: "",
+            drafts: [],
+            activeDraftId: null,
+            draftCounters: {},
+            _loaded: false,
+            _dirty: false,
+          });
+          queryClient.removeQueries({ queryKey: ["timetable"] });
+        } catch {
+          // Timetable reset failed but user data was reset — continue
+        }
         setConfirming(false);
         onSuccess?.();
         onClose();
@@ -68,9 +92,7 @@ export function ResetUserDialog({
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
               <AlertTriangle className="h-7 w-7 text-destructive" />
             </div>
-            <h2 className="text-xl font-bold">
-              איפוס נתוני משתמש
-            </h2>
+            <h2 className="text-xl font-bold">איפוס נתוני משתמש</h2>
           </div>
 
           {/* Warning text */}
@@ -79,7 +101,7 @@ export function ResetUserDialog({
               האם אתה בטוח שברצונך לאפס את כל הנתונים?
             </p>
             <p className="text-sm text-muted-foreground">
-              פעולה זו תמחק את כל הקורסים, הסמסטרים והסטטוס שלך.
+              פעולה זו תמחק את כל הקורסים, הסמסטרים, מערכות השעות והסטטוס שלך.
               לא ניתן לבטל פעולה זו.
             </p>
           </div>
@@ -93,6 +115,7 @@ export function ResetUserDialog({
               <li>כל הקורסים שייבאת או הוספת ידנית יימחקו</li>
               <li>בחירת הקטלוג תתאפס</li>
               <li>סטטוס התואר יתאפס</li>
+              <li>כל מערכות השעות יימחקו</li>
               <li>תועבר לתהליך ההרשמה מחדש</li>
             </ul>
           </div>
