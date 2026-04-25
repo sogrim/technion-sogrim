@@ -8,6 +8,7 @@ import { Plus, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
 import { Toast } from "@/components/ui/toast";
+import { useIsOgPalette } from "@/stores/ui-store";
 
 interface PlannerCourseSearchProps {
   semester: string | null;
@@ -24,6 +25,7 @@ export function PlannerCourseSearch({
 }: PlannerCourseSearchProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<CourseSchedule | null>(null);
+  const isOg = useIsOgPalette();
 
   // Detail form state
   const [credit, setCredit] = useState("");
@@ -80,10 +82,14 @@ export function PlannerCourseSearch({
     return (
       <>
         <Button
-          variant="outline"
+          variant={isOg ? "outline" : undefined}
           size="sm"
           onClick={() => setSearchOpen(true)}
-          className="border-foreground/30 text-foreground hover:bg-foreground hover:text-background"
+          className={
+            isOg
+              ? "border-foreground/30 text-foreground hover:bg-foreground hover:text-background"
+              : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+          }
         >
           <Plus className="h-4 w-4" />
           הוסף קורס חדש
@@ -166,7 +172,7 @@ export function PlannerCourseSearch({
               <button
                 type="button"
                 onClick={() => { setGradeIsNumeric(false); setGrade(""); }}
-                className="text-[10px] text-blue-500 hover:underline"
+                className="text-[10px] text-info hover:underline"
               >
                 ציון לא מספרי
               </button>
@@ -181,7 +187,7 @@ export function PlannerCourseSearch({
               <button
                 type="button"
                 onClick={() => { setGradeIsNumeric(true); setGrade(""); }}
-                className="text-[10px] text-blue-500 hover:underline"
+                className="text-[10px] text-info hover:underline"
               >
                 ציון מספרי
               </button>

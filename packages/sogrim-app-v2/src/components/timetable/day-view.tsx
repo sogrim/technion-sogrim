@@ -140,7 +140,7 @@ export function DayView({ events }: DayViewProps) {
           className="grid"
           style={{
             gridTemplateColumns: "56px 1fr",
-            gridTemplateRows: `repeat(${slotCount}, minmax(4.2vh, 1fr))`,
+            gridTemplateRows: `repeat(${slotCount}, minmax(min(4.2vh, 44px), 1fr))`,
           }}
           dir="rtl"
         >

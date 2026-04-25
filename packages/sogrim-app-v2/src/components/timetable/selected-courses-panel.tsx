@@ -16,7 +16,17 @@ export function SelectedCoursesPanel() {
   const theme = useUiStore((s) => s.theme);
   const isDark = theme === "dark";
 
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Default behavior: courses are expanded so group selectors are visible
+  // immediately. Track which ones the user has explicitly collapsed.
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  const toggleCollapsed = (id: string) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const draft = drafts.find((d) => d.id === activeDraftId);
 
@@ -67,7 +77,7 @@ export function SelectedCoursesPanel() {
             if (!course) return null;
             const color = getCourseColor(colorIndex);
             const bgColor = isDark ? color.bgDark : color.bg;
-            const isExpanded = expandedId === selection.courseId;
+            const isExpanded = !collapsedIds.has(selection.courseId);
 
             return (
               <div
@@ -81,7 +91,7 @@ export function SelectedCoursesPanel() {
                 {/* Compact header — always visible */}
                 <div
                   className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-colors"
-                  onClick={() => setExpandedId(isExpanded ? null : selection.courseId)}
+                  onClick={() => toggleCollapsed(selection.courseId)}
                 >
                   {/* Color dot */}
                   <div

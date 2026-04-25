@@ -15,7 +15,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.405 0.154 263.83);
+  --primary: oklch(0.52 0.12 215);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.965 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -27,11 +27,37 @@
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.405 0.154 263.83);
+  --ring: oklch(0.52 0.12 215);
   --success: oklch(0.527 0.154 150.069);
   --success-foreground: oklch(0.985 0 0);
   --warning: oklch(0.769 0.188 70.08);
   --warning-foreground: oklch(0.205 0 0);
+  /* Hero banner strip — sits behind the two summary cards on the planner. */
+  --banner: oklch(0.27 0.025 240);
+
+  /* ─────────────────────────────────────────────────────────────────
+     Semantic concept tokens — let palettes split roles when they want
+     to (e.g. sogrim and botanical use distinct colors per role; teal
+     and bronze route everything through --primary for a unified look).
+     Defaults route everything through --primary / --success.
+     ───────────────────────────────────────────────────────────────── */
+  /* Toggles, info badges, action links, info icons */
+  --ui-info: var(--primary);
+  /* In-progress progress-bar fill, tab underline, important-count badge.
+     OG used a distinct coral here, separate from --primary (which was blue).
+     Other palettes route this through their primary so the look stays unified. */
+  --ui-progress-active: var(--primary);
+  /* 100% / completed-progress bar fill (also other "done" celebration) */
+  --ui-progress-complete: var(--success);
+  /* Modified-toast banner (the "you have unsaved changes" strip) */
+  --ui-notice-bg: color-mix(in oklch, var(--primary) 10%, transparent);
+  --ui-notice-fg: var(--foreground);
+  --ui-notice-border: color-mix(in oklch, var(--primary) 25%, transparent);
+  --ui-notice-accent: var(--primary);
+  --ui-notice-accent-fg: var(--primary-foreground);
+  --ui-notice-accent-hover: color-mix(in oklch, var(--primary) 90%, black);
+  --ui-notice-link: var(--ui-notice-accent);
+  --ui-notice-link-hover: var(--ui-notice-accent-hover);
 }
 
 .dark {
@@ -42,23 +68,37 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.551 0.215 264.364);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.66 0.13 215);
+  --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground: oklch(0.76 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.145 0 0);
   --border: oklch(0.35 0 0);
   --input: oklch(0.35 0 0);
-  --ring: oklch(0.551 0.215 264.364);
+  --ring: oklch(0.66 0.13 215);
   --success: oklch(0.627 0.194 149.214);
   --success-foreground: oklch(0.145 0 0);
   --warning: oklch(0.828 0.189 84.429);
   --warning-foreground: oklch(0.205 0 0);
+  --banner: oklch(0.18 0.02 240);
+
+  /* Semantic concept tokens (dark variant) */
+  --ui-info: var(--primary);
+  --ui-progress-active: var(--primary);
+  --ui-progress-complete: var(--success);
+  --ui-notice-bg: color-mix(in oklch, var(--primary) 14%, transparent);
+  --ui-notice-fg: var(--foreground);
+  --ui-notice-border: color-mix(in oklch, var(--primary) 35%, transparent);
+  --ui-notice-accent: var(--primary);
+  --ui-notice-accent-fg: var(--primary-foreground);
+  --ui-notice-accent-hover: color-mix(in oklch, var(--primary) 90%, white);
+  --ui-notice-link: var(--ui-notice-accent);
+  --ui-notice-link-hover: var(--ui-notice-accent-hover);
 }
 
 @theme inline {
@@ -85,10 +125,183 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  /* Semantic concept tokens — usable as bg-info / text-info / etc. */
+  --color-info: var(--ui-info);
+  --color-progress-active: var(--ui-progress-active);
+  --color-progress-complete: var(--ui-progress-complete);
+  --color-notice-bg: var(--ui-notice-bg);
+  --color-notice-fg: var(--ui-notice-fg);
+  --color-notice-border: var(--ui-notice-border);
+  --color-notice-accent: var(--ui-notice-accent);
+  --color-notice-accent-fg: var(--ui-notice-accent-fg);
+  --color-notice-accent-hover: var(--ui-notice-accent-hover);
+  --color-notice-link: var(--ui-notice-link);
+  --color-notice-link-hover: var(--ui-notice-link-hover);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Palette overrides — applied via a class on <html> by ui-store.
+   Each palette only changes --primary and --ring; everything else
+   inherits from :root / .dark. The teal default lives in :root, so
+   .palette-teal is a no-op. Keep these blocks ordered after :root
+   and .dark so cascade resolves correctly.
+   ───────────────────────────────────────────────────────────────── */
+/* Sogrim Classic — original brand mix.
+   Coral is the primary accent, but UI-concepts (toggles, info badges,
+   notice banner) use their original distinct colors instead of inheriting
+   from --primary. This is intentional: the OG had a multi-color identity
+   and we restore that look here.
+   Other palettes (teal, indigo, bronze) leave the concept tokens alone
+   so they inherit a unified primary color. */
+.palette-sogrim {
+  /* OG primary was blue — used for sidebar nav active, focus rings, info pills */
+  --primary: oklch(0.405 0.154 263.83);
+  --ring: oklch(0.405 0.154 263.83);
+  /* Banner strip — exact OG navy */
+  --banner: #24333c;
+  /* Brighter Tailwind greens, matching OG green-600/green-400 mix */
+  --success: #16a34a;             /* green-600 */
+  --ui-info: #3b82f6;             /* blue-500 */
+  /* OG coral accent — used for in-progress progress bars, tab underline,
+     important-count badge. Distinct from --primary, by design. */
+  --ui-progress-active: #d66563;
+  --ui-progress-complete: #4ade80; /* green-400 */
+  /* Modified-toast banner — soft purple */
+  --ui-notice-bg: #e8dff5;
+  --ui-notice-fg: #3b2069;
+  --ui-notice-border: rgba(60, 30, 105, 0.18);
+  --ui-notice-accent: #7c5cbf;
+  --ui-notice-accent-fg: #ffffff;
+  --ui-notice-accent-hover: #6a4da6;
+  --ui-notice-link: #7c5cbf;
+  --ui-notice-link-hover: #6a4da6;
+}
+.dark.palette-sogrim {
+  --primary: oklch(0.551 0.215 264.364);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.551 0.215 264.364);
+  --banner: #24333c;
+  --success: #4ade80;             /* green-400 */
+  --ui-info: #60a5fa;             /* blue-400 */
+  --ui-progress-active: #d66563;
+  --ui-progress-complete: #4ade80;
+  --ui-notice-bg: #2d1f4e;
+  --ui-notice-fg: #d4c4f0;
+  --ui-notice-border: rgba(212, 196, 240, 0.2);
+  --ui-notice-accent: #7c5cbf;
+  --ui-notice-accent-fg: #ffffff;
+  --ui-notice-accent-hover: #6a4da6;
+  --ui-notice-link: #b69df0;
+  --ui-notice-link-hover: #c9b4f5;
+}
+
+/* Botanical apothecary — multi-accent palette in the spirit of the OG sogrim
+   chaos: moss-green banner + amber/honey primary + wine progress accent +
+   sage success + cream/walnut notice. Earthy and warm as a counterpoint to
+   sogrim's cool navy/coral/blue. */
+.palette-botanical {
+  --primary: oklch(0.55 0.13 70);          /* amber/honey */
+  --ring: oklch(0.55 0.13 70);
+  --banner: #2d3d2a;                       /* deep moss green */
+  --success: #6b8e4a;                      /* sage */
+  --ui-info: #4a7a8c;                      /* muted teal — complementary to amber */
+  --ui-progress-active: #8b2e3d;           /* wine/burgundy — standout */
+  --ui-progress-complete: #8aa05a;         /* bright sage */
+  /* Modified-toast banner — vintage paper label */
+  --ui-notice-bg: #f5ead4;                 /* warm cream */
+  --ui-notice-fg: #3d2818;                 /* deep walnut */
+  --ui-notice-border: rgba(61, 40, 24, 0.18);
+  --ui-notice-accent: #8b2e3d;             /* wine */
+  --ui-notice-accent-fg: #ffffff;
+  --ui-notice-accent-hover: #732430;
+  --ui-notice-link: #8b2e3d;
+  --ui-notice-link-hover: #732430;
+}
+.dark.palette-botanical {
+  --primary: oklch(0.72 0.14 70);          /* brighter amber */
+  --ring: oklch(0.72 0.14 70);
+  --banner: #1f2a1d;
+  --success: #9bb56a;
+  --ui-info: #6b9bad;
+  --ui-progress-active: #c4546a;           /* lighter wine */
+  --ui-progress-complete: #a8c47a;
+  --ui-notice-bg: #3d2818;                 /* walnut */
+  --ui-notice-fg: #f5ead4;                 /* cream */
+  --ui-notice-border: rgba(245, 234, 212, 0.20);
+  --ui-notice-accent: #c4546a;
+  --ui-notice-accent-fg: #ffffff;
+  --ui-notice-accent-hover: #d4707a;
+  --ui-notice-link: #e89aa5;
+  --ui-notice-link-hover: #f0b0b8;
+}
+
+/* Midnight — synthwave / late-night cinematic. Deep ink banner with neon
+   accents that recall a 1980s Miami sunset reflected on a midnight horizon:
+   electric violet primary, hot magenta progress punch, cyber cyan info,
+   lime success. Built to feel like Linear at 2am with the neon still on.
+   Surface tokens (card / bg / border) are tinted violet so panels read as
+   velvet rather than neutral gray — the chrome around the neon. */
+.palette-midnight {
+  --primary: oklch(0.50 0.22 295);          /* electric violet */
+  --ring: oklch(0.50 0.22 295);
+  --banner: #0e1130;                         /* deep ink horizon (icon color fallback) */
+  --banner-bg: linear-gradient(115deg, #0a0d24 0%, #1a0d3a 45%, #2a0a3f 75%, #0e1130 100%);
+  --success: #65a30d;                        /* lime — saturated for light bg */
+  --ui-info: #0891b2;                        /* cyber cyan */
+  --ui-progress-active: #db2777;             /* hot magenta — the neon punch */
+  --ui-progress-complete: #84cc16;           /* bright lime */
+  /* Modified-toast — whisper pink wash with wine ink, like a neon sign reflection */
+  --ui-notice-bg: #fdf2f8;
+  --ui-notice-fg: #831843;
+  --ui-notice-border: rgba(131, 24, 67, 0.20);
+  --ui-notice-accent: #db2777;
+  --ui-notice-accent-fg: #ffffff;
+  --ui-notice-accent-hover: #be185d;
+  --ui-notice-link: #db2777;
+  --ui-notice-link-hover: #be185d;
+}
+.dark.palette-midnight {
+  /* Surfaces tinted violet — the room around the neon */
+  --background: oklch(0.135 0.018 295);
+  --card: oklch(0.205 0.025 295);
+  --popover: oklch(0.205 0.025 295);
+  --secondary: oklch(0.27 0.03 295);
+  --muted: oklch(0.27 0.03 295);
+  --muted-foreground: oklch(0.78 0.025 320); /* tinted toward dusty pink for atmosphere */
+  --accent: oklch(0.27 0.03 295);
+  --border: oklch(0.36 0.04 300);            /* violet-tinted border, like chrome edge */
+  --input: oklch(0.36 0.04 300);
+  /* Neon */
+  --primary: oklch(0.65 0.22 295);           /* glowing violet */
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.65 0.22 295);
+  --banner: #07091a;                          /* deepest ink — the void */
+  /* Diagonal horizon: deep void → violet midline → magenta haze → ink */
+  --banner-bg: linear-gradient(115deg, #050617 0%, #1a0a3f 40%, #3a0d44 70%, #0a0d24 100%);
+  --success: #a3e635;
+  --ui-info: #22d3ee;                         /* electric cyan */
+  --ui-progress-active: #f472b6;              /* lighter magenta for dark */
+  --ui-progress-complete: #bef264;
+  --ui-notice-bg: #2a0a24;                    /* deep wine */
+  --ui-notice-fg: #fce7f3;                    /* soft pink */
+  --ui-notice-border: rgba(252, 231, 243, 0.20);
+  --ui-notice-accent: #f472b6;
+  --ui-notice-accent-fg: #ffffff;
+  --ui-notice-accent-hover: #f9a8d4;
+  --ui-notice-link: #f9a8d4;
+  --ui-notice-link-hover: #fbcfe8;
+}
+
+/* Subtle neon glow on midnight's primary surfaces — applies a soft halo to
+   anything wearing bg-primary (sidebar nav active, primary buttons). Other
+   palettes leave this empty so they keep their flat, professional look. */
+.palette-midnight .bg-primary,
+.dark.palette-midnight .bg-primary {
+  box-shadow: 0 0 20px -6px color-mix(in oklch, var(--primary) 65%, transparent);
 }
 
 @layer base {

@@ -98,7 +98,7 @@ export function GradeEditor(
           ref={selectRef}
           value={selVal}
           onChange={onSel}
-          className="w-full h-7 px-1 text-sm border border-border rounded bg-card focus:outline-none focus:border-blue-400"
+          className="w-full h-7 px-1 text-sm border border-border rounded bg-card focus:outline-none focus:border-info"
         >
           <option value="">--</option>
           {opts.map((o) => (
@@ -116,7 +116,7 @@ export function GradeEditor(
       <button
         type="button"
         onMouseDown={toggle}
-        className="shrink-0 text-muted-foreground hover:text-blue-500 transition-colors"
+        className="shrink-0 text-muted-foreground hover:text-info transition-colors"
         title={isNumeric ? "ציון לא מספרי" : "ציון מספרי"}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -136,14 +136,14 @@ export function GradeEditor(
           onChange={onNum}
           onKeyDown={(e) => { if (e.key === "Enter") stopEditing(); }}
           placeholder="0-100"
-          className="w-16 h-7 px-1 text-sm text-center border border-border rounded bg-card focus:outline-none focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-16 h-7 px-1 text-sm text-center border border-border rounded bg-card focus:outline-none focus:border-info [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       ) : (
         <select
           ref={selectRef}
           value={selVal}
           onChange={onSel}
-          className="flex-1 h-7 px-1 text-sm border border-border rounded bg-card focus:outline-none focus:border-blue-400"
+          className="flex-1 h-7 px-1 text-sm border border-border rounded bg-card focus:outline-none focus:border-info"
         >
           <option value="">--</option>
           {opts.map((o) => (
@@ -156,7 +156,7 @@ export function GradeEditor(
       <button
         type="button"
         onMouseDown={toggle}
-        className="shrink-0 text-[11px] text-blue-500 hover:text-blue-700 hover:underline whitespace-nowrap"
+        className="shrink-0 text-[11px] text-info hover:opacity-80 hover:underline whitespace-nowrap"
       >
         {isNumeric ? "ציון לא מספרי" : "ציון מספרי"}
       </button>

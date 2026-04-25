@@ -216,7 +216,7 @@ export function AddCourseForm({
               <button
                 type="button"
                 onClick={() => { setGradeIsNumeric(false); setGrade(""); }}
-                className="text-[10px] text-blue-500 hover:underline"
+                className="text-[10px] text-info hover:underline"
               >
                 ציון לא מספרי
               </button>
@@ -231,7 +231,7 @@ export function AddCourseForm({
               <button
                 type="button"
                 onClick={() => { setGradeIsNumeric(true); setGrade(""); }}
-                className="text-[10px] text-blue-500 hover:underline"
+                className="text-[10px] text-info hover:underline"
               >
                 ציון מספרי
               </button>

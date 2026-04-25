@@ -82,7 +82,7 @@ export function CoursesStep({
               onChange={(e) => setUgData(e.target.value)}
               placeholder={EXAMPLE_TEXT}
               className="flex min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y font-mono"
-              dir="ltr"
+              dir="rtl"
               disabled={importMutation.isPending}
             />
           </div>

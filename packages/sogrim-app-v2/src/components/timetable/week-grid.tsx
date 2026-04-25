@@ -102,7 +102,12 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
     <>
       <div
         className={cn(
-          "w-full overflow-x-auto rounded-lg border border-border bg-card select-none",
+          "w-full overflow-auto rounded-lg border border-border bg-card select-none",
+          // Cap the grid's footprint to a fraction of the viewport so on big
+          // monitors the whole page (toolbar + grid + exam timeline) fits
+          // without scrolling. If the container is genuinely too small to
+          // host all rows at min height, the grid scrolls inside this box.
+          "max-h-[calc(100dvh-220px)]",
           compact ? "text-[0.6rem]" : "text-sm",
         )}
       >
@@ -112,7 +117,10 @@ export function WeekGrid({ events, compact = false }: WeekGridProps) {
             gridTemplateColumns: compact
               ? `36px repeat(${dayCount}, 1fr)`
               : `56px repeat(${dayCount}, 1fr)`,
-            gridTemplateRows: `auto repeat(${slotCount}, minmax(${compact ? "2.5vh" : "4.2vh"}, 1fr))`,
+            // Cap absolute slot height so rows don't balloon on large external
+            // monitors. 44px keeps a 1h block (2 slots) ~88px tall — readable
+            // without dominating the viewport.
+            gridTemplateRows: `auto repeat(${slotCount}, minmax(${compact ? "min(2.5vh, 28px)" : "min(4.2vh, 44px)"}, 1fr))`,
           }}
           dir="rtl"
         >

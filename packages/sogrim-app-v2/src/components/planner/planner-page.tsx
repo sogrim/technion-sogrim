@@ -275,7 +275,7 @@ export function PlannerPage() {
             className={cn(
               "pb-3 text-xl font-medium transition-colors relative",
               activeTab === tab.key
-                ? "text-[#d66563]"
+                ? "text-progress-active"
                 : "text-muted-foreground hover:text-foreground"
             )}
             style={{ fontSize: "22px" }}
@@ -284,7 +284,7 @@ export function PlannerPage() {
             {activeTab === tab.key && (
               <span
                 className="absolute bottom-0 inset-x-0 h-[3px] rounded-t-full"
-                style={{ backgroundColor: "#d66563" }}
+                style={{ backgroundColor: "var(--ui-progress-active)" }}
               />
             )}
           </button>
