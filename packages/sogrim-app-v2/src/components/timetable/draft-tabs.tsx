@@ -77,17 +77,15 @@ export function DraftTabs() {
               >
                 <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
               </button>
-              {semesterDrafts.length > 1 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteDraft(draft.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                </button>
-              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteDraft(draft.id);
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+              </button>
             </>
           )}
         </div>
