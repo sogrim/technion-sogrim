@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { CourseGrid } from "./course-grid";
-import { PlannerCourseSearch } from "./planner-course-search";
+import { AddCourseForm } from "./add-course-form";
 import { SemesterFooter } from "./semester-footer";
 import type { CourseStatus } from "@/types/api";
 import type { RowData } from "@/types/domain";
@@ -54,7 +54,7 @@ export function SemesterPanel({
       {semester !== null && <SemesterFooter rows={existingRows} />}
 
       <div className="flex justify-center pt-4 pb-8">
-        <PlannerCourseSearch
+        <AddCourseForm
           semester={semester}
           existingRows={existingRows}
           bankNames={bankNames}

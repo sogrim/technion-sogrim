@@ -5,8 +5,10 @@ import { cn } from "@/lib/utils";
 import {
   getAllSemesters,
   formatSemesterName,
+  parseSemesterDisplay,
   getNextSemesterName,
   parseSemesterOrder,
+  getCurrentAcademicYear,
 } from "@/lib/semester-utils";
 import { SemesterPanel } from "./semester-panel";
 import type { CourseStatus } from "@/types/api";
@@ -37,6 +39,7 @@ function EmptyState({
 }: {
   onAddSemester: (semesterName: string) => void;
 }) {
+  const academicYear = getCurrentAcademicYear();
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <h3 className="text-xl font-medium text-foreground mb-6">
@@ -47,7 +50,7 @@ function EmptyState({
           variant="outline"
           size="lg"
           className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
-          onClick={() => onAddSemester("חורף_1")}
+          onClick={() => onAddSemester(`חורף_${academicYear}`)}
         >
           <Snowflake className="h-5 w-5" />
           {"חורף"}
@@ -56,7 +59,7 @@ function EmptyState({
           variant="outline"
           size="lg"
           className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
-          onClick={() => onAddSemester("אביב_1")}
+          onClick={() => onAddSemester(`אביב_${academicYear}`)}
         >
           <Sun className="h-5 w-5" />
           {"אביב"}
@@ -137,12 +140,14 @@ export function SemestersTab({
       <div className="flex items-center gap-2 flex-wrap">
         {/* Semester pill buttons */}
         <div className="flex items-center gap-1.5 flex-wrap flex-1">
-          {tabs.map((semester, idx) => (
+          {tabs.map((semester, idx) => {
+            const { season, year } = parseSemesterDisplay(semester);
+            return (
             <button
               key={semester ?? "__null"}
               onClick={() => onSelectSemester(idx)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border",
+                "shrink-0 rounded-xl px-4 py-1.5 text-sm transition-colors border text-center leading-tight",
                 idx === currentSemesterIdx
                   ? "text-white border-transparent shadow-sm"
                   : "bg-card text-foreground border-foreground/30 hover:bg-muted"
@@ -153,9 +158,16 @@ export function SemestersTab({
                   : undefined
               }
             >
-              {formatSemesterName(semester)}
+              <span className="font-bold">{season}</span>
+              {year && (
+                <>
+                  <br />
+                  <span className="text-xs opacity-80">{year}</span>
+                </>
+              )}
             </button>
-          ))}
+            );
+          })}
         </div>
 
         {/* Add + Delete buttons */}

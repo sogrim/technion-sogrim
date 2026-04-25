@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import { useUiStore } from "@/stores/ui-store";
-import { getAllSemesters } from "@/lib/semester-utils";
+import { getAllSemesters, parseSemesterOrder } from "@/lib/semester-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -66,7 +66,7 @@ export function PlannerPage() {
   const courseStatuses = details?.degree_status.course_statuses ?? [];
   const bankNames = details?.catalog?.course_bank_names ?? [];
 
-  const hasNullSemester = courseStatuses.some((cs) => cs.semester === null);
+
 
   const sendUpdate = useCallback(
     (updatedStatuses: CourseStatus[]) => {
@@ -147,19 +147,17 @@ export function PlannerPage() {
           prev.includes(semesterName) ? prev : [...prev, semesterName]
         );
       }
-      const allSemesters = existingSemesters.includes(semesterName)
-        ? existingSemesters
-        : [...existingSemesters, semesterName].sort();
-      const allTabs = hasNullSemester
-        ? [null, ...allSemesters]
-        : allSemesters;
+      // Compute tabs the same way SemestersTab does: merge courses + extras + new, sort by parseSemesterOrder
+      const allTabs = Array.from(
+        new Set([...existingSemesters, ...extraSemesters, semesterName])
+      ).sort((a, b) => parseSemesterOrder(a) - parseSemesterOrder(b));
 
       const idx = allTabs.findIndex((t) => t === semesterName);
       if (idx >= 0) {
         setCurrentSemester(idx);
       }
     },
-    [courseStatuses, hasNullSemester, setCurrentSemester]
+    [courseStatuses, extraSemesters, setCurrentSemester]
   );
 
   const handleDeleteSemester = useCallback(

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
+import { useProviderUpdates } from "@/hooks/use-api-provider";
 import { getCourseColor } from "@/lib/timetable-colors";
 import { useUiStore } from "@/stores/ui-store";
 import { GroupSelector } from "./group-selector";
@@ -16,6 +17,7 @@ export function SelectedCoursesPanel() {
   const theme = useUiStore((s) => s.theme);
   const isDark = theme === "dark";
 
+  const providerVersion = useProviderUpdates();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const draft = drafts.find((d) => d.id === activeDraftId);
@@ -32,7 +34,7 @@ export function SelectedCoursesPanel() {
     } catch {
       return [];
     }
-  }, [draft]);
+  }, [draft, providerVersion]);
 
   const totalCredits = coursesWithData.reduce(
     (sum, c) => sum + (c.course?.credit ?? 0),
