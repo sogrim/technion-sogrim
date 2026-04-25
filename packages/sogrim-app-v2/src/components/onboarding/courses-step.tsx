@@ -3,7 +3,6 @@ import {
   Upload,
   FileText,
   Loader2,
-  ClipboardPaste,
   SkipForward,
 } from "lucide-react";
 import { useImportUgData } from "@/hooks/use-mutations";
@@ -37,14 +36,6 @@ export function CoursesStep({
   const [ugData, setUgData] = useState("");
   const importMutation = useImportUgData();
 
-  async function handlePaste() {
-    try {
-      const text = await navigator.clipboard.readText();
-      setUgData(text);
-    } catch {
-      onError?.("לא ניתן לגשת ללוח ההעתקה. אנא הדבק ידנית.");
-    }
-  }
 
   function handleSubmit() {
     if (!ugData.trim()) {
@@ -84,18 +75,7 @@ export function CoursesStep({
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="ug-data">גיליון ציונים</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handlePaste}
-                type="button"
-              >
-                <ClipboardPaste className="h-4 w-4" />
-                הדבק מהלוח
-              </Button>
-            </div>
+            <Label htmlFor="ug-data">גיליון ציונים</Label>
             <textarea
               id="ug-data"
               value={ugData}
@@ -127,7 +107,7 @@ export function CoursesStep({
                 סמן את כל הטקסט (Ctrl+A / Cmd+A)
               </li>
               <li>העתק (Ctrl+C / Cmd+C)</li>
-              <li>חזור לכאן והדבק (Ctrl+V / Cmd+V) או לחץ על &quot;הדבק מהלוח&quot;</li>
+              <li>חזור לכאן והדבק (Ctrl+V / Cmd+V)</li>
             </ol>
           </div>
 

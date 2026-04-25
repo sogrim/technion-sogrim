@@ -8,7 +8,7 @@ import {
   Sun,
   FileText,
   Upload,
-  ClipboardPaste,
+
   Loader2,
   AlertTriangle,
   Trash2,
@@ -138,17 +138,6 @@ export function SettingsPage() {
     );
   }
 
-  async function handlePasteFromClipboard() {
-    try {
-      const text = await navigator.clipboard.readText();
-      setUgData(text);
-    } catch {
-      setToast({
-        message: "לא ניתן לגשת ללוח ההעתקה. אנא הדבק ידנית.",
-        type: "error",
-      });
-    }
-  }
 
   function handleImportSubmit() {
     if (!ugData.trim()) {
@@ -380,20 +369,9 @@ export function SettingsPage() {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="settings-ug-data">
-                גיליון ציונים
-              </Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handlePasteFromClipboard}
-                type="button"
-              >
-                <ClipboardPaste className="h-4 w-4" />
-                הדבק מהלוח
-              </Button>
-            </div>
+            <Label htmlFor="settings-ug-data">
+              גיליון ציונים
+            </Label>
             <textarea
               id="settings-ug-data"
               value={ugData}
