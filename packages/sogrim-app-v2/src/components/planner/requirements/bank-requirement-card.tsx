@@ -105,7 +105,7 @@ export function BankRequirementCard({
                   className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
                     width: `${percentage}%`,
-                    backgroundColor: isCompleted ? "#4ade80" : "#d66563",
+                    backgroundColor: isCompleted ? "var(--ui-progress-complete)" : "var(--ui-progress-active)",
                   }}
                 />
               </div>
@@ -195,7 +195,7 @@ export function BankRequirementCard({
                               onClick={() =>
                                 onIgnoreCourse(cs.course._id, "לא הושלם")
                               }
-                              className="p-0.5 rounded hover:bg-background transition-colors text-green-600"
+                              className="p-0.5 rounded hover:bg-background transition-colors text-success"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </button>

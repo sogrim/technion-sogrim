@@ -23,6 +23,10 @@ pub struct UserDetails {
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct UserSettings {
     pub dark_mode: bool,
+    /// Color palette identifier. None until the user picks one — the frontend
+    /// falls back to its DEFAULT_PALETTE when this field is absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub palette: Option<String>,
 }
 
 // ---------------------------------------------------------------------------

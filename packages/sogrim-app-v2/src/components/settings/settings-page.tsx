@@ -15,7 +15,51 @@ import {
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuthStore } from "@/stores/auth-store";
-import { useUiStore } from "@/stores/ui-store";
+import { useUiStore, PALETTES, DEFAULT_PALETTE, DARK_ONLY_PALETTES, type Palette as PaletteId } from "@/stores/ui-store";
+import { cn } from "@/lib/utils";
+
+const PALETTE_LABELS: Record<PaletteId, string> = {
+  sogrim: "סוגרים",
+  teal: "טורקיז עמוק",
+  botanical: "בוטני",
+  midnight: "חצות",
+};
+
+/** Swatch fill — four forms:
+ *   - string: solid color (unified palettes, single brand hue)
+ *   - { primary, secondary }: half/half split (sogrim — coral + blue)
+ *   - { primary, secondary, tertiary }: tri-band split (botanical — moss/amber/wine)
+ *   - { gradient }: full CSS gradient string for palettes that want to
+ *     telegraph their multi-accent identity smoothly (midnight — the
+ *     synthwave cyan→violet→magenta sweep).
+ *  Kept in sync with the actual values in index.css. */
+type SwatchSpec =
+  | string
+  | { primary: string; secondary: string }
+  | { primary: string; secondary: string; tertiary: string }
+  | { gradient: string };
+
+const PALETTE_SWATCH_COLORS: Record<PaletteId, SwatchSpec> = {
+  sogrim: { primary: "#d66563", secondary: "#3b82f6" },
+  teal: "oklch(0.52 0.12 215)",
+  botanical: { primary: "#2d3d2a", secondary: "#a47332", tertiary: "#8b2e3d" },
+  midnight: { gradient: "linear-gradient(135deg, #22d3ee 0%, #a855f7 50%, #ec4899 100%)" },
+};
+
+function swatchStyle(spec: SwatchSpec): React.CSSProperties {
+  if (typeof spec === "string") return { backgroundColor: spec };
+  if ("gradient" in spec) return { background: spec.gradient };
+  if ("tertiary" in spec) {
+    // RTL-aware tri-band: "to left" so the first stop sits on the right edge
+    // of the swatch (mirroring the visual order users read).
+    return {
+      background: `linear-gradient(to left, ${spec.primary} 0% 33.34%, ${spec.secondary} 33.34% 66.67%, ${spec.tertiary} 66.67% 100%)`,
+    };
+  }
+  return {
+    background: `linear-gradient(to left, ${spec.primary} 50%, ${spec.secondary} 50%)`,
+  };
+}
 import { useUserState } from "@/hooks/use-user-state";
 import { useCatalogs } from "@/hooks/use-catalogs";
 import {
@@ -71,6 +115,9 @@ export function SettingsPage() {
   const userInfo = useAuthStore((s) => s.userInfo);
   const theme = useUiStore((s) => s.theme);
   const toggleTheme = useUiStore((s) => s.toggleTheme);
+  const setTheme = useUiStore((s) => s.setTheme);
+  const palette = useUiStore((s) => s.palette);
+  const setPalette = useUiStore((s) => s.setPalette);
   const { data: userState, isLoading: userLoading } = useUserState();
   const { data: catalogs, isLoading: catalogsLoading } = useCatalogs();
   const updateCatalog = useUpdateCatalog();
@@ -126,11 +173,31 @@ export function SettingsPage() {
     toggleTheme();
     const newDarkMode = theme === "light";
     updateSettings.mutate(
-      { dark_mode: newDarkMode },
+      { dark_mode: newDarkMode, palette },
       {
         onError: () => {
           setToast({
             message: "שגיאה בשמירת הגדרות ערכת נושא",
+            type: "error",
+          });
+        },
+      }
+    );
+  }
+
+  function handlePaletteChange(next: PaletteId) {
+    if (next === palette) return;
+    setPalette(next);
+    // Dark-only palettes (midnight) auto-flip the theme so the user sees the
+    // intended look immediately. They can still toggle back to light afterward.
+    const forceDark = DARK_ONLY_PALETTES.has(next) && theme !== "dark";
+    if (forceDark) setTheme("dark");
+    updateSettings.mutate(
+      { dark_mode: forceDark || theme === "dark", palette: next },
+      {
+        onError: () => {
+          setToast({
+            message: "שגיאה בשמירת ערכת הצבעים",
             type: "error",
           });
         },
@@ -227,11 +294,6 @@ export function SettingsPage() {
                   {userInfo?.email || ""}
                 </p>
               </div>
-              {userState?.permissions && (
-                <Badge variant="secondary" className="mr-auto">
-                  {userState.permissions}
-                </Badge>
-              )}
             </div>
           )}
         </CardContent>
@@ -378,7 +440,7 @@ export function SettingsPage() {
               onChange={(e) => setUgData(e.target.value)}
               placeholder="הדבק כאן את גיליון הציונים מ-SAP..."
               className="flex min-h-[160px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y font-mono"
-              dir="ltr"
+              dir="rtl"
               disabled={importMutation.isPending}
             />
           </div>
@@ -436,7 +498,7 @@ export function SettingsPage() {
             התאם את תצוגת האפליקציה
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-5">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-sm font-medium">ערכת נושא</p>
@@ -460,6 +522,62 @@ export function SettingsPage() {
                 <Moon className="h-4 w-4" />
               )}
             </Button>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">ערכת צבעים</p>
+              <p className="text-sm text-muted-foreground">
+                בחרו את ערכת הצבעים של האפליקציה
+              </p>
+            </div>
+            <div
+              role="radiogroup"
+              aria-label="ערכת צבעים"
+              className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+            >
+              {PALETTES.map((p) => {
+                const isSelected = p === palette;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => handlePaletteChange(p)}
+                    className={cn(
+                      "group relative flex items-center gap-3 rounded-lg border px-3 py-2.5 text-start transition-all",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      isSelected
+                        ? "border-foreground/50 bg-muted/40 shadow-sm"
+                        : "border-border hover:border-foreground/30 hover:bg-muted/30",
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "h-7 w-7 shrink-0 rounded-full ring-1 ring-foreground/10 transition-transform",
+                        isSelected ? "scale-110" : "group-hover:scale-105",
+                      )}
+                      style={swatchStyle(PALETTE_SWATCH_COLORS[p])}
+                    />
+                    <span className="text-sm font-medium">{PALETTE_LABELS[p]}</span>
+                    {p === DEFAULT_PALETTE && (
+                      <span className="text-[9px] uppercase tracking-wide text-muted-foreground/70 ms-auto">
+                        Classic
+                      </span>
+                    )}
+                    {DARK_ONLY_PALETTES.has(p) && (
+                      <span className="text-[9px] uppercase tracking-wide text-muted-foreground/70 ms-auto">
+                        Dark
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>

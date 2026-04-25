@@ -61,6 +61,8 @@ export interface DegreeStatus {
 
 export interface UserSettings {
   dark_mode: boolean;
+  /** Optional palette ID; absent until the user picks one. */
+  palette?: string;
 }
 
 export interface Catalog {

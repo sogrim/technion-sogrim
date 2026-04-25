@@ -58,7 +58,9 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
       )}
       style={{
         ...style,
-        fontSize: compact ? "calc(0.05em + 0.9vh)" : "calc(0.1em + 1.1vh)",
+        fontSize: compact
+          ? "min(calc(0.05em + 0.9vh), 12px)"
+          : "min(calc(0.1em + 1.1vh), 14px)",
         lineHeight: 1.2,
         backgroundColor: isPreview
           ? (isDark ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.85)")

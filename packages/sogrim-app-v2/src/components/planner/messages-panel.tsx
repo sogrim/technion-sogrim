@@ -31,7 +31,7 @@ function AccordionSection({
           {icon}
           <span className="font-medium text-foreground">{title}</span>
           {count !== undefined && count > 0 && (
-            <span className="rounded-full bg-[#d66563] px-2 py-0.5 text-xs text-white">
+            <span className="rounded-full bg-progress-active px-2 py-0.5 text-xs text-white">
               {count}
             </span>
           )}
@@ -73,7 +73,7 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
       {hasOverflow && (
         <AccordionSection
           title={"\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05D7\u05E9\u05D5\u05D1\u05D5\u05EA"}
-          icon={<Info className="h-4 w-4 text-blue-500" />}
+          icon={<Info className="h-4 w-4 text-info" />}
           defaultOpen={true}
           count={overflow_msgs.length}
         >
@@ -83,7 +83,7 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
                 key={i}
                 className="flex items-start gap-2 text-sm text-foreground"
               >
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-info" />
                 {msg}
               </li>
             ))}

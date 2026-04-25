@@ -25,9 +25,8 @@ export function Sidebar() {
         <h1
           className={cn("font-bold transition-all duration-300 text-foreground", collapsed ? "text-sm" : "text-xl")}
         >
-          {collapsed ? <GraduationCap className="h-6 w-6" style={{color: "#24333c"}} /> : "סוגרים"}
+          {collapsed ? <GraduationCap className="h-6 w-6" style={{ color: "var(--banner)" }} /> : "סוגרים"}
         </h1>
-        {/* subtitle removed */}
       </div>
 
       <nav className="flex-1 space-y-1">

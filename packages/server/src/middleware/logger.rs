@@ -1,6 +1,8 @@
+use std::io::Write;
 use std::time::{Duration, Instant};
 
 use axum::{extract::Request, middleware::Next, response::Response};
+use chrono::Local;
 use colored::{Color, ColoredString, Colorize};
 
 const SEP: &str = "  |  ";
@@ -19,7 +21,24 @@ fn log_header_once() {
 
 pub fn init_env_logger() {
     env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("info"))
-        .format_timestamp(None)
+        .format(|buf, record| {
+            let ts = Local::now().format("%H:%M:%S").to_string().dimmed();
+            let level = match record.level() {
+                log::Level::Error => "ERROR".red().bold(),
+                log::Level::Warn => "WARN ".yellow().bold(),
+                log::Level::Info => "INFO ".green(),
+                log::Level::Debug => "DEBUG".cyan(),
+                log::Level::Trace => "TRACE".magenta(),
+            };
+            writeln!(
+                buf,
+                "[{} {} {}] {}",
+                ts,
+                level,
+                record.target(),
+                record.args(),
+            )
+        })
         .init();
 }
 
