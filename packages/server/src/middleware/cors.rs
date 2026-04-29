@@ -12,6 +12,7 @@ pub fn cors() -> actix_cors::Cors {
         })
     } else {
         cors.allowed_origin("https://sogrim.org")
+            .allowed_origin("https://www.sogrim.org")
             .allowed_origin("https://students.sogrim.org")
             .allowed_origin("https://sogrim.onrender.com")
             .allowed_origin("https://sogrim-v2.onrender.com")
