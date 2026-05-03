@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronUp, BookOpenCheck, Target, Award, ArrowUpRight } from "lucide-react";
+import { ChevronDown, ChevronUp, BookOpenCheck, Target, Sigma, CalendarDays, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ComputeButton } from "./compute-button";
 import { isSocialActivityCourse } from "@/lib/reserved-credits";
@@ -104,9 +104,6 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
   const completedCount = course_statuses.filter(
     (cs) => cs.state === "הושלם" && !isSocialActivityCourse(cs),
   ).length;
-  const highestGrade = gradedCourses.length > 0
-    ? Math.max(...gradedCourses.map((cs) => parseFloat(cs.grade!)))
-    : null;
   const semesterGPA = useMemo(
     () => computePerSemesterGPA(course_statuses),
     [course_statuses],
@@ -115,6 +112,38 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
   const gpaDelta = semesterGPA.length >= 2
     ? semesterGPA[semesterGPA.length - 1].gpa - semesterGPA[semesterGPA.length - 2].gpa
     : null;
+  // GPA of the most recent semester that has graded courses.
+  const lastSemesterGPA = semesterGPA.length > 0
+    ? semesterGPA[semesterGPA.length - 1].gpa
+    : null;
+  // Most recent semester string across all courses (chronologically last).
+  // Distinct from lastSemesterGPA's semester — that one filters to graded
+  // semesters only; this one includes in-progress / unscheduled work too.
+  const lastSemester = useMemo(() => {
+    let result: string | null = null;
+    let maxOrder = -Infinity;
+    for (const cs of course_statuses) {
+      if (!cs.semester) continue;
+      const order = parseSemesterOrder(cs.semester);
+      if (order > maxOrder) {
+        maxOrder = order;
+        result = cs.semester;
+      }
+    }
+    return result;
+  }, [course_statuses]);
+  // Credits the student is taking / took this semester. Excludes ignored
+  // courses ("לא רלוונטי") and social-activity reserved credits.
+  const lastSemesterCredits = useMemo(() => {
+    if (!lastSemester) return null;
+    return course_statuses
+      .filter((cs) =>
+        cs.semester === lastSemester &&
+        cs.state !== "לא רלוונטי" &&
+        !isSocialActivityCourse(cs),
+      )
+      .reduce((sum, cs) => sum + cs.course.credit, 0);
+  }, [course_statuses, lastSemester]);
 
   return (
     <div
@@ -263,7 +292,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
           )}
 
           {/* Tile row with subtle iconography for visual texture */}
-          <div className="grid grid-cols-3 gap-2 mt-auto pt-3 border-t border-border/50">
+          <div className="grid grid-cols-4 gap-2 mt-auto pt-3 border-t border-border/50">
             <div className="flex flex-col items-center text-center gap-0.5">
               <BookOpenCheck className="h-3 w-3 text-muted-foreground/70" />
               <div className="text-base font-bold text-foreground tabular-nums leading-none">{completedCount}</div>
@@ -277,11 +306,18 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
               <div className="text-[10px] text-muted-foreground">דרישות</div>
             </div>
             <div className="flex flex-col items-center text-center gap-0.5">
-              <Award className="h-3 w-3 text-muted-foreground/70" />
+              <Sigma className="h-3 w-3 text-muted-foreground/70" />
               <div className="text-base font-bold text-foreground tabular-nums leading-none">
-                {highestGrade != null ? highestGrade : "--"}
+                {lastSemesterGPA != null ? lastSemesterGPA.toFixed(1) : "--"}
               </div>
-              <div className="text-[10px] text-muted-foreground">ציון מקסימלי</div>
+              <div className="text-[10px] text-muted-foreground">ממוצע סמסטר</div>
+            </div>
+            <div className="flex flex-col items-center text-center gap-0.5">
+              <CalendarDays className="h-3 w-3 text-muted-foreground/70" />
+              <div className="text-base font-bold text-foreground tabular-nums leading-none">
+                {lastSemesterCredits != null ? lastSemesterCredits : "--"}
+              </div>
+              <div className="text-[10px] text-muted-foreground">נק״ז סמסטר</div>
             </div>
           </div>
         </div>
