@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { BookOpen } from "lucide-react";
 import { CourseGrid } from "./course-grid";
 import { PlannerCourseSearch } from "./planner-course-search";
 import { SemesterFooter } from "./semester-footer";
@@ -40,6 +41,34 @@ export function SemesterPanel({
       })),
     [semesterCourses]
   );
+
+  const isEmpty = semester !== null && semesterCourses.length === 0;
+
+  if (isEmpty) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        <div className="relative mb-5">
+          <div className="absolute inset-0 rounded-full bg-foreground/5 blur-xl" aria-hidden />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-full border border-border/60 bg-card">
+            <BookOpen className="h-6 w-6 text-muted-foreground" />
+          </div>
+        </div>
+        <h3 className="text-base font-medium text-foreground mb-1.5">
+          אין קורסים בסמסטר זה
+        </h3>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+          הוסיפו קורסים שלמדתם או שאתם מתכננים ללמוד כדי לעקוב אחר ההתקדמות
+          שלכם
+        </p>
+        <PlannerCourseSearch
+          semester={semester}
+          existingRows={existingRows}
+          bankNames={bankNames}
+          onAdd={onAddCourse}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0">
