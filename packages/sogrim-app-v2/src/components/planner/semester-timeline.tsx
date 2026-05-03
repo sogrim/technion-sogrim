@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
+import { useTimelineStore, type TimelineState } from "@/stores/timeline-store";
 import { createPortal } from "react-dom";
 import {
   DndContext,
@@ -49,11 +50,6 @@ interface EmptySlot {
 
 type Slot = OrdinalSlot | EmptySlot;
 
-interface TimelineState {
-  positions: number[];
-  annotations: Record<number, string>;
-}
-
 // ────────────────────────────────────────────────────────────────
 // Constants
 // ────────────────────────────────────────────────────────────────
@@ -77,7 +73,6 @@ const CHIP_HEIGHT = 60;
 const PADDING_SLOTS = 3;
 
 const GAP_PRESETS = ["מילואים", "חופשה", "חילופי סטודנטים", "אחר"] as const;
-const STATE_KEY = "sogrim-timeline-v2";
 
 // ────────────────────────────────────────────────────────────────
 // Helpers
@@ -199,25 +194,6 @@ function reconcile(saved: TimelineState, ordinals: string[]): TimelineState {
     }
   }
   return saved;
-}
-
-function loadState(ordinals: string[]): TimelineState {
-  try {
-    const raw = localStorage.getItem(STATE_KEY);
-    if (raw) {
-      const p = JSON.parse(raw);
-      if (Array.isArray(p.positions) && typeof p.annotations === "object") {
-        return reconcile(p, ordinals);
-      }
-    }
-  } catch {}
-  return reconcile({ positions: [], annotations: {} }, ordinals);
-}
-
-function saveState(s: TimelineState) {
-  try {
-    localStorage.setItem(STATE_KEY, JSON.stringify(s));
-  } catch {}
 }
 
 /** Build all slots in display range. Always includes summer — uniform calendar grid. */
@@ -726,7 +702,18 @@ export function SemesterTimeline({
   onDeleteSemester,
   className,
 }: SemesterTimelineProps) {
-  const [state, setState] = useState<TimelineState>(() => loadState(ordinals));
+  // State is hoisted into a Zustand store so other surfaces (banner stats,
+  // future analytics) can read calendar positions without prop-drilling.
+  // The store persists to localStorage via the `persist` middleware, so
+  // existing users keep their saved positions across this refactor.
+  const positions = useTimelineStore((s) => s.positions);
+  const annotations = useTimelineStore((s) => s.annotations);
+  const setStoreState = useTimelineStore((s) => s.setState);
+  const state = useMemo<TimelineState>(
+    () => ({ positions, annotations }),
+    [positions, annotations],
+  );
+  const setState = setStoreState;
   const [drag, setDrag] = useState<{ ordinalIdx: number; deltaX: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState({ start: false, end: false });
@@ -818,10 +805,6 @@ export function SemesterTimeline({
     },
     [onDeleteSemester, ordinals],
   );
-
-  useEffect(() => {
-    saveState(state);
-  }, [state]);
 
   const { slots, coreStart, coreEnd } = useMemo(
     () => buildSlots(state.positions, state.annotations, ordinals),

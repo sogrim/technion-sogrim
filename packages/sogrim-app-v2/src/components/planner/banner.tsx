@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronUp, BookOpenCheck, Target, Sigma, CalendarDays, ArrowUpRight } from "lucide-react";
+import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarDays, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ComputeButton } from "./compute-button";
 import { isSocialActivityCourse } from "@/lib/reserved-credits";
 import { parseSemesterOrder } from "@/lib/semester-utils";
+import { useTimelineStore, distinctAcademicYears } from "@/stores/timeline-store";
 import type { DegreeStatus, Catalog, CourseStatus } from "@/types/api";
 
 /** Per-semester GPA, ordered chronologically (uses parseSemesterOrder so
@@ -112,13 +113,31 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
   const gpaDelta = semesterGPA.length >= 2
     ? semesterGPA[semesterGPA.length - 1].gpa - semesterGPA[semesterGPA.length - 2].gpa
     : null;
-  // GPA of the most recent semester that has graded courses.
-  const lastSemesterGPA = semesterGPA.length > 0
-    ? semesterGPA[semesterGPA.length - 1].gpa
-    : null;
+  // How many academic years the student has been studying. The semester
+  // timeline owns the source of truth (calendar positions per ordinal-named
+  // semester, encoded as `year*3 + season`), so we subscribe to its store
+  // to stay reactive — moving a chip in the timeline updates this stat
+  // immediately. When the timeline hasn't been touched yet, fall back to
+  // the ordinal numbering — the counter increments per non-summer semester
+  // (winter+spring per year, summer reuses the prior), so dividing the max
+  // ordinal by 2 rounded up approximates years.
+  const timelinePositions = useTimelineStore((s) => s.positions);
+  const yearsOfStudy = useMemo(() => {
+    if (timelinePositions.length > 0) {
+      const years = distinctAcademicYears(timelinePositions);
+      if (years > 0) return years;
+    }
+    let maxNum = 0;
+    for (const cs of course_statuses) {
+      if (!cs.semester) continue;
+      const parts = cs.semester.split("_");
+      if (parts.length < 2) continue;
+      const num = parseInt(parts[1], 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+    return maxNum > 0 ? Math.ceil(maxNum / 2) : null;
+  }, [course_statuses, timelinePositions]);
   // Most recent semester string across all courses (chronologically last).
-  // Distinct from lastSemesterGPA's semester — that one filters to graded
-  // semesters only; this one includes in-progress / unscheduled work too.
   const lastSemester = useMemo(() => {
     let result: string | null = null;
     let maxOrder = -Infinity;
@@ -306,18 +325,18 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
               <div className="text-[10px] text-muted-foreground">דרישות</div>
             </div>
             <div className="flex flex-col items-center text-center gap-0.5">
-              <Sigma className="h-3 w-3 text-muted-foreground/70" />
+              <CalendarRange className="h-3 w-3 text-muted-foreground/70" />
               <div className="text-base font-bold text-foreground tabular-nums leading-none">
-                {lastSemesterGPA != null ? lastSemesterGPA.toFixed(1) : "--"}
+                {yearsOfStudy != null ? yearsOfStudy : "--"}
               </div>
-              <div className="text-[10px] text-muted-foreground">ממוצע סמסטר</div>
+              <div className="text-[10px] text-muted-foreground">שנים</div>
             </div>
             <div className="flex flex-col items-center text-center gap-0.5">
               <CalendarDays className="h-3 w-3 text-muted-foreground/70" />
               <div className="text-base font-bold text-foreground tabular-nums leading-none">
                 {lastSemesterCredits != null ? lastSemesterCredits : "--"}
               </div>
-              <div className="text-[10px] text-muted-foreground">נק״ז סמסטר</div>
+              <div className="text-[10px] text-muted-foreground">נק״ז הסמסטר</div>
             </div>
           </div>
         </div>
