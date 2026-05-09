@@ -127,10 +127,17 @@ function canonicalSemesterNames(seasons: Season[]): string[] {
   return result;
 }
 
+function isYearFormatName(name: string): boolean {
+  return /^.+_\d{4}-\d{4}$/.test(name);
+}
+
 /**
  * Plan an insertion at slotRealIdx with the given season, including any
  * renumbering renames required to keep the ordinal sequence canonical and
  * sort-aligned with calendar order.
+ *
+ * For year-format semesters, the new name uses the slot's actual year and
+ * no renames are needed (year-format names are calendar identities).
  */
 function computeAddInsertion(
   ordinals: string[],
@@ -138,6 +145,16 @@ function computeAddInsertion(
   slotRealIdx: number,
   season: Season,
 ): { newName: string; renames: Record<string, string> } {
+  const allYearFormat = ordinals.length > 0 && ordinals.every(isYearFormatName);
+
+  if (allYearFormat) {
+    // Year-format: derive name from the actual calendar slot, no renames needed
+    const { year } = fromLinearIdx(slotRealIdx);
+    const newName = `${SEASON_HE_NAME[season]}_${year}-${year + 1}`;
+    return { newName, renames: {} };
+  }
+
+  // Legacy ordinal: renumber to keep monotonic sequence
   let k = positions.findIndex((p) => p > slotRealIdx);
   if (k < 0) k = positions.length;
 
@@ -868,22 +885,27 @@ export function SemesterTimeline({
       const name = ordinals[ordinalIdx];
       if (!name) return;
 
-      // Compute renumbered names for the remaining semesters in calendar order.
-      const remainingSeasons: Season[] = [];
-      const remainingNames: string[] = [];
-      for (let i = 0; i < ordinals.length; i++) {
-        if (i === ordinalIdx) continue;
-        const parsed = parseOrdinal(ordinals[i]);
-        if (parsed) {
-          remainingSeasons.push(parsed.season);
-          remainingNames.push(ordinals[i]);
+      let renames: Record<string, string> = {};
+
+      // Year-format semesters are calendar identities — no renumbering needed.
+      // Only legacy ordinal semesters need renaming after deletion.
+      const allYearFormat = ordinals.every(isYearFormatName);
+      if (!allYearFormat) {
+        const remainingSeasons: Season[] = [];
+        const remainingNames: string[] = [];
+        for (let i = 0; i < ordinals.length; i++) {
+          if (i === ordinalIdx) continue;
+          const parsed = parseOrdinal(ordinals[i]);
+          if (parsed) {
+            remainingSeasons.push(parsed.season);
+            remainingNames.push(ordinals[i]);
+          }
         }
-      }
-      const canonical = canonicalSemesterNames(remainingSeasons);
-      const renames: Record<string, string> = {};
-      for (let i = 0; i < remainingNames.length; i++) {
-        if (remainingNames[i] !== canonical[i]) {
-          renames[remainingNames[i]] = canonical[i];
+        const canonical = canonicalSemesterNames(remainingSeasons);
+        for (let i = 0; i < remainingNames.length; i++) {
+          if (remainingNames[i] !== canonical[i]) {
+            renames[remainingNames[i]] = canonical[i];
+          }
         }
       }
 

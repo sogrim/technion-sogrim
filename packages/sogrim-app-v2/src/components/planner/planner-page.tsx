@@ -2,7 +2,8 @@ import { useState, useCallback } from "react";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import { useUiStore } from "@/stores/ui-store";
-import { getAllSemesters, parseSemesterOrder } from "@/lib/semester-utils";
+import { getAllSemesters, parseSemesterOrder, buildLegacyToYearMap } from "@/lib/semester-utils";
+import { useTimelineStore } from "@/stores/timeline-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -71,11 +72,29 @@ export function PlannerPage() {
   const sendUpdate = useCallback(
     (updatedStatuses: CourseStatus[]) => {
       if (!details) return;
+
+      // Migrate legacy ordinal semester names to year-format using timeline positions
+      const positions = useTimelineStore.getState().positions;
+      const courseSemesters = getAllSemesters(updatedStatuses);
+      // Build the same merged+sorted list that SemestersTab passes to the timeline
+      const merged = new Set([...courseSemesters, ...extraSemesters]);
+      const ordinals = Array.from(merged).sort(
+        (a, b) => parseSemesterOrder(a) - parseSemesterOrder(b),
+      );
+      const legacyMap = buildLegacyToYearMap(ordinals, positions);
+      const migratedStatuses = legacyMap.size > 0
+        ? updatedStatuses.map((cs) => {
+            if (!cs.semester) return cs;
+            const newSem = legacyMap.get(cs.semester);
+            return newSem ? { ...cs, semester: newSem } : cs;
+          })
+        : updatedStatuses;
+
       const updatedDetails: UserDetails = {
         ...details,
         degree_status: {
           ...details.degree_status,
-          course_statuses: updatedStatuses,
+          course_statuses: migratedStatuses,
         },
         modified: true,
       };
@@ -94,7 +113,7 @@ export function PlannerPage() {
         },
       });
     },
-    [details, updateMutation]
+    [details, extraSemesters, updateMutation]
   );
 
   const handleUpdateStatuses = useCallback(

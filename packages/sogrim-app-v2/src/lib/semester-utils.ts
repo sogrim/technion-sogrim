@@ -156,3 +156,34 @@ export function plannerSemesterToApiId(semester: string): string | null {
   if (!yearMatch) return null;
   return `${yearMatch[1]}-${code}`;
 }
+
+/**
+ * Build a mapping from legacy ordinal semester names to year-format names
+ * using the timeline positions as the source of truth.
+ *
+ * `ordinals` is the sorted list of semester names (same order as timeline chips).
+ * `positions` is the parallel array of linear calendar indices (year*3 + season).
+ *
+ * Returns a Map from old name → new name. Only legacy names are included;
+ * year-format names are left unchanged.
+ */
+export function buildLegacyToYearMap(
+  ordinals: string[],
+  positions: number[],
+): Map<string, string> {
+  const SEASON_LABELS: Record<number, string> = { 0: "חורף", 1: "אביב", 2: "קיץ" };
+  const map = new Map<string, string>();
+  for (let i = 0; i < ordinals.length; i++) {
+    const name = ordinals[i];
+    if (isYearFormat(name)) continue;
+    const pos = positions[i];
+    if (pos === undefined) continue;
+    const year = Math.floor(pos / 3);
+    const seasonIdx = ((pos % 3) + 3) % 3;
+    const season = SEASON_LABELS[seasonIdx];
+    if (!season) continue;
+    const yearRange = `${year}-${year + 1}`;
+    map.set(name, `${season}_${yearRange}`);
+  }
+  return map;
+}
