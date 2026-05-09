@@ -78,18 +78,27 @@ const GAP_PRESETS = ["מילואים", "חופשה", "חילופי סטודנט�
 // Helpers
 // ────────────────────────────────────────────────────────────────
 
-function parseOrdinal(name: string | undefined | null): { season: Season; num: number } | null {
+function parseOrdinal(name: string | undefined | null): { season: Season; num: number; /** Start year from "YYYY-YYYY" format, if present */ year?: number } | null {
   if (!name || typeof name !== "string") return null;
   const parts = name.split("_");
   if (parts.length < 2) return null;
-  const num = parseInt(parts[1], 10);
-  if (isNaN(num)) return null;
   const season: Season | null =
     parts[0] === "חורף" ? "winter"
     : parts[0] === "אביב" ? "spring"
     : parts[0] === "קיץ" ? "summer"
     : null;
-  return season ? { season, num } : null;
+  if (!season) return null;
+  const rest = parts[1];
+  // Year-range format from grade sheets: "חורף_2020-2021"
+  const yearMatch = rest.match(/^(\d{4})-(\d{4})$/);
+  if (yearMatch) {
+    const startYear = parseInt(yearMatch[1], 10);
+    return { season, num: startYear, year: startYear };
+  }
+  // Legacy ordinal format: "חורף_1"
+  const num = parseInt(rest, 10);
+  if (isNaN(num)) return null;
+  return { season, num };
 }
 
 const SEASON_HE_NAME: Record<Season, string> = {
@@ -174,7 +183,17 @@ function defaultPositions(ordinalNames: string[], startYear: number): number[] {
   for (const name of ordinalNames) {
     const p = parseOrdinal(name);
     if (!p) continue;
-    while (fromLinearIdx(cursor).season !== p.season) cursor++;
+    // Year-format semesters (from grade sheets) carry the actual academic year —
+    // jump the cursor to that year instead of sequentially advancing.
+    if (p.year !== undefined) {
+      const exactIdx = toLinearIdx(p.year, p.season);
+      // Only jump forward (or to same spot); never backwards.
+      if (exactIdx >= cursor) {
+        cursor = exactIdx;
+      }
+    } else {
+      while (fromLinearIdx(cursor).season !== p.season) cursor++;
+    }
     out.push(cursor);
     cursor++;
   }
@@ -185,12 +204,20 @@ function reconcile(saved: TimelineState, ordinals: string[]): TimelineState {
   const defaultStart = new Date().getFullYear() - 2;
   if (saved.positions.length !== ordinals.length) {
     const first = saved.positions[0];
-    const startYear = first !== undefined ? fromLinearIdx(first).year : defaultStart;
-    return { ...saved, positions: defaultPositions(ordinals, startYear) };
+    // Derive start year: prefer saved position, then first semester's actual year
+    let startYear = first !== undefined ? fromLinearIdx(first).year : undefined;
+    if (startYear === undefined && ordinals.length > 0) {
+      const parsed = parseOrdinal(ordinals[0]);
+      if (parsed?.year !== undefined) startYear = parsed.year;
+    }
+    return { ...saved, positions: defaultPositions(ordinals, startYear ?? defaultStart) };
   }
   for (let i = 1; i < saved.positions.length; i++) {
     if (saved.positions[i] <= saved.positions[i - 1]) {
-      return { ...saved, positions: defaultPositions(ordinals, defaultStart) };
+      // Try to recover start year from ordinals before falling back
+      const firstParsed = ordinals.length > 0 ? parseOrdinal(ordinals[0]) : null;
+      const fallbackStart = firstParsed?.year ?? defaultStart;
+      return { ...saved, positions: defaultPositions(ordinals, fallbackStart) };
     }
   }
   return saved;
@@ -349,7 +376,8 @@ function OrdinalChip({
     snappedActiveX !== undefined ? snappedActiveX : followOffsetX ?? 0;
 
   const parsed = parseOrdinal(slot.name);
-  const num = parsed?.num ?? slot.ordinalIdx + 1;
+  // For year-format semesters, display the ordinal position (1-based), not the year
+  const num = parsed?.year !== undefined ? slot.ordinalIdx + 1 : (parsed?.num ?? slot.ordinalIdx + 1);
 
   return (
     <button
