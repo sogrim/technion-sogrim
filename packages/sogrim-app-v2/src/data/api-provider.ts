@@ -138,9 +138,8 @@ function semesterCodeToName(code: string): string {
 
 function semesterDisplayName(code: string, acYear: number): string {
   const label = semesterCodeToName(code);
-  if (code === "200") return `${label} ${acYear}-${acYear + 1}`;
-  // Spring and summer both use acYear+1 (summer 2024/202 = קיץ 2025)
-  return `${label} ${acYear + 1}`;
+  // All semesters show the full academic year range (e.g. "אביב 2024-2025")
+  return `${label} ${acYear}-${acYear + 1}`;
 }
 
 function timeToMinutes(time: string): number {

@@ -312,13 +312,16 @@ export function CourseGrid({
           headerHeight={38}
           rowHeight={40}
           getRowId={(params) => params.data.courseNumber}
-          noRowsOverlayComponent={() => (
-            <span className="text-muted-foreground text-sm">
-              אין קורסים בסמסטר זה
-            </span>
-          )}
+          noRowsOverlayComponent={() => null}
         />
       </div>
+      {rowData.length === 0 && (
+        <div className="flex justify-center border border-t-0 rounded-b-lg py-3">
+          <span className="text-muted-foreground text-sm">
+            אין קורסים בסמסטר זה
+          </span>
+        </div>
+      )}
       {toast && (
         <Toast
           message={toast.message}

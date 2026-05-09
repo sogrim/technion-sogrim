@@ -26,7 +26,7 @@ interface TimetableState {
   currentSemester: string;
   drafts: TimetableDraft[];
   activeDraftId: string | null;
-  draftCounter: number;
+  draftCounters: Record<string, number>;
 
   // Sync status
   _loaded: boolean;   // true only after successful backend load
@@ -90,7 +90,7 @@ export const useTimetableStore = create<TimetableState>()(
       currentSemester: "",
       drafts: [],
       activeDraftId: null,
-      draftCounter: 0,
+      draftCounters: {},
       _loaded: false,
       _syncing: false,
       _lastSaved: 0,
@@ -116,7 +116,7 @@ export const useTimetableStore = create<TimetableState>()(
       createDraft: (semester) => {
         const state = get();
         const sem = semester ?? state.currentSemester;
-        const next = state.draftCounter + 1;
+        const next = (state.draftCounters[sem] ?? 0) + 1;
         const id = generateDraftId();
         const now = new Date().toISOString();
         const newDraft: TimetableDraft = {
@@ -132,7 +132,7 @@ export const useTimetableStore = create<TimetableState>()(
         set({
           drafts: [...state.drafts, newDraft],
           activeDraftId: id,
-          draftCounter: next,
+          draftCounters: { ...state.draftCounters, [sem]: next },
         });
         return id;
       },
@@ -144,11 +144,15 @@ export const useTimetableStore = create<TimetableState>()(
       deleteDraft: (draftId) => {
         const state = get();
         const remaining = state.drafts.filter((d) => d.id !== draftId);
-        const semDrafts = remaining.filter(
-          (d) => d.semester === state.currentSemester,
-        );
+        const sem = state.currentSemester;
+        const semDrafts = remaining.filter((d) => d.semester === sem);
+        const updatedCounters = { ...state.draftCounters };
+        if (semDrafts.length === 0) {
+          delete updatedCounters[sem];
+        }
         set({
           drafts: remaining,
+          draftCounters: updatedCounters,
           activeDraftId:
             state.activeDraftId === draftId
               ? (semDrafts[0]?.id ?? null)

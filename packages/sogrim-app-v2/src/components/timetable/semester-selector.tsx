@@ -20,7 +20,7 @@ export function SemesterSelector() {
         value: sem.id,
         label: sem.name,
       }))}
-      className="w-40"
+      className="w-48"
     />
   );
 }
