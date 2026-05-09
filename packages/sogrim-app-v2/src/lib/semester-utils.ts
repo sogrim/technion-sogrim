@@ -128,7 +128,7 @@ export function getNextSemesterName(
   const parts = fallbackSemester.split("_");
   const num = parseInt(parts[1], 10) || 0;
 
-  if (type === "Summer") return `קיץ_${num}`;
+  if (type === "Summer") return `קיץ_${num}.5`;
 
   const newName = fallbackSemester.includes("חורף") ? "אביב" : "חורף";
   return `${newName}_${num + 1}`;

@@ -95,8 +95,8 @@ function parseOrdinal(name: string | undefined | null): { season: Season; num: n
     const startYear = parseInt(yearMatch[1], 10);
     return { season, num: startYear, year: startYear };
   }
-  // Legacy ordinal format: "חורף_1"
-  const num = parseInt(rest, 10);
+  // Legacy ordinal format: "חורף_1" or "קיץ_5.5"
+  const num = parseFloat(rest);
   if (isNaN(num)) return null;
   return { season, num };
 }
@@ -117,7 +117,8 @@ function canonicalSemesterNames(seasons: Season[]): string[] {
   let counter = 0;
   for (const s of seasons) {
     if (s === "summer") {
-      result.push(`${SEASON_HE_NAME.summer}_${counter > 0 ? counter : 1}`);
+      const base = counter > 0 ? counter : 1;
+      result.push(`${SEASON_HE_NAME.summer}_${base}.5`);
     } else {
       counter++;
       result.push(`${SEASON_HE_NAME[s]}_${counter}`);

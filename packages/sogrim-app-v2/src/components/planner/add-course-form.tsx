@@ -56,24 +56,24 @@ export function AddCourseForm({
   // Subscribe to provider updates for reactive search results
   const providerVersion = useProviderUpdates();
 
-  // Search courses from the timetable provider (semester-specific)
+  // Search courses from the timetable provider (semester-specific when available)
   const courses = useMemo(() => {
-    if (!debouncedSearch || !apiSemesterId) return [];
+    if (!debouncedSearch) return [];
     try {
       return getProvider().searchCourses(debouncedSearch).slice(0, 50);
     } catch {
       return [];
     }
-  }, [debouncedSearch, apiSemesterId, providerVersion]);
+  }, [debouncedSearch, providerVersion]);
 
   const numberCourses = useMemo(() => {
-    if (!debouncedNumberSearch || !apiSemesterId) return [];
+    if (!debouncedNumberSearch) return [];
     try {
       return getProvider().searchCourses(debouncedNumberSearch).slice(0, 50);
     } catch {
       return [];
     }
-  }, [debouncedNumberSearch, apiSemesterId, providerVersion]);
+  }, [debouncedNumberSearch, providerVersion]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

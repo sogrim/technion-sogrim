@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import { useUiStore } from "@/stores/ui-store";
-import { getAllSemesters } from "@/lib/semester-utils";
+import { getAllSemesters, parseSemesterOrder } from "@/lib/semester-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -163,20 +163,27 @@ export function PlannerPage() {
         if (changed) sendUpdate(renamedStatuses);
       }
 
-      // Switch to the newly-added semester tab.
+      // Switch to the newly-added semester tab. Replicate the same merge+sort
+      // logic that SemestersTab uses so the index we compute here matches.
       const renamedExisting = getAllSemesters(courseStatuses).map(
         (s) => renames[s] ?? s,
       );
-      const allSemesters = renamedExisting.includes(semesterName)
-        ? renamedExisting
-        : [...renamedExisting, semesterName].sort();
-      const allTabs = hasNullSemester ? [null, ...allSemesters] : allSemesters;
+      // We need the updated extraSemesters — apply same rename+add logic inline.
+      const renamedExtra = extraSemesters
+        .map((s) => renames[s] ?? s)
+        .concat(
+          renamedExisting.includes(semesterName) ? [] : [semesterName],
+        );
+      const merged = new Set([...renamedExisting, ...renamedExtra]);
+      const allTabs = Array.from(merged).sort(
+        (a, b) => parseSemesterOrder(a) - parseSemesterOrder(b),
+      );
       const idx = allTabs.findIndex((t) => t === semesterName);
       if (idx >= 0) {
         setCurrentSemester(idx);
       }
     },
-    [courseStatuses, hasNullSemester, sendUpdate, setCurrentSemester],
+    [courseStatuses, extraSemesters, sendUpdate, setCurrentSemester],
   );
 
   const handleDeleteSemester = useCallback(

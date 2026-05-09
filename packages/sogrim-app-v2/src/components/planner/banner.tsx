@@ -51,11 +51,11 @@ function GPASparkline({ data }: { data: { semester: string; gpa: number }[] }) {
           <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={area} fill="url(#sparkfill)" className="text-progress-active" />
+      <path d={area} fill="url(#sparkfill)" className="text-[#d66563]" />
       <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5"
-        strokeLinejoin="round" strokeLinecap="round" className="text-progress-active" />
+        strokeLinejoin="round" strokeLinecap="round" className="text-[#d66563]" />
       {data.map((d, i) => (
-        <circle key={i} cx={x(i)} cy={y(d.gpa)} r="2" className="fill-progress-active">
+        <circle key={i} cx={x(i)} cy={y(d.gpa)} r="2" className="fill-[#d66563]">
           <title>{`${d.semester}: ${d.gpa.toFixed(2)}`}</title>
         </circle>
       ))}
@@ -109,18 +109,9 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
     () => computePerSemesterGPA(course_statuses),
     [course_statuses],
   );
-  // Delta of latest semester GPA vs the one before it — small momentum signal.
   const gpaDelta = semesterGPA.length >= 2
     ? semesterGPA[semesterGPA.length - 1].gpa - semesterGPA[semesterGPA.length - 2].gpa
     : null;
-  // How many academic years the student has been studying. The semester
-  // timeline owns the source of truth (calendar positions per ordinal-named
-  // semester, encoded as `year*3 + season`), so we subscribe to its store
-  // to stay reactive — moving a chip in the timeline updates this stat
-  // immediately. When the timeline hasn't been touched yet, fall back to
-  // the ordinal numbering — the counter increments per non-summer semester
-  // (winter+spring per year, summer reuses the prior), so dividing the max
-  // ordinal by 2 rounded up approximates years.
   const timelinePositions = useTimelineStore((s) => s.positions);
   const yearsOfStudy = useMemo(() => {
     if (timelinePositions.length > 0) {
@@ -137,7 +128,6 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
     }
     return maxNum > 0 ? Math.ceil(maxNum / 2) : null;
   }, [course_statuses, timelinePositions]);
-  // Most recent semester string across all courses (chronologically last).
   const lastSemester = useMemo(() => {
     let result: string | null = null;
     let maxOrder = -Infinity;
@@ -151,8 +141,6 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
     }
     return result;
   }, [course_statuses]);
-  // Credits the student is taking / took this semester. Excludes ignored
-  // courses ("לא רלוונטי") and social-activity reserved credits.
   const lastSemesterCredits = useMemo(() => {
     if (!lastSemester) return null;
     return course_statuses
@@ -167,7 +155,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
   return (
     <div
       className="md:-mx-6 md:px-6 md:py-5"
-      style={{ background: "var(--banner-bg, var(--banner))" }}
+      style={{ backgroundColor: "#24333c" }}
     >
       {/* ===== MOBILE: Compact summary strip ===== */}
       <div className="md:hidden px-4 py-3">
@@ -182,7 +170,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             <div className="flex-1 h-2 rounded-full bg-white/20 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all"
-                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "var(--ui-progress-complete)" : "var(--ui-progress-active)" }}
+                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "#4ade80" : "#d66563" }}
               />
             </div>
             <span className="text-xs text-white/70 shrink-0">
@@ -222,7 +210,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
                   onClick={(e) => { e.stopPropagation(); onToggleInProgress(!includeInProgress); }}
                   className={cn(
                     "relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors",
-                    includeInProgress ? "bg-info" : "bg-white/30"
+                    includeInProgress ? "bg-blue-400" : "bg-white/30"
                   )}
                 >
                   <span className={cn(
@@ -252,7 +240,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
               onClick={() => onToggleInProgress(!includeInProgress)}
               className={cn(
                 "relative inline-flex h-4 w-8 shrink-0 rounded-full border-2 border-transparent transition-colors",
-                includeInProgress ? "bg-info" : "bg-muted"
+                includeInProgress ? "bg-blue-500" : "bg-muted"
               )}
             >
               <span className={cn(
@@ -266,7 +254,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "var(--ui-progress-complete)" : "var(--ui-progress-active)" }}
+                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "#4ade80" : "#d66563" }}
               />
             </div>
           </div>
@@ -283,16 +271,12 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
         <div className="flex-1 rounded-xl bg-card border border-border px-5 py-4 flex flex-col">
           <h3 className="text-sm font-bold text-foreground mb-3">סטטיסטיקות תואר</h3>
 
-          {/* GPA — large, centered. Asymmetric momentum tag: celebrate gains
-             vs the previous semester, stay silent on dips so the design doesn't
-             demoralize a student having a tough semester. The sparkline below
-             still shows the full trajectory for context. */}
           <div className="flex items-baseline justify-center gap-2 mb-2">
             <span className="text-3xl font-bold text-foreground tabular-nums">{gpa}</span>
             <span className="text-xs text-muted-foreground">ממוצע כללי</span>
             {gpaDelta != null && gpaDelta > 0 && (
               <span
-                className="inline-flex items-center gap-0.5 text-[10px] font-medium tabular-nums text-success"
+                className="inline-flex items-center gap-0.5 text-[10px] font-medium tabular-nums text-green-600 dark:text-green-400"
                 title="עלייה לעומת הסמסטר הקודם"
               >
                 <ArrowUpRight className="h-3 w-3" />
@@ -301,7 +285,6 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             )}
           </div>
 
-          {/* Sparkline of per-semester GPA — only when we have ≥2 semesters of grades */}
           {semesterGPA.length >= 2 ? (
             <div className="px-1 mb-3">
               <GPASparkline data={semesterGPA} />
@@ -310,7 +293,6 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             <div className="flex-1" />
           )}
 
-          {/* Tile row with subtle iconography for visual texture */}
           <div className="grid grid-cols-4 gap-2 mt-auto pt-3 border-t border-border/50">
             <div className="flex flex-col items-center text-center gap-0.5">
               <BookOpenCheck className="h-3 w-3 text-muted-foreground/70" />
