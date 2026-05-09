@@ -178,6 +178,33 @@ function formatSlotTitle(real: RealSemester): string {
   return `${SEASON_HE[real.season]} ${real.year + 1}`;
 }
 
+/**
+ * Determine the current academic semester's linear index.
+ * Academic year starts in October (winter). Month mapping:
+ *   Oct–Jan → winter of that year
+ *   Feb–Jul → spring of that year-1 (academic year started previous Oct)
+ *   Aug–Sep → summer of that year-1
+ */
+function currentSemesterIdx(): number {
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed
+  const year = now.getFullYear();
+  if (month >= 9) {
+    // Oct–Dec → winter semester of this academic year
+    return toLinearIdx(year, "winter");
+  }
+  if (month <= 1) {
+    // Jan–Feb → still winter of previous calendar year's academic year
+    return toLinearIdx(year - 1, "winter");
+  }
+  if (month <= 6) {
+    // Mar–Jul → spring
+    return toLinearIdx(year - 1, "spring");
+  }
+  // Aug–Sep → summer
+  return toLinearIdx(year - 1, "summer");
+}
+
 function defaultPositions(ordinalNames: string[], startYear: number): number[] {
   const out: number[] = [];
   let cursor = toLinearIdx(startYear, "winter");
@@ -201,24 +228,59 @@ function defaultPositions(ordinalNames: string[], startYear: number): number[] {
   return out;
 }
 
+/**
+ * For legacy ordinal semesters (no year info), derive a start year by
+ * anchoring the last semester to the closest real semester to "now",
+ * then walking backwards to find where the first semester should land.
+ */
+function inferStartYear(ordinalNames: string[]): number {
+  if (ordinalNames.length === 0) return new Date().getFullYear() - 1;
+
+  // Check if any semester already has year info — use the first one found
+  for (const name of ordinalNames) {
+    const p = parseOrdinal(name);
+    if (p?.year !== undefined) return p.year;
+  }
+
+  // All legacy format — anchor last semester to current academic semester
+  const lastParsed = parseOrdinal(ordinalNames[ordinalNames.length - 1]);
+  if (!lastParsed) return new Date().getFullYear() - 1;
+
+  const nowIdx = currentSemesterIdx();
+  const nowSeason = fromLinearIdx(nowIdx);
+
+  // Place the last semester at the current semester's year (same season)
+  // or the closest preceding slot if seasons don't match
+  let lastIdx = toLinearIdx(nowSeason.year, lastParsed.season);
+  // If that's in the future relative to now, step back one academic year
+  if (lastIdx > nowIdx) {
+    lastIdx = toLinearIdx(nowSeason.year - 1, lastParsed.season);
+  }
+
+  // Walk backwards from the last semester to compute where the first lands
+  let cursor = lastIdx;
+  for (let i = ordinalNames.length - 2; i >= 0; i--) {
+    const p = parseOrdinal(ordinalNames[i]);
+    if (!p) continue;
+    cursor--;
+    while (fromLinearIdx(cursor).season !== p.season && cursor > 0) cursor--;
+  }
+
+  return fromLinearIdx(cursor).year;
+}
+
 function reconcile(saved: TimelineState, ordinals: string[]): TimelineState {
-  const defaultStart = new Date().getFullYear() - 2;
   if (saved.positions.length !== ordinals.length) {
     const first = saved.positions[0];
-    // Derive start year: prefer saved position, then first semester's actual year
-    let startYear = first !== undefined ? fromLinearIdx(first).year : undefined;
-    if (startYear === undefined && ordinals.length > 0) {
-      const parsed = parseOrdinal(ordinals[0]);
-      if (parsed?.year !== undefined) startYear = parsed.year;
-    }
-    return { ...saved, positions: defaultPositions(ordinals, startYear ?? defaultStart) };
+    // Derive start year: prefer saved position, otherwise infer from ordinals
+    const startYear = first !== undefined
+      ? fromLinearIdx(first).year
+      : inferStartYear(ordinals);
+    return { ...saved, positions: defaultPositions(ordinals, startYear) };
   }
   for (let i = 1; i < saved.positions.length; i++) {
     if (saved.positions[i] <= saved.positions[i - 1]) {
-      // Try to recover start year from ordinals before falling back
-      const firstParsed = ordinals.length > 0 ? parseOrdinal(ordinals[0]) : null;
-      const fallbackStart = firstParsed?.year ?? defaultStart;
-      return { ...saved, positions: defaultPositions(ordinals, fallbackStart) };
+      return { ...saved, positions: defaultPositions(ordinals, inferStartYear(ordinals)) };
     }
   }
   return saved;

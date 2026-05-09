@@ -383,9 +383,9 @@ fn semester_sort_key(year: &str, term: &str) -> (i32, i32) {
     (start_year, term_order)
 }
 
-/// Build a mapping from (year, term) to semester display string (e.g. "חורף_1").
-/// Semesters are sorted chronologically; counter increments by 1.0 for regular
-/// semesters and 0.5 for summer semesters.
+/// Build a mapping from (year, term) to semester display string using
+/// the year-range format (e.g. "חורף_2022-2023") so the frontend timeline
+/// can place semesters at their actual calendar positions.
 fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), String> {
     let mut unique_semesters: Vec<(String, String)> = raw_courses
         .iter()
@@ -395,16 +395,9 @@ fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), St
     unique_semesters.dedup();
 
     let mut semester_map = HashMap::new();
-    let mut counter: f32 = 0.0;
 
     for (year, term) in &unique_semesters {
-        let is_summer = term == "קיץ";
-        counter += if is_summer || counter.fract() != 0.0 {
-            0.5
-        } else {
-            1.0
-        };
-        semester_map.insert((year.clone(), term.clone()), format!("{term}_{counter}"));
+        semester_map.insert((year.clone(), term.clone()), format!("{term}_{year}"));
     }
 
     semester_map
