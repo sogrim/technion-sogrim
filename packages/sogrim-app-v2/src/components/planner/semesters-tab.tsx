@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Snowflake, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAllSemesters, parseSemesterOrder } from "@/lib/semester-utils";
+import { getAllSemesters, parseSemesterOrder, getCurrentAcademicYear } from "@/lib/semester-utils";
 import { SemesterPanel } from "./semester-panel";
 import { SemesterTimeline } from "./semester-timeline";
 import type { CourseStatus } from "@/types/api";
@@ -36,7 +36,7 @@ function EmptyState({
           variant="outline"
           size="lg"
           className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
-          onClick={() => onAddSemester("חורף_1")}
+          onClick={() => onAddSemester(`חורף_${getCurrentAcademicYear()}`)}
         >
           <Snowflake className="h-5 w-5" />
           {"חורף"}
@@ -45,7 +45,7 @@ function EmptyState({
           variant="outline"
           size="lg"
           className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
-          onClick={() => onAddSemester("אביב_1")}
+          onClick={() => onAddSemester(`אביב_${getCurrentAcademicYear()}`)}
         >
           <Sun className="h-5 w-5" />
           {"אביב"}
