@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, AlertTriangle, Info } from "lucide-react";
-import type { DegreeStatus, CourseBankReq } from "@/types/api";
+import type { DegreeStatus } from "@/types/api";
 
 interface MessagesPanelProps {
   degreeStatus: DegreeStatus;
@@ -47,44 +47,53 @@ function AccordionSection({
   );
 }
 
-export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
-  const { overflow_msgs, course_bank_requirements } = degreeStatus;
+const WARNING_PREFIX = "\u05D0\u05D6\u05D4\u05E8\u05D4";
 
-  // Collect bank messages (warnings)
-  const bankMessages: { bankName: string; message: string }[] = [];
-  course_bank_requirements.forEach((bank: CourseBankReq) => {
-    if (bank.message) {
-      bankMessages.push({
-        bankName: bank.course_bank_name,
-        message: bank.message,
-      });
+export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
+  const { overflow_msgs } = degreeStatus;
+
+  const warnings: string[] = [];
+  const importantMessages: string[] = [];
+
+  overflow_msgs.forEach((msg) => {
+    const trimmed = msg.trimStart();
+    if (trimmed.startsWith(WARNING_PREFIX)) {
+      warnings.push(trimmed.slice(WARNING_PREFIX.length).replace(/^[:\s]+/, ""));
+    } else {
+      importantMessages.push(msg);
     }
   });
 
-  const hasOverflow = overflow_msgs.length > 0;
-  const hasWarnings = bankMessages.length > 0;
+  const hasWarnings = warnings.length > 0;
+  const hasImportant = importantMessages.length > 0;
 
-  if (!hasOverflow && !hasWarnings) {
+  if (!hasWarnings && !hasImportant) {
     return null;
   }
 
+  const renderMessage = (msg: string, dotClass: string) => (
+    <>
+      <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
+      <span className="text-foreground">{msg}</span>
+    </>
+  );
+
   return (
     <div className="space-y-3">
-      {hasOverflow && (
+      {hasImportant && (
         <AccordionSection
           title={"\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05D7\u05E9\u05D5\u05D1\u05D5\u05EA"}
           icon={<Info className="h-4 w-4 text-info" />}
           defaultOpen={true}
-          count={overflow_msgs.length}
+          count={importantMessages.length}
         >
           <ul className="space-y-2">
-            {overflow_msgs.map((msg, i) => (
+            {importantMessages.map((msg, i) => (
               <li
                 key={i}
                 className="flex items-start gap-2 text-sm text-foreground"
               >
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-info" />
-                {msg}
+                {renderMessage(msg, "bg-info")}
               </li>
             ))}
           </ul>
@@ -95,15 +104,15 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
         <AccordionSection
           title={"\u05D0\u05D6\u05D4\u05E8\u05D5\u05EA"}
           icon={<AlertTriangle className="h-4 w-4 text-amber-500" />}
-          count={bankMessages.length}
+          count={warnings.length}
         >
           <ul className="space-y-2">
-            {bankMessages.map((item, i) => (
-              <li key={i} className="text-sm">
-                <span className="font-medium text-foreground">
-                  {item.bankName}:
-                </span>{" "}
-                <span className="text-foreground">{item.message}</span>
+            {warnings.map((msg, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm text-foreground"
+              >
+                {renderMessage(msg, "bg-amber-500")}
               </li>
             ))}
           </ul>
