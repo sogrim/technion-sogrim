@@ -18,6 +18,8 @@ import type { RowData } from "@/types/domain";
 import type { CourseStatus } from "@/types/api";
 import { useUiStore } from "@/stores/ui-store";
 import { isReservedCourse } from "@/lib/reserved-credits";
+import { semestersEqual } from "@/lib/semester-utils";
+import type { AcademicSemester } from "@/types/api";
 
 /* ------------------------------------------------------------------ */
 /* Custom AG Grid theme — adapts to light/dark via CSS color-scheme   */
@@ -55,7 +57,7 @@ const sogrimGridThemeDark = themeQuartz.withParams({
 
 interface CourseGridProps {
   courseStatuses: CourseStatus[];
-  semester: string | null;
+  semester: AcademicSemester | null;
   bankNames: string[];
   onUpdate: (updatedStatuses: CourseStatus[]) => void;
   onDelete: (courseNumber: string) => void;
@@ -110,7 +112,7 @@ export function CourseGrid({
     () =>
       courseStatuses.filter((cs) => {
         if (isReservedCourse(cs)) return false;
-        if (cs.semester !== semester) return false;
+        if (!semestersEqual(cs.semester, semester)) return false;
         if (semester === null) {
           return (
             cs.grade === "פטור ללא ניקוד" || cs.grade === "פטור עם ניקוד"

@@ -2,8 +2,7 @@ import { useState, useCallback } from "react";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import { useUiStore } from "@/stores/ui-store";
-import { getAllSemesters, parseSemesterOrder, buildLegacyToYearMap } from "@/lib/semester-utils";
-import { useTimelineStore } from "@/stores/timeline-store";
+import { getAllSemesters, parseSemesterOrder, semesterKey, semestersEqual } from "@/lib/semester-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -14,7 +13,7 @@ import { SemestersTab } from "./semesters-tab";
 import { ExemptionsTab } from "./exemptions-tab";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 import { UserRegistrationState } from "@/types/domain";
-import type { CourseStatus, UserDetails } from "@/types/api";
+import type { AcademicSemester, CourseStatus, UserDetails } from "@/types/api";
 import type { RowData } from "@/types/domain";
 
 type PlannerTab = "requirements" | "semesters" | "exemptions";
@@ -59,7 +58,7 @@ export function PlannerPage() {
   const [includeInProgress, setIncludeInProgress] = useState(
     () => userState?.details?.compute_in_progress ?? false
   );
-  const [extraSemesters, setExtraSemesters] = useState<string[]>([]);
+  const [extraSemesters, setExtraSemesters] = useState<AcademicSemester[]>([]);
 
   const details = userState?.details;
   const registrationState = getRegistrationState(details);
@@ -67,34 +66,15 @@ export function PlannerPage() {
   const courseStatuses = details?.degree_status.course_statuses ?? [];
   const bankNames = details?.catalog?.course_bank_names ?? [];
 
-  const hasNullSemester = courseStatuses.some((cs) => cs.semester === null);
-
   const sendUpdate = useCallback(
     (updatedStatuses: CourseStatus[]) => {
       if (!details) return;
-
-      // Migrate legacy ordinal semester names to year-format using timeline positions
-      const positions = useTimelineStore.getState().positions;
-      const courseSemesters = getAllSemesters(updatedStatuses);
-      // Build the same merged+sorted list that SemestersTab passes to the timeline
-      const merged = new Set([...courseSemesters, ...extraSemesters]);
-      const ordinals = Array.from(merged).sort(
-        (a, b) => parseSemesterOrder(a) - parseSemesterOrder(b),
-      );
-      const legacyMap = buildLegacyToYearMap(ordinals, positions);
-      const migratedStatuses = legacyMap.size > 0
-        ? updatedStatuses.map((cs) => {
-            if (!cs.semester) return cs;
-            const newSem = legacyMap.get(cs.semester);
-            return newSem ? { ...cs, semester: newSem } : cs;
-          })
-        : updatedStatuses;
 
       const updatedDetails: UserDetails = {
         ...details,
         degree_status: {
           ...details.degree_status,
-          course_statuses: migratedStatuses,
+          course_statuses: updatedStatuses,
         },
         modified: true,
       };
@@ -113,7 +93,7 @@ export function PlannerPage() {
         },
       });
     },
-    [details, extraSemesters, updateMutation]
+    [details, updateMutation]
   );
 
   const handleUpdateStatuses = useCallback(
@@ -157,82 +137,48 @@ export function PlannerPage() {
   );
 
   const handleAddSemester = useCallback(
-    (semesterName: string, renames: Record<string, string> = {}) => {
-      // Apply renames to extraSemesters AND add the new name in one update.
+    (semesterName: AcademicSemester) => {
       setExtraSemesters((prev) => {
-        const renamed = prev.map((s) => renames[s] ?? s);
-        const existing = getAllSemesters(courseStatuses).map((s) => renames[s] ?? s);
-        if (existing.includes(semesterName) || renamed.includes(semesterName)) {
-          return renamed;
+        const existing = getAllSemesters(courseStatuses);
+        if (
+          existing.some((s) => semestersEqual(s, semesterName)) ||
+          prev.some((s) => semestersEqual(s, semesterName))
+        ) {
+          return prev;
         }
-        return [...renamed, semesterName];
+        return [...prev, semesterName];
       });
-
-      // Apply renames to course statuses (server-state) — only if any course
-      // is actually affected.
-      const renameKeys = Object.keys(renames);
-      if (renameKeys.length > 0) {
-        const renamedStatuses = courseStatuses.map((cs) => {
-          const newSem = cs.semester != null ? renames[cs.semester] : undefined;
-          return newSem ? { ...cs, semester: newSem, modified: true } : cs;
-        });
-        const changed = renamedStatuses.some(
-          (cs, i) => cs.semester !== courseStatuses[i].semester,
-        );
-        if (changed) sendUpdate(renamedStatuses);
-      }
 
       // Switch to the newly-added semester tab. Replicate the same merge+sort
       // logic that SemestersTab uses so the index we compute here matches.
-      const renamedExisting = getAllSemesters(courseStatuses).map(
-        (s) => renames[s] ?? s,
-      );
-      // We need the updated extraSemesters — apply same rename+add logic inline.
-      const renamedExtra = extraSemesters
-        .map((s) => renames[s] ?? s)
-        .concat(
-          renamedExisting.includes(semesterName) ? [] : [semesterName],
-        );
-      const merged = new Set([...renamedExisting, ...renamedExtra]);
-      const allTabs = Array.from(merged).sort(
+      const existing = getAllSemesters(courseStatuses);
+      const updatedExtra = existing.some((s) => semestersEqual(s, semesterName))
+        ? extraSemesters
+        : [...extraSemesters, semesterName];
+      const merged = new Map([...existing, ...updatedExtra].map((s) => [semesterKey(s), s]));
+      const allTabs = Array.from(merged.values()).sort(
         (a, b) => parseSemesterOrder(a) - parseSemesterOrder(b),
       );
-      const idx = allTabs.findIndex((t) => t === semesterName);
+      const idx = allTabs.findIndex((t) => semestersEqual(t, semesterName));
       if (idx >= 0) {
         setCurrentSemester(idx);
       }
     },
-    [courseStatuses, extraSemesters, sendUpdate, setCurrentSemester],
+    [courseStatuses, extraSemesters, setCurrentSemester],
   );
 
   const handleDeleteSemester = useCallback(
-    (semesterName: string, renames: Record<string, string> = {}) => {
-      // Drop the deleted name AND apply renames to extraSemesters in one update.
+    (semesterName: AcademicSemester) => {
       setExtraSemesters((prev) =>
-        prev
-          .filter((s) => s !== semesterName)
-          .map((s) => renames[s] ?? s),
+        prev.filter((s) => !semestersEqual(s, semesterName)),
       );
 
-      // Build the new course-statuses: drop deleted, rename survivors, mark
-      // affected rows modified. Push to the backend if anything actually
-      // changed.
-      const renameKeys = Object.keys(renames);
       const semesterHasCourses = courseStatuses.some(
-        (cs) => cs.semester === semesterName,
+        (cs) => semestersEqual(cs.semester, semesterName),
       );
-      const someRenamed =
-        renameKeys.length > 0 &&
-        courseStatuses.some(
-          (cs) => cs.semester != null && renames[cs.semester] !== undefined,
-        );
-      if (semesterHasCourses || someRenamed) {
+      if (semesterHasCourses) {
         const updatedStatuses = courseStatuses
-          .filter((cs) => cs.semester !== semesterName)
-          .map((cs) => {
-            const newSem = cs.semester != null ? renames[cs.semester] : undefined;
-            return newSem ? { ...cs, semester: newSem, modified: true } : cs;
-          });
+          .filter((cs) => !semestersEqual(cs.semester, semesterName));
         sendUpdate(updatedStatuses);
       }
 

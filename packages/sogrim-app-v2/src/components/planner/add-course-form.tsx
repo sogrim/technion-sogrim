@@ -9,9 +9,10 @@ import { getProvider } from "@/data/course-schedule-provider";
 import { switchProviderSemester, useProviderUpdates } from "@/hooks/use-api-provider";
 import { plannerSemesterToApiId } from "@/lib/semester-utils";
 import type { CourseSchedule } from "@/types/timetable";
+import type { AcademicSemester } from "@/types/api";
 
 interface AddCourseFormProps {
-  semester: string | null;
+  semester: AcademicSemester | null;
   existingRows: RowData[];
   bankNames: string[];
   onAdd: (row: RowData) => void;

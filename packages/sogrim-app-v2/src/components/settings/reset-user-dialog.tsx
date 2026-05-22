@@ -51,7 +51,7 @@ export function ResetUserDialog({
         try {
           await putTimetable(emptyTimetable);
           useTimetableStore.setState({
-            currentSemester: "",
+            currentSemester: null,
             drafts: [],
             activeDraftId: null,
             draftCounters: {},

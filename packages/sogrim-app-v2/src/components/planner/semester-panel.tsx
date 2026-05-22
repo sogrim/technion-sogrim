@@ -2,11 +2,12 @@ import { useMemo } from "react";
 import { CourseGrid } from "./course-grid";
 import { AddCourseForm } from "./add-course-form";
 import { SemesterFooter } from "./semester-footer";
-import type { CourseStatus } from "@/types/api";
+import { semestersEqual } from "@/lib/semester-utils";
+import type { AcademicSemester, CourseStatus } from "@/types/api";
 import type { RowData } from "@/types/domain";
 
 interface SemesterPanelProps {
-  semester: string | null;
+  semester: AcademicSemester | null;
   courseStatuses: CourseStatus[];
   bankNames: string[];
   onUpdateStatuses: (updatedStatuses: CourseStatus[]) => void;
@@ -23,7 +24,7 @@ export function SemesterPanel({
   onAddCourse,
 }: SemesterPanelProps) {
   const semesterCourses = useMemo(
-    () => courseStatuses.filter((cs) => cs.semester === semester),
+    () => courseStatuses.filter((cs) => semestersEqual(cs.semester, semester)),
     [courseStatuses, semester]
   );
 

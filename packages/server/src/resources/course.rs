@@ -1,18 +1,228 @@
 use bson::{doc, Document};
+use chrono::Datelike;
 use serde::de::{Error as Err, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::ops::Deref;
+use std::str::FromStr;
 
 use crate::core::types::Rule;
 use crate::db::Resource;
 use crate::sap::CourseDetails;
 
 const NON_STANDARD_PREFIXES: [&str; 4] = ["51", "52", "61", "97"];
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SemesterSeason {
+    Winter,
+    Spring,
+    Summer,
+}
+
+impl SemesterSeason {
+    pub fn order(self) -> i32 {
+        match self {
+            SemesterSeason::Winter => 0,
+            SemesterSeason::Spring => 1,
+            SemesterSeason::Summer => 2,
+        }
+    }
+}
+
+impl FromStr for SemesterSeason {
+    type Err = ();
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "חורף" | "winter" | "Winter" => Ok(SemesterSeason::Winter),
+            "אביב" | "spring" | "Spring" => Ok(SemesterSeason::Spring),
+            "קיץ" | "summer" | "Summer" => Ok(SemesterSeason::Summer),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Serialize)]
+pub struct AcademicSemester {
+    pub season: SemesterSeason,
+    pub start_year: i32,
+    #[serde(skip)]
+    legacy_name: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum AcademicSemesterRepr {
+    Object {
+        season: SemesterSeason,
+        start_year: i32,
+    },
+    Legacy(String),
+}
+
+impl<'de> Deserialize<'de> for AcademicSemester {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match AcademicSemesterRepr::deserialize(deserializer)? {
+            AcademicSemesterRepr::Object { season, start_year } => {
+                Ok(AcademicSemester::new(season, start_year))
+            }
+            AcademicSemesterRepr::Legacy(value) => AcademicSemester::from_legacy_str(&value)
+                .map(|semester| semester.with_legacy_name(value))
+                .ok_or_else(|| D::Error::custom("invalid legacy semester string")),
+        }
+    }
+}
+
+impl PartialEq for AcademicSemester {
+    fn eq(&self, other: &Self) -> bool {
+        self.season == other.season && self.start_year == other.start_year
+    }
+}
+
+impl Hash for AcademicSemester {
+    // Hashes only the calendar identity so the Hash/Eq contract holds even when
+    // a transient `legacy_name` is attached after deserialization.
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.season.hash(state);
+        self.start_year.hash(state);
+    }
+}
+
+impl Default for AcademicSemester {
+    fn default() -> Self {
+        AcademicSemester::current()
+    }
+}
+
+impl AcademicSemester {
+    pub fn new(season: SemesterSeason, start_year: i32) -> Self {
+        Self {
+            season,
+            start_year,
+            legacy_name: None,
+        }
+    }
+
+    /// Returns the current academic semester based on the system clock.
+    /// The academic year starts in October (winter).
+    pub fn current() -> Self {
+        let now = chrono::Utc::now();
+        let year = now.year();
+        match now.month() {
+            10..=12 => AcademicSemester::new(SemesterSeason::Winter, year),
+            1..=2 => AcademicSemester::new(SemesterSeason::Winter, year - 1),
+            3..=7 => AcademicSemester::new(SemesterSeason::Spring, year - 1),
+            _ => AcademicSemester::new(SemesterSeason::Summer, year - 1),
+        }
+    }
+
+    pub fn order_key(&self) -> i32 {
+        // Year takes precedence over season by multiplying by 3 (seasons per academic year).
+        self.start_year * 3 + self.season.order()
+    }
+
+    /// Returns the academic semester immediately preceding this one in calendar order.
+    pub fn previous(&self) -> Self {
+        match self.season {
+            SemesterSeason::Winter => {
+                AcademicSemester::new(SemesterSeason::Summer, self.start_year - 1)
+            }
+            SemesterSeason::Spring => {
+                AcademicSemester::new(SemesterSeason::Winter, self.start_year)
+            }
+            SemesterSeason::Summer => {
+                AcademicSemester::new(SemesterSeason::Spring, self.start_year)
+            }
+        }
+    }
+
+    pub fn legacy_name(&self) -> Option<&str> {
+        self.legacy_name.as_deref()
+    }
+
+    fn with_legacy_name(mut self, legacy_name: String) -> Self {
+        self.legacy_name = Some(legacy_name);
+        self
+    }
+
+    /// Attaches a legacy ordinal name (e.g. "חורף_3") to a freshly-constructed
+    /// `AcademicSemester` so it participates in the same legacy-resolution pass
+    /// that runs on user-document load. The placeholder `start_year` is replaced
+    /// once `resolve_legacy_names` sees the full sequence.
+    pub fn with_legacy_marker(season: SemesterSeason, legacy_name: String) -> Self {
+        AcademicSemester::new(season, AcademicSemester::current().start_year)
+            .with_legacy_name(legacy_name)
+    }
+
+    pub fn from_legacy_str(value: &str) -> Option<Self> {
+        // Only the calendar identity (season + placeholder year) is set here; the
+        // real start_year is filled in by `resolve_legacy_names` once the full
+        // ordinal sequence is known.
+        let (season, _) = Self::parse_legacy_ordinal(value)?;
+        Some(AcademicSemester::new(
+            season,
+            AcademicSemester::current().start_year,
+        ))
+    }
+
+    pub fn parse_legacy_ordinal(value: &str) -> Option<(SemesterSeason, f32)> {
+        let (season_str, rest) = value.split_once('_')?;
+        let season = season_str.parse().ok()?;
+        let ordinal = rest.parse::<f32>().ok()?;
+        Some((season, ordinal))
+    }
+
+    /// Maps a set of legacy ordinal semester names (e.g. "חורף_3", "קיץ_4.5") to
+    /// `AcademicSemester` values with concrete calendar years. The latest ordinal is
+    /// anchored to the current academic semester (or one year earlier if that would
+    /// land in the future), and earlier ordinals are walked backwards through the
+    /// calendar — honoring each ordinal's season.
+    ///
+    /// Names that don't parse as legacy ordinals are silently skipped.
+    pub fn resolve_legacy_names(legacy_names: &[String]) -> HashMap<String, AcademicSemester> {
+        let mut seen = std::collections::HashSet::new();
+        let mut parsed: Vec<(String, SemesterSeason, f32)> = legacy_names
+            .iter()
+            .filter(|name| seen.insert((*name).clone()))
+            .filter_map(|name| {
+                Self::parse_legacy_ordinal(name)
+                    .map(|(season, ordinal)| (name.clone(), season, ordinal))
+            })
+            .collect();
+        parsed.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(Ordering::Equal));
+
+        let mut map = HashMap::new();
+        let Some((_, last_season, _)) = parsed.last() else {
+            return map;
+        };
+
+        let now = AcademicSemester::current();
+        let mut cursor = AcademicSemester::new(*last_season, now.start_year);
+        if cursor.order_key() > now.order_key() {
+            cursor = AcademicSemester::new(*last_season, now.start_year - 1);
+        }
+
+        // Walk backwards: place the newest ordinal at the anchor, then for each
+        // earlier ordinal step the cursor back until it matches that ordinal's season.
+        for (name, season, _) in parsed.into_iter().rev() {
+            while cursor.season != season {
+                cursor = cursor.previous();
+            }
+            map.insert(name, cursor.clone());
+            cursor = cursor.previous();
+        }
+        map
+    }
+}
 
 /// A normalized course identifier.
 ///
@@ -211,7 +421,7 @@ impl<'de> Deserialize<'de> for CourseState {
 pub struct CourseStatus {
     pub course: Course,
     pub state: Option<CourseState>,
-    pub semester: Option<String>,
+    pub semester: Option<AcademicSemester>,
     pub grade: Option<Grade>,
     pub r#type: Option<String>, // if none, nissan cries
     pub specialization_group_name: Option<String>,
@@ -246,18 +456,11 @@ impl CourseStatus {
         self.completed().then_some(self.course.credit)
     }
 
-    pub fn extract_semester(&self) -> f32 {
+    pub fn semester_order_key(&self) -> i32 {
         self.semester
             .as_ref()
-            .map(|semester| {
-                semester
-                    .split('_')
-                    .next_back()
-                    .unwrap_or("0.0")
-                    .parse::<f32>()
-                    .unwrap_or(0.0)
-            })
-            .unwrap_or(0.0)
+            .map(AcademicSemester::order_key)
+            .unwrap_or(0)
     }
 
     pub fn valid_for_bank(&self, bank_name: &str) -> bool {

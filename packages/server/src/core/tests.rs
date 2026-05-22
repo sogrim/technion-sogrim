@@ -16,6 +16,10 @@ use std::sync::LazyLock;
 use super::types::Requirement;
 use super::*;
 
+fn current_academic_year() -> i32 {
+    course::AcademicSemester::current().start_year
+}
+
 pub const COMPUTER_SCIENCE_3_YEARS_19_20_CATALOG_ID: &str = "61a102bb04c5400b98e6f401"; // catalog id from database
 pub const COMPUTER_SCIENCE_3_YEARS_21_22_CATALOG_ID: &str = "61ec835f015bedeab20397a4"; // catalog id from database
 pub const COMPUTER_ENGINEER_18_19_CATALOG_ID: &str = "61ddcc8a2397192f08d517d9"; // catalog id from database
@@ -66,7 +70,13 @@ async fn test_asterisk_course_input_from_edge_browser() {
         .unwrap();
 
     assert_eq!(course_status.grade.as_ref().unwrap(), &Grade::Numeric(92));
-    assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_3");
+    assert_eq!(
+        course_status.semester,
+        Some(course::AcademicSemester::new(
+            course::SemesterSeason::Winter,
+            current_academic_year() - 1,
+        ))
+    );
 }
 
 #[tokio::test]
@@ -82,7 +92,16 @@ async fn test_asterisk_course_input_from_chrome_browser() {
         .unwrap();
 
     assert_eq!(course_status.grade.as_ref().unwrap(), &Grade::Numeric(67));
-    assert_eq!(course_status.semester.as_ref().unwrap(), "חורף_1");
+    // The chrome fixture lists 7 legacy ordinals (oldest-first). With newest
+    // anchored to the current academic year, this winter course in ordinal 1
+    // lands three academic years earlier.
+    assert_eq!(
+        course_status.semester,
+        Some(course::AcademicSemester::new(
+            course::SemesterSeason::Winter,
+            current_academic_year() - 3,
+        ))
+    );
 }
 
 #[tokio::test]
@@ -404,7 +423,10 @@ async fn test_restore_irrelevant_course() {
             tags: None,
         },
         state: Some(NotComplete),
-        semester: Some("חורף_1".to_string()),
+        semester: Some(course::AcademicSemester::new(
+            course::SemesterSeason::Winter,
+            2025,
+        )),
         grade: Some(Numeric(51)),
         modified: true,
         ..Default::default()
@@ -522,7 +544,10 @@ async fn test_duplicated_courses() {
             tags: None,
         },
         state: Some(NotComplete),
-        semester: Some("חורף_1".to_string()),
+        semester: Some(course::AcademicSemester::new(
+            course::SemesterSeason::Winter,
+            2025,
+        )),
         grade: Some(Numeric(51)),
         modified: true,
         ..Default::default()

@@ -22,6 +22,13 @@ export type CourseGradeOptions =
   | "פטור עם ניקוד"
   | "לא השלים";
 
+export type SemesterSeason = "winter" | "spring" | "summer";
+
+export interface AcademicSemester {
+  season: SemesterSeason;
+  start_year: number;
+}
+
 export interface Course {
   credit: number;
   name: string;
@@ -31,7 +38,7 @@ export interface Course {
 export interface CourseStatus {
   course: Course;
   grade?: string;
-  semester: string | null;
+  semester: AcademicSemester | null;
   state: CourseState;
   type?: string;
   modified: boolean;

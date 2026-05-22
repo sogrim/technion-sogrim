@@ -16,6 +16,8 @@ import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { semesterKey } from "@/lib/semester-utils";
+import type { AcademicSemester } from "@/types/api";
 
 // ────────────────────────────────────────────────────────────────
 // Types
@@ -33,7 +35,6 @@ interface OrdinalSlot {
   kind: "ordinal";
   id: string;
   ordinalIdx: number;
-  name: string;
   season: Season;
   real: RealSemester;
   isPadding: false;
@@ -78,107 +79,6 @@ const GAP_PRESETS = ["מילואים", "חופשה", "חילופי סטודנט�
 // Helpers
 // ────────────────────────────────────────────────────────────────
 
-function parseOrdinal(name: string | undefined | null): { season: Season; num: number; /** Start year from "YYYY-YYYY" format, if present */ year?: number } | null {
-  if (!name || typeof name !== "string") return null;
-  const parts = name.split("_");
-  if (parts.length < 2) return null;
-  const season: Season | null =
-    parts[0] === "חורף" ? "winter"
-    : parts[0] === "אביב" ? "spring"
-    : parts[0] === "קיץ" ? "summer"
-    : null;
-  if (!season) return null;
-  const rest = parts[1];
-  // Year-range format from grade sheets: "חורף_2020-2021"
-  const yearMatch = rest.match(/^(\d{4})-(\d{4})$/);
-  if (yearMatch) {
-    const startYear = parseInt(yearMatch[1], 10);
-    return { season, num: startYear, year: startYear };
-  }
-  // Legacy ordinal format: "חורף_1" or "קיץ_5.5"
-  const num = parseFloat(rest);
-  if (isNaN(num)) return null;
-  return { season, num };
-}
-
-const SEASON_HE_NAME: Record<Season, string> = {
-  winter: "חורף",
-  spring: "אביב",
-  summer: "קיץ",
-};
-
-/**
- * Assign canonical, monotonic ordinal names to a calendar-ordered list of
- * seasons. Non-summer slots increment a counter; summer reuses the preceding
- * non-summer's counter so it shares the degree-year number.
- */
-function canonicalSemesterNames(seasons: Season[]): string[] {
-  const result: string[] = [];
-  let counter = 0;
-  for (const s of seasons) {
-    if (s === "summer") {
-      const base = counter > 0 ? counter : 1;
-      result.push(`${SEASON_HE_NAME.summer}_${base}.5`);
-    } else {
-      counter++;
-      result.push(`${SEASON_HE_NAME[s]}_${counter}`);
-    }
-  }
-  return result;
-}
-
-function isYearFormatName(name: string): boolean {
-  return /^.+_\d{4}-\d{4}$/.test(name);
-}
-
-/**
- * Plan an insertion at slotRealIdx with the given season, including any
- * renumbering renames required to keep the ordinal sequence canonical and
- * sort-aligned with calendar order.
- *
- * For year-format semesters, the new name uses the slot's actual year and
- * no renames are needed (year-format names are calendar identities).
- */
-function computeAddInsertion(
-  ordinals: string[],
-  positions: number[],
-  slotRealIdx: number,
-  season: Season,
-): { newName: string; renames: Record<string, string> } {
-  const allYearFormat = ordinals.length > 0 && ordinals.every(isYearFormatName);
-
-  if (allYearFormat) {
-    // Year-format: derive name from the actual calendar slot, no renames needed
-    const { year } = fromLinearIdx(slotRealIdx);
-    const newName = `${SEASON_HE_NAME[season]}_${year}-${year + 1}`;
-    return { newName, renames: {} };
-  }
-
-  // Legacy ordinal: renumber to keep monotonic sequence
-  let k = positions.findIndex((p) => p > slotRealIdx);
-  if (k < 0) k = positions.length;
-
-  const seasons: Season[] = [];
-  for (let i = 0; i < ordinals.length; i++) {
-    if (i === k) seasons.push(season);
-    const parsed = parseOrdinal(ordinals[i]);
-    if (parsed) seasons.push(parsed.season);
-  }
-  if (k === ordinals.length) seasons.push(season);
-
-  const canonical = canonicalSemesterNames(seasons);
-  const newName = canonical[k];
-
-  const renames: Record<string, string> = {};
-  for (let i = 0; i < ordinals.length; i++) {
-    const ci = i < k ? i : i + 1;
-    if (ordinals[i] !== canonical[ci]) {
-      renames[ordinals[i]] = canonical[ci];
-    }
-  }
-  return { newName, renames };
-}
-
 function toLinearIdx(year: number, season: Season): number {
   return year * 3 + (season === "winter" ? 0 : season === "spring" ? 1 : 2);
 }
@@ -190,124 +90,28 @@ function fromLinearIdx(idx: number): { year: number; season: Season } {
   return { year, season };
 }
 
+function semesterToLinearIdx(sem: AcademicSemester): number {
+  return toLinearIdx(sem.start_year, sem.season);
+}
+
 function formatSlotTitle(real: RealSemester): string {
   if (real.season === "winter") return `${SEASON_HE.winter} ${real.year}-${real.year + 1}`;
   return `${SEASON_HE[real.season]} ${real.year + 1}`;
 }
 
-/**
- * Determine the current academic semester's linear index.
- * Academic year starts in October (winter). Month mapping:
- *   Oct–Jan → winter of that year
- *   Feb–Jul → spring of that year-1 (academic year started previous Oct)
- *   Aug–Sep → summer of that year-1
- */
-function currentSemesterIdx(): number {
-  const now = new Date();
-  const month = now.getMonth(); // 0-indexed
-  const year = now.getFullYear();
-  if (month >= 9) {
-    // Oct–Dec → winter semester of this academic year
-    return toLinearIdx(year, "winter");
-  }
-  if (month <= 1) {
-    // Jan–Feb → still winter of previous calendar year's academic year
-    return toLinearIdx(year - 1, "winter");
-  }
-  if (month <= 6) {
-    // Mar–Jul → spring
-    return toLinearIdx(year - 1, "spring");
-  }
-  // Aug–Sep → summer
-  return toLinearIdx(year - 1, "summer");
+function defaultPositions(ordinals: AcademicSemester[]): number[] {
+  return ordinals.map(semesterToLinearIdx);
 }
 
-function defaultPositions(ordinalNames: string[], startYear: number): number[] {
-  const out: number[] = [];
-  let cursor = toLinearIdx(startYear, "winter");
-  for (const name of ordinalNames) {
-    const p = parseOrdinal(name);
-    if (!p) continue;
-    // Year-format semesters (from grade sheets) carry the actual academic year —
-    // jump the cursor to that year instead of sequentially advancing.
-    if (p.year !== undefined) {
-      const exactIdx = toLinearIdx(p.year, p.season);
-      // Only jump forward (or to same spot); never backwards.
-      if (exactIdx >= cursor) {
-        cursor = exactIdx;
-      }
-    } else {
-      while (fromLinearIdx(cursor).season !== p.season) cursor++;
-    }
-    out.push(cursor);
-    cursor++;
-  }
-  return out;
-}
-
-/**
- * For legacy ordinal semesters (no year info), derive a start year by
- * anchoring the last semester to the closest real semester to "now",
- * then walking backwards to find where the first semester should land.
- */
-function inferStartYear(ordinalNames: string[]): number {
-  if (ordinalNames.length === 0) return new Date().getFullYear() - 1;
-
-  // Check if any semester already has year info — use the first one found
-  for (const name of ordinalNames) {
-    const p = parseOrdinal(name);
-    if (p?.year !== undefined) return p.year;
-  }
-
-  // All legacy format — anchor last semester to current academic semester
-  const lastParsed = parseOrdinal(ordinalNames[ordinalNames.length - 1]);
-  if (!lastParsed) return new Date().getFullYear() - 1;
-
-  const nowIdx = currentSemesterIdx();
-  const nowSeason = fromLinearIdx(nowIdx);
-
-  // Place the last semester at the current semester's year (same season)
-  // or the closest preceding slot if seasons don't match
-  let lastIdx = toLinearIdx(nowSeason.year, lastParsed.season);
-  // If that's in the future relative to now, step back one academic year
-  if (lastIdx > nowIdx) {
-    lastIdx = toLinearIdx(nowSeason.year - 1, lastParsed.season);
-  }
-
-  // Walk backwards from the last semester to compute where the first lands
-  let cursor = lastIdx;
-  for (let i = ordinalNames.length - 2; i >= 0; i--) {
-    const p = parseOrdinal(ordinalNames[i]);
-    if (!p) continue;
-    cursor--;
-    while (fromLinearIdx(cursor).season !== p.season && cursor > 0) cursor--;
-  }
-
-  return fromLinearIdx(cursor).year;
-}
-
-function reconcile(saved: TimelineState, ordinals: string[]): TimelineState {
-  if (saved.positions.length !== ordinals.length) {
-    const first = saved.positions[0];
-    // Derive start year: prefer saved position, otherwise infer from ordinals
-    const startYear = first !== undefined
-      ? fromLinearIdx(first).year
-      : inferStartYear(ordinals);
-    return { ...saved, positions: defaultPositions(ordinals, startYear) };
-  }
-  for (let i = 1; i < saved.positions.length; i++) {
-    if (saved.positions[i] <= saved.positions[i - 1]) {
-      return { ...saved, positions: defaultPositions(ordinals, inferStartYear(ordinals)) };
-    }
-  }
-  return saved;
+function reconcile(saved: TimelineState, ordinals: AcademicSemester[]): TimelineState {
+  return { ...saved, positions: defaultPositions(ordinals) };
 }
 
 /** Build all slots in display range. Always includes summer — uniform calendar grid. */
 function buildSlots(
   positions: number[],
   annotations: Record<number, string>,
-  ordinals: string[],
+  ordinals: AcademicSemester[],
 ): { slots: Slot[]; coreStart: number; coreEnd: number } {
   if (positions.length === 0) return { slots: [], coreStart: 0, coreEnd: 0 };
   const positionByIdx = new Map<number, number>();
@@ -333,22 +137,20 @@ function buildSlots(
     const annotation = annotations[idx];
     const isPadding = idx < coreStart || idx > coreEnd;
 
-    // Guard: ordinalIdx may reference a stale index when ordinals prop shrinks
+    // Guard: ordinalIdx may reference a stale index when semesters shrink
     // (e.g. during the render right after deletion, before reconcile runs).
     // In that case, treat the slot as empty so we don't crash on undefined.
-    const ordinalName =
+    const ordinalSemester =
       ordinalIdx !== undefined && ordinalIdx < ordinals.length
         ? ordinals[ordinalIdx]
         : undefined;
 
-    if (ordinalIdx !== undefined && ordinalName) {
-      const parsed = parseOrdinal(ordinalName);
+    if (ordinalIdx !== undefined && ordinalSemester) {
       slots.push({
         kind: "ordinal",
         id: `ord-${ordinalIdx}`,
         ordinalIdx,
-        name: ordinalName,
-        season: parsed?.season ?? season,
+        season: ordinalSemester.season,
         real,
         isPadding: false,
       });
@@ -364,21 +166,11 @@ function buildSlots(
 // ────────────────────────────────────────────────────────────────
 
 interface SemesterTimelineProps {
-  ordinals: string[];
+  ordinals: AcademicSemester[];
   currentOrdinalIdx: number;
   onSelectOrdinal: (idx: number) => void;
-  /**
-   * Add a semester with the given canonical name. `renames` (oldName → newName)
-   * lists existing semesters that must be renamed atomically with the add to
-   * keep ordinal numbers monotonic with calendar order.
-   */
-  onAddSemester?: (name: string, renames: Record<string, string>) => void;
-  /**
-   * Delete the semester by name. `renames` lists any remaining semesters that
-   * must be renamed atomically to keep ordinal numbers monotonic with calendar
-   * order after the deletion.
-   */
-  onDeleteSemester?: (name: string, renames: Record<string, string>) => void;
+  onAddSemester?: (name: AcademicSemester) => void;
+  onDeleteSemester?: (name: AcademicSemester) => void;
   className?: string;
 }
 
@@ -455,9 +247,7 @@ function OrdinalChip({
   const effectiveX =
     snappedActiveX !== undefined ? snappedActiveX : followOffsetX ?? 0;
 
-  const parsed = parseOrdinal(slot.name);
-  // For year-format semesters, display the ordinal position (1-based), not the year
-  const num = parsed?.year !== undefined ? slot.ordinalIdx + 1 : (parsed?.num ?? slot.ordinalIdx + 1);
+  const num = slot.ordinalIdx + 1;
 
   return (
     <button
@@ -810,6 +600,8 @@ export function SemesterTimeline({
   onDeleteSemester,
   className,
 }: SemesterTimelineProps) {
+  // Key for invalidating reconciliation when the absolute semester list changes.
+  const ordinalsKey = useMemo(() => ordinals.map(semesterKey).join("|"), [ordinals]);
   // State is hoisted into a Zustand store so other surfaces (banner stats,
   // future analytics) can read calendar positions without prop-drilling.
   // The store persists to localStorage via the `persist` middleware, so
@@ -836,10 +628,8 @@ export function SemesterTimeline({
     useSensor(KeyboardSensor),
   );
 
-  // Sync positions with ordinals length changes (parent adds/removes semesters).
+  // Sync positions with absolute semester data changes (parent adds/removes semesters).
   // Uses pendingAddPositionRef to place newly-added semesters where the user clicked.
-  // Inserts at the correct calendar-order index (not just append), so middle-gap
-  // adds keep positions[] monotonic and aligned with the parent's sorted ordinals.
   useEffect(() => {
     setState((s) => {
       if (ordinals.length > s.positions.length && pendingAddPositionRef.current !== null) {
@@ -862,59 +652,31 @@ export function SemesterTimeline({
       return reconcile(s, ordinals);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordinals.length]);
+  }, [ordinalsKey]);
 
   const handleAddSemesterAtSlot = useCallback(
     (slotRealIdx: number, season: Season) => {
       if (!onAddSemester) return;
-      const { newName, renames } = computeAddInsertion(
-        ordinals,
-        state.positions,
-        slotRealIdx,
-        season,
-      );
+      const { year } = fromLinearIdx(slotRealIdx);
+      const newSemester: AcademicSemester = { season, start_year: year };
       pendingAddPositionRef.current = slotRealIdx;
-      onAddSemester(newName, renames);
+      onAddSemester(newSemester);
     },
-    [onAddSemester, ordinals, state.positions],
+    [onAddSemester],
   );
 
   const handleDeleteSemesterAt = useCallback(
     (ordinalIdx: number) => {
       if (!onDeleteSemester) return;
-      const name = ordinals[ordinalIdx];
-      if (!name) return;
-
-      let renames: Record<string, string> = {};
-
-      // Year-format semesters are calendar identities — no renumbering needed.
-      // Only legacy ordinal semesters need renaming after deletion.
-      const allYearFormat = ordinals.every(isYearFormatName);
-      if (!allYearFormat) {
-        const remainingSeasons: Season[] = [];
-        const remainingNames: string[] = [];
-        for (let i = 0; i < ordinals.length; i++) {
-          if (i === ordinalIdx) continue;
-          const parsed = parseOrdinal(ordinals[i]);
-          if (parsed) {
-            remainingSeasons.push(parsed.season);
-            remainingNames.push(ordinals[i]);
-          }
-        }
-        const canonical = canonicalSemesterNames(remainingSeasons);
-        for (let i = 0; i < remainingNames.length; i++) {
-          if (remainingNames[i] !== canonical[i]) {
-            renames[remainingNames[i]] = canonical[i];
-          }
-        }
-      }
+      const semester = ordinals[ordinalIdx];
+      if (!semester) return;
 
       // Pre-emptively drop the position so we don't render a stale index.
       setState((s) => ({
         ...s,
         positions: s.positions.filter((_, i) => i !== ordinalIdx),
       }));
-      onDeleteSemester(name, renames);
+      onDeleteSemester(semester);
     },
     [onDeleteSemester, ordinals],
   );

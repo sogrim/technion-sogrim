@@ -4,6 +4,7 @@ import { courseFromUserValidations } from "@/lib/course-validator";
 import { COURSE_GRADE_OPTIONS } from "@/types/domain";
 import type { CourseSchedule } from "@/types/timetable";
 import type { RowData } from "@/types/domain";
+import type { AcademicSemester } from "@/types/api";
 import { Plus, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
@@ -11,7 +12,7 @@ import { Toast } from "@/components/ui/toast";
 import { useIsOgPalette } from "@/stores/ui-store";
 
 interface PlannerCourseSearchProps {
-  semester: string | null;
+  semester: AcademicSemester | null;
   existingRows: RowData[];
   bankNames: string[];
   onAdd: (row: RowData) => void;

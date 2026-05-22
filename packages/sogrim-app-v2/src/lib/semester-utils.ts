@@ -1,189 +1,85 @@
-export function getAllSemesters(courseStatuses: Array<{ semester: string | null }>): string[] {
-  const semesterSet = new Set<string>();
-  for (const cs of courseStatuses) {
-    if (cs.semester) {
-      semesterSet.add(cs.semester);
-    }
-  }
-  return Array.from(semesterSet).sort((a, b) => {
-    const aNum = parseSemesterOrder(a);
-    const bNum = parseSemesterOrder(b);
-    return aNum - bNum;
-  });
-}
+import type { AcademicSemester, SemesterSeason } from "@/types/api";
 
-const SEASON_ORDER: Record<string, number> = {
-  "חורף": 0,
-  "אביב": 1,
-  "קיץ": 2,
+const SEASON_ORDER: Record<SemesterSeason, number> = {
+  winter: 0,
+  spring: 1,
+  summer: 2,
 };
 
-/**
- * Returns a sort key for a semester string.
- * Supports both new format "season_YYYY-YYYY" and legacy format "season_N".
- */
-export function parseSemesterOrder(semester: string): number {
-  const parts = semester.split("_");
-  if (parts.length < 2) return 0;
-  const season = parts[0];
-  const rest = parts[1];
-  const seasonOrder = SEASON_ORDER[season] ?? 3;
+const SEASON_HE: Record<SemesterSeason, string> = {
+  winter: "חורף",
+  spring: "אביב",
+  summer: "קיץ",
+};
 
-  // New format: "חורף_2020-2021"
-  const yearMatch = rest.match(/^(\d{4})-(\d{4})$/);
-  if (yearMatch) {
-    const startYear = parseInt(yearMatch[1], 10);
-    return startYear * 10 + seasonOrder;
+export function semesterKey(semester: AcademicSemester): string {
+  return `${semester.season}_${semester.start_year}`;
+}
+
+export function semestersEqual(a: AcademicSemester | null, b: AcademicSemester | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.season === b.season && a.start_year === b.start_year;
+}
+
+export function getAllSemesters(courseStatuses: Array<{ semester: AcademicSemester | null }>): AcademicSemester[] {
+  const semesterMap = new Map<string, AcademicSemester>();
+  for (const cs of courseStatuses) {
+    if (cs.semester) {
+      semesterMap.set(semesterKey(cs.semester), cs.semester);
+    }
   }
-
-  // Legacy format: "חורף_1" or "קיץ_2.5"
-  const num = parseFloat(rest);
-  if (!isNaN(num)) {
-    return num * 10 + seasonOrder;
-  }
-
-  return 0;
+  return Array.from(semesterMap.values()).sort((a, b) => parseSemesterOrder(a) - parseSemesterOrder(b));
 }
 
-export function formatSemesterName(semester: string): string {
-  const name = semester.replace("_", " ");
-  return name;
+export function parseSemesterOrder(semester: AcademicSemester): number {
+  return semester.start_year * 3 + SEASON_ORDER[semester.season];
 }
 
-/** Split a semester key into season label and optional year. */
-export function parseSemesterDisplay(semester: string): {
-  season: string;
-  year: string | null;
-} {
-  const parts = semester.split("_");
-  const season = parts[0];
-  const rest = parts.length > 1 ? parts.slice(1).join("_") : null;
-  // Show year only for year-range format (e.g. "2024-2025"), not legacy numeric
-  const year = rest && rest.includes("-") ? rest : null;
-  return { season, year };
+export function formatSemesterName(semester: AcademicSemester): string {
+  return `${SEASON_HE[semester.season]} ${semester.start_year}-${semester.start_year + 1}`;
 }
 
-/**
- * Returns the current Technion academic year range (e.g., "2024-2025").
- * Academic year starts in October.
- */
-export function getCurrentAcademicYear(): string {
+export function getCurrentAcademicStartYear(): number {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth(); // 0-indexed: 9 = October
-  if (month >= 9) {
-    return `${year}-${year + 1}`;
-  }
-  return `${year - 1}-${year}`;
+  return month >= 9 ? year : year - 1;
 }
 
-/**
- * Increments a "YYYY-YYYY" year range by one academic year.
- */
-function incrementYearRange(yearRange: string): string {
-  const match = yearRange.match(/^(\d{4})-(\d{4})$/);
-  if (!match) return yearRange;
-  const start = parseInt(match[1], 10) + 1;
-  return `${start}-${start + 1}`;
-}
-
-/**
- * Checks whether a semester string uses the new year-based format.
- */
-function isYearFormat(semester: string): boolean {
-  return /^.+_\d{4}-\d{4}$/.test(semester);
+export function createSemester(season: SemesterSeason, start_year = getCurrentAcademicStartYear()): AcademicSemester {
+  return { season, start_year };
 }
 
 export function getNextSemesterName(
-  allSemesters: string[],
+  allSemesters: AcademicSemester[],
   type: "Winter" | "Spring" | "Summer"
-): string {
-  const hebrewType = type === "Winter" ? "חורף" : type === "Spring" ? "אביב" : "קיץ";
-  const academicYear = getCurrentAcademicYear();
-
+): AcademicSemester {
+  const season: SemesterSeason = type === "Winter" ? "winter" : type === "Spring" ? "spring" : "summer";
   if (allSemesters.length === 0) {
-    return `${hebrewType}_${academicYear}`;
+    return createSemester(season);
   }
 
   const lastSemester = allSemesters[allSemesters.length - 1];
-
-  // New year-based format
-  if (isYearFormat(lastSemester)) {
-    const parts = lastSemester.split("_");
-    const lastSeason = parts[0];
-    const lastYear = parts[1];
-
-    // Increment year when adding חורף after אביב or קיץ (new academic year)
-    const lastSeasonOrder = SEASON_ORDER[lastSeason] ?? 0;
-    const newSeasonOrder = SEASON_ORDER[hebrewType] ?? 0;
-    const needsYearIncrement = newSeasonOrder <= lastSeasonOrder && hebrewType === "חורף";
-    const yearRange = needsYearIncrement ? incrementYearRange(lastYear) : lastYear;
-
-    return `${hebrewType}_${yearRange}`;
-  }
-
-  // Legacy format fallback
-  const lastNonSummer = [...allSemesters].reverse().find((s) => !s.includes("קיץ"));
-  const fallbackSemester = lastNonSummer || lastSemester;
-  const parts = fallbackSemester.split("_");
-  const num = parseInt(parts[1], 10) || 0;
-
-  if (type === "Summer") return `קיץ_${num}.5`;
-
-  const newName = fallbackSemester.includes("חורף") ? "אביב" : "חורף";
-  return `${newName}_${num + 1}`;
+  const needsYearIncrement = season === "winter" && SEASON_ORDER[season] <= SEASON_ORDER[lastSemester.season];
+  return {
+    season,
+    start_year: needsYearIncrement ? lastSemester.start_year + 1 : lastSemester.start_year,
+  };
 }
 
-const SEASON_TO_CODE: Record<string, string> = {
-  "חורף": "200",
-  "אביב": "201",
-  "קיץ": "202",
+const SEASON_TO_CODE: Record<SemesterSeason, string> = {
+  winter: "200",
+  spring: "201",
+  summer: "202",
 };
 
-/**
- * Convert a planner semester string (e.g. "אביב_2024-2025") to a timetable
- * API semester ID (e.g. "2024-201").
- * Returns null for legacy-format semesters that can't be mapped.
- */
-export function plannerSemesterToApiId(semester: string): string | null {
-  const parts = semester.split("_");
-  if (parts.length < 2) return null;
-  const season = parts[0];
-  const rest = parts[1];
-  const code = SEASON_TO_CODE[season];
-  if (!code) return null;
-  const yearMatch = rest.match(/^(\d{4})-\d{4}$/);
-  if (!yearMatch) return null;
-  return `${yearMatch[1]}-${code}`;
+export function plannerSemesterToApiId(semester: AcademicSemester): string {
+  return `${semester.start_year}-${SEASON_TO_CODE[semester.season]}`;
 }
 
-/**
- * Build a mapping from legacy ordinal semester names to year-format names
- * using the timeline positions as the source of truth.
- *
- * `ordinals` is the sorted list of semester names (same order as timeline chips).
- * `positions` is the parallel array of linear calendar indices (year*3 + season).
- *
- * Returns a Map from old name → new name. Only legacy names are included;
- * year-format names are left unchanged.
- */
-export function buildLegacyToYearMap(
-  ordinals: string[],
-  positions: number[],
-): Map<string, string> {
-  const SEASON_LABELS: Record<number, string> = { 0: "חורף", 1: "אביב", 2: "קיץ" };
-  const map = new Map<string, string>();
-  for (let i = 0; i < ordinals.length; i++) {
-    const name = ordinals[i];
-    if (isYearFormat(name)) continue;
-    const pos = positions[i];
-    if (pos === undefined) continue;
-    const year = Math.floor(pos / 3);
-    const seasonIdx = ((pos % 3) + 3) % 3;
-    const season = SEASON_LABELS[seasonIdx];
-    if (!season) continue;
-    const yearRange = `${year}-${year + 1}`;
-    map.set(name, `${season}_${yearRange}`);
-  }
-  return map;
+export function parseSapSemesterId(value: string): AcademicSemester | null {
+  const sapMatch = value.match(/^(\d{4})-(200|201|202)$/);
+  if (!sapMatch) return null;
+  const codeToSeason: Record<string, SemesterSeason> = { "200": "winter", "201": "spring", "202": "summer" };
+  return { season: codeToSeason[sapMatch[2]], start_year: parseInt(sapMatch[1], 10) };
 }

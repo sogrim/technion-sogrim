@@ -3,10 +3,10 @@ import { persist } from "zustand/middleware";
 
 /** Hoisted state for the planner's semester timeline.
  *
- *  `positions` is the calendar slot of each ordinal-named semester, encoded
+ *  `positions` is the calendar slot of each planner semester, encoded
  *  as a linear index `year*3 + season` (winter/spring/summer = 0/1/2). It's
- *  parallel to the `ordinals` array passed into the timeline — `positions[i]`
- *  is the calendar slot of `ordinals[i]`. Other surfaces (banner stats,
+ *  parallel to the semester array passed into the timeline — `positions[i]`
+ *  is the calendar slot of the semester at the same index. Other surfaces (banner stats,
  *  exports, future analytics) read this to derive academic-year info.
  *
  *  `annotations` keys gap slots (e.g. military service, leave) by their

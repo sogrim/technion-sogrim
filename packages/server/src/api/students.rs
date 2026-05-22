@@ -50,6 +50,12 @@ pub async fn login(
 
     let mut updated_user = db.create_or_update::<User>(user).await?;
 
+    // Normalize legacy semester formats if necessary. This is needed to ensure that old users with legacy semester formats don't break the degree status computation and other features that rely on normalized semesters.
+    // We do this before the last seen update to avoid unnecessary writes for users who have already been normalized.
+    if updated_user.normalize_legacy_semesters() {
+        updated_user = db.update::<User>(updated_user).await?;
+    }
+
     // Asynchronously update the user's last seen time
     let mut user = updated_user.clone();
     tokio::spawn(async move {

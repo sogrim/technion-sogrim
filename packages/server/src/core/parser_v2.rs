@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 
 use crate::{
     error::AppError,
-    resources::course::{Course, CourseId, CourseStatus, Grade},
+    resources::course::{AcademicSemester, Course, CourseId, CourseStatus, Grade, SemesterSeason},
 };
 use std::collections::HashMap;
 
@@ -383,10 +383,8 @@ fn semester_sort_key(year: &str, term: &str) -> (i32, i32) {
     (start_year, term_order)
 }
 
-/// Build a mapping from (year, term) to semester display string using
-/// the year-range format (e.g. "חורף_2022-2023") so the frontend timeline
-/// can place semesters at their actual calendar positions.
-fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), String> {
+/// Build a mapping from (year, term) to typed academic semesters.
+fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), AcademicSemester> {
     let mut unique_semesters: Vec<(String, String)> = raw_courses
         .iter()
         .map(|c| (c.semester_year.clone(), c.semester_term.clone()))
@@ -397,7 +395,15 @@ fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), St
     let mut semester_map = HashMap::new();
 
     for (year, term) in &unique_semesters {
-        semester_map.insert((year.clone(), term.clone()), format!("{term}_{year}"));
+        if let (Some(start_year), Some(season)) = (
+            year.split('-').next().and_then(|y| y.parse::<i32>().ok()),
+            term.parse::<SemesterSeason>().ok(),
+        ) {
+            semester_map.insert(
+                (year.clone(), term.clone()),
+                AcademicSemester::new(season, start_year),
+            );
+        }
     }
 
     semester_map

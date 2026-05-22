@@ -158,13 +158,8 @@ impl DegreeStatus {
         self.fill_tags(courses);
         self.reset(catalog);
 
-        self.course_statuses.sort_by(|c1, c2| {
-            c1.extract_semester()
-                .partial_cmp(&c2.extract_semester())
-                .unwrap_or(std::cmp::Ordering::Equal)
-            // partial_cmp returns None if one of the two values are NaN, which should never happen
-            // still, to be on the safe side, we use Ordering::Equal in that case instead of unwrapping
-        });
+        self.course_statuses
+            .sort_by(|c1, c2| c1.semester_order_key().cmp(&c2.semester_order_key()));
 
         self.replace_student_course_with_courses_in_catalog(catalog, courses);
 

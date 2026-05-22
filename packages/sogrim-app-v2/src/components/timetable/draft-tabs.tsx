@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { cn } from "@/lib/utils";
 import { Plus, X, Check, Pencil } from "lucide-react";
+import { semestersEqual } from "@/lib/semester-utils";
 
 export function DraftTabs() {
   const drafts = useTimetableStore((s) => s.drafts);
@@ -15,7 +16,7 @@ export function DraftTabs() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
 
-  const semesterDrafts = drafts.filter((d) => d.semester === currentSemester);
+  const semesterDrafts = drafts.filter((d) => semestersEqual(d.semester, currentSemester));
 
   const handleStartRename = (draftId: string, currentName: string) => {
     setEditingId(draftId);

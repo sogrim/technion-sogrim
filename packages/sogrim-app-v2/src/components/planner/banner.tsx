@@ -3,31 +3,35 @@ import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarD
 import { cn } from "@/lib/utils";
 import { ComputeButton } from "./compute-button";
 import { isSocialActivityCourse } from "@/lib/reserved-credits";
-import { parseSemesterOrder } from "@/lib/semester-utils";
+import { formatSemesterName, parseSemesterOrder, semesterKey, semestersEqual } from "@/lib/semester-utils";
 import { useTimelineStore, distinctAcademicYears } from "@/stores/timeline-store";
-import type { DegreeStatus, Catalog, CourseStatus } from "@/types/api";
+import type { AcademicSemester, DegreeStatus, Catalog, CourseStatus } from "@/types/api";
 
 /** Per-semester GPA, ordered chronologically (uses parseSemesterOrder so
  *  spring/winter/summer interleave correctly). */
 function computePerSemesterGPA(
   courses: CourseStatus[],
 ): { semester: string; gpa: number }[] {
-  const bySemester = new Map<string, { tg: number; tc: number }>();
+  const bySemester = new Map<
+    string,
+    { semester: AcademicSemester; tg: number; tc: number }
+  >();
   for (const cs of courses) {
     if (cs.state !== "הושלם" || !cs.semester || !cs.grade) continue;
     if (isSocialActivityCourse(cs)) continue;
     const grade = parseFloat(cs.grade);
     if (isNaN(grade)) continue;
     const credit = cs.course.credit;
-    const e = bySemester.get(cs.semester) ?? { tg: 0, tc: 0 };
-    e.tg += grade * credit;
-    e.tc += credit;
-    bySemester.set(cs.semester, e);
+    const key = semesterKey(cs.semester);
+    const entry = bySemester.get(key) ?? { semester: cs.semester, tg: 0, tc: 0 };
+    entry.tg += grade * credit;
+    entry.tc += credit;
+    bySemester.set(key, entry);
   }
-  return Array.from(bySemester.entries())
-    .filter(([, e]) => e.tc > 0)
-    .map(([semester, e]) => ({ semester, gpa: e.tg / e.tc }))
-    .sort((a, b) => parseSemesterOrder(a.semester) - parseSemesterOrder(b.semester));
+  return Array.from(bySemester.values())
+    .filter((e) => e.tc > 0)
+    .sort((a, b) => parseSemesterOrder(a.semester) - parseSemesterOrder(b.semester))
+    .map((e) => ({ semester: formatSemesterName(e.semester), gpa: e.tg / e.tc }));
 }
 
 function GPASparkline({ data }: { data: { semester: string; gpa: number }[] }) {
@@ -118,18 +122,15 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
       const years = distinctAcademicYears(timelinePositions);
       if (years > 0) return years;
     }
-    let maxNum = 0;
+    const years = new Set<number>();
     for (const cs of course_statuses) {
       if (!cs.semester) continue;
-      const parts = cs.semester.split("_");
-      if (parts.length < 2) continue;
-      const num = parseInt(parts[1], 10);
-      if (!isNaN(num) && num > maxNum) maxNum = num;
+      years.add(cs.semester.start_year);
     }
-    return maxNum > 0 ? Math.ceil(maxNum / 2) : null;
+    return years.size > 0 ? years.size : null;
   }, [course_statuses, timelinePositions]);
   const lastSemester = useMemo(() => {
-    let result: string | null = null;
+    let result: AcademicSemester | null = null;
     let maxOrder = -Infinity;
     for (const cs of course_statuses) {
       if (!cs.semester) continue;
@@ -145,7 +146,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
     if (!lastSemester) return null;
     return course_statuses
       .filter((cs) =>
-        cs.semester === lastSemester &&
+        semestersEqual(cs.semester, lastSemester) &&
         cs.state !== "לא רלוונטי" &&
         !isSocialActivityCourse(cs),
       )

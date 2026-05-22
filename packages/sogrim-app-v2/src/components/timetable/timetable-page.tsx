@@ -10,6 +10,7 @@ import { CourseSearch } from "./course-search";
 import { SelectedCoursesPanel } from "./selected-courses-panel";
 import { ExamTimeline } from "./exam-timeline";
 import { CourseDetailModal } from "./course-detail-modal";
+import { semestersEqual } from "@/lib/semester-utils";
 
 export function TimetablePage() {
   const { ready, error } = useApiProvider();
@@ -53,8 +54,9 @@ function TimetableContent() {
 
   // Auto-create first draft if none exist for this semester
   useEffect(() => {
+    if (!currentSemester) return;
     const state = useTimetableStore.getState();
-    const semDrafts = state.drafts.filter((d) => d.semester === currentSemester);
+    const semDrafts = state.drafts.filter((d) => semestersEqual(d.semester, currentSemester));
     if (semDrafts.length === 0) {
       createDraft(currentSemester);
     } else if (!state.activeDraftId || !semDrafts.find((d) => d.id === state.activeDraftId)) {

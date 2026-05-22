@@ -1,3 +1,5 @@
+import type { AcademicSemester } from "@/types/api";
+
 /** Day of week: Sunday=0 through Friday=5 */
 export type Day = 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -58,7 +60,7 @@ export interface CustomEvent {
 export interface TimetableDraft {
   id: string;
   name: string; // "אפשרות א׳"
-  semester: string; // "אביב_1"
+  semester: AcademicSemester;
   courses: CourseSelection[];
   customEvents: CustomEvent[];
   createdAt: string;

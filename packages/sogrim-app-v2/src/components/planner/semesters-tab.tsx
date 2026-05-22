@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import { Snowflake, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAllSemesters, parseSemesterOrder, getCurrentAcademicYear } from "@/lib/semester-utils";
+import { createSemester, getAllSemesters, parseSemesterOrder, semesterKey } from "@/lib/semester-utils";
 import { SemesterPanel } from "./semester-panel";
 import { SemesterTimeline } from "./semester-timeline";
-import type { CourseStatus } from "@/types/api";
+import type { AcademicSemester, CourseStatus } from "@/types/api";
 import type { RowData } from "@/types/domain";
 
 
@@ -12,10 +12,10 @@ interface SemestersTabProps {
   courseStatuses: CourseStatus[];
   bankNames: string[];
   currentSemesterIdx: number;
-  extraSemesters?: string[];
+  extraSemesters?: AcademicSemester[];
   onSelectSemester: (idx: number) => void;
-  onAddSemester: (semesterName: string, renames?: Record<string, string>) => void;
-  onDeleteSemester: (semesterName: string, renames?: Record<string, string>) => void;
+  onAddSemester: (semesterName: AcademicSemester) => void;
+  onDeleteSemester: (semesterName: AcademicSemester) => void;
   onUpdateStatuses: (updatedStatuses: CourseStatus[]) => void;
   onDeleteCourse: (courseNumber: string) => void;
   onAddCourse: (row: RowData) => void;
@@ -24,7 +24,7 @@ interface SemestersTabProps {
 function EmptyState({
   onAddSemester,
 }: {
-  onAddSemester: (semesterName: string, renames?: Record<string, string>) => void;
+  onAddSemester: (semesterName: AcademicSemester) => void;
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -36,7 +36,7 @@ function EmptyState({
           variant="outline"
           size="lg"
           className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
-          onClick={() => onAddSemester(`חורף_${getCurrentAcademicYear()}`)}
+          onClick={() => onAddSemester(createSemester("winter"))}
         >
           <Snowflake className="h-5 w-5" />
           {"חורף"}
@@ -45,7 +45,7 @@ function EmptyState({
           variant="outline"
           size="lg"
           className="px-8 py-4 text-base border-foreground text-foreground hover:bg-foreground hover:text-background gap-2"
-          onClick={() => onAddSemester(`אביב_${getCurrentAcademicYear()}`)}
+          onClick={() => onAddSemester(createSemester("spring"))}
         >
           <Sun className="h-5 w-5" />
           {"אביב"}
@@ -70,8 +70,8 @@ export function SemestersTab({
   const courseSemesters = getAllSemesters(courseStatuses);
   // Merge course-based semesters with extra (empty) semesters from parent
   const tabs = useMemo(() => {
-    const merged = new Set([...courseSemesters, ...extraSemesters]);
-    return Array.from(merged).sort((a, b) => {
+    const merged = new Map([...courseSemesters, ...extraSemesters].map((s) => [semesterKey(s), s]));
+    return Array.from(merged.values()).sort((a, b) => {
       const aNum = parseSemesterOrder(a);
       const bNum = parseSemesterOrder(b);
       return aNum - bNum;
