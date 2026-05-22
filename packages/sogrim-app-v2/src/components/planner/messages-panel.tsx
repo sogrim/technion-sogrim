@@ -48,6 +48,7 @@ function AccordionSection({
 }
 
 const WARNING_PREFIX = "\u05D0\u05D6\u05D4\u05E8\u05D4";
+const ERROR_PREFIX = "\u05E4\u05E1\u05D9\u05DC\u05D4";
 
 export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
   const { overflow_msgs } = degreeStatus;
@@ -57,8 +58,11 @@ export function MessagesPanel({ degreeStatus }: MessagesPanelProps) {
 
   overflow_msgs.forEach((msg) => {
     const trimmed = msg.trimStart();
-    if (trimmed.startsWith(WARNING_PREFIX)) {
-      warnings.push(trimmed.slice(WARNING_PREFIX.length).replace(/^[:\s]+/, ""));
+    const matchedPrefix = [WARNING_PREFIX, ERROR_PREFIX].find((p) =>
+      trimmed.startsWith(p)
+    );
+    if (matchedPrefix) {
+      warnings.push(trimmed.slice(matchedPrefix.length).replace(/^[:\s]+/, ""));
     } else {
       importantMessages.push(msg);
     }
