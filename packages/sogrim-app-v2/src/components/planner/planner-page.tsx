@@ -3,6 +3,7 @@ import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import { useUiStore } from "@/stores/ui-store";
 import { getAllSemesters, parseSemesterOrder, semesterKey, semestersEqual } from "@/lib/semester-utils";
+import { determineState } from "@/lib/course-validator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -13,7 +14,7 @@ import { SemestersTab } from "./semesters-tab";
 import { ExemptionsTab } from "./exemptions-tab";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 import { UserRegistrationState } from "@/types/domain";
-import type { AcademicSemester, CourseStatus, UserDetails } from "@/types/api";
+import type { AcademicSemester, CourseState, CourseStatus, UserDetails } from "@/types/api";
 import type { RowData } from "@/types/domain";
 
 type PlannerTab = "requirements" | "semesters" | "exemptions";
@@ -192,9 +193,16 @@ export function PlannerPage() {
 
   const handleIgnoreCourse = useCallback(
     (courseId: string, action: "לא רלוונטי" | "לא הושלם") => {
-      const updatedStatuses = courseStatuses.map((cs) =>
-        cs.course._id === courseId ? { ...cs, state: action, modified: true } : cs
-      );
+      const updatedStatuses = courseStatuses.map((cs) => {
+        if (cs.course._id !== courseId) return cs;
+        // When un-ignoring a course, restore the state implied by its grade
+        // (e.g. a passing grade should return to "הושלם", not "לא הושלם").
+        const newState: CourseState =
+          action === "לא רלוונטי"
+            ? "לא רלוונטי"
+            : determineState(cs.grade);
+        return { ...cs, state: newState, modified: true };
+      });
       sendUpdate(updatedStatuses);
     },
     [courseStatuses, sendUpdate]

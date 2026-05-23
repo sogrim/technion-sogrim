@@ -1,4 +1,5 @@
 import type { RowData } from "@/types/domain";
+import type { CourseState } from "@/types/api";
 
 const COURSE_NUMBER_REGEX = /^\d{6}$|^\d{8}$/;
 const PASS_GRADES = ["עבר", "פטור ללא ניקוד", "פטור עם ניקוד"];
@@ -38,7 +39,7 @@ export function validateGrade(grade: string | undefined): string | null {
   return null;
 }
 
-export function determineState(grade: string | undefined): string {
+export function determineState(grade: string | undefined): CourseState {
   if (!grade || grade === "-") return "בתהליך";
   if (PASS_GRADES.includes(grade)) return "הושלם";
   if (FAIL_GRADES.includes(grade)) return "לא הושלם";
