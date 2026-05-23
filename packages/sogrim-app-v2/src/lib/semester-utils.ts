@@ -16,6 +16,14 @@ export function semesterKey(semester: AcademicSemester): string {
   return `${semester.season}_${semester.start_year}`;
 }
 
+export function nullableSemesterKey(semester: AcademicSemester | null): string {
+  return semester ? semesterKey(semester) : "null";
+}
+
+export function courseSemesterKey(courseId: string, semester: AcademicSemester | null): string {
+  return `${courseId}__${nullableSemesterKey(semester)}`;
+}
+
 export function semestersEqual(a: AcademicSemester | null, b: AcademicSemester | null): boolean {
   if (a === null || b === null) return a === b;
   return a.season === b.season && a.start_year === b.start_year;

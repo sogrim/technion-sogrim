@@ -17,7 +17,7 @@ interface SemestersTabProps {
   onAddSemester: (semesterName: AcademicSemester) => void;
   onDeleteSemester: (semesterName: AcademicSemester) => void;
   onUpdateStatuses: (updatedStatuses: CourseStatus[]) => void;
-  onDeleteCourse: (courseNumber: string) => void;
+  onDeleteCourse: (courseNumber: string, semester: AcademicSemester | null) => void;
   onAddCourse: (row: RowData) => void;
 }
 

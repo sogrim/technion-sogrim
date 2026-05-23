@@ -1,5 +1,6 @@
 import type { RowData } from "@/types/domain";
 import type { CourseState } from "@/types/api";
+import { semestersEqual } from "./semester-utils";
 
 const COURSE_NUMBER_REGEX = /^\d{6}$|^\d{8}$/;
 const PASS_GRADES = ["עבר", "פטור ללא ניקוד", "פטור עם ניקוד"];
@@ -62,7 +63,14 @@ export function courseFromUserValidations(
   }
 
   // Check uniqueness for new courses
-  if (isNew && existingRows.some((r) => r.courseNumber === row.courseNumber)) {
+  if (
+    isNew &&
+    existingRows.some(
+      (r) =>
+        r.courseNumber === row.courseNumber &&
+        semestersEqual(r.semester, row.semester),
+    )
+  ) {
     return { error: true, msg: "קורס זה כבר קיים בסמסטר", newRowData: row };
   }
 

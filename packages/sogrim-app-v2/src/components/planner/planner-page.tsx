@@ -2,7 +2,13 @@ import { useState, useCallback } from "react";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import { useUiStore } from "@/stores/ui-store";
-import { getAllSemesters, parseSemesterOrder, semesterKey, semestersEqual } from "@/lib/semester-utils";
+import {
+  courseSemesterKey,
+  getAllSemesters,
+  parseSemesterOrder,
+  semesterKey,
+  semestersEqual,
+} from "@/lib/semester-utils";
 import { determineState } from "@/lib/course-validator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
@@ -105,9 +111,10 @@ export function PlannerPage() {
   );
 
   const handleDeleteCourse = useCallback(
-    (courseNumber: string) => {
+    (courseNumber: string, semester: AcademicSemester | null) => {
+      const deleteKey = courseSemesterKey(courseNumber, semester);
       const updatedStatuses = courseStatuses.filter(
-        (cs) => cs.course._id !== courseNumber
+        (cs) => courseSemesterKey(cs.course._id, cs.semester) !== deleteKey
       );
       sendUpdate(updatedStatuses);
     },

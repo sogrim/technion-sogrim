@@ -11,7 +11,7 @@ interface SemesterPanelProps {
   courseStatuses: CourseStatus[];
   bankNames: string[];
   onUpdateStatuses: (updatedStatuses: CourseStatus[]) => void;
-  onDeleteCourse: (courseNumber: string) => void;
+  onDeleteCourse: (courseNumber: string, semester: AcademicSemester | null) => void;
   onAddCourse: (row: RowData) => void;
 }
 
