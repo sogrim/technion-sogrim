@@ -44,7 +44,14 @@ export function parseSemesterOrder(semester: AcademicSemester): number {
 }
 
 export function formatSemesterName(semester: AcademicSemester): string {
-  return `${SEASON_HE[semester.season]} ${semester.start_year}-${semester.start_year + 1}`;
+  const label = SEASON_HE[semester.season];
+  // Winter spans the academic year (e.g. "חורף 2024-2025"); spring and
+  // summer fall entirely in the second calendar year, so show only that
+  // year (e.g. "אביב 2025" / "קיץ 2025").
+  if (semester.season === "winter") {
+    return `${label} ${semester.start_year}-${semester.start_year + 1}`;
+  }
+  return `${label} ${semester.start_year + 1}`;
 }
 
 export function getCurrentAcademicStartYear(): number {
