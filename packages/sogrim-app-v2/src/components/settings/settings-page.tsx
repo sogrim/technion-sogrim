@@ -105,10 +105,17 @@ function groupByFaculty(
   }
   for (const faculty of Object.keys(grouped)) {
     grouped[faculty].sort(
-      (a, b) => a.year - b.year || a.name.localeCompare(b.name)
+      (a, b) =>
+        b.year - a.year ||
+        trackName(a.name).localeCompare(trackName(b.name), "he")
     );
   }
   return grouped;
+}
+
+const YEAR_IN_NAME_RE = /\s*\d{4}(-\d{4})?\s*/g;
+function trackName(name: string): string {
+  return name.replace(YEAR_IN_NAME_RE, " ").trim();
 }
 
 export function SettingsPage() {

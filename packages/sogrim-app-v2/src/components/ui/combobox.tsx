@@ -81,7 +81,10 @@ export function Combobox({
         <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover shadow-lg animate-in fade-in-0 zoom-in-95">
           <Command
             filter={(value, search, keywords) => {
-              const haystack = [value, ...(keywords ?? [])]
+              const realValue = value.includes("|")
+                ? value.slice(value.indexOf("|") + 1)
+                : value;
+              const haystack = [realValue, ...(keywords ?? [])]
                 .join(" ")
                 .toLowerCase();
               return haystack.includes(search.toLowerCase()) ? 1 : 0;
@@ -93,10 +96,10 @@ export function Combobox({
               {hasGroups ? (
                 Array.from(groups.entries()).map(([group, opts]) => (
                   <CommandGroup key={group} heading={group || undefined}>
-                    {opts.map((opt) => (
+                    {opts.map((opt, idx) => (
                       <CommandItem
                         key={opt.value}
-                        value={`${opt.label} ${opt.value}`}
+                        value={`${String(idx).padStart(6, "0")}|${opt.label} ${opt.value}`}
                         keywords={opt.keywords}
                         onSelect={() => {
                           onChange(opt.value);
@@ -116,10 +119,10 @@ export function Combobox({
                 ))
               ) : (
                 <CommandGroup>
-                  {options.map((opt) => (
+                  {options.map((opt, idx) => (
                     <CommandItem
                       key={opt.value}
-                      value={`${opt.label} ${opt.value}`}
+                      value={`${String(idx).padStart(6, "0")}|${opt.label} ${opt.value}`}
                       keywords={opt.keywords}
                       onSelect={() => {
                         onChange(opt.value);
