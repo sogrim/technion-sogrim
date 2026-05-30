@@ -3,6 +3,7 @@ import { SemesterSelector } from "./semester-selector";
 import { DraftTabs } from "./draft-tabs";
 import { ViewToggle } from "./view-toggle";
 import { ConflictBadge } from "./conflict-badge";
+import { SyncToSemestersButton } from "./sync-to-semesters-button";
 import type { TimetableEvent } from "@/types/timetable";
 import { Search, Cloud, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,8 @@ export function TimetableToolbar({ events }: TimetableToolbarProps) {
           )}
 
           <ViewToggle />
+
+          <SyncToSemestersButton />
 
           <button
             onClick={() => setSearchOpen(true)}

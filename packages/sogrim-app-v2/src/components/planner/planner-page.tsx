@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearch } from "@tanstack/react-router";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import { useUiStore } from "@/stores/ui-store";
@@ -57,11 +58,25 @@ export function PlannerPage() {
   const updateMutation = useUpdateUserState();
   const currentSemesterIdx = useUiStore((s) => s.currentSemesterIdx);
   const setCurrentSemester = useUiStore((s) => s.setCurrentSemester);
+  // Read optional ?tab=... search param so other pages can deep-link into
+  // a specific planner tab (e.g. timetable sync → semesters).
+  const search = useSearch({ from: "/planner" }) as { tab?: PlannerTab };
   const [toast, setToast] = useState<{
     message: string;
     type: "error" | "success";
   } | null>(null);
-  const [activeTab, setActiveTab] = useState<PlannerTab>("requirements");
+  const [activeTab, setActiveTab] = useState<PlannerTab>(search.tab ?? "requirements");
+
+  // If the URL ?tab=... changes after mount (e.g. user clicks the sync
+  // button while already on /planner), follow the navigation.
+  useEffect(() => {
+    if (search.tab && search.tab !== activeTab) {
+      setActiveTab(search.tab);
+    }
+    // We intentionally omit `activeTab` from deps: this effect should only
+    // react to external URL changes, not to user-driven tab clicks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.tab]);
   const [includeInProgress, setIncludeInProgress] = useState(
     () => userState?.details?.compute_in_progress ?? false
   );
