@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarDays, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ComputeButton } from "./compute-button";
@@ -47,23 +47,110 @@ function GPASparkline({ data }: { data: { semester: string; gpa: number }[] }) {
   const y = (g: number) => H - P - ((g - padded.lo) / span) * (H - 2 * P);
   const path = data.map((d, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(d.gpa)}`).join(" ");
   const area = `${path} L ${x(data.length - 1)} ${H - P} L ${x(0)} ${H - P} Z`;
+
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+
+  const updateActiveFromPointer = (clientX: number) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const viewX = ((clientX - rect.left) / rect.width) * W;
+    let nearest = 0;
+    let nearestDist = Infinity;
+    for (let i = 0; i < data.length; i++) {
+      const d = Math.abs(x(i) - viewX);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearest = i;
+      }
+    }
+    setActiveIdx(nearest);
+  };
+
+  const active = activeIdx != null ? data[activeIdx] : null;
+  const activeXPct = activeIdx != null ? (x(activeIdx) / W) * 100 : 0;
+  const activeYPct = active ? (y(active.gpa) / H) * 100 : 0;
+  const tooltipShiftX = activeXPct < 12 ? "0%" : activeXPct > 88 ? "-100%" : "-50%";
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-12" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill="url(#sparkfill)" className="text-[#d66563]" />
-      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5"
-        strokeLinejoin="round" strokeLinecap="round" className="text-[#d66563]" />
-      {data.map((d, i) => (
-        <circle key={i} cx={x(i)} cy={y(d.gpa)} r="2" className="fill-[#d66563]">
-          <title>{`${d.semester}: ${d.gpa.toFixed(2)}`}</title>
-        </circle>
-      ))}
-    </svg>
+    <div className="relative">
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full h-12"
+        preserveAspectRatio="none"
+        onPointerMove={(e) => updateActiveFromPointer(e.clientX)}
+        onPointerDown={(e) => updateActiveFromPointer(e.clientX)}
+        onPointerLeave={() => setActiveIdx(null)}
+      >
+        <defs>
+          <linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill="url(#sparkfill)" className="text-[#d66563]" />
+        <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5"
+          strokeLinejoin="round" strokeLinecap="round" className="text-[#d66563]" />
+        {data.map((d, i) => (
+          <circle
+            key={i}
+            cx={x(i)}
+            cy={y(d.gpa)}
+            r="2"
+            className={cn("fill-[#d66563]", activeIdx === i && "opacity-0")}
+          />
+        ))}
+        {activeIdx != null && active && (
+          <g className="pointer-events-none">
+            <line
+              x1={x(activeIdx)}
+              y1={P}
+              x2={x(activeIdx)}
+              y2={H - P}
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeDasharray="2 2"
+              className="text-[#d66563]/40"
+              vectorEffect="non-scaling-stroke"
+            />
+            <circle
+              cx={x(activeIdx)}
+              cy={y(active.gpa)}
+              r="5"
+              className="fill-[#d66563]/25"
+            />
+            <circle
+              cx={x(activeIdx)}
+              cy={y(active.gpa)}
+              r="2.75"
+              className="fill-[#d66563]"
+              stroke="white"
+              strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+        )}
+      </svg>
+      {active && (
+        <div
+          dir="rtl"
+          className="pointer-events-none absolute z-10 rounded-md border border-border bg-popover px-2 py-1 text-[11px] leading-tight text-popover-foreground shadow-md whitespace-nowrap"
+          style={{
+            left: `${activeXPct}%`,
+            top: `${activeYPct}%`,
+            transform: `translate(${tooltipShiftX}, calc(-100% - 8px))`,
+          }}
+        >
+          <div className="font-medium text-foreground">{active.semester}</div>
+          <div className="tabular-nums text-muted-foreground text-[10px]" dir="ltr">
+            {active.gpa.toFixed(2)}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
