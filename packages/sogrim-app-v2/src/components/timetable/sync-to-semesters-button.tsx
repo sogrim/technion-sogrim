@@ -139,7 +139,7 @@ export function SyncToSemestersButton() {
     }
     if (lockedByEdits) {
       const name = formatSemesterName(draftSemester);
-      return `הסמסטר "${name}" כבר קיים בעמוד הסמסטרים. כדי להעביר את כל הקורסים לסמסטר חדש, יש למחוק תחילה את הסמסטר הקיים.`;
+      return `הסמסטר "${name}" כבר קיים בעמוד הסמסטרים. כדי לסנכרן את כל הקורסים לסמסטר חדש, יש למחוק תחילה את הסמסטר הקיים.`;
     }
     if (coursesToAdd.length === 0 && coursesToRemove.length === 0) {
       const name = formatSemesterName(draftSemester);
