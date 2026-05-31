@@ -69,19 +69,48 @@ pub fn completed_chain_msg(mut chain: Vec<String>) -> String {
     msg
 }
 
-pub fn completed_specialization_groups_msg(mut groups: Vec<String>, needed: usize) -> String {
-    let mut msg = if groups.len() == ZERO as usize {
+pub fn completed_specialization_groups_msg(
+    groups: Vec<(String, usize)>,
+    needed: usize,
+) -> String {
+    let weighted_total: usize = groups.iter().map(|(_, w)| w).sum();
+    let has_double = groups.iter().any(|(_, w)| *w > 1);
+
+    // Annotate double groups with "(כפולה)"
+    let mut names: Vec<String> = groups
+        .iter()
+        .map(|(name, weight)| {
+            if *weight > 1 {
+                format!("{name} (כפולה)")
+            } else {
+                name.clone()
+            }
+        })
+        .collect();
+
+    let mut msg = if weighted_total == ZERO as usize {
         "לא השלמת אף קבוצת התמחות".to_string()
-    } else if groups.len() == SINGLE as usize {
+    } else if groups.len() == SINGLE as usize && !has_double {
         format!("השלמת קבוצת התמחות אחת (מתוך {needed}): ")
+    } else if has_double {
+        // When doubles are involved, show actual group count and explain the weight
+        format!(
+            "השלמת {} קבוצות התמחות (נספרות כ-{} מתוך {} הנדרשות): ",
+            groups.len(),
+            weighted_total,
+            needed
+        )
     } else {
         format!("השלמת {} (מתוך {}) קבוצות התמחות: ", groups.len(), needed)
     };
-    while let Some(group) = groups.pop() {
-        if groups.is_empty() {
-            msg += &group;
+
+    // Append group names
+    names.reverse();
+    while let Some(name) = names.pop() {
+        if names.is_empty() {
+            msg += &name;
         } else {
-            let _ = write!(msg, "{group}, ");
+            let _ = write!(msg, "{name}, ");
         }
     }
     msg

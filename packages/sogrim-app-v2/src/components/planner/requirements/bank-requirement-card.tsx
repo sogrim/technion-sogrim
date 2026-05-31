@@ -78,16 +78,11 @@ export function BankRequirementCard({
 
         {/* Main content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center justify-between gap-2 mb-1">
             <div className="flex items-center gap-2">
               <span className="font-bold text-foreground text-sm">
                 {bank.course_bank_name}
               </span>
-              {bank.message && (
-                <span title={bank.message}>
-                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                </span>
-              )}
             </div>
             <Badge
               variant={isCompleted ? "success-outline" : "info-outline"}
@@ -96,6 +91,12 @@ export function BankRequirementCard({
               {isCompleted ? "בוצע" : "בתהליך"}
             </Badge>
           </div>
+
+          {bank.message && (
+            <p className="text-xs text-muted-foreground mb-1.5 leading-relaxed">
+              {bank.message}
+            </p>
+          )}
 
           {/* Progress bar */}
           <div className="space-y-1">

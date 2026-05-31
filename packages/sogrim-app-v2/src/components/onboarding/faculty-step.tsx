@@ -19,6 +19,12 @@ const FACULTIES: {
     icon: BarChart3,
   },
   {
+    key: Faculty.ElectricalEngineering,
+    label: "הנדסת חשמל ומחשבים",
+    description: "הפקולטה להנדסת חשמל ומחשבים ע\"ש ויטרבי",
+    icon: Zap,
+  },
+  {
     key: Faculty.Medicine,
     label: "רפואה",
     icon: Stethoscope,

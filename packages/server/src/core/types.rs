@@ -7,6 +7,15 @@ use std::fmt;
 pub type Chain = Vec<CourseId>;
 pub type NumCourses = usize;
 
+/// Requirements for completing a specialization group as "double" (counts as 2 groups).
+/// Used in EE faculty where some groups can be taken at single depth (3 courses = 1 group)
+/// or double depth (6 courses = 2 groups toward the total requirement).
+#[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
+pub struct DoubleGroupRequirement {
+    pub courses_sum: usize,
+    pub mandatory: Option<Vec<OptionalReplacements>>,
+}
+
 #[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
@@ -20,6 +29,11 @@ pub struct SpecializationGroup {
     //  [5,6]]
     // The user needs to pass the courses: (1 or 2), and (3 or 4), and (5 or 6).
     pub mandatory: Option<Vec<OptionalReplacements>>,
+
+    /// If present, this group can count as 2 groups when the student completes
+    /// extra courses and satisfies the double mandatory requirements.
+    #[serde(default)]
+    pub double: Option<DoubleGroupRequirement>,
 }
 
 #[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]

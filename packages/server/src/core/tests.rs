@@ -805,7 +805,7 @@ async fn test_computer_engineer_itinerary() {
             .unwrap()
             .message,
         Some(messages::completed_specialization_groups_msg(
-            vec!["רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים".to_string()],
+            vec![("רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים".to_string(), 1)],
             2
         ))
     );

@@ -2,6 +2,7 @@ export const Faculty = {
   Unknown: "Unknown",
   ComputerScience: "ComputerScience",
   DataAndDecisionScience: "DataAndDecisionScience",
+  ElectricalEngineering: "ElectricalEngineering",
   Medicine: "Medicine",
   ElectricalEngineering: "ElectricalEngineering",
 } as const;

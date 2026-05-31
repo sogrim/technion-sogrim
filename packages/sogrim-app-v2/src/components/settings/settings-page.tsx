@@ -89,6 +89,7 @@ import type { Catalog } from "@/types/api";
 const FACULTY_LABELS: Record<string, string> = {
   ComputerScience: "מדעי המחשב",
   DataAndDecisionScience: "מדעי הנתונים וקבלת החלטות",
+  ElectricalEngineering: "הנדסת חשמל ומחשבים",
   Medicine: "רפואה",
   ElectricalEngineering: "הנדסת חשמל",
   Unknown: "כללי",
