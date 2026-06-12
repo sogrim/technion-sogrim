@@ -15,6 +15,7 @@ pub fn cors(debug: bool) -> CorsLayer {
     } else {
         AllowOrigin::list([
             "https://sogrim.org".parse().unwrap(),
+            "https://www.sogrim.org".parse().unwrap(),
             "https://students.sogrim.org".parse().unwrap(),
             "https://sogrim.onrender.com".parse().unwrap(),
             "https://sogrim-v2.onrender.com".parse().unwrap(),
