@@ -338,10 +338,10 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
               />
             </div>
           </div>
-          <p className="text-lg font-semibold text-foreground text-center flex-1 flex items-center justify-center">
+          <p className="text-xl font-semibold text-foreground text-center flex-1 flex items-center justify-center">
             השלמת {displayedCredit} מתוך {totalRequired} נקודות
           </p>
-          {catalog && <p className="text-xs text-muted-foreground text-center mt-2">{catalog.name}</p>}
+          {catalog && <p className="text-sm text-muted-foreground text-center mt-2 mb-6">{catalog.name}</p>}
         </div>
 
         {/* Stats card */}
