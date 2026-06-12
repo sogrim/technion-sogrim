@@ -87,6 +87,10 @@ export interface UserDetails {
   catalog?: Catalog;
   compute_in_progress: boolean;
   modified: boolean;
+  /** Hebrew gap labels on empty timeline slots, keyed by linear calendar idx
+   *  (`year*3 + season`, winter/spring/summer = 0/1/2) as a string. Optional
+   *  for backwards-compat with responses from servers that pre-date this field. */
+  timeline_annotations?: Record<string, string>;
 }
 
 export interface UserState {

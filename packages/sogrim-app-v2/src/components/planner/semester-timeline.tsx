@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
-import { useTimelineStore, type TimelineState } from "@/stores/timeline-store";
 import { createPortal } from "react-dom";
 import {
   DndContext,
@@ -16,7 +15,6 @@ import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { semesterKey } from "@/lib/semester-utils";
 import type { AcademicSemester } from "@/types/api";
 
 // ────────────────────────────────────────────────────────────────
@@ -99,18 +97,10 @@ function formatSlotTitle(real: RealSemester): string {
   return `${SEASON_HE[real.season]} ${real.year + 1}`;
 }
 
-function defaultPositions(ordinals: AcademicSemester[]): number[] {
-  return ordinals.map(semesterToLinearIdx);
-}
-
-function reconcile(saved: TimelineState, ordinals: AcademicSemester[]): TimelineState {
-  return { ...saved, positions: defaultPositions(ordinals) };
-}
-
 /** Build all slots in display range. Always includes summer — uniform calendar grid. */
 function buildSlots(
   positions: number[],
-  annotations: Record<number, string>,
+  annotations: Record<string, string>,
   ordinals: AcademicSemester[],
 ): { slots: Slot[]; coreStart: number; coreEnd: number } {
   if (positions.length === 0) return { slots: [], coreStart: 0, coreEnd: 0 };
@@ -134,11 +124,11 @@ function buildSlots(
     const { year, season } = fromLinearIdx(idx);
     const real: RealSemester = { year, season, idx };
     const ordinalIdx = positionByIdx.get(idx);
-    const annotation = annotations[idx];
+    const annotation = annotations[String(idx)];
     const isPadding = idx < coreStart || idx > coreEnd;
 
-    // Guard: ordinalIdx may reference a stale index when semesters shrink
-    // (e.g. during the render right after deletion, before reconcile runs).
+    // Guard: ordinalIdx may reference a stale index when ordinals shrink
+    // (e.g. during the render right after deletion).
     // In that case, treat the slot as empty so we don't crash on undefined.
     const ordinalSemester =
       ordinalIdx !== undefined && ordinalIdx < ordinals.length
@@ -168,9 +158,17 @@ function buildSlots(
 interface SemesterTimelineProps {
   ordinals: AcademicSemester[];
   currentOrdinalIdx: number;
+  /** Gap labels keyed by linear calendar idx (`year*3 + season`). Keys are
+   *  serialized as strings to match backend HashMap<String, String>. */
+  annotations: Record<string, string>;
   onSelectOrdinal: (idx: number) => void;
   onAddSemester?: (name: AcademicSemester) => void;
   onDeleteSemester?: (name: AcademicSemester) => void;
+  /** Apply a year shift to the ordinal at `fromIdx` and every ordinal after
+   *  it. Validation (strict chronological order) is the parent's responsibility;
+   *  this component already only invokes valid shifts. */
+  onShiftSemestersFrom: (fromOrdinalIdx: number, deltaYears: number) => void;
+  onSetAnnotations: (next: Record<string, string>) => void;
   className?: string;
 }
 
@@ -373,6 +371,7 @@ function EmptySlotView({
   canAdd,
   isGhost,
   isPrimaryNext,
+  followOffsetX,
   onAddSemester,
   onAddAnnotation,
   onRemoveAnnotation,
@@ -384,6 +383,8 @@ function EmptySlotView({
   isGhost: boolean;
   /** First non-summer slot past the latest chip — gets prominent "next semester" treatment */
   isPrimaryNext: boolean;
+  /** Snapped translate for annotated slots that should follow a drag. */
+  followOffsetX?: number;
   onAddSemester?: () => void;
   onAddAnnotation: (label: string) => void;
   onRemoveAnnotation: () => void;
@@ -447,6 +448,16 @@ function EmptySlotView({
           "dark:bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.18)_0,rgba(245,158,11,0.18)_5px,transparent_5px,transparent_10px)]",
           "flex items-center justify-center",
         )}
+        style={{
+          transform: followOffsetX
+            ? `translate3d(${followOffsetX}px, 0, 0)`
+            : undefined,
+          transition: followOffsetX !== undefined
+            ? "transform 120ms cubic-bezier(0.25, 1, 0.4, 1)"
+            : undefined,
+          willChange: followOffsetX !== undefined ? "transform" : undefined,
+          zIndex: followOffsetX ? 10 : undefined,
+        }}
         title={`${slot.annotation} · ${formatSlotTitle(slot.real)}`}
       >
         <span className="text-[10px] text-amber-700 dark:text-amber-400 px-1 text-center font-medium">
@@ -595,71 +606,40 @@ function EmptySlotView({
 export function SemesterTimeline({
   ordinals,
   currentOrdinalIdx,
+  annotations,
   onSelectOrdinal,
   onAddSemester,
   onDeleteSemester,
+  onShiftSemestersFrom,
+  onSetAnnotations,
   className,
 }: SemesterTimelineProps) {
-  // Key for invalidating reconciliation when the absolute semester list changes.
-  const ordinalsKey = useMemo(() => ordinals.map(semesterKey).join("|"), [ordinals]);
-  // State is hoisted into a Zustand store so other surfaces (banner stats,
-  // future analytics) can read calendar positions without prop-drilling.
-  // The store persists to localStorage via the `persist` middleware, so
-  // existing users keep their saved positions across this refactor.
-  const positions = useTimelineStore((s) => s.positions);
-  const annotations = useTimelineStore((s) => s.annotations);
-  const setStoreState = useTimelineStore((s) => s.setState);
-  const state = useMemo<TimelineState>(
+  // Positions are derived from the underlying AcademicSemester data — single
+  // source of truth. A drag mutates the semesters' start_year through
+  // onShiftSemestersFrom; positions then recompute on the next render.
+  const positions = useMemo(
+    () => ordinals.map(semesterToLinearIdx),
+    [ordinals],
+  );
+  const state = useMemo(
     () => ({ positions, annotations }),
     [positions, annotations],
   );
-  const setState = setStoreState;
   const [drag, setDrag] = useState<{ ordinalIdx: number; deltaX: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState({ start: false, end: false });
   const grabScrollRef = useRef<{ x: number; scrollLeft: number } | null>(null);
-
-  /** Calendar idx to place the next added semester at — set right before calling
-      onAddSemester so the new chip lands exactly where the user clicked. */
-  const pendingAddPositionRef = useRef<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor),
   );
 
-  // Sync positions with absolute semester data changes (parent adds/removes semesters).
-  // Uses pendingAddPositionRef to place newly-added semesters where the user clicked.
-  useEffect(() => {
-    setState((s) => {
-      if (ordinals.length > s.positions.length && pendingAddPositionRef.current !== null) {
-        const pos = pendingAddPositionRef.current;
-        pendingAddPositionRef.current = null;
-        let k = s.positions.findIndex((p) => p > pos);
-        if (k < 0) k = s.positions.length;
-        const newPositions = [
-          ...s.positions.slice(0, k),
-          pos,
-          ...s.positions.slice(k),
-        ];
-        for (let i = 1; i < newPositions.length; i++) {
-          if (newPositions[i] <= newPositions[i - 1]) {
-            return reconcile(s, ordinals); // shouldn't happen, but be safe
-          }
-        }
-        return { ...s, positions: newPositions };
-      }
-      return reconcile(s, ordinals);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordinalsKey]);
-
   const handleAddSemesterAtSlot = useCallback(
     (slotRealIdx: number, season: Season) => {
       if (!onAddSemester) return;
       const { year } = fromLinearIdx(slotRealIdx);
       const newSemester: AcademicSemester = { season, start_year: year };
-      pendingAddPositionRef.current = slotRealIdx;
       onAddSemester(newSemester);
     },
     [onAddSemester],
@@ -670,12 +650,6 @@ export function SemesterTimeline({
       if (!onDeleteSemester) return;
       const semester = ordinals[ordinalIdx];
       if (!semester) return;
-
-      // Pre-emptively drop the position so we don't render a stale index.
-      setState((s) => ({
-        ...s,
-        positions: s.positions.filter((_, i) => i !== ordinalIdx),
-      }));
       onDeleteSemester(semester);
     },
     [onDeleteSemester, ordinals],
@@ -719,6 +693,8 @@ export function SemesterTimeline({
       const deltaYears = Math.round(rawSlotDelta / 3);
       const deltaSlots = deltaYears * 3;
       if (deltaSlots !== 0) {
+        // Validate strict chronological order would be preserved before
+        // asking the parent to mutate the underlying semester data.
         const newPositions = state.positions.map((p, i) =>
           i >= drag.ordinalIdx ? p + deltaSlots : p,
         );
@@ -730,12 +706,12 @@ export function SemesterTimeline({
           }
         }
         if (valid) {
-          setState((s) => ({ ...s, positions: newPositions }));
+          onShiftSemestersFrom(drag.ordinalIdx, deltaYears);
         }
       }
     }
     setDrag(null);
-  }, [drag, state.positions]);
+  }, [drag, state.positions, onShiftSemestersFrom]);
 
   const handleDragCancel = useCallback(() => setDrag(null), []);
 
@@ -839,19 +815,14 @@ export function SemesterTimeline({
   }, [slots]);
 
   const addAnnotation = useCallback((idx: number, label: string) => {
-    setState((s) => ({
-      ...s,
-      annotations: { ...s.annotations, [idx]: label },
-    }));
-  }, []);
+    onSetAnnotations({ ...annotations, [String(idx)]: label });
+  }, [annotations, onSetAnnotations]);
 
   const removeAnnotation = useCallback((idx: number) => {
-    setState((s) => {
-      const next = { ...s.annotations };
-      delete next[idx];
-      return { ...s, annotations: next };
-    });
-  }, []);
+    const next = { ...annotations };
+    delete next[String(idx)];
+    onSetAnnotations(next);
+  }, [annotations, onSetAnnotations]);
 
   if (ordinals.length === 0) return null;
 
@@ -916,15 +887,22 @@ export function SemesterTimeline({
     return s;
   }, [targetArrayIndices, slots]);
 
-  // Snap follower chips visually to year increments
+  // Snap follower chips & annotations visually to year increments. Follower
+  // ordinal chips with `ordinalIdx > drag.ordinalIdx` move; annotated empty
+  // slots at or after the dragged chip's original calendar idx also move,
+  // mirroring the shift logic in planner-page.tsx so the visual preview
+  // matches what gets persisted on drop.
   const computeFollowOffset = (slot: Slot): number | undefined => {
     if (!drag || drag.deltaX === 0) return undefined;
-    if (slot.kind !== "ordinal") return undefined;
-    if (slot.ordinalIdx > drag.ordinalIdx) {
-      // Reverse sign for RTL (positive calendar delta = negative screen x)
-      return -snappedDeltaYears * 3 * SLOT_WIDTH;
+    // Reverse sign for RTL (positive calendar delta = negative screen x)
+    const offset = -snappedDeltaYears * 3 * SLOT_WIDTH;
+    if (slot.kind === "ordinal") {
+      return slot.ordinalIdx > drag.ordinalIdx ? offset : undefined;
     }
-    return undefined;
+    // Empty slots only have a visual to animate when they're annotated.
+    if (!slot.annotation) return undefined;
+    const draggedChipIdx = state.positions[drag.ordinalIdx];
+    return slot.real.idx >= draggedChipIdx ? offset : undefined;
   };
 
   return (
@@ -1051,6 +1029,7 @@ export function SemesterTimeline({
                       <EmptySlotView
                         slot={slot}
                         canAdd={!!onAddSemester}
+                        followOffsetX={followOffsetX}
                         isGhost={
                           // In-core empty slots; OR padding slots up to (and
                           // including) the primary-next slot — so the skipped

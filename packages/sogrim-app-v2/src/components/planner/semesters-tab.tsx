@@ -13,9 +13,12 @@ interface SemestersTabProps {
   bankNames: string[];
   currentSemesterIdx: number;
   extraSemesters?: AcademicSemester[];
+  annotations: Record<string, string>;
   onSelectSemester: (idx: number) => void;
   onAddSemester: (semesterName: AcademicSemester) => void;
   onDeleteSemester: (semesterName: AcademicSemester) => void;
+  onShiftSemestersFrom: (fromOrdinalIdx: number, deltaYears: number) => void;
+  onSetAnnotations: (next: Record<string, string>) => void;
   onUpdateStatuses: (updatedStatuses: CourseStatus[]) => void;
   onDeleteCourse: (courseNumber: string, semester: AcademicSemester | null) => void;
   onAddCourse: (row: RowData) => void;
@@ -60,9 +63,12 @@ export function SemestersTab({
   bankNames,
   currentSemesterIdx,
   extraSemesters = [],
+  annotations,
   onSelectSemester,
   onAddSemester,
   onDeleteSemester,
+  onShiftSemestersFrom,
+  onSetAnnotations,
   onUpdateStatuses,
   onDeleteCourse,
   onAddCourse,
@@ -90,9 +96,12 @@ export function SemestersTab({
       <SemesterTimeline
         ordinals={tabs}
         currentOrdinalIdx={currentSemesterIdx}
+        annotations={annotations}
         onSelectOrdinal={onSelectSemester}
         onAddSemester={onAddSemester}
         onDeleteSemester={onDeleteSemester}
+        onShiftSemestersFrom={onShiftSemestersFrom}
+        onSetAnnotations={onSetAnnotations}
       />
 
       {/* Course grid for selected semester */}

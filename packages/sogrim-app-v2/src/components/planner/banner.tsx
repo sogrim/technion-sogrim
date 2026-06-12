@@ -1,10 +1,8 @@
 import { useState, useMemo, useRef } from "react";
 import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarDays, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ComputeButton } from "./compute-button";
 import { isSocialActivityCourse } from "@/lib/reserved-credits";
 import { formatSemesterName, parseSemesterOrder, semesterKey, semestersEqual } from "@/lib/semester-utils";
-import { useTimelineStore, distinctAcademicYears } from "@/stores/timeline-store";
 import type { AcademicSemester, DegreeStatus, Catalog, CourseStatus } from "@/types/api";
 
 /** Per-semester GPA, ordered chronologically (uses parseSemesterOrder so
@@ -203,19 +201,14 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
   const gpaDelta = semesterGPA.length >= 2
     ? semesterGPA[semesterGPA.length - 1].gpa - semesterGPA[semesterGPA.length - 2].gpa
     : null;
-  const timelinePositions = useTimelineStore((s) => s.positions);
   const yearsOfStudy = useMemo(() => {
-    if (timelinePositions.length > 0) {
-      const years = distinctAcademicYears(timelinePositions);
-      if (years > 0) return years;
-    }
     const years = new Set<number>();
     for (const cs of course_statuses) {
       if (!cs.semester) continue;
       years.add(cs.semester.start_year);
     }
     return years.size > 0 ? years.size : null;
-  }, [course_statuses, timelinePositions]);
+  }, [course_statuses]);
   const lastSemester = useMemo(() => {
     let result: AcademicSemester | null = null;
     let maxOrder = -Infinity;
@@ -307,7 +300,6 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
                   )} />
                 </button>
               </div>
-              <ComputeButton />
             </div>
           </div>
         )}
@@ -350,9 +342,6 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             השלמת {displayedCredit} מתוך {totalRequired} נקודות
           </p>
           {catalog && <p className="text-xs text-muted-foreground text-center mt-2">{catalog.name}</p>}
-          <div className="mt-3 flex justify-center">
-            <ComputeButton />
-          </div>
         </div>
 
         {/* Stats card */}

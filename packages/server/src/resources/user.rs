@@ -19,6 +19,12 @@ pub struct UserDetails {
     pub degree_status: DegreeStatus,
     pub compute_in_progress: bool,
     pub modified: bool,
+    /// Free-form Hebrew labels on empty calendar slots in the planner timeline
+    /// (e.g. "מילואים", "חופשה"), keyed by the linear calendar idx
+    /// (`year*3 + season`, where winter/spring/summer = 0/1/2) as a string.
+    /// String keys keep BSON happy and round-trip cleanly through JSON.
+    #[serde(default)]
+    pub timeline_annotations: std::collections::HashMap<String, String>,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]

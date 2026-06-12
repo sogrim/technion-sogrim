@@ -18,6 +18,7 @@ const emptyDetails: UserDetails = {
   catalog: undefined,
   compute_in_progress: false,
   modified: false,
+  timeline_annotations: {},
 };
 
 interface ResetUserDialogProps {

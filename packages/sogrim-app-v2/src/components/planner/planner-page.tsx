@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearch } from "@tanstack/react-router";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
@@ -87,6 +87,63 @@ export function PlannerPage() {
 
   const courseStatuses = details?.degree_status.course_statuses ?? [];
   const bankNames = details?.catalog?.course_bank_names ?? [];
+
+  // One-shot migration: pull legacy timeline annotations out of localStorage
+  // (where they lived before the DB-backed flow) into UserDetails. We only
+  // migrate `annotations` — the legacy `positions` field is meaningless under
+  // the new model (drag now updates each course's start_year directly), so
+  // it's dropped on the floor.
+  const migratedAnnotationsRef = useRef(false);
+  useEffect(() => {
+    if (migratedAnnotationsRef.current) return;
+    if (!details) return;
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem("sogrim-timeline-v2");
+    if (!raw) {
+      migratedAnnotationsRef.current = true;
+      return;
+    }
+    migratedAnnotationsRef.current = true;
+    let parsed: { state?: { annotations?: Record<string, string> } };
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // Legacy blob is corrupt — nothing to migrate, safe to clear.
+      window.localStorage.removeItem("sogrim-timeline-v2");
+      return;
+    }
+    const legacyAnnotations = parsed.state?.annotations ?? {};
+    const existingAnnotations = details.timeline_annotations ?? {};
+    const merged: Record<string, string> = { ...existingAnnotations };
+    let added = 0;
+    for (const [k, v] of Object.entries(legacyAnnotations)) {
+      if (merged[k] === undefined) {
+        merged[k] = v;
+        added++;
+      }
+    }
+    if (added === 0) {
+      // Nothing new to persist — safe to clear.
+      window.localStorage.removeItem("sogrim-timeline-v2");
+      return;
+    }
+    // Only remove the legacy blob after the server confirms it has the
+    // merged annotations. If the mutation fails (network error, server
+    // 500, expired token), leave localStorage alone so the next mount
+    // gets another chance to migrate. Also reset the ref so the retry
+    // can actually happen on the next render.
+    updateMutation.mutate(
+      { ...details, timeline_annotations: merged, modified: true },
+      {
+        onSuccess: () => {
+          window.localStorage.removeItem("sogrim-timeline-v2");
+        },
+        onError: () => {
+          migratedAnnotationsRef.current = false;
+        },
+      },
+    );
+  }, [details, updateMutation]);
 
   const sendUpdate = useCallback(
     (updatedStatuses: CourseStatus[]) => {
@@ -211,6 +268,139 @@ export function PlannerPage() {
       }
     },
     [courseStatuses, currentSemesterIdx, sendUpdate, setCurrentSemester],
+  );
+
+  // Drag-in-slider: the timeline asked to shift the semester at `fromIdx` and
+  // every later semester by `deltaYears`. Translate that into start_year
+  // updates on all matching course statuses (and on extraSemesters local state
+  // for empty chips), shift gap annotations that sit inside the moved region,
+  // then persist atomically via the existing user-details mutation so the new
+  // position survives a refresh.
+  const handleShiftSemestersFrom = useCallback(
+    (fromOrdinalIdx: number, deltaYears: number) => {
+      if (deltaYears === 0) return;
+      if (!details) return;
+
+      const existing = getAllSemesters(courseStatuses);
+      const merged = new Map(
+        [...existing, ...extraSemesters].map((s) => [semesterKey(s), s]),
+      );
+      const allTabs = Array.from(merged.values()).sort(
+        (a, b) => parseSemesterOrder(a) - parseSemesterOrder(b),
+      );
+      if (fromOrdinalIdx < 0 || fromOrdinalIdx >= allTabs.length) return;
+
+      // Build the affected set (semesters at or after fromIdx), keyed for fast lookup.
+      const affected = new Set(
+        allTabs.slice(fromOrdinalIdx).map(semesterKey),
+      );
+
+      // Defence-in-depth: confirm the shift preserves strict chronological
+      // ordering against the unchanged earlier semester (if any). The
+      // timeline component already validates this client-side; we re-check
+      // before letting the change reach the DB.
+      if (fromOrdinalIdx > 0) {
+        const prev = allTabs[fromOrdinalIdx - 1];
+        const shifted = allTabs[fromOrdinalIdx];
+        const prevOrder = parseSemesterOrder(prev);
+        const shiftedOrder = parseSemesterOrder({
+          ...shifted,
+          start_year: shifted.start_year + deltaYears,
+        });
+        if (shiftedOrder <= prevOrder) return;
+      }
+
+      // Shifting backwards into negative years is degenerate — bail.
+      if (allTabs[fromOrdinalIdx].start_year + deltaYears < 0) return;
+
+      const updatedStatuses = courseStatuses.map((cs) => {
+        if (!cs.semester) return cs;
+        if (!affected.has(semesterKey(cs.semester))) return cs;
+        return {
+          ...cs,
+          semester: { ...cs.semester, start_year: cs.semester.start_year + deltaYears },
+          modified: true,
+        };
+      });
+
+      setExtraSemesters((prev) =>
+        prev.map((s) =>
+          affected.has(semesterKey(s))
+            ? { ...s, start_year: s.start_year + deltaYears }
+            : s,
+        ),
+      );
+
+      // Shift gap annotations whose calendar idx sits at or after the first
+      // shifted chip. Annotations to the left of the shift stay anchored —
+      // they describe time before the moved block. Without this remap, a
+      // drag would visually orphan labels (the chip moves but the gap label
+      // stays put), or worse, the chip would land on top of an annotation
+      // idx and silently hide it from the timeline render.
+      const firstShiftedIdx = parseSemesterOrder(allTabs[fromOrdinalIdx]);
+      const deltaSlots = deltaYears * 3;
+      const oldAnnotations = details.timeline_annotations ?? {};
+      const shiftedAnnotations: Record<string, string> = {};
+      for (const [k, v] of Object.entries(oldAnnotations)) {
+        const idx = Number(k);
+        if (!Number.isFinite(idx)) {
+          // Preserve unexpected non-numeric keys verbatim — don't lose data.
+          shiftedAnnotations[k] = v;
+          continue;
+        }
+        const newIdx = idx >= firstShiftedIdx ? idx + deltaSlots : idx;
+        shiftedAnnotations[String(newIdx)] = v;
+      }
+
+      const updatedDetails: UserDetails = {
+        ...details,
+        degree_status: {
+          ...details.degree_status,
+          course_statuses: updatedStatuses,
+        },
+        timeline_annotations: shiftedAnnotations,
+        modified: true,
+      };
+      updateMutation.mutate(updatedDetails, {
+        onError: (err) => {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          const serverMsg =
+            (err as { response?: { data?: string } })?.response?.data;
+          setToast({
+            message: serverMsg
+              ? `שגיאה בשמירת הנתונים: ${serverMsg}`
+              : `שגיאה בשמירת הנתונים: ${errorMsg}`,
+            type: "error",
+          });
+        },
+      });
+    },
+    [courseStatuses, details, extraSemesters, updateMutation],
+  );
+
+  const handleSetAnnotations = useCallback(
+    (next: Record<string, string>) => {
+      if (!details) return;
+      const updatedDetails: UserDetails = {
+        ...details,
+        timeline_annotations: next,
+        modified: true,
+      };
+      updateMutation.mutate(updatedDetails, {
+        onError: (err) => {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          const serverMsg =
+            (err as { response?: { data?: string } })?.response?.data;
+          setToast({
+            message: serverMsg
+              ? `שגיאה בשמירת הנתונים: ${serverMsg}`
+              : `שגיאה בשמירת הנתונים: ${errorMsg}`,
+            type: "error",
+          });
+        },
+      });
+    },
+    [details, updateMutation],
   );
 
   const handleIgnoreCourse = useCallback(
@@ -341,9 +531,12 @@ export function PlannerPage() {
             bankNames={bankNames}
             currentSemesterIdx={currentSemesterIdx}
             extraSemesters={extraSemesters}
+            annotations={details?.timeline_annotations ?? {}}
             onSelectSemester={setCurrentSemester}
             onAddSemester={handleAddSemester}
             onDeleteSemester={handleDeleteSemester}
+            onShiftSemestersFrom={handleShiftSemestersFrom}
+            onSetAnnotations={handleSetAnnotations}
             onUpdateStatuses={handleUpdateStatuses}
             onDeleteCourse={handleDeleteCourse}
             onAddCourse={handleAddCourse}
