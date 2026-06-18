@@ -1,49 +1,146 @@
 <div align="center">
-  <h1>Sogrim</h1>
-  <p>
-    <strong>Are you ready to complete your degree?</strong>
-  </p>
-  <h2>
 
-[![CI](https://github.com/sogrim/technion-sogrim/actions/workflows/on_pr_server_ci.yml/badge.svg)](https://github.com/sogrim/technion-sogrim/actions/workflows/on_pr_server_ci.yml) 
-![LASTEST](https://img.shields.io/github/v/release/sogrim/technion-sogrim?include_prereleases&label=latest)
-![LICENSE](https://img.shields.io/github/license/sogrim/technion-sogrim)
-[![CODECOV](https://codecov.io/gh/sogrim/technion-sogrim/branch/master/graph/badge.svg)](https://codecov.io/gh/sogrim/technion-sogrim)
-[![DEGREES-COMPLETED](https://img.shields.io/endpoint?logo=RunKit&style=flat&color=red&url=https%3A%2F%2Fdegrees-completed-cs2s7fg9pgz2.runkit.sh%2F)](https://runkit.com/home#endpoint)
-[![HOMEPAGE](https://img.shields.io/badge/https-sogrim.org-blueviolet)](https://sogrim.org)
-  </h2>
+# סוגרים — Sogrim
 
-</p>
+**Open-source degree tracking & schedule planning for Technion students**
+
+[![CI](https://github.com/sogrim/technion-sogrim/actions/workflows/on_pr_server_ci.yml/badge.svg)](https://github.com/sogrim/technion-sogrim/actions/workflows/on_pr_server_ci.yml)
+![Latest Release](https://img.shields.io/github/v/release/sogrim/technion-sogrim?include_prereleases&label=latest)
+![License](https://img.shields.io/github/license/sogrim/technion-sogrim)
+[![Homepage](https://img.shields.io/badge/https-sogrim.org-blueviolet)](https://sogrim.org)
+![Rust](https://img.shields.io/badge/Rust-000000?logo=rust&logoColor=white)
+![React](https://img.shields.io/badge/React_19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+
+
 </div>
 
-Sogrim is an open source system that checks the status of your academic degree: Have you met all the requirements, and are you ready to complete your degree?
+---
 
+**Sogrim** (סוגרים — *"closing"* in Hebrew, as in *closing your degree*) helps Technion students answer two questions:
 
-Currently supports the Technion, Faculty of Computer Science.
+1. **Have I met all my degree requirements?**
+2. **What should my schedule look like next semester?**
 
-**Soon! 💃🏼💃🏼💃🏼**  - Support for building personal catalogs (So that any institution and faculty will be supported) 🤓
+It currently supports **Computer Science**, **Data Science**, and **Medicine** faculties.
 
+## ✨ Features
 
-## Suggestions, fixes and issues
-Something isn't working?
-Have an idea?   
-Cool!
-You can open an issue for us, or specify your suggestion in the following [form](https://docs.google.com/forms/d/e/1FAIpQLSe7GbkAkIdTgJ3QkGmJMHhkIpjWz_I0ZX608FlxVLeT0cyJJQ/viewform) 
+### 📋 Degree Planner (מעקב תואר)
 
-## Contributing
-Pull requests are welcome. 
-1. First, please open an issue to discuss what you would like to change.
-2. After approval from the admins, checkout from `development` with your new branch.
-3. When finished, make a PR (`your-branch` -> `development`).
+- **One-click import** — paste your grade sheet from Technion's UG portal
+- **Automatic degree status** — computes progress against your catalog requirements
+- **Requirement banks** — track mandatory, elective, science, and other categories separately
+- **Visual progress** — progress bars, credit summaries, and GPA calculation
+- **Semester management** — semester-by-semester course view with inline editing
+- **Smart validation** — duplicate detection and prerequisite awareness
 
+### 🗓️ Timetable Builder (מערכת שעות)
 
-## Tech stack
-![react&rust=love](/packages/docs/rrlove.png)
-* Backend - **Rust** (with [actix](https://actix.rs/))
-* Frontend - **React**
+- **Visual weekly schedule** — drag-and-drop course placement
+- **Rich course search** — filter by faculty, credits, days, and exam dates
+- **Multiple drafts** — build and compare different schedule options
+- **Conflict detection** — time overlaps are highlighted automatically
+- **Group selection** — choose between course sections and recitation groups
+- **Exam timeline** — see your exam schedule at a glance
+- **Custom events** — add personal commitments to your schedule
+- **Dark mode** — full dark theme support
 
-## Sogrim-BO
-**Sogrim-BO** - Back office app for administrations. WIP
+## 🏗️ Tech Stack
 
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 19, TypeScript, Vite 7, Tailwind CSS 4, [shadcn/ui](https://ui.shadcn.com) |
+| **Routing & Data** | TanStack Router, TanStack Query |
+| **Tables** | AG Grid Community |
+| **State** | Zustand |
+| **Auth** | Google Identity Services (One Tap) |
+| **Backend** | Rust, [Axum](https://github.com/tokio-rs/axum), tower-http |
+| **Database** | MongoDB |
+| **Infra** | Oracle Cloud VM, GitHub Actions CI/CD, [Pulumi](https://www.pulumi.com) IaC |
+
+The frontend is fully **RTL** (right-to-left) and **responsive** — mobile users get a bottom navigation bar, desktop users get a sidebar.
+
+## 📂 Project Structure
+
+```
+technion-sogrim/
+├── packages/
+│   ├── sogrim-app-v2/       # Frontend — React 19 + Vite + shadcn
+│   │   └── src/
+│   │       ├── components/  # UI components (planner, timetable, settings, auth, etc.)
+│   │       ├── hooks/       # Custom React hooks
+│   │       ├── stores/      # Zustand state stores
+│   │       ├── types/       # TypeScript type definitions
+│   │       ├── lib/         # Utilities
+│   │       └── data/        # Static data & constants
+│   ├── server/              # Backend — Rust + Axum
+│   │   └── src/
+│   │       ├── api/         # HTTP route handlers
+│   │       ├── core/        # Degree computation engine
+│   │       ├── db/          # MongoDB data access
+│   │       ├── middleware/   # Auth & request middleware
+│   │       ├── bin/          # CLI binary entry points
+│   │       ├── sap/         # Course catalog parsing
+│   │       └── resources/   # Static resources
+│   ├── sogrim-app/           # V1 frontend (legacy)
+│   ├── sogrim-bo-app/        # Back-office app
+│   ├── infra/               # Pulumi infrastructure as code
+│   └── docs/                # Documentation & plans
+├── .github/workflows/       # CI/CD pipelines
+└── README.md
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/) (latest stable)
+- [Node.js](https://nodejs.org/) (v20+)
+- [MongoDB](https://www.mongodb.com/try/download/community) (running locally or a connection URI)
+
+### Backend
+
+```bash
+cd packages/server
+# Create .env with required variables (see config.rs for details):
+# SOGRIM_URI=mongodb://... SOGRIM_CLIENT_ID=... SOGRIM_PROFILE=dev
+cargo run
+```
+
+### Frontend
+
+```bash
+cd packages/sogrim-app-v2
+npm install
+npm run dev             # starts Vite dev server with API proxy
+```
+
+The frontend dev server proxies `/api` requests to the backend. Open [http://localhost:3000](http://localhost:3000) to see the app.
+
+### Build for Production
+
+```bash
+# Frontend
+cd packages/sogrim-app-v2
+npm run build           # outputs to dist/
+
+# Backend
+cd packages/server
+cargo build --release
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how to get started:
+
+1. **Open an issue** to discuss the change you'd like to make
+2. **Fork the repo** and create a feature branch from `master`
+3. **Make your changes** — follow the existing code style and conventions
+4. **Submit a pull request** with a clear description
+
+You can also share ideas or report bugs via our [feedback form](https://docs.google.com/forms/d/e/1FAIpQLSe7GbkAkIdTgJ3QkGmJMHhkIpjWz_I0ZX608FlxVLeT0cyJJQ/viewform).
+
+## 📄 License
+
+[MIT](https://choosealicense.com/licenses/mit/) — Copyright (c) 2022 Sogrim.org
