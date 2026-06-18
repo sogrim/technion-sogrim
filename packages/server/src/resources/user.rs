@@ -88,8 +88,15 @@ pub enum Permissions {
 pub struct User {
     #[serde(rename(serialize = "_id", deserialize = "_id"))]
     pub sub: String,
+    // `default` so a legacy/partial document missing these fields still
+    // deserializes (permissions falls back to Student — least privilege) instead
+    // of failing the whole read. This matters for the back-office users list,
+    // where one bad document would otherwise 500 the entire endpoint.
+    #[serde(default)]
     pub permissions: Permissions,
+    #[serde(default)]
     pub details: UserDetails,
+    #[serde(default)]
     pub settings: UserSettings,
     #[serde(default)]
     pub timetable: TimetableState,
@@ -103,6 +110,33 @@ impl Resource for User {
     }
     fn key(&self) -> Document {
         doc! {"_id": self.sub.clone()}
+    }
+}
+
+/// Lightweight projection of a [`User`] for the back-office users list. Keeps
+/// the list response small (and the full degree status / timetable out of it)
+/// while still surfacing the fields an admin scans by.
+#[derive(Clone, Debug, Serialize)]
+pub struct UserSummary {
+    pub sub: String,
+    pub permissions: Permissions,
+    pub catalog_name: Option<String>,
+    pub total_credit: f32,
+    pub num_courses: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_seen: Option<DateTime>,
+}
+
+impl From<&User> for UserSummary {
+    fn from(user: &User) -> Self {
+        UserSummary {
+            sub: user.sub.clone(),
+            permissions: user.permissions,
+            catalog_name: user.details.catalog.as_ref().map(|c| c.name.clone()),
+            total_credit: user.details.degree_status.total_credit,
+            num_courses: user.details.degree_status.course_statuses.len(),
+            last_seen: user.last_seen,
+        }
     }
 }
 
@@ -131,5 +165,60 @@ impl FromRequestParts<()> for User {
             ));
         }
         Ok(user)
+    }
+}
+
+#[cfg(test)]
+mod user_summary_tests {
+    use super::*;
+    use crate::resources::catalog::{DisplayCatalog, Faculty};
+    use crate::resources::course::CourseStatus;
+    use bson::oid::ObjectId;
+
+    fn display_catalog(name: &str) -> DisplayCatalog {
+        DisplayCatalog {
+            id: ObjectId::new(),
+            name: name.to_string(),
+            faculty: Faculty::ComputerScience,
+            total_credit: 118.5,
+            description: String::new(),
+            course_bank_names: vec![],
+            year: 2024,
+        }
+    }
+
+    #[test]
+    fn user_summary_projects_the_key_fields() {
+        let mut user = User {
+            sub: "11112222".to_string(),
+            permissions: Permissions::Admin,
+            ..Default::default()
+        };
+        user.details.catalog = Some(display_catalog("מדמח תלת שנתי 2024-2025"));
+        user.details.degree_status.total_credit = 76.5;
+        user.details.degree_status.course_statuses =
+            vec![CourseStatus::default(), CourseStatus::default()];
+
+        let summary = UserSummary::from(&user);
+
+        assert_eq!(summary.sub, "11112222");
+        assert_eq!(summary.permissions, Permissions::Admin);
+        assert_eq!(
+            summary.catalog_name.as_deref(),
+            Some("מדמח תלת שנתי 2024-2025")
+        );
+        assert_eq!(summary.total_credit, 76.5);
+        assert_eq!(summary.num_courses, 2);
+    }
+
+    #[test]
+    fn user_summary_has_no_catalog_name_when_unset() {
+        let user = User {
+            sub: "no-catalog".to_string(),
+            ..Default::default()
+        };
+        let summary = UserSummary::from(&user);
+        assert_eq!(summary.catalog_name, None);
+        assert_eq!(summary.num_courses, 0);
     }
 }

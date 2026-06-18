@@ -71,6 +71,17 @@ fn test_course_cache_with_tagged_courses() -> Arc<DiskCourseCache> {
 }
 
 use super::admins::{self, ComputeDegreeStatusPayload};
+use super::bo;
+
+/// Build an authenticated GET request for the back-office tests.
+fn auth_get(uri: &str, jwt: &str) -> Request<Body> {
+    Request::builder()
+        .method(Method::GET)
+        .uri(uri)
+        .header("authorization", jwt)
+        .body(Body::empty())
+        .unwrap()
+}
 
 #[tokio::test]
 pub async fn test_get_all_catalogs() {
@@ -583,4 +594,133 @@ async fn test_unauthorized_path() {
         body,
         "Permission denied: User not authorized to access this resource"
     );
+}
+
+// NOTE: like the existing owner/admin tests, the back-office tests run against
+// the shared dev DB (SOGRIM_URI) and assume it is seeded with the fake_jwt user
+// `11112222333344445555` at >= Admin, and `bugo-the-debugo-junior` as a
+// non-admin. On a clean DB these would need to be upserted first.
+fn bo_app(db: Db) -> Router {
+    let decoder = JwtDecoder::mock(&fake_rsa_keypair().1, "test-client-id-for-jwt-validation");
+    Router::new()
+        .nest(
+            "/admins",
+            Router::new()
+                .route("/catalogs", get(bo::get_catalogs))
+                .route("/catalogs/{id}", get(bo::get_catalog))
+                .route("/courses", get(bo::get_courses))
+                .route("/courses/{id}", get(bo::get_course))
+                .route("/users", get(bo::get_users))
+                .route("/users/{id}", get(bo::get_user)),
+        )
+        .layer(axum::middleware::from_fn(middleware::auth::authenticate))
+        .layer(Extension(Permissions::Admin))
+        .layer(Extension(db))
+        .layer(Extension(decoder))
+}
+
+#[tokio::test]
+async fn test_bo_catalogs_and_courses() {
+    let jwt = fake_jwt();
+    let db = Db::from_test_env().await;
+    let app = bo_app(db);
+
+    // List catalogs
+    let resp = app
+        .clone()
+        .oneshot(auth_get("/admins/catalogs", &jwt))
+        .await
+        .unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let catalogs: Vec<Catalog> = serde_json::from_slice(&body).unwrap();
+    assert!(!catalogs.is_empty(), "expected at least one catalog");
+
+    // Fetch one catalog by id
+    let id = catalogs[0].id.to_hex();
+    let resp = app
+        .clone()
+        .oneshot(auth_get(&format!("/admins/catalogs/{id}"), &jwt))
+        .await
+        .unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let catalog: Catalog = serde_json::from_slice(&body).unwrap();
+    assert_eq!(catalog.id.to_hex(), id);
+
+    // List courses
+    let resp = app
+        .clone()
+        .oneshot(auth_get("/admins/courses", &jwt))
+        .await
+        .unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let courses: Vec<Course> = serde_json::from_slice(&body).unwrap();
+    assert!(!courses.is_empty(), "expected at least one course");
+}
+
+#[tokio::test]
+async fn test_bo_users() {
+    let jwt = fake_jwt();
+    let db = Db::from_test_env().await;
+    let app = bo_app(db);
+
+    // List users -> summaries (avoid coupling to the typed DTO; assert on JSON)
+    let resp = app
+        .clone()
+        .oneshot(auth_get("/admins/users", &jwt))
+        .await
+        .unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let users: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let arr = users.as_array().expect("users response should be an array");
+    assert!(!arr.is_empty(), "expected at least one user");
+    assert!(arr[0].get("sub").is_some());
+    assert!(arr[0].get("total_credit").is_some());
+
+    // Fetch the requesting user by sub
+    let resp = app
+        .clone()
+        .oneshot(auth_get("/admins/users/11112222333344445555", &jwt))
+        .await
+        .unwrap();
+    assert!(resp.status().is_success());
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let user: User = serde_json::from_slice(&body).unwrap();
+    assert_eq!(user.sub, "11112222333344445555");
+}
+
+#[tokio::test]
+async fn test_bo_requires_admin() {
+    let db = Db::from_test_env().await;
+    let app = Router::new()
+        .nest(
+            "/admins",
+            Router::new().route("/catalogs", get(bo::get_catalogs)),
+        )
+        .layer(Extension(Permissions::Admin))
+        .layer(Extension(db.clone()));
+
+    // A non-admin (student) sub must be rejected.
+    let mut req = Request::builder()
+        .method(Method::GET)
+        .uri("/admins/catalogs")
+        .body(Body::empty())
+        .unwrap();
+    req.extensions_mut()
+        .insert::<auth::Sub>("bugo-the-debugo-junior".to_string());
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
