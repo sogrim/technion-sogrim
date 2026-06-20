@@ -207,63 +207,10 @@ impl<'de> Deserialize<'de> for CourseState {
     }
 }
 
-/// Tolerant deserializer for `CourseStatus::semester`.
-///
-/// The field is, and stays, `Option<String>` — serialization is unchanged, so
-/// writes keep emitting either a plain string or `null`, exactly as before.
-///
-/// On READ we additionally tolerate documents written by other/newer branches
-/// that store the semester as a structured object, e.g.
-/// `{ "season": "spring", "start_year": 2023 }`. The shared dev/test Mongo
-/// contains such documents, and the previous `Option<String>` deserializer
-/// rejected them with `invalid type: map, expected a string`, 500-ing the auth
-/// extractor (`db.get::<User>`) and turning every auth-gated integration test
-/// red on all branches.
-///
-/// Decision: an object/map (or any non-string, non-null value) deserializes to
-/// `None`, NOT to a derived string. The canonical semester string the rest of
-/// the code expects is `"{term}_{counter}"` (e.g. `"חורף_1"`, `"אביב_2.5"`),
-/// where `counter` is a per-user chronological ordinal computed across ALL of a
-/// user's courses (see `build_semester_map` in `core/parser_v2.rs`).
-/// `extract_semester` then parses that trailing `counter` as `f32` to order
-/// courses for degree computation. A standalone `{season, start_year}` object
-/// carries no such counter, so any string we synthesized from it (e.g.
-/// `"spring_2023"`) would be parsed as the bogus ordinal `2023.0` and corrupt
-/// the ordering. `None` is already a fully-supported state everywhere
-/// (`semester.is_none()`), so mapping the object form to `None` is safe: the
-/// course is simply treated as having no semester ordering, never a wrong one.
-/// We never panic on the map form.
-fn deserialize_tolerant_semester<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use serde::de::IgnoredAny;
-
-    /// Helper enum: try a string first, otherwise consume and discard whatever
-    /// is there (object/number/bool/array). `serde(untagged)` makes serde pick
-    /// the first variant that matches, so a string yields `Str`, and anything
-    /// else falls through to `Other` (which always matches via `IgnoredAny`).
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum TolerantSemester {
-        Str(String),
-        Other(IgnoredAny),
-    }
-
-    // `#[serde(default)]` on the field already maps a missing field to `None`.
-    // An explicit `null` is handled by `Option<TolerantSemester>` → `None`.
-    let value = Option::<TolerantSemester>::deserialize(deserializer)?;
-    Ok(match value {
-        Some(TolerantSemester::Str(s)) => Some(s),
-        Some(TolerantSemester::Other(_)) | None => None,
-    })
-}
-
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct CourseStatus {
     pub course: Course,
     pub state: Option<CourseState>,
-    #[serde(default, deserialize_with = "deserialize_tolerant_semester")]
     pub semester: Option<String>,
     pub grade: Option<Grade>,
     pub r#type: Option<String>, // if none, nissan cries
@@ -476,82 +423,4 @@ impl<'de> Deserialize<'de> for Grade {
 
 pub fn vec_to_map(vec: Vec<Course>) -> HashMap<CourseId, Course> {
     HashMap::from_iter(vec.clone().iter().map(|course| course.id.clone()).zip(vec))
-}
-
-#[cfg(test)]
-mod semester_deserialize_tests {
-    use super::CourseStatus;
-    use serde_json::{json, Value};
-
-    /// A minimal-but-complete `CourseStatus` JSON document whose `semester`
-    /// field is set to the given value. Mirrors the shape stored in Mongo.
-    fn course_status_json(semester: Value) -> Value {
-        json!({
-            "course": { "_id": "01040166", "credit": 0.0, "name": "" },
-            "state": null,
-            "semester": semester,
-            "grade": null,
-            "type": null,
-            "specialization_group_name": null,
-            "additional_msg": null,
-            "modified": false,
-            "times_repeated": 0,
-        })
-    }
-
-    /// A normal string semester must keep deserializing to the same value
-    /// (unchanged behavior for all existing data).
-    #[test]
-    fn string_semester_is_preserved() {
-        let value = course_status_json(json!("חורף_1"));
-        let cs: CourseStatus = serde_json::from_value(value).expect("should deserialize");
-        assert_eq!(cs.semester.as_deref(), Some("חורף_1"));
-    }
-
-    /// A null semester must deserialize to `None`.
-    #[test]
-    fn null_semester_is_none() {
-        let value = course_status_json(Value::Null);
-        let cs: CourseStatus = serde_json::from_value(value).expect("should deserialize");
-        assert_eq!(cs.semester, None);
-    }
-
-    /// A missing semester must deserialize to `None`.
-    #[test]
-    fn missing_semester_is_none() {
-        let value = json!({
-            "course": { "_id": "01040166", "credit": 0.0, "name": "" },
-            "modified": false,
-            "times_repeated": 0,
-        });
-        let cs: CourseStatus = serde_json::from_value(value).expect("should deserialize");
-        assert_eq!(cs.semester, None);
-    }
-
-    /// The bug: a structured/object semester written by another branch
-    /// (`{ "season": ..., "start_year": ... }`) must NOT fail deserialization.
-    /// It is mapped to `None` (see the deserializer doc comment for why this is
-    /// the safe choice for degree computation).
-    #[test]
-    fn object_semester_is_tolerated_as_none() {
-        let value = course_status_json(json!({ "season": "spring", "start_year": 2023 }));
-        let cs: CourseStatus =
-            serde_json::from_value(value).expect("object semester must not error");
-        assert_eq!(cs.semester, None);
-    }
-
-    /// The same tolerance must hold when reading from BSON (the actual Mongo
-    /// path that 500s the auth extractor today).
-    #[test]
-    fn object_semester_from_bson_is_tolerated_as_none() {
-        let doc = bson::doc! {
-            "course": { "_id": "01040166", "credit": 0.0_f64, "name": "" },
-            "semester": { "season": "spring", "start_year": 2023_i32 },
-            "modified": false,
-            "times_repeated": 0_i64,
-        };
-        let cs: CourseStatus =
-            bson::deserialize_from_document(doc).expect("object semester from bson must not error");
-        assert_eq!(cs.semester, None);
-    }
 }
