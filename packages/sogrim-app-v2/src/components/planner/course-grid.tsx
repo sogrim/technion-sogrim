@@ -18,6 +18,8 @@ import type { RowData } from "@/types/domain";
 import type { CourseStatus } from "@/types/api";
 import { useUiStore } from "@/stores/ui-store";
 import { isReservedCourse } from "@/lib/reserved-credits";
+import { courseSemesterKey, semestersEqual } from "@/lib/semester-utils";
+import type { AcademicSemester } from "@/types/api";
 
 /* ------------------------------------------------------------------ */
 /* Custom AG Grid theme — adapts to light/dark via CSS color-scheme   */
@@ -55,10 +57,10 @@ const sogrimGridThemeDark = themeQuartz.withParams({
 
 interface CourseGridProps {
   courseStatuses: CourseStatus[];
-  semester: string | null;
+  semester: AcademicSemester | null;
   bankNames: string[];
   onUpdate: (updatedStatuses: CourseStatus[]) => void;
-  onDelete: (courseNumber: string) => void;
+  onDelete: (courseNumber: string, semester: AcademicSemester | null) => void;
 }
 
 function courseStatusToRow(cs: CourseStatus): RowData {
@@ -110,7 +112,7 @@ export function CourseGrid({
     () =>
       courseStatuses.filter((cs) => {
         if (isReservedCourse(cs)) return false;
-        if (cs.semester !== semester) return false;
+        if (!semestersEqual(cs.semester, semester)) return false;
         if (semester === null) {
           return (
             cs.grade === "פטור ללא ניקוד" || cs.grade === "פטור עם ניקוד"
@@ -227,9 +229,10 @@ export function CourseGrid({
         cellRenderer: (params: { data: RowData | undefined }) => {
           if (!params.data) return null;
           const courseNumber = params.data.courseNumber;
+          const courseSemester = params.data.semester;
           return (
             <button
-              onClick={() => onDelete(courseNumber)}
+              onClick={() => onDelete(courseNumber, courseSemester)}
               className="flex items-center justify-center h-full w-full text-muted-foreground hover:text-destructive transition-colors"
               title="מחק קורס"
             >
@@ -247,6 +250,7 @@ export function CourseGrid({
       if (!event.data) return;
 
       const updatedRow: RowData = { ...event.data };
+      const updatedKey = courseSemesterKey(updatedRow.courseNumber, updatedRow.semester);
 
       // Recompute state if grade changed
       if (event.colDef.field === "grade") {
@@ -255,7 +259,7 @@ export function CourseGrid({
 
       // Validate
       const allRows = rowData.filter(
-        (r) => r.courseNumber !== updatedRow.courseNumber
+        (r) => courseSemesterKey(r.courseNumber, r.semester) !== updatedKey
       );
       const result = courseFromUserValidations(updatedRow, allRows, false);
 
@@ -274,7 +278,10 @@ export function CourseGrid({
 
       // Build updated CourseStatus array for the parent
       const updatedStatuses = courseStatuses.map((cs) => {
-        if (cs.course._id === result.newRowData.courseNumber) {
+        if (
+          courseSemesterKey(cs.course._id, cs.semester) ===
+          courseSemesterKey(result.newRowData.courseNumber, result.newRowData.semester)
+        ) {
           return rowToCourseStatus(result.newRowData, cs);
         }
         return cs;
@@ -311,14 +318,17 @@ export function CourseGrid({
           animateRows={true}
           headerHeight={38}
           rowHeight={40}
-          getRowId={(params) => params.data.courseNumber}
-          noRowsOverlayComponent={() => (
-            <span className="text-muted-foreground text-sm">
-              אין קורסים בסמסטר זה
-            </span>
-          )}
+          getRowId={(params) => courseSemesterKey(params.data.courseNumber, params.data.semester)}
+          noRowsOverlayComponent={() => null}
         />
       </div>
+      {rowData.length === 0 && (
+        <div className="flex justify-center border border-t-0 rounded-b-lg py-3">
+          <span className="text-muted-foreground text-sm">
+            אין קורסים בסמסטר זה
+          </span>
+        </div>
+      )}
       {toast && (
         <Toast
           message={toast.message}

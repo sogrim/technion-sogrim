@@ -1,8 +1,8 @@
-use crate::resources::course::{CourseId, CourseState};
+use crate::resources::course::{AcademicSemester, CourseId, CourseState, SemesterSeason};
 
 use super::*;
 
-fn cs(id: &str, grade: Grade, semester: &str) -> CourseStatus {
+fn cs(id: &str, grade: Grade, semester: AcademicSemester) -> CourseStatus {
     let mut course_status = CourseStatus {
         course: Course {
             id: CourseId::new(id),
@@ -11,7 +11,7 @@ fn cs(id: &str, grade: Grade, semester: &str) -> CourseStatus {
             tags: None,
         },
         grade: Some(grade),
-        semester: Some(semester.to_string()),
+        semester: Some(semester),
         ..Default::default()
     };
     course_status.set_state();
@@ -20,11 +20,27 @@ fn cs(id: &str, grade: Grade, semester: &str) -> CourseStatus {
 
 #[test]
 fn set_grades_for_uncompleted_courses_prefers_latest_non_notcomplete_attempt() {
-    let mut courses = vec![cs("234111", Grade::NotComplete, "חורף_3")];
+    let mut courses = vec![cs(
+        "234111",
+        Grade::NotComplete,
+        AcademicSemester::new(SemesterSeason::Winter, 2026),
+    )];
     let asterisk_courses = vec![
-        cs("234111", Grade::Numeric(82), "חורף_1"),
-        cs("234111", Grade::NotComplete, "אביב_2"),
-        cs("234111", Grade::Numeric(91), "חורף_2"),
+        cs(
+            "234111",
+            Grade::Numeric(82),
+            AcademicSemester::new(SemesterSeason::Winter, 2024),
+        ),
+        cs(
+            "234111",
+            Grade::NotComplete,
+            AcademicSemester::new(SemesterSeason::Spring, 2025),
+        ),
+        cs(
+            "234111",
+            Grade::Numeric(91),
+            AcademicSemester::new(SemesterSeason::Winter, 2025),
+        ),
     ];
 
     set_grades_for_uncompleted_courses(&mut courses, &asterisk_courses);

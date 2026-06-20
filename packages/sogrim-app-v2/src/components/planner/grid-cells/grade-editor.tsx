@@ -109,9 +109,9 @@ export function GradeEditor(
     );
   }
 
-  // Regular semester: single row [toggle-icon] [input/select] [label]
+  // Regular semester: single row [input/select] [label]
   return (
-    <div className="flex items-center h-full gap-1.5 px-2 bg-card">
+    <div className="flex items-center h-full gap-1.5 px-2 bg-card w-[200px]">
       {/* Toggle icon - wand */}
       <button
         type="button"
@@ -136,14 +136,14 @@ export function GradeEditor(
           onChange={onNum}
           onKeyDown={(e) => { if (e.key === "Enter") stopEditing(); }}
           placeholder="0-100"
-          className="w-16 h-7 px-1 text-sm text-center border border-border rounded bg-card focus:outline-none focus:border-info [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="flex-1 min-w-0 h-7 px-1 text-sm text-center border border-border rounded bg-card focus:outline-none focus:border-info [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       ) : (
         <select
           ref={selectRef}
           value={selVal}
           onChange={onSel}
-          className="flex-1 h-7 px-1 text-sm border border-border rounded bg-card focus:outline-none focus:border-info"
+          className="flex-1 min-w-0 h-7 px-1 text-sm border border-border rounded bg-card focus:outline-none focus:border-info"
         >
           <option value="">--</option>
           {opts.map((o) => (

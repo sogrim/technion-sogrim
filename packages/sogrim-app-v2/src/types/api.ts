@@ -22,6 +22,13 @@ export type CourseGradeOptions =
   | "פטור עם ניקוד"
   | "לא השלים";
 
+export type SemesterSeason = "winter" | "spring" | "summer";
+
+export interface AcademicSemester {
+  season: SemesterSeason;
+  start_year: number;
+}
+
 export interface Course {
   credit: number;
   name: string;
@@ -31,7 +38,7 @@ export interface Course {
 export interface CourseStatus {
   course: Course;
   grade?: string;
-  semester: string | null;
+  semester: AcademicSemester | null;
   state: CourseState;
   type?: string;
   modified: boolean;
@@ -80,6 +87,10 @@ export interface UserDetails {
   catalog?: Catalog;
   compute_in_progress: boolean;
   modified: boolean;
+  /** Hebrew gap labels on empty timeline slots, keyed by linear calendar idx
+   *  (`year*3 + season`, winter/spring/summer = 0/1/2) as a string. Optional
+   *  for backwards-compat with responses from servers that pre-date this field. */
+  timeline_annotations?: Record<string, string>;
 }
 
 export interface UserState {

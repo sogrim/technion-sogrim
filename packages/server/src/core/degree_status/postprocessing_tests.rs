@@ -5,7 +5,7 @@ use crate::{
     core::{messages, types::Rule},
     resources::{
         catalog::{Catalog, Faculty},
-        course::{Course, CourseBank, CourseId, CourseState, CourseStatus, Grade, Tag},
+        course::*,
     },
 };
 
@@ -37,7 +37,7 @@ fn regular_course(id: &str, bank: &str, grade: Grade, repeats: usize) -> CourseS
         grade: Some(grade),
         r#type: Some(bank.to_string()),
         times_repeated: repeats,
-        semester: Some("חורף_1".to_string()),
+        semester: Some(AcademicSemester::new(SemesterSeason::Winter, 2025)),
         ..Default::default()
     }
 }

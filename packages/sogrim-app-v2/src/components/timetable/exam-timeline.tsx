@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
+import { useProviderUpdates } from "@/hooks/use-api-provider";
 import { getCourseColor } from "@/lib/timetable-colors";
 import { useUiStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ export function ExamTimeline() {
   const isDark = theme === "dark";
 
   const draft = drafts.find((d) => d.id === activeDraftId);
+  const providerVersion = useProviderUpdates();
 
   const { examInfos, timelineA, timelineB } = useMemo(() => {
     if (!draft) return { examInfos: [], timelineA: [], timelineB: [] };
@@ -86,7 +88,15 @@ export function ExamTimeline() {
     ) => {
       const withDates = infos
         .filter((e) => getDate(e) != null)
-        .sort((a, b) => getDate(a)!.getTime() - getDate(b)!.getTime());
+        .sort((a, b) => {
+          const dateDiff = getDate(a)!.getTime() - getDate(b)!.getTime();
+          
+          // Secondary sort by start time when dates are equal
+          const timeA = getTime(a)?.split(" - ")[0] ?? "";
+          const timeB = getTime(b)?.split(" - ")[0] ?? "";
+
+          return dateDiff || timeA.localeCompare(timeB);
+        });
 
       const items: {
         exam: ExamInfo;
@@ -118,7 +128,7 @@ export function ExamTimeline() {
       timelineA: buildTimeline((e) => e.dateA, (e) => e.timeA),
       timelineB: buildTimeline((e) => e.dateB, (e) => e.timeB),
     };
-  }, [draft]);
+  }, [draft, providerVersion]);
 
   if (examInfos.length === 0) return null;
 
@@ -239,7 +249,7 @@ function ExamSession({
                     {formatDate(item.date)}
                   </div>
                   {item.time && (
-                    <div className="text-[0.65rem] font-mono text-muted-foreground">
+                    <div className="text-[0.65rem] font-mono text-muted-foreground" dir="ltr">
                       {item.time}
                     </div>
                   )}

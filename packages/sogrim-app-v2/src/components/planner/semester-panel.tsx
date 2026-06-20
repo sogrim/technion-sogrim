@@ -1,16 +1,17 @@
 import { useMemo } from "react";
 import { CourseGrid } from "./course-grid";
-import { PlannerCourseSearch } from "./planner-course-search";
+import { AddCourseForm } from "./add-course-form";
 import { SemesterFooter } from "./semester-footer";
-import type { CourseStatus } from "@/types/api";
+import { semestersEqual } from "@/lib/semester-utils";
+import type { AcademicSemester, CourseStatus } from "@/types/api";
 import type { RowData } from "@/types/domain";
 
 interface SemesterPanelProps {
-  semester: string | null;
+  semester: AcademicSemester | null;
   courseStatuses: CourseStatus[];
   bankNames: string[];
   onUpdateStatuses: (updatedStatuses: CourseStatus[]) => void;
-  onDeleteCourse: (courseNumber: string) => void;
+  onDeleteCourse: (courseNumber: string, semester: AcademicSemester | null) => void;
   onAddCourse: (row: RowData) => void;
 }
 
@@ -23,7 +24,7 @@ export function SemesterPanel({
   onAddCourse,
 }: SemesterPanelProps) {
   const semesterCourses = useMemo(
-    () => courseStatuses.filter((cs) => cs.semester === semester),
+    () => courseStatuses.filter((cs) => semestersEqual(cs.semester, semester)),
     [courseStatuses, semester]
   );
 
@@ -54,7 +55,7 @@ export function SemesterPanel({
       {semester !== null && <SemesterFooter rows={existingRows} />}
 
       <div className="flex justify-center pt-4 pb-8">
-        <PlannerCourseSearch
+        <AddCourseForm
           semester={semester}
           existingRows={existingRows}
           bankNames={bankNames}

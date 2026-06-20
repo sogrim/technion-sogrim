@@ -209,8 +209,8 @@ fn chrome_assigns_semester_numbers() {
         );
         let sem = cs.semester.as_ref().unwrap();
         assert!(
-            sem.contains('_'),
-            "Semester '{}' for course {} missing underscore separator",
+            sem.start_year > 0,
+            "Semester {:?} for course {} is missing a valid start year",
             sem,
             cs.course.id
         );

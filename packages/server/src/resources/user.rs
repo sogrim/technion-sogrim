@@ -3,6 +3,7 @@ use crate::{
     core::degree_status::DegreeStatus,
     db::{Db, Resource},
     error::AppError,
+    resources::course::AcademicSemester,
 };
 
 /// Google JWT subject identifier (unique user ID).
@@ -18,6 +19,12 @@ pub struct UserDetails {
     pub degree_status: DegreeStatus,
     pub compute_in_progress: bool,
     pub modified: bool,
+    /// Free-form Hebrew labels on empty calendar slots in the planner timeline
+    /// (e.g. "מילואים", "חופשה"), keyed by the linear calendar idx
+    /// (`year*3 + season`, where winter/spring/summer = 0/1/2) as a string.
+    /// String keys keep BSON happy and round-trip cleanly through JSON.
+    #[serde(default)]
+    pub timeline_annotations: std::collections::HashMap<String, String>,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -36,7 +43,7 @@ pub struct UserSettings {
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct TimetableState {
     #[serde(default)]
-    pub current_semester: Option<String>,
+    pub current_semester: Option<AcademicSemester>,
     #[serde(default)]
     pub active_draft_id: Option<String>,
     #[serde(default)]
@@ -47,7 +54,7 @@ pub struct TimetableState {
 pub struct TimetableDraft {
     pub id: String,
     pub name: String,
-    pub semester: String,
+    pub semester: AcademicSemester,
     #[serde(default)]
     pub courses: Vec<CourseSelection>,
     #[serde(default)]
@@ -95,6 +102,47 @@ pub struct User {
     pub timetable: TimetableState,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_seen: Option<DateTime>,
+}
+
+impl User {
+    /// On first login after the legacy-string semester format was retired, this
+    /// rewrites any `cs.semester` that still carries a `legacy_name` into a
+    /// fully-typed `AcademicSemester` with concrete (season, start_year). It
+    /// returns `true` only when at least one semester actually changed, so the
+    /// caller can avoid a redundant DB write.
+    pub fn normalize_legacy_semesters(&mut self) -> bool {
+        let legacy_names: Vec<String> = self
+            .details
+            .degree_status
+            .course_statuses
+            .iter()
+            .filter_map(|cs| cs.semester.as_ref().and_then(AcademicSemester::legacy_name))
+            .map(String::from)
+            .collect();
+
+        if legacy_names.is_empty() {
+            return false;
+        }
+
+        let resolution = AcademicSemester::resolve_legacy_names(&legacy_names);
+
+        let mut changed = false;
+        for cs in &mut self.details.degree_status.course_statuses {
+            let Some(current) = &cs.semester else {
+                continue;
+            };
+            let Some(legacy) = current.legacy_name() else {
+                continue;
+            };
+            let resolved = resolution
+                .get(legacy)
+                .cloned()
+                .unwrap_or_else(|| AcademicSemester::new(current.season, current.start_year));
+            cs.semester = Some(resolved);
+            changed = true;
+        }
+        changed
+    }
 }
 
 impl Resource for User {

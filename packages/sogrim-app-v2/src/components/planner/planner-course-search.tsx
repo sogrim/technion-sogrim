@@ -4,6 +4,7 @@ import { courseFromUserValidations } from "@/lib/course-validator";
 import { COURSE_GRADE_OPTIONS } from "@/types/domain";
 import type { CourseSchedule } from "@/types/timetable";
 import type { RowData } from "@/types/domain";
+import type { AcademicSemester } from "@/types/api";
 import { Plus, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
@@ -11,7 +12,7 @@ import { Toast } from "@/components/ui/toast";
 import { useIsOgPalette } from "@/stores/ui-store";
 
 interface PlannerCourseSearchProps {
-  semester: string | null;
+  semester: AcademicSemester | null;
   existingRows: RowData[];
   bankNames: string[];
   onAdd: (row: RowData) => void;
@@ -117,7 +118,7 @@ export function PlannerCourseSearch({
   // State: course selected, show inline detail form
   return (
     <div className="w-full max-w-5xl">
-      <div className="flex items-end gap-1.5 flex-wrap rounded-lg border bg-muted/50 p-3">
+      <div className="flex items-start gap-1.5 flex-wrap rounded-lg border bg-muted/50 p-3">
         {/* Course name (read-only) */}
         <div className="flex-[2] min-w-[160px]">
           <label className="text-[11px] text-muted-foreground mb-0.5 block">
@@ -210,8 +211,8 @@ export function PlannerCourseSearch({
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1">
+        {/* Action buttons — push down past the (invisible) label row to align with inputs */}
+        <div className="flex items-center gap-1 mt-[18px]">
           <button
             onClick={handleSubmit}
             className="flex items-center justify-center h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/80 transition-colors"
