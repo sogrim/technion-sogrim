@@ -25,7 +25,13 @@ REQUIRED_FIELDS = [
     "catalog_replacements", "common_replacements",
 ]
 
-VALID_FACULTIES = ["ComputerScience", "DataAndDecisionScience", "Medicine", "Unknown"]
+VALID_FACULTIES = [
+    "ComputerScience",
+    "DataAndDecisionScience",
+    "ElectricalEngineering",
+    "Medicine",
+    "Unknown",
+]
 
 
 def validate(catalog: dict) -> list[str]:
