@@ -471,6 +471,7 @@ Before outputting the final JSON:
 8. `faculty` field is set correctly
 9. JSON is valid and parseable
 10. Hebrew text is properly encoded (UTF-8)
+11. Every key in `catalog_replacements` and `common_replacements` exists in `course_to_bank` (the key is the catalog course; replacement values must **not** appear in `course_to_bank`)
 
 ## Cross-Validation Against PDF
 
