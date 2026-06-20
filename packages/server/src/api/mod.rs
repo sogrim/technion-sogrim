@@ -1,5 +1,4 @@
 pub mod admins;
-pub mod bo;
 pub mod courses;
 pub mod owners;
 pub mod students;
