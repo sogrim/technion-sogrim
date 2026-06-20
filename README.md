@@ -107,10 +107,8 @@ technion-sogrim/
 
 ## Sogrim-BO
 
-**Sogrim-BO** ([`packages/sogrim-bo-app`](/packages/sogrim-bo-app)) — a view-only back-office
-console for administrators to inspect catalogs, courses and users (structured view + raw JSON),
-reusing the main app's design system. Access is enforced server-side via the existing `Admin`
-permission — there is no secret in the app. Runs locally; deployment is WIP.
+**Sogrim-BO** ([`packages/sogrim-bo-app`](/packages/sogrim-bo-app)) — a back-office console
+for administrators to inspect catalogs, courses, and users. WIP.
 
 ## Contributing
 
