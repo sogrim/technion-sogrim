@@ -91,6 +91,13 @@ async fn main() -> anyhow::Result<()> {
             "/parse-compute",
             post(api::admins::parse_courses_and_compute_degree_status),
         )
+        // Read-only back-office endpoints (powering packages/sogrim-bo-app).
+        .route("/catalogs", get(api::bo::get_catalogs))
+        .route("/catalogs/{id}", get(api::bo::get_catalog))
+        .route("/courses", get(api::bo::get_courses))
+        .route("/courses/{id}", get(api::bo::get_course))
+        .route("/users", get(api::bo::get_users))
+        .route("/users/{id}", get(api::bo::get_user))
         .layer(Extension(Permissions::Admin));
 
     // Owner routes
