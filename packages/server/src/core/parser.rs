@@ -106,10 +106,9 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         // calendar-anchored `AcademicSemester` once we've seen the full list of
         // semesters in this grade sheet.
         let semester = match (current_season, current_legacy_name.as_ref()) {
-            (Some(season), Some(name)) => Some(AcademicSemester::with_legacy_marker(
-                season,
-                name.clone(),
-            )),
+            (Some(season), Some(name)) => {
+                Some(AcademicSemester::with_legacy_marker(season, name.clone()))
+            }
             _ => None,
         };
 

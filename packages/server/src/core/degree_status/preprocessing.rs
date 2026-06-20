@@ -159,7 +159,7 @@ impl DegreeStatus {
         self.reset(catalog);
 
         self.course_statuses
-            .sort_by(|c1, c2| c1.semester_order_key().cmp(&c2.semester_order_key()));
+            .sort_by_key(|c1| c1.semester_order_key());
 
         self.replace_student_course_with_courses_in_catalog(catalog, courses);
 

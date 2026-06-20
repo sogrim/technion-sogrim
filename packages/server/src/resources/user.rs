@@ -128,7 +128,9 @@ impl User {
 
         let mut changed = false;
         for cs in &mut self.details.degree_status.course_statuses {
-            let Some(current) = &cs.semester else { continue };
+            let Some(current) = &cs.semester else {
+                continue;
+            };
             let Some(legacy) = current.legacy_name() else {
                 continue;
             };
