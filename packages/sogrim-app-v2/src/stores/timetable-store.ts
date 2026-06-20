@@ -12,6 +12,8 @@ import type {
 import { getProvider } from "@/data/course-schedule-provider";
 import { generateDraftId } from "@/lib/timetable-utils";
 import { getConflictingEventKeys, eventKey } from "@/lib/timetable-conflicts";
+import { semesterKey, semestersEqual } from "@/lib/semester-utils";
+import type { AcademicSemester } from "@/types/api";
 
 interface TimetableState {
   // View state (ephemeral — not saved to backend)
@@ -23,10 +25,10 @@ interface TimetableState {
   detailCourseId: string | null;
 
   // Persistent state (saved to backend)
-  currentSemester: string;
+  currentSemester: AcademicSemester | null;
   drafts: TimetableDraft[];
   activeDraftId: string | null;
-  draftCounter: number;
+  draftCounters: Record<string, number>;
 
   // Sync status
   _loaded: boolean;   // true only after successful backend load
@@ -42,10 +44,10 @@ interface TimetableState {
   setDetailCourse: (courseId: string | null) => void;
 
   // Actions: semester
-  setSemester: (semester: string) => void;
+  setSemester: (semester: AcademicSemester) => void;
 
   // Actions: draft CRUD
-  createDraft: (semester?: string) => string;
+  createDraft: (semester?: AcademicSemester) => string | null;
   renameDraft: (draftId: string, name: string) => void;
   deleteDraft: (draftId: string) => void;
   setActiveDraft: (draftId: string) => void;
@@ -87,10 +89,10 @@ export const useTimetableStore = create<TimetableState>()(
       previewingCourse: null,
       previewingType: null,
       detailCourseId: null,
-      currentSemester: "",
+      currentSemester: null,
       drafts: [],
       activeDraftId: null,
-      draftCounter: 0,
+      draftCounters: {},
       _loaded: false,
       _syncing: false,
       _lastSaved: 0,
@@ -105,7 +107,7 @@ export const useTimetableStore = create<TimetableState>()(
       setSemester: (semester) => {
         const state = get();
         const semesterDrafts = state.drafts.filter(
-          (d) => d.semester === semester,
+          (d) => semestersEqual(d.semester, semester),
         );
         set({
           currentSemester: semester,
@@ -116,7 +118,9 @@ export const useTimetableStore = create<TimetableState>()(
       createDraft: (semester) => {
         const state = get();
         const sem = semester ?? state.currentSemester;
-        const next = state.draftCounter + 1;
+        if (!sem) return null;
+        const semKey = semesterKey(sem);
+        const next = (state.draftCounters[semKey] ?? 0) + 1;
         const id = generateDraftId();
         const now = new Date().toISOString();
         const newDraft: TimetableDraft = {
@@ -132,7 +136,7 @@ export const useTimetableStore = create<TimetableState>()(
         set({
           drafts: [...state.drafts, newDraft],
           activeDraftId: id,
-          draftCounter: next,
+          draftCounters: { ...state.draftCounters, [semKey]: next },
         });
         return id;
       },
@@ -144,11 +148,15 @@ export const useTimetableStore = create<TimetableState>()(
       deleteDraft: (draftId) => {
         const state = get();
         const remaining = state.drafts.filter((d) => d.id !== draftId);
-        const semDrafts = remaining.filter(
-          (d) => d.semester === state.currentSemester,
-        );
+        const sem = state.currentSemester;
+        const semDrafts = sem ? remaining.filter((d) => semestersEqual(d.semester, sem)) : [];
+        const updatedCounters = { ...state.draftCounters };
+        if (sem && semDrafts.length === 0) {
+          delete updatedCounters[semesterKey(sem)];
+        }
         set({
           drafts: remaining,
+          draftCounters: updatedCounters,
           activeDraftId:
             state.activeDraftId === draftId
               ? (semDrafts[0]?.id ?? null)

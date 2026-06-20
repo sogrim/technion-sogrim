@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
 import type { CourseStatus } from "@/types/api";
 import type { RowData } from "@/types/domain";
+import { courseSemesterKey } from "@/lib/semester-utils";
 import {
   isReservedCourse,
   SOCIAL_ACTIVITY_COURSES,
@@ -13,7 +14,7 @@ import {
 interface ExemptionsTabProps {
   courseStatuses: CourseStatus[];
   onAddCourse: (row: RowData) => void;
-  onDeleteCourse: (courseNumber: string) => void;
+  onDeleteCourse: (courseNumber: string, semester: null) => void;
 }
 
 export function ExemptionsTab({
@@ -71,7 +72,7 @@ export function ExemptionsTab({
         {/* Table rows */}
         {exemptionCourses.map((cs) => (
           <div
-            key={cs.course._id}
+            key={courseSemesterKey(cs.course._id, cs.semester)}
             className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b last:border-b-0 hover:bg-muted transition-colors"
           >
             <div className="col-span-4 text-right font-medium text-foreground truncate">
@@ -107,7 +108,7 @@ export function ExemptionsTab({
             </div>
             <div className="col-span-1 flex justify-center items-center">
               <button
-                onClick={() => onDeleteCourse(cs.course._id)}
+                onClick={() => onDeleteCourse(cs.course._id, null)}
                 className="flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
                 title="מחק קורס"
               >

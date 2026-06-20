@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 
 use crate::{
     error::AppError,
-    resources::course::{Course, CourseId, CourseStatus, Grade},
+    resources::course::{AcademicSemester, Course, CourseId, CourseStatus, Grade, SemesterSeason},
 };
 use std::collections::HashMap;
 
@@ -383,10 +383,8 @@ fn semester_sort_key(year: &str, term: &str) -> (i32, i32) {
     (start_year, term_order)
 }
 
-/// Build a mapping from (year, term) to semester display string (e.g. "חורף_1").
-/// Semesters are sorted chronologically; counter increments by 1.0 for regular
-/// semesters and 0.5 for summer semesters.
-fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), String> {
+/// Build a mapping from (year, term) to typed academic semesters.
+fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), AcademicSemester> {
     let mut unique_semesters: Vec<(String, String)> = raw_courses
         .iter()
         .map(|c| (c.semester_year.clone(), c.semester_term.clone()))
@@ -395,16 +393,17 @@ fn build_semester_map(raw_courses: &[RawCourse]) -> HashMap<(String, String), St
     unique_semesters.dedup();
 
     let mut semester_map = HashMap::new();
-    let mut counter: f32 = 0.0;
 
     for (year, term) in &unique_semesters {
-        let is_summer = term == "קיץ";
-        counter += if is_summer || counter.fract() != 0.0 {
-            0.5
-        } else {
-            1.0
-        };
-        semester_map.insert((year.clone(), term.clone()), format!("{term}_{counter}"));
+        if let (Some(start_year), Some(season)) = (
+            year.split('-').next().and_then(|y| y.parse::<i32>().ok()),
+            term.parse::<SemesterSeason>().ok(),
+        ) {
+            semester_map.insert(
+                (year.clone(), term.clone()),
+                AcademicSemester::new(season, start_year),
+            );
+        }
     }
 
     semester_map

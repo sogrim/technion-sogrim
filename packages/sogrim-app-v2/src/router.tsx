@@ -25,6 +25,13 @@ const plannerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/planner",
   component: PlannerPage,
+  validateSearch: (search: Record<string, unknown>): { tab?: "requirements" | "semesters" | "exemptions" } => {
+    const tab = search.tab;
+    if (tab === "requirements" || tab === "semesters" || tab === "exemptions") {
+      return { tab };
+    }
+    return {};
+  },
 });
 
 const settingsRoute = createRoute({

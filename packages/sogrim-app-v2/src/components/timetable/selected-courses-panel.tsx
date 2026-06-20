@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { getProvider } from "@/data/course-schedule-provider";
+import { useProviderUpdates } from "@/hooks/use-api-provider";
 import { getCourseColor } from "@/lib/timetable-colors";
 import { useUiStore } from "@/stores/ui-store";
 import { GroupSelector } from "./group-selector";
@@ -15,6 +16,8 @@ export function SelectedCoursesPanel() {
   const setDetailCourse = useTimetableStore((s) => s.setDetailCourse);
   const theme = useUiStore((s) => s.theme);
   const isDark = theme === "dark";
+
+  const providerVersion = useProviderUpdates();
 
   // Default behavior: courses are expanded so group selectors are visible
   // immediately. Track which ones the user has explicitly collapsed.
@@ -42,7 +45,7 @@ export function SelectedCoursesPanel() {
     } catch {
       return [];
     }
-  }, [draft]);
+  }, [draft, providerVersion]);
 
   const totalCredits = coursesWithData.reduce(
     (sum, c) => sum + (c.course?.credit ?? 0),

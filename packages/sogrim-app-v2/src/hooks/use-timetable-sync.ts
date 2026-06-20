@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useTimetableStore } from "@/stores/timetable-store";
 import type { TimetableDraft } from "@/types/timetable";
 import type { ApiProvider } from "@/data/api-provider";
+import { parseSapSemesterId, plannerSemesterToApiId } from "@/lib/semester-utils";
 
 // ---------------------------------------------------------------------------
 // DTO ↔ Store mapping
@@ -36,7 +37,7 @@ function dtoToDrafts(dto: TimetableStateDTO): TimetableDraft[] {
 function storeToDto(): TimetableStateDTO {
   const state = useTimetableStore.getState();
   return {
-    current_semester: state.currentSemester || null,
+    current_semester: state.currentSemester,
     active_draft_id: state.activeDraftId,
     drafts: state.drafts.map((d) => ({
       id: d.id,
@@ -89,7 +90,7 @@ export function useTimetableSync(provider?: ApiProvider) {
     if (useTimetableStore.getState()._loaded) return; // Already hydrated
 
     const drafts = dtoToDrafts(data);
-    const savedSemester = data.current_semester ?? "";
+    const savedSemester = data.current_semester;
 
     if (savedSemester) {
       useTimetableStore.setState({
@@ -101,7 +102,7 @@ export function useTimetableSync(provider?: ApiProvider) {
 
       // Switch provider to saved semester and prefetch courses
       if (provider) {
-        provider.switchSemester(savedSemester).then(() => {
+        provider.switchSemester(plannerSemesterToApiId(savedSemester)).then(() => {
           const courseIds = new Set(drafts.flatMap((d) => d.courses.map((c) => c.courseId)));
           for (const id of courseIds) {
             provider.prefetch(id);
@@ -113,7 +114,10 @@ export function useTimetableSync(provider?: ApiProvider) {
       if (provider) {
         const semesters = provider.getSemesters();
         if (semesters.length > 0) {
-          useTimetableStore.getState().setSemester(semesters[0].id);
+          const latestSemester = parseSapSemesterId(semesters[0].id);
+          if (latestSemester) {
+            useTimetableStore.getState().setSemester(latestSemester);
+          }
         }
       }
       useTimetableStore.setState({ _loaded: true });

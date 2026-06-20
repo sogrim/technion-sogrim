@@ -1,4 +1,5 @@
 import type { CourseStatus } from "@/types/api";
+import { formatSemesterName } from "@/lib/semester-utils";
 
 export function exportCoursesToCsv(courseStatuses: CourseStatus[]): void {
   const BOM = "\uFEFF";
@@ -7,7 +8,7 @@ export function exportCoursesToCsv(courseStatuses: CourseStatus[]): void {
     cs.course._id,
     cs.course.name,
     String(cs.course.credit),
-    cs.semester ?? "",
+    cs.semester ? formatSemesterName(cs.semester) : "",
     cs.grade ?? "",
     cs.state,
     cs.type ?? "",

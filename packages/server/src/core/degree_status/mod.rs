@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use crate::core::types::Requirement;
 use crate::resources::{
     catalog::Catalog,
-    course::{Course, CourseBank, CourseId, CourseState, CourseStatus},
+    course::{AcademicSemester, Course, CourseBank, CourseId, CourseState, CourseStatus},
 };
 use serde::{Deserialize, Serialize};
 
@@ -38,7 +38,7 @@ impl DegreeStatus {
 
     // This function sets the state for all courses where their state is "in progress" to "complete"
     // and returns a list of all courses which were changed, (CourseId, Semester) is a key for each courseStatus.
-    pub fn set_in_progress_to_complete(&mut self) -> Vec<(CourseId, Option<String>)> {
+    pub fn set_in_progress_to_complete(&mut self) -> Vec<(CourseId, Option<AcademicSemester>)> {
         self.course_statuses
             .iter_mut()
             .filter(|course_status| course_status.state == Some(CourseState::InProgress))
@@ -53,7 +53,7 @@ impl DegreeStatus {
     }
 
     // This function gets a list of courses and sets their state to "in progress"
-    pub fn set_to_in_progress(&mut self, course_list: Vec<(CourseId, Option<String>)>) {
+    pub fn set_to_in_progress(&mut self, course_list: Vec<(CourseId, Option<AcademicSemester>)>) {
         self.course_statuses
             .iter_mut()
             .filter(|course_status| {

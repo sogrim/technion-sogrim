@@ -27,11 +27,7 @@ interface CatalogStepProps {
   onError?: (message: string) => void;
 }
 
-export function CatalogStep({
-  faculty,
-  onBack,
-  onError,
-}: CatalogStepProps) {
+export function CatalogStep({ faculty, onBack, onError }: CatalogStepProps) {
   const { data: catalogs, isLoading } = useCatalogs(faculty);
   const updateCatalog = useUpdateCatalog();
 
@@ -44,7 +40,7 @@ export function CatalogStep({
   }
 
   const filteredCatalogs: Catalog[] = [...(catalogs ?? [])].sort(
-    (a, b) => a.year - b.year || a.name.localeCompare(b.name)
+    (a, b) => a.year - b.year || a.name.localeCompare(b.name),
   );
 
   if (isLoading) {
@@ -74,8 +70,7 @@ export function CatalogStep({
         <h2 className="text-2xl font-bold">בחר מסלול לימודים</h2>
         <p className="text-muted-foreground max-w-md mx-auto">
           בחר את הקטלוג המתאים למסלול הלימודים שלך ב
-          {FACULTY_LABELS[faculty] ?? faculty}.
-          הקטלוג מגדיר את דרישות התואר.
+          {FACULTY_LABELS[faculty] ?? faculty}. הקטלוג מגדיר את דרישות התואר.
         </p>
       </div>
 
@@ -90,9 +85,7 @@ export function CatalogStep({
             <Card className="h-full transition-all hover:border-primary hover:bg-accent/50 cursor-pointer hover:shadow-md">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
-                  <CardTitle className="text-base">
-                    {catalog.name}
-                  </CardTitle>
+                  <CardTitle className="text-base">{catalog.name}</CardTitle>
                   {updateCatalog.isPending &&
                   updateCatalog.variables === catalog._id.$oid ? (
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -100,11 +93,6 @@ export function CatalogStep({
                     <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
                   )}
                 </div>
-                {catalog.description && (
-                  <CardDescription className="text-xs">
-                    {catalog.description}
-                  </CardDescription>
-                )}
               </CardHeader>
               <CardContent>
                 <Badge variant="secondary">

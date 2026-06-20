@@ -1,5 +1,5 @@
 import { apiClient } from "./api-client";
-import type { Catalog, Course, DegreeStatus, UserDetails, UserSettings, UserState } from "@/types/api";
+import type { AcademicSemester, Catalog, Course, DegreeStatus, UserDetails, UserSettings, UserState } from "@/types/api";
 
 export async function getCatalogs(faculty?: string): Promise<Catalog[]> {
   const params = faculty ? { faculty } : undefined;
@@ -55,7 +55,7 @@ export async function postParseAndCompute(payload: { catalogId: { $oid: string }
 
 // Timetable
 export interface TimetableStateDTO {
-  current_semester: string | null;
+  current_semester: AcademicSemester | null;
   active_draft_id: string | null;
   drafts: TimetableDraftDTO[];
 }
@@ -63,7 +63,7 @@ export interface TimetableStateDTO {
 export interface TimetableDraftDTO {
   id: string;
   name: string;
-  semester: string;
+  semester: AcademicSemester;
   courses: { course_id: string; selected_groups: Record<string, string> }[];
   custom_events: {
     id: string;

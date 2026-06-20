@@ -1,4 +1,4 @@
-import type { CourseGradeOptions } from "./api";
+import type { AcademicSemester, CourseGradeOptions } from "./api";
 
 export interface RowData {
   name: string;
@@ -7,7 +7,7 @@ export interface RowData {
   state: string;
   type?: string;
   grade?: string;
-  semester: string | null;
+  semester: AcademicSemester | null;
   sg_name?: string;
   msg?: string;
 }

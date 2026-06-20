@@ -1,7 +1,7 @@
 use serde_json::json;
 
 use super::catalog::{Catalog, Faculty};
-use super::course::{Course, CourseBank, CourseId, CourseState, CourseStatus, Grade};
+use super::course::*;
 use crate::core::types::Rule;
 
 #[tokio::test]
@@ -54,6 +54,33 @@ async fn test_course_grade_serde() {
     let res: Result<Grade, _> = serde_json::from_value(json!("-"));
     assert!(res.is_err());
     assert!(format!("{res:#?}").contains("expected a valid string representation of a grade"));
+}
+
+#[test]
+fn test_academic_semester_serde_supports_new_and_legacy_shapes() {
+    let semester: AcademicSemester =
+        serde_json::from_value(json!({ "season": "spring", "start_year": 2025 }))
+            .expect("object semester should deserialize");
+    assert_eq!(
+        semester,
+        AcademicSemester::new(SemesterSeason::Spring, 2025)
+    );
+    assert_eq!(
+        serde_json::to_value(&semester).expect("semester should serialize"),
+        json!({ "season": "spring", "start_year": 2025 })
+    );
+
+    let ordinal_semester: AcademicSemester =
+        serde_json::from_value(json!("חורף_1")).expect("ordinal semester should deserialize");
+    assert_eq!(ordinal_semester.season, SemesterSeason::Winter);
+    assert_eq!("אביב".parse::<SemesterSeason>(), Ok(SemesterSeason::Spring));
+    assert!("סתיו".parse::<SemesterSeason>().is_err());
+
+    let year_range: Result<AcademicSemester, _> = serde_json::from_value(json!("קיץ_2025-2026"));
+    assert!(year_range.is_err());
+
+    let sap_id: Result<AcademicSemester, _> = serde_json::from_value(json!("2025-200"));
+    assert!(sap_id.is_err());
 }
 
 fn make_catalog(name: &str, banks: Vec<(&str, Rule)>, courses: Vec<(&str, &str)>) -> Catalog {
@@ -284,7 +311,7 @@ fn make_course_status(course_id: &str, credit: f32) -> CourseStatus {
         },
         state: Some(CourseState::Complete),
         grade: Some(Grade::Numeric(85)),
-        semester: Some("winter_1".to_string()),
+        semester: Some(AcademicSemester::new(SemesterSeason::Winter, 2025)),
         modified: false,
         ..Default::default()
     }

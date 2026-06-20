@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 
 use crate::{
     error::AppError,
-    resources::course::{Course, CourseId, CourseStatus, Grade},
+    resources::course::{AcademicSemester, Course, CourseId, CourseStatus, Grade, SemesterSeason},
 };
 use std::collections::HashMap;
 
@@ -53,7 +53,8 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     let mut courses = HashMap::<CourseId, CourseStatus>::new();
     let mut asterisk_courses = Vec::<CourseStatus>::new();
     let mut sport_courses = Vec::<CourseStatus>::new();
-    let mut semester = String::new();
+    let mut current_legacy_name: Option<String> = None;
+    let mut current_season: Option<SemesterSeason> = None;
     let mut semester_counter: f32 = 0.0;
     let should_reverse_credit = CREDIT_RE
         .captures_iter(
@@ -75,25 +76,24 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         let is_winter = line.contains("חורף");
         let is_summer = line.contains("קיץ");
 
-        semester = if is_spring || is_summer || is_winter {
+        if is_spring || is_summer || is_winter {
             semester_counter += if is_summer || semester_counter.fract() != 0.0 {
                 0.5
             } else {
                 1.0
             };
 
-            let semester_term = if is_spring {
-                "אביב"
+            let (season, season_he) = if is_spring {
+                (SemesterSeason::Spring, "אביב")
             } else if is_summer {
-                "קיץ"
+                (SemesterSeason::Summer, "קיץ")
             } else {
-                "חורף"
+                (SemesterSeason::Winter, "חורף")
             };
 
-            format!("{semester_term}_{semester_counter}")
-        } else {
-            semester
-        };
+            current_legacy_name = Some(format!("{season_he}_{semester_counter}"));
+            current_season = Some(season);
+        }
 
         if !COURSE_ID_RE.is_match(&line) || line.contains("ת.ז") {
             continue;
@@ -102,9 +102,19 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         let (course, grade) =
             parse_course_status_pdf_format(&line, should_reverse_credit, should_reverse_name)?;
 
+        // Stash the legacy ordinal name on the semester; it's swapped for a
+        // calendar-anchored `AcademicSemester` once we've seen the full list of
+        // semesters in this grade sheet.
+        let semester = match (current_season, current_legacy_name.as_ref()) {
+            (Some(season), Some(name)) => {
+                Some(AcademicSemester::with_legacy_marker(season, name.clone()))
+            }
+            _ => None,
+        };
+
         let mut course_status = CourseStatus {
             course,
-            semester: (!semester.is_empty()).then(|| semester.clone()),
+            semester,
             grade,
             ..Default::default()
         };
@@ -128,6 +138,10 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
         }
     }
     let mut vec_courses = courses.into_values().collect::<Vec<_>>();
+
+    // Resolve every parsed legacy ordinal name to a real (season, start_year) in
+    // one pass — anchoring the newest ordinal to the current academic semester.
+    resolve_legacy_semesters(&mut vec_courses, &mut asterisk_courses, &mut sport_courses);
 
     // Fix the grades for said courses
     set_grades_for_uncompleted_courses(&mut vec_courses, &asterisk_courses);
@@ -156,6 +170,40 @@ pub fn parse_copy_paste_data(data: &str) -> Result<Vec<CourseStatus>, AppError> 
     }
 
     Ok(vec_courses)
+}
+
+fn resolve_legacy_semesters(
+    vec_courses: &mut [CourseStatus],
+    asterisk_courses: &mut [CourseStatus],
+    sport_courses: &mut [CourseStatus],
+) {
+    let legacy_names: Vec<String> = vec_courses
+        .iter()
+        .chain(asterisk_courses.iter())
+        .chain(sport_courses.iter())
+        .filter_map(|cs| cs.semester.as_ref().and_then(|s| s.legacy_name()))
+        .map(String::from)
+        .collect();
+
+    if legacy_names.is_empty() {
+        return;
+    }
+
+    let resolution = AcademicSemester::resolve_legacy_names(&legacy_names);
+
+    let apply = |cs: &mut CourseStatus| {
+        if let Some(sem) = cs.semester.as_ref() {
+            if let Some(name) = sem.legacy_name() {
+                if let Some(resolved) = resolution.get(name) {
+                    cs.semester = Some(resolved.clone());
+                }
+            }
+        }
+    };
+
+    vec_courses.iter_mut().for_each(apply);
+    asterisk_courses.iter_mut().for_each(apply);
+    sport_courses.iter_mut().for_each(apply);
 }
 
 fn set_grades_for_uncompleted_courses(

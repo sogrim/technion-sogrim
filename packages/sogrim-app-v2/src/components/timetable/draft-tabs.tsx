@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { cn } from "@/lib/utils";
 import { Plus, X, Check, Pencil } from "lucide-react";
+import { semestersEqual } from "@/lib/semester-utils";
 
 export function DraftTabs() {
   const drafts = useTimetableStore((s) => s.drafts);
@@ -15,7 +16,7 @@ export function DraftTabs() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
 
-  const semesterDrafts = drafts.filter((d) => d.semester === currentSemester);
+  const semesterDrafts = drafts.filter((d) => semestersEqual(d.semester, currentSemester));
 
   const handleStartRename = (draftId: string, currentName: string) => {
     setEditingId(draftId);
@@ -77,17 +78,15 @@ export function DraftTabs() {
               >
                 <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
               </button>
-              {semesterDrafts.length > 1 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteDraft(draft.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                </button>
-              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteDraft(draft.id);
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+              </button>
             </>
           )}
         </div>
