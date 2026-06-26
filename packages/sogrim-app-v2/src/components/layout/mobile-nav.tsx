@@ -21,15 +21,15 @@ export function MobileNav() {
             <Link
               key={item.to}
               to={item.to}
+              aria-label={item.label}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-1 text-xs transition-colors",
+                "flex items-center justify-center px-3 py-2 transition-colors",
                 isActive ? "text-primary" : "text-muted-foreground",
               )}
             >
               <item.icon
                 className={cn("h-5 w-5", isActive && "text-primary")}
               />
-              <span>{item.label}</span>
             </Link>
           );
         })}
