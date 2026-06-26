@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { GraduationCap, Calendar, Settings, ChevronRight, ChevronLeft } from "lucide-react";
+import { GraduationCap, Calendar, Settings, Mail, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -7,6 +7,7 @@ const navItems = [
   { to: "/planner" as const, label: "מעקב תואר", icon: GraduationCap },
   { to: "/timetable" as const, label: "מערכת שעות", icon: Calendar },
   { to: "/settings" as const, label: "הגדרות", icon: Settings },
+  { to: "/contact" as const, label: "צרו קשר", icon: Mail },
 ];
 
 export function Sidebar() {

@@ -1,11 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { GraduationCap, Calendar, Settings } from "lucide-react";
+import { GraduationCap, Calendar, Settings, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/planner" as const, label: "תואר", icon: GraduationCap },
   { to: "/timetable" as const, label: "מערכת", icon: Calendar },
   { to: "/settings" as const, label: "הגדרות", icon: Settings },
+  { to: "/contact" as const, label: "קשר", icon: Mail },
 ];
 
 export function MobileNav() {
