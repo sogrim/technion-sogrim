@@ -4,6 +4,7 @@ import {
   Palette,
   BookOpen,
   Info,
+  Github,
   Moon,
   Sun,
   FileText,
@@ -647,6 +648,15 @@ export function SettingsPage() {
             סוגרים - מערכת לבדיקת סטטוס השלמת תואר בטכניון. פרויקט
             קוד פתוח.
           </p>
+          <a
+            href="https://github.com/sogrim/technion-sogrim"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
+          >
+            <Github className="h-4 w-4 shrink-0" />
+            <span>GitHub</span>
+          </a>
         </CardContent>
       </Card>
 

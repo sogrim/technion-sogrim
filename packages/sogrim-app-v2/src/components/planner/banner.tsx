@@ -34,12 +34,12 @@ function computePerSemesterGPA(
 
 function GPASparkline({ data }: { data: { semester: string; gpa: number }[] }) {
   const W = 220;
-  const H = 56;
+  const H = 72;
   const P = 6;
   const min = Math.min(...data.map((d) => d.gpa));
   const max = Math.max(...data.map((d) => d.gpa));
   const range = Math.max(max - min, 4);
-  const padded = { lo: min - range * 0.15, hi: max + range * 0.15 };
+  const padded = { lo: min - range * 0.1, hi: max + range * 0.1 };
   const span = padded.hi - padded.lo || 1;
   const x = (i: number) => P + (i / Math.max(1, data.length - 1)) * (W - 2 * P);
   const y = (g: number) => H - P - ((g - padded.lo) / span) * (H - 2 * P);
@@ -77,7 +77,7 @@ function GPASparkline({ data }: { data: { semester: string; gpa: number }[] }) {
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-12"
+        className="w-full h-16"
         preserveAspectRatio="none"
         onPointerMove={(e) => updateActiveFromPointer(e.clientX)}
         onPointerDown={(e) => updateActiveFromPointer(e.clientX)}
