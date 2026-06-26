@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, computeDropUp } from "@/lib/utils";
 
 export interface DropdownOption {
   value: string;
@@ -25,6 +25,7 @@ export function Dropdown({
   className,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selected = options.find((o) => o.value === value);
@@ -39,6 +40,15 @@ export function Dropdown({
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
+
+  // Open upward when there isn't room below, so long menus don't grow the page.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => setDropUp(computeDropUp(containerRef.current, options.length));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [open, options.length]);
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
@@ -58,7 +68,12 @@ export function Dropdown({
       </button>
 
       {open && (
-        <div className="absolute z-50 top-full mt-1 w-full min-w-[120px] max-h-[200px] overflow-y-auto rounded-md border bg-popover shadow-lg animate-in fade-in-0 zoom-in-95">
+        <div
+          className={cn(
+            "absolute z-50 w-full min-w-[120px] max-h-[200px] overflow-y-auto rounded-md border bg-popover shadow-lg animate-in fade-in-0 zoom-in-95",
+            dropUp ? "bottom-full mb-1" : "top-full mt-1",
+          )}
+        >
           {options.map((opt) => (
             <button
               key={opt.value}
