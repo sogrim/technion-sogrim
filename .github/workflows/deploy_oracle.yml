@@ -1,12 +1,20 @@
 name: Deploy to Oracle Cloud
 
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
     inputs:
       ref:
         description: "Git ref to deploy (commit SHA, branch, or tag). Defaults to latest master."
         required: false
         default: "master"
+
+# Serialize deploys so two merges in quick succession can't build/restart the
+# service on top of each other.
+concurrency:
+  group: deploy-oracle
+  cancel-in-progress: false
 
 env:
   VM_USER: opc
