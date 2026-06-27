@@ -9,7 +9,7 @@ export function ModifiedToast({ visible = true }: { visible?: boolean }) {
 
   return (
     <div
-      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg mb-2 md:rounded-none md:-mx-6 md:px-6 md:mb-0 md:-mt-6 md:-mb-3 relative z-10 bg-[#e8dff5] text-[#3b2069] dark:bg-[#2d1f4e] dark:text-[#d4c4f0]"
+      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg mb-2 md:rounded-none md:-mx-6 md:px-6 md:mb-0 md:-mt-6 md:-mb-3 relative z-10 bg-notice-bg text-notice-fg"
       style={{ visibility: visible ? "visible" : "hidden" }}
     >
       <span className="text-center font-medium text-xs md:text-sm">
@@ -20,7 +20,7 @@ export function ModifiedToast({ visible = true }: { visible?: boolean }) {
         size="sm"
         onClick={() => mutate()}
         disabled={isPending}
-        className="bg-[#7c5cbf] hover:bg-[#6a4da6] text-white text-xs h-7"
+        className="bg-notice-accent hover:bg-notice-accent-hover text-notice-accent-fg text-xs h-7"
       >
         {isPending ? (
           <>
@@ -35,7 +35,7 @@ export function ModifiedToast({ visible = true }: { visible?: boolean }) {
       <div className="relative">
         <button
           onClick={() => setShowInfo(!showInfo)}
-          className="flex items-center gap-1 text-[10px] md:text-xs text-[#7c5cbf] hover:text-[#6a4da6] dark:text-[#b69df0] dark:hover:text-[#c9b4f5] underline"
+          className="flex items-center gap-1 text-[10px] md:text-xs text-notice-link hover:text-notice-link-hover underline"
           type="button"
         >
           <Info className="h-3 w-3" />
@@ -46,7 +46,7 @@ export function ModifiedToast({ visible = true }: { visible?: boolean }) {
             {"כאשר מבוצע שינוי בקורסים (הוספה, עריכה או מחיקה), יש להריץ מחדש את חישוב סגירת התואר כדי לעדכן את הסטטוס."}
             <button
               onClick={() => setShowInfo(false)}
-              className="mt-1 block text-[#7c5cbf] hover:underline"
+              className="mt-1 block text-notice-link hover:underline"
             >
               {"סגור"}
             </button>
