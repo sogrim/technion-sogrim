@@ -3,6 +3,7 @@ import { LESSON_TYPE_NAMES, DAY_LABELS } from "@/lib/timetable-utils";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { cn } from "@/lib/utils";
 import { Eye } from "lucide-react";
+import { Hint } from "@/components/ui/hint";
 
 interface GroupSelectorProps {
   course: CourseSchedule;
@@ -49,42 +50,43 @@ export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
             </span>
             <div className="flex gap-0.5 flex-wrap">
               {groups.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => setGroup(course.id, type, g.id)}
-                  title={g.summary}
-                  className={cn(
-                    "px-1.5 py-0.5 rounded text-[0.65rem] font-medium transition-all",
-                    g.id === selectedId
-                      ? "bg-primary text-primary-foreground"
-                      : isTypePreview
-                        ? "bg-primary/20 text-primary ring-1 ring-primary/30"
-                        : "bg-secondary text-secondary-foreground hover:bg-accent",
-                  )}
-                >
-                  {g.id.split("-")[0]}
-                </button>
+                <Hint key={g.id} label={g.summary}>
+                  <button
+                    onClick={() => setGroup(course.id, type, g.id)}
+                    className={cn(
+                      "px-1.5 py-0.5 rounded text-[0.65rem] font-medium transition-all",
+                      g.id === selectedId
+                        ? "bg-primary text-primary-foreground"
+                        : isTypePreview
+                          ? "bg-primary/20 text-primary ring-1 ring-primary/30"
+                          : "bg-secondary text-secondary-foreground hover:bg-accent",
+                    )}
+                  >
+                    {g.id.split("-")[0]}
+                  </button>
+                </Hint>
               ))}
             </div>
             {/* Preview all button */}
-            <button
-              onClick={() => {
-                if (isTypePreview) {
-                  setPreview(null, null);
-                } else {
-                  setPreview(course.id, type);
-                }
-              }}
-              title="הצג את כל האפשרויות על המערכת"
-              className={cn(
-                "p-0.5 rounded transition-colors",
-                isTypePreview
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-primary",
-              )}
-            >
-              <Eye className="h-3 w-3" />
-            </button>
+            <Hint label="הצג את כל האפשרויות על המערכת">
+              <button
+                onClick={() => {
+                  if (isTypePreview) {
+                    setPreview(null, null);
+                  } else {
+                    setPreview(course.id, type);
+                  }
+                }}
+                className={cn(
+                  "p-0.5 rounded transition-colors",
+                  isTypePreview
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-primary",
+                )}
+              >
+                <Eye className="h-3 w-3" />
+              </button>
+            </Hint>
           </div>
         );
       })}

@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react
 import { Plus, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
+import { Hint } from "@/components/ui/hint";
 import { cn, computeDropUp } from "@/lib/utils";
 import { courseFromUserValidations } from "@/lib/course-validator";
 import { COURSE_GRADE_OPTIONS } from "@/types/domain";
@@ -356,24 +357,26 @@ export function AddCourseForm({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1">
-          <button
-            onClick={handleSubmit}
-            className="flex items-center justify-center h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/80 transition-colors"
-            title="הוסף"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => {
-              resetForm();
-              setToast(null);
-              setExpanded(false);
-            }}
-            className="flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
-            title="ביטול"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <Hint label="הוסף">
+            <button
+              onClick={handleSubmit}
+              className="flex items-center justify-center h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/80 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </Hint>
+          <Hint label="ביטול">
+            <button
+              onClick={() => {
+                resetForm();
+                setToast(null);
+                setExpanded(false);
+              }}
+              className="flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </Hint>
         </div>
       </div>
 

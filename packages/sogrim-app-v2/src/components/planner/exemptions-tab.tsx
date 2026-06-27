@@ -3,6 +3,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
+import { Hint } from "@/components/ui/hint";
 import type { CourseStatus } from "@/types/api";
 import type { RowData } from "@/types/domain";
 import { courseSemesterKey } from "@/lib/semester-utils";
@@ -107,13 +108,14 @@ export function ExemptionsTab({
               </Badge>
             </div>
             <div className="col-span-1 flex justify-center items-center">
-              <button
-                onClick={() => onDeleteCourse(cs.course._id, null)}
-                className="flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-                title="מחק קורס"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <Hint label="מחק קורס">
+                <button
+                  onClick={() => onDeleteCourse(cs.course._id, null)}
+                  className="flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </Hint>
             </div>
           </div>
         ))}
@@ -199,24 +201,26 @@ export function ExemptionsTab({
 
                 {/* Action buttons */}
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={handleAdd}
-                    disabled={!selectedCourseId}
-                    className="flex items-center justify-center h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/80 transition-colors disabled:opacity-40"
-                    title="הוסף"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedCourseId("");
-                      setExpanded(false);
-                    }}
-                    className="flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
-                    title="ביטול"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <Hint label="הוסף">
+                    <button
+                      onClick={handleAdd}
+                      disabled={!selectedCourseId}
+                      className="flex items-center justify-center h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/80 transition-colors disabled:opacity-40"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </Hint>
+                  <Hint label="ביטול">
+                    <button
+                      onClick={() => {
+                        setSelectedCourseId("");
+                        setExpanded(false);
+                      }}
+                      className="flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </Hint>
                 </div>
               </div>
             </div>

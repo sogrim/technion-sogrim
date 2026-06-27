@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarDays, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Hint } from "@/components/ui/hint";
 import { isSocialActivityCourse } from "@/lib/reserved-credits";
 import { formatSemesterName, parseSemesterOrder, semesterKey, semestersEqual } from "@/lib/semester-utils";
 import type { AcademicSemester, DegreeStatus, Catalog, CourseStatus } from "@/types/api";
@@ -352,13 +353,12 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             <span className="text-3xl font-bold text-foreground tabular-nums">{gpa}</span>
             <span className="text-xs text-muted-foreground">ממוצע כללי</span>
             {gpaDelta != null && gpaDelta > 0 && (
-              <span
-                className="inline-flex items-center gap-0.5 text-[10px] font-medium tabular-nums text-green-600 dark:text-green-400"
-                title="עלייה לעומת הסמסטר הקודם"
-              >
-                <ArrowUpRight className="h-3 w-3" />
-                +{gpaDelta.toFixed(1)}
-              </span>
+              <Hint label="עלייה לעומת הסמסטר הקודם">
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium tabular-nums text-green-600 dark:text-green-400">
+                  <ArrowUpRight className="h-3 w-3" />
+                  +{gpaDelta.toFixed(1)}
+                </span>
+              </Hint>
             )}
           </div>
 

@@ -4,6 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { ErrorBoundary } from "@/components/common/error-boundary";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { startAuthRefreshLoop } from "@/lib/google-auth";
 import { router } from "./router";
 import "./index.css";
@@ -34,7 +35,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <TooltipProvider delayDuration={200} skipDelayDuration={300}>
+          <RouterProvider router={router} />
+        </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   </StrictMode>,

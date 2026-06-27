@@ -4,6 +4,7 @@ import { useTimetableStore } from "@/stores/timetable-store";
 import { DAY_NAMES, formatTime, DEFAULT_START_HOUR, MAX_END_HOUR, SLOT_MINUTES } from "@/lib/timetable-utils";
 import { cn } from "@/lib/utils";
 import { X, Clock, Pencil } from "lucide-react";
+import { Hint } from "@/components/ui/hint";
 
 const EVENT_COLORS = [
   { id: "gray", bg: "oklch(0.65 0.02 250)", label: "אפור" },
@@ -163,16 +164,16 @@ export function CustomEventDialog({
             <span className="text-xs text-muted-foreground">צבע:</span>
             <div className="flex gap-1">
               {EVENT_COLORS.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedColor(c.id)}
-                  title={c.label}
-                  className={cn(
-                    "w-6 h-6 rounded-full transition-all",
-                    selectedColor === c.id && "ring-2 ring-offset-2 ring-primary",
-                  )}
-                  style={{ backgroundColor: c.bg }}
-                />
+                <Hint key={c.id} label={c.label}>
+                  <button
+                    onClick={() => setSelectedColor(c.id)}
+                    className={cn(
+                      "w-6 h-6 rounded-full transition-all",
+                      selectedColor === c.id && "ring-2 ring-offset-2 ring-primary",
+                    )}
+                    style={{ backgroundColor: c.bg }}
+                  />
+                </Hint>
               ))}
             </div>
           </div>

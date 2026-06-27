@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
 import { Toast } from "@/components/ui/toast";
 import { useIsOgPalette } from "@/stores/ui-store";
+import { Hint } from "@/components/ui/hint";
 
 interface PlannerCourseSearchProps {
   semester: AcademicSemester | null;
@@ -213,20 +214,22 @@ export function PlannerCourseSearch({
 
         {/* Action buttons — push down past the (invisible) label row to align with inputs */}
         <div className="flex items-center gap-1 mt-[18px]">
-          <button
-            onClick={handleSubmit}
-            className="flex items-center justify-center h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/80 transition-colors"
-            title="אישור"
-          >
-            <Check className="h-4 w-4" />
-          </button>
-          <button
-            onClick={resetForm}
-            className="flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
-            title="ביטול"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <Hint label="אישור">
+            <button
+              onClick={handleSubmit}
+              className="flex items-center justify-center h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/80 transition-colors"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          </Hint>
+          <Hint label="ביטול">
+            <button
+              onClick={resetForm}
+              className="flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </Hint>
         </div>
       </div>
 

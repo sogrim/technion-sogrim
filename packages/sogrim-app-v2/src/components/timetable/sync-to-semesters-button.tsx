@@ -12,6 +12,7 @@ import { useUiStore } from "@/stores/ui-store";
 import { getProvider } from "@/data/course-schedule-provider";
 import { Toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import { Hint } from "@/components/ui/hint";
 import {
   formatSemesterName,
   getAllSemesters,
@@ -276,25 +277,29 @@ export function SyncToSemestersButton() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={isDisabled}
-        title={tooltip}
-        aria-label={tooltip}
-        className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-          "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-foreground",
-        )}
-      >
-        {updateMutation.isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <RefreshCw className="h-4 w-4" />
-        )}
-        <span className="hidden sm:inline">סנכרן לסמסטרים</span>
-      </button>
+      <Hint label={tooltip}>
+        {/* span trigger so the tooltip still shows when the button is disabled */}
+        <span className="inline-flex">
+          <button
+            type="button"
+            onClick={handleClick}
+            disabled={isDisabled}
+            aria-label={tooltip}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+              "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-foreground",
+            )}
+          >
+            {updateMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">סנכרן לסמסטרים</span>
+          </button>
+        </span>
+      </Hint>
 
       {/* Confirmation dialog — only when removals are involved.
           Inline modal matches the ResetUserDialog pattern. */}
