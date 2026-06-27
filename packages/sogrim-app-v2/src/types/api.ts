@@ -7,6 +7,16 @@ export const Faculty = {
 } as const;
 export type Faculty = (typeof Faculty)[keyof typeof Faculty];
 
+/** Single source of truth for faculty display names. `Record<Faculty, string>`
+ *  makes the build fail if a faculty is ever added without a label here. */
+export const FACULTY_LABELS: Record<Faculty, string> = {
+  Unknown: "כללי",
+  ComputerScience: "מדעי המחשב",
+  DataAndDecisionScience: "מדעי הנתונים וקבלת החלטות",
+  Medicine: "רפואה",
+  ElectricalEngineering: "הנדסת חשמל",
+};
+
 export const UserPermissions = {
   Student: "Student",
   Admin: "Admin",

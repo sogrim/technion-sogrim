@@ -85,15 +85,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
 import { ResetUserDialog } from "./reset-user-dialog";
-import type { Catalog } from "@/types/api";
-
-const FACULTY_LABELS: Record<string, string> = {
-  ComputerScience: "מדעי המחשב",
-  DataAndDecisionScience: "מדעי הנתונים וקבלת החלטות",
-  Medicine: "רפואה",
-  ElectricalEngineering: "הנדסת חשמל",
-  Unknown: "כללי",
-};
+import { FACULTY_LABELS } from "@/types/api";
+import type { Catalog, Faculty } from "@/types/api";
 
 function groupByFaculty(
   catalogs: Catalog[]
@@ -338,10 +331,10 @@ export function SettingsPage() {
                       facultyCatalogs.map((catalog) => ({
                         value: catalog._id.$oid,
                         label: `${catalog.name} (${catalog.total_credit} נ״ז)`,
-                        group: FACULTY_LABELS[faculty] || faculty,
+                        group: FACULTY_LABELS[faculty as Faculty] || faculty,
                         keywords: [
                           String(catalog.year),
-                          FACULTY_LABELS[faculty] || faculty,
+                          FACULTY_LABELS[faculty as Faculty] || faculty,
                         ],
                       }))
                   )}

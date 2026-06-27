@@ -1,33 +1,16 @@
 import { GraduationCap, Monitor, BarChart3, Stethoscope } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Faculty } from "@/types/api";
+import { Faculty, FACULTY_LABELS } from "@/types/api";
 import { cn } from "@/lib/utils";
 
 const FACULTIES: {
   key: Faculty;
-  label: string;
   icon: typeof Monitor;
 }[] = [
-  {
-    key: Faculty.ComputerScience,
-    label: "מדעי המחשב",
-    icon: Monitor,
-  },
-  {
-    key: Faculty.DataAndDecisionScience,
-    label: "הנדסת תעשייה וניהול",
-    icon: BarChart3,
-  },
-  {
-    key: Faculty.Medicine,
-    label: "רפואה",
-    icon: Stethoscope,
-  },
-  {
-    key: Faculty.ElectricalEngineering,
-    label: "הנדסת חשמל",
-    icon: Monitor,
-  }
+  { key: Faculty.ComputerScience, icon: Monitor },
+  { key: Faculty.DataAndDecisionScience, icon: BarChart3 },
+  { key: Faculty.Medicine, icon: Stethoscope },
+  { key: Faculty.ElectricalEngineering, icon: Monitor },
 ];
 
 interface FacultyStepProps {
@@ -72,7 +55,7 @@ export function FacultyStep({ onSelect }: FacultyStepProps) {
                     </div>
                     <div className="space-y-1">
                       <CardTitle className="text-lg">
-                        {faculty.label}
+                        {FACULTY_LABELS[faculty.key]}
                       </CardTitle>
                     </div>
                   </div>
