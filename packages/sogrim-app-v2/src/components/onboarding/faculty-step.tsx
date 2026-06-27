@@ -1,4 +1,4 @@
-import { GraduationCap, Monitor, BarChart3, Stethoscope } from "lucide-react";
+import { GraduationCap, Monitor, BarChart3 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Faculty, FACULTY_LABELS } from "@/types/api";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,8 @@ const FACULTIES: {
 }[] = [
   { key: Faculty.ComputerScience, icon: Monitor },
   { key: Faculty.DataAndDecisionScience, icon: BarChart3 },
-  { key: Faculty.Medicine, icon: Stethoscope },
+  // Medicine is intentionally omitted: it has no released catalogs, so showing
+  // it would dead-end on an empty catalog list after selection.
   { key: Faculty.ElectricalEngineering, icon: Monitor },
 ];
 
