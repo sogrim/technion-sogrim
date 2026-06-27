@@ -2,6 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { GraduationCap, Calendar, Settings, Mail, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
+import { Hint } from "@/components/ui/hint";
 
 const navItems = [
   { to: "/planner" as const, label: "מעקב תואר", icon: GraduationCap },
@@ -34,21 +35,21 @@ export function Sidebar() {
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           return (
-            <Link
-              key={item.to}
-              to={item.to}
-              title={collapsed ? item.label : undefined}
-              className={cn(
-                "flex items-center rounded-lg text-sm font-medium transition-colors",
-                collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
-            >
-              <item.icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
+            <Hint key={item.to} label={collapsed ? item.label : undefined} side="left">
+              <Link
+                to={item.to}
+                className={cn(
+                  "flex items-center rounded-lg text-sm font-medium transition-colors",
+                  collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+              </Link>
+            </Hint>
           );
         })}
       </nav>

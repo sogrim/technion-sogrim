@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Hint } from "@/components/ui/hint";
 import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateUserState } from "@/hooks/use-mutations";
 import {
@@ -72,17 +73,18 @@ function CreditInput({
   }
 
   return (
-    <button
-      onClick={startEdit}
-      className={`w-9 h-7 flex items-center justify-center text-sm font-bold rounded border cursor-text transition-colors hover:border-primary ${
-        isOverAllocated && value > 0
-          ? "text-destructive border-destructive/40"
-          : "text-foreground border-border"
-      }`}
-      title="לחץ לעריכה"
-    >
-      {value}
-    </button>
+    <Hint label="לחץ לעריכה">
+      <button
+        onClick={startEdit}
+        className={`w-9 h-7 flex items-center justify-center text-sm font-bold rounded border cursor-text transition-colors hover:border-primary ${
+          isOverAllocated && value > 0
+            ? "text-destructive border-destructive/40"
+            : "text-foreground border-border"
+        }`}
+      >
+        {value}
+      </button>
+    </Hint>
   );
 }
 
@@ -219,26 +221,28 @@ export function ReservedCreditsPanel() {
                     {bankName}
                   </span>
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleDelta(bankName, CREDIT_STEP)}
-                      className="w-7 h-7 flex items-center justify-center rounded border text-muted-foreground hover:text-foreground hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={"הוסף נקודות"}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
+                    <Hint label="הוסף נקודות">
+                      <button
+                        onClick={() => handleDelta(bankName, CREDIT_STEP)}
+                        className="w-7 h-7 flex items-center justify-center rounded border text-muted-foreground hover:text-foreground hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </Hint>
                     <CreditInput
                       value={allocated}
                       onChange={(v) => handleSet(bankName, v)}
                       isOverAllocated={isOverAllocated}
                     />
-                    <button
-                      onClick={() => handleDelta(bankName, -CREDIT_STEP)}
-                      disabled={allocated <= 0}
-                      className="w-7 h-7 flex items-center justify-center rounded border text-muted-foreground hover:text-foreground hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={"הפחת נקודות"}
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
+                    <Hint label="הפחת נקודות">
+                      <button
+                        onClick={() => handleDelta(bankName, -CREDIT_STEP)}
+                        disabled={allocated <= 0}
+                        className="w-7 h-7 flex items-center justify-center rounded border text-muted-foreground hover:text-foreground hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                    </Hint>
                   </div>
                 </div>
               );

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type { CustomCellEditorProps } from "ag-grid-react";
 import { COURSE_GRADE_OPTIONS } from "@/types/domain";
 import type { RowData } from "@/types/domain";
+import { Hint } from "@/components/ui/hint";
 
 const EXEMPTION_OPTIONS = COURSE_GRADE_OPTIONS.filter((opt) =>
   opt.includes("פטור")
@@ -113,17 +114,18 @@ export function GradeEditor(
   return (
     <div className="flex items-center h-full gap-1.5 px-2 bg-card w-[200px]">
       {/* Toggle icon - wand */}
-      <button
-        type="button"
-        onMouseDown={toggle}
-        className="shrink-0 text-muted-foreground hover:text-info transition-colors"
-        title={isNumeric ? "ציון לא מספרי" : "ציון מספרי"}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72" />
-          <path d="m14 7 3 3" />
-        </svg>
-      </button>
+      <Hint label={isNumeric ? "ציון לא מספרי" : "ציון מספרי"}>
+        <button
+          type="button"
+          onMouseDown={toggle}
+          className="shrink-0 text-muted-foreground hover:text-info transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72" />
+            <path d="m14 7 3 3" />
+          </svg>
+        </button>
+      </Hint>
 
       {/* Input or select */}
       {isNumeric ? (

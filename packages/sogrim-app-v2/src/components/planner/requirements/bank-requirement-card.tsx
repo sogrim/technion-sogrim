@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { CourseBankReq, CourseStatus } from "@/types/api";
 import { isReservedCourse } from "@/lib/reserved-credits";
+import { Hint } from "@/components/ui/hint";
 
 interface BankRequirementCardProps {
   bank: CourseBankReq;
@@ -84,9 +85,11 @@ export function BankRequirementCard({
                 {bank.course_bank_name}
               </span>
               {bank.message && (
-                <span title={bank.message}>
-                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                </span>
+                <Hint label={bank.message}>
+                  <span>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  </span>
+                </Hint>
               )}
             </div>
             <Badge

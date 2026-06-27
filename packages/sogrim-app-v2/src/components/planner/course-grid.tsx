@@ -10,6 +10,7 @@ import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Toast } from "@/components/ui/toast";
 import { GradeEditor } from "@/components/planner/grid-cells/grade-editor";
+import { Hint } from "@/components/ui/hint";
 import {
   courseFromUserValidations,
   determineState,
@@ -231,13 +232,14 @@ export function CourseGrid({
           const courseNumber = params.data.courseNumber;
           const courseSemester = params.data.semester;
           return (
-            <button
-              onClick={() => onDelete(courseNumber, courseSemester)}
-              className="flex items-center justify-center h-full w-full text-muted-foreground hover:text-destructive transition-colors"
-              title="מחק קורס"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <Hint label="מחק קורס">
+              <button
+                onClick={() => onDelete(courseNumber, courseSemester)}
+                className="flex items-center justify-center h-full w-full text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </Hint>
           );
         },
       },
