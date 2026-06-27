@@ -23,7 +23,7 @@ your catalog and shows which requirements you've met, what's still missing, and 
 you're ready to close your degree.
 
 It currently supports the faculties of **Computer Science**, **Electrical Engineering**,
-**Industrial Engineering & Management**, and **Medicine**.
+and **Industrial Engineering & Management**.
 
 > **Soon! 💃🏼💃🏼💃🏼**: More faculties!
 
