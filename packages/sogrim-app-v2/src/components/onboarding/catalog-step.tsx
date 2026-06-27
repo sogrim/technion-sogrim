@@ -10,15 +10,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Faculty } from "@/types/api";
+import { Faculty, FACULTY_LABELS } from "@/types/api";
 import type { Catalog } from "@/types/api";
-
-const FACULTY_LABELS: Record<string, string> = {
-  ComputerScience: "מדעי המחשב",
-  DataAndDecisionScience: "מדעי הנתונים וקבלת החלטות",
-  Medicine: "רפואה",
-  Unknown: "כללי",
-};
 
 interface CatalogStepProps {
   faculty: Faculty;
