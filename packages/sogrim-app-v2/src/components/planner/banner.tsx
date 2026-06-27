@@ -89,16 +89,16 @@ function GPASparkline({ data }: { data: { semester: string; gpa: number }[] }) {
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <path d={area} fill="url(#sparkfill)" className="text-[#d66563]" />
+        <path d={area} fill="url(#sparkfill)" className="text-progress-active" />
         <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5"
-          strokeLinejoin="round" strokeLinecap="round" className="text-[#d66563]" />
+          strokeLinejoin="round" strokeLinecap="round" className="text-progress-active" />
         {data.map((d, i) => (
           <circle
             key={i}
             cx={x(i)}
             cy={y(d.gpa)}
             r="2"
-            className={cn("fill-[#d66563]", activeIdx === i && "opacity-0")}
+            className={cn("fill-progress-active", activeIdx === i && "opacity-0")}
           />
         ))}
         {activeIdx != null && active && (
@@ -111,20 +111,20 @@ function GPASparkline({ data }: { data: { semester: string; gpa: number }[] }) {
               stroke="currentColor"
               strokeWidth="1"
               strokeDasharray="2 2"
-              className="text-[#d66563]/40"
+              className="text-progress-active/40"
               vectorEffect="non-scaling-stroke"
             />
             <circle
               cx={x(activeIdx)}
               cy={y(active.gpa)}
               r="5"
-              className="fill-[#d66563]/25"
+              className="fill-progress-active/25"
             />
             <circle
               cx={x(activeIdx)}
               cy={y(active.gpa)}
               r="2.75"
-              className="fill-[#d66563]"
+              className="fill-progress-active"
               stroke="white"
               strokeWidth="1"
               vectorEffect="non-scaling-stroke"
@@ -236,7 +236,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
   return (
     <div
       className="md:-mx-6 md:px-6 md:py-5"
-      style={{ backgroundColor: "#24333c" }}
+      style={{ background: "var(--banner-bg, var(--banner))" }}
     >
       {/* ===== MOBILE: Compact summary strip ===== */}
       <div className="md:hidden px-4 py-3">
@@ -251,7 +251,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             <div className="flex-1 h-2 rounded-full bg-white/20 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all"
-                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "#4ade80" : "#d66563" }}
+                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "var(--ui-progress-complete)" : "var(--ui-progress-active)" }}
               />
             </div>
             <span className="text-xs text-white/70 shrink-0">
@@ -334,7 +334,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "#4ade80" : "#d66563" }}
+                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? "var(--ui-progress-complete)" : "var(--ui-progress-active)" }}
               />
             </div>
           </div>
