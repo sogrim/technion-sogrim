@@ -114,3 +114,115 @@ export interface ComputeDegreeStatusPayload {
   catalogId: { $oid: string };
   gradeSheetAsString: string;
 }
+
+/* ───────────────────────────────────────────────────────────────────────
+   Admin BI dashboard — mirrors the backend `DashboardStats` returned by
+   `GET /api/admins/stats`. Field names are snake_case to match the Rust
+   serde default used throughout the user/degree-status model. Every metric
+   is computed from data already persisted on `Users` (no new persisted
+   stats). Deferred/time-series metrics are intentionally absent (spec §7).
+   The backend `DashboardStats` struct MUST serialize to exactly this shape.
+   ─────────────────────────────────────────────────────────────────────── */
+
+/** A `{ label, value }` pair for categorical bar/pie series. */
+export interface CountBucket {
+  label: string;
+  value: number;
+}
+
+/** Overview KPI strip. Activity counts come from `last_seen` (login-only,
+ *  hourly-throttled) and are point-in-time, not engagement-per-action. */
+export interface OverviewStats {
+  total_users: number;
+  /** `last_seen` within 1 / 7 / 30 days. */
+  dau: number;
+  wau: number;
+  mau: number;
+  /** DAU / MAU as a fraction in [0, 1]. */
+  stickiness: number;
+  /** has `details.catalog`. */
+  onboarded: number;
+  /** non-empty `course_statuses`. */
+  imported_grades: number;
+  /** has a computed degree status. */
+  computed_status: number;
+}
+
+/** Activity recency, bucketed from the single `last_seen` per user. */
+export interface ActivityStats {
+  /** `last_seen` <= 7d. */
+  active: number;
+  /** 7d < `last_seen` <= 30d. */
+  dormant: number;
+  /** `last_seen` > 30d (or never). */
+  inactive: number;
+  /** Proxy heatmap: 7 rows (day-of-week, 0 = Sunday) × 24 cols (hour),
+   *  each cell a user count from that user's single `last_seen`. */
+  last_active_heatmap: number[][];
+}
+
+/** Population breakdowns. Faculty includes an explicit "no catalog /
+ *  onboarding" bucket for users without `details.catalog`. */
+export interface PopulationStats {
+  by_faculty: CountBucket[];
+  by_catalog: CountBucket[];
+  by_catalog_year: CountBucket[];
+  /** Feature adoption: dark mode, custom palette, timetable usage. */
+  adoption: CountBucket[];
+}
+
+/** Onboarding funnel steps in order, with absolute counts at each step. */
+export interface FunnelStats {
+  signed_in: number;
+  picked_catalog: number;
+  imported_grades: number;
+  computed_status: number;
+}
+
+/** One most-taken / hardest course row, names enriched from the course cache. */
+export interface CourseStat {
+  course_id: string;
+  course_name: string;
+  /** Number of students who took the course (most-taken). */
+  count: number;
+  /** Average numeric grade among graded takes, if any. */
+  average_grade?: number;
+  /** Fraction of takes that did not pass, in [0, 1]. */
+  fail_rate?: number;
+  /** Total `times_repeated` across students. */
+  times_repeated?: number;
+}
+
+/** Requirement-bank completion (bottleneck banks). */
+export interface BankCompletionStat {
+  bank_name: string;
+  /** Fraction of students who completed this bank, in [0, 1]. */
+  completion_rate: number;
+  completed: number;
+  total: number;
+}
+
+/** Academic insights. */
+export interface AcademicStats {
+  /** Courses taken per academic semester, ordered by `semester.order_key`. */
+  courses_per_semester: CountBucket[];
+  most_taken_courses: CourseStat[];
+  /** Per-student weighted-average GPA distribution, bucketed (e.g. by 5-pt bins). */
+  gpa_distribution: CountBucket[];
+  hardest_courses: CourseStat[];
+  /** Highest-average courses (min graded-takers floor). */
+  best_average_courses: CourseStat[];
+  /** Lowest-average courses (min graded-takers floor). */
+  worst_average_courses: CourseStat[];
+  bank_completion: BankCompletionStat[];
+}
+
+export interface AdminStats {
+  overview: OverviewStats;
+  activity: ActivityStats;
+  population: PopulationStats;
+  funnel: FunnelStats;
+  academic: AcademicStats;
+  /** ISO-8601 timestamp of when the stats were computed (for the "updated" pill). */
+  generated_at: string;
+}

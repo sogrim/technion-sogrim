@@ -1,6 +1,8 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { GraduationCap, Calendar, Settings, Mail } from "lucide-react";
+import { GraduationCap, Calendar, Settings, Mail, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserState } from "@/hooks/use-user-state";
+import { UserPermissions } from "@/types/api";
 
 const navItems = [
   { to: "/planner" as const, label: "תואר", icon: GraduationCap },
@@ -9,13 +11,19 @@ const navItems = [
   { to: "/contact" as const, label: "קשר", icon: Mail },
 ];
 
+const adminNavItem = { to: "/admin" as const, label: "בקרה", icon: LayoutDashboard };
+
 export function MobileNav() {
   const location = useLocation();
+  const { data: user } = useUserState();
+  const isAdmin =
+    user?.permissions === UserPermissions.Admin || user?.permissions === UserPermissions.Owner;
+  const items = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center justify-around py-2">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive = location.pathname === item.to;
           return (
             <Link

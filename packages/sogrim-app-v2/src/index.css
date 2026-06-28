@@ -58,6 +58,20 @@
   --ui-notice-accent-hover: color-mix(in oklch, var(--primary) 90%, black);
   --ui-notice-link: var(--ui-notice-accent);
   --ui-notice-link-hover: var(--ui-notice-accent-hover);
+
+  /* ─────────────────────────────────────────────────────────────────
+     Categorical chart tokens — the BI dashboard reads these via
+     var(--chart-N) only (no hardcoded hex in chart components). One
+     coherent 6-hue series per palette/theme so charts recolor with the
+     active palette and dark/light. Default series (teal palette) is a
+     cool→warm spread anchored on the teal primary.
+     ───────────────────────────────────────────────────────────────── */
+  --chart-1: oklch(0.55 0.13 215);   /* teal (primary family) */
+  --chart-2: oklch(0.58 0.15 260);   /* indigo */
+  --chart-3: oklch(0.6 0.15 160);    /* green */
+  --chart-4: oklch(0.65 0.16 70);    /* amber */
+  --chart-5: oklch(0.58 0.18 25);    /* coral */
+  --chart-6: oklch(0.55 0.17 320);   /* magenta */
 }
 
 .dark {
@@ -99,6 +113,14 @@
   --ui-notice-accent-hover: color-mix(in oklch, var(--primary) 90%, white);
   --ui-notice-link: var(--ui-notice-accent);
   --ui-notice-link-hover: var(--ui-notice-accent-hover);
+
+  /* Chart tokens (dark variant) — brighter for dark surfaces */
+  --chart-1: oklch(0.68 0.13 215);
+  --chart-2: oklch(0.7 0.15 260);
+  --chart-3: oklch(0.72 0.15 160);
+  --chart-4: oklch(0.78 0.16 70);
+  --chart-5: oklch(0.7 0.18 25);
+  --chart-6: oklch(0.7 0.17 320);
 }
 
 @theme inline {
@@ -137,6 +159,13 @@
   --color-notice-accent-hover: var(--ui-notice-accent-hover);
   --color-notice-link: var(--ui-notice-link);
   --color-notice-link-hover: var(--ui-notice-link-hover);
+  /* Categorical chart colors — usable as fill-chart-1 / text-chart-1 / etc. */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -179,6 +208,13 @@
   --ui-notice-accent-hover: #6a4da6;
   --ui-notice-link: #7c5cbf;
   --ui-notice-link-hover: #6a4da6;
+  /* Chart series — OG multi-color identity: blue / coral / green / amber / purple / teal */
+  --chart-1: oklch(0.5 0.16 264);    /* OG blue */
+  --chart-2: oklch(0.62 0.15 25);    /* coral */
+  --chart-3: oklch(0.58 0.15 150);   /* green */
+  --chart-4: oklch(0.68 0.15 70);    /* amber */
+  --chart-5: oklch(0.52 0.15 295);   /* purple */
+  --chart-6: oklch(0.6 0.12 200);    /* teal */
 }
 .dark.palette-sogrim {
   --primary: oklch(0.551 0.215 264.364);
@@ -197,6 +233,13 @@
   --ui-notice-accent-hover: #6a4da6;
   --ui-notice-link: #b69df0;
   --ui-notice-link-hover: #c9b4f5;
+  /* Chart series (dark) — brighter OG multi-color */
+  --chart-1: oklch(0.65 0.18 264);
+  --chart-2: oklch(0.72 0.16 25);
+  --chart-3: oklch(0.72 0.16 150);
+  --chart-4: oklch(0.8 0.15 70);
+  --chart-5: oklch(0.66 0.18 295);
+  --chart-6: oklch(0.72 0.12 200);
 }
 
 /* Botanical apothecary — multi-accent palette in the spirit of the OG sogrim
@@ -220,6 +263,13 @@
   --ui-notice-accent-hover: #732430;
   --ui-notice-link: #8b2e3d;
   --ui-notice-link-hover: #732430;
+  /* Chart series — earthy apothecary: amber / sage / wine / teal / moss / walnut */
+  --chart-1: oklch(0.6 0.13 70);     /* amber/honey */
+  --chart-2: oklch(0.58 0.1 135);    /* sage */
+  --chart-3: oklch(0.48 0.14 15);    /* wine */
+  --chart-4: oklch(0.55 0.08 220);   /* muted teal */
+  --chart-5: oklch(0.5 0.1 150);     /* moss */
+  --chart-6: oklch(0.5 0.08 50);     /* walnut */
 }
 .dark.palette-botanical {
   --primary: oklch(0.72 0.14 70);          /* brighter amber */
@@ -237,6 +287,13 @@
   --ui-notice-accent-hover: #d4707a;
   --ui-notice-link: #e89aa5;
   --ui-notice-link-hover: #f0b0b8;
+  /* Chart series (dark) — brighter earthy tones */
+  --chart-1: oklch(0.74 0.14 70);
+  --chart-2: oklch(0.72 0.11 135);
+  --chart-3: oklch(0.62 0.15 15);
+  --chart-4: oklch(0.68 0.09 220);
+  --chart-5: oklch(0.66 0.11 150);
+  --chart-6: oklch(0.64 0.08 50);
 }
 
 /* Midnight — synthwave / late-night cinematic. Deep ink banner with neon
@@ -263,6 +320,13 @@
   --ui-notice-accent-hover: #be185d;
   --ui-notice-link: #db2777;
   --ui-notice-link-hover: #be185d;
+  /* Chart series — synthwave neon: violet / magenta / cyan / lime / pink / blue */
+  --chart-1: oklch(0.55 0.2 295);    /* electric violet */
+  --chart-2: oklch(0.55 0.2 350);    /* hot magenta */
+  --chart-3: oklch(0.58 0.13 220);   /* cyber cyan */
+  --chart-4: oklch(0.62 0.17 130);   /* lime */
+  --chart-5: oklch(0.6 0.18 15);     /* coral pink */
+  --chart-6: oklch(0.55 0.18 260);   /* neon blue */
 }
 .dark.palette-midnight {
   /* Surfaces tinted violet — the room around the neon */
@@ -294,6 +358,13 @@
   --ui-notice-accent-hover: #f9a8d4;
   --ui-notice-link: #f9a8d4;
   --ui-notice-link-hover: #fbcfe8;
+  /* Chart series (dark) — glowing neon */
+  --chart-1: oklch(0.68 0.22 295);
+  --chart-2: oklch(0.68 0.22 350);
+  --chart-3: oklch(0.74 0.15 200);
+  --chart-4: oklch(0.82 0.18 130);
+  --chart-5: oklch(0.72 0.19 15);
+  --chart-6: oklch(0.68 0.2 260);
 }
 
 /* Subtle neon glow on midnight's primary surfaces — applies a soft halo to

@@ -46,6 +46,24 @@ async fn main() -> anyhow::Result<()> {
         .context("failed to connect to MongoDB")?;
     info!(target: "server", "Initialized DB client in {}ms", now.elapsed().as_millis());
 
+    // Idempotently create the `last_seen` index on Users. The admin BI dashboard's
+    // DAU/WAU/MAU windows filter on this field. `create_index` is a no-op if an
+    // equivalent index already exists, so this is safe to run on every startup.
+    match db
+        .client()
+        .database(db.profile())
+        .collection::<bson::Document>("Users")
+        .create_index(
+            mongodb::IndexModel::builder()
+                .keys(bson::doc! { "last_seen": 1 })
+                .build(),
+        )
+        .await
+    {
+        Ok(_) => info!(target: "server", "Ensured last_seen index on Users"),
+        Err(e) => log::warn!(target: "server", "Failed to create last_seen index on Users: {e}"),
+    }
+
     // Initialize JWT decoder
     let jwt_decoder = JwtDecoder::new(config.client_id).await;
     info!(target: "server", "Initialized JWT decoder in {}ms", now.elapsed().as_millis());
@@ -91,6 +109,7 @@ async fn main() -> anyhow::Result<()> {
             "/parse-compute",
             post(api::admins::parse_courses_and_compute_degree_status),
         )
+        .route("/stats", get(api::admins::get_stats))
         .layer(Extension(Permissions::Admin));
 
     // Owner routes
@@ -126,7 +145,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(cors::cors(is_debug))
         .layer(Extension(db))
         .layer(Extension(course_cache))
-        .layer(Extension(jwt_decoder));
+        .layer(Extension(jwt_decoder))
+        .layer(Extension(core::stats::StatsCache::default()));
 
     // Optionally serve static frontend files with SPA fallback
     let app = if let Some(ref static_dir) = config.static_dir {

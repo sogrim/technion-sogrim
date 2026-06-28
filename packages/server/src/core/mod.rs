@@ -4,6 +4,7 @@ pub mod degree_status;
 pub mod messages;
 pub mod parser;
 pub mod parser_v2;
+pub mod stats;
 pub mod types;
 
 pub mod catalog_validations;
