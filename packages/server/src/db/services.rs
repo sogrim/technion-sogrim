@@ -8,6 +8,30 @@ use serde::{de::DeserializeOwned, Serialize};
 use super::{Db, FilterOption, InsertOption, Resource};
 
 impl Db {
+    /// Run an aggregation pipeline against an arbitrary collection and deserialize
+    /// each result document into `R`. This is the generic escape hatch for read-only
+    /// analytics pipelines (e.g. the admin BI `$facet`) that do not map onto a single
+    /// `Resource`. The raw client + profile drive the collection handle directly.
+    pub async fn aggregate<R>(
+        &self,
+        collection: &str,
+        pipeline: Vec<bson::Document>,
+    ) -> Result<Vec<R>, AppError>
+    where
+        R: DeserializeOwned + Send + Sync,
+    {
+        let docs: Vec<bson::Document> = self
+            .client()
+            .database(self.profile())
+            .collection::<bson::Document>(collection)
+            .aggregate(pipeline)
+            .await?
+            .try_collect()
+            .await?;
+        docs.into_iter()
+            .map(|d| bson::deserialize_from_document(d).map_err(AppError::from))
+            .collect()
+    }
     pub async fn get<R>(&self, id: impl Serialize) -> Result<R, AppError>
     where
         R: Resource + Send + Sync + Unpin,

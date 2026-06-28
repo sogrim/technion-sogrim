@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::core::degree_status::DegreeStatus;
 use crate::core::parser;
+use crate::core::stats::{DashboardStats, StatsCache, STATS_TTL};
 use crate::db::Db;
 use crate::disk_cache::DiskCourseCache;
 use crate::error::AppError;
@@ -34,4 +35,20 @@ pub async fn parse_courses_and_compute_degree_status(
     degree_status.compute(catalog, courses);
 
     Ok(Json(degree_status))
+}
+
+/// Admin-only BI dashboard statistics. Computed from a single `$facet` over the
+/// `Users` collection and memoized for a short TTL so rapid dashboard reloads
+/// don't re-scan the collection. The `_admin: User` extractor enforces the
+/// `Permissions::Admin` gate (401 below Admin) via the route group's
+/// `Extension(Permissions::Admin)`.
+pub async fn get_stats(
+    _admin: User,
+    Extension(db): Extension<Db>,
+    Extension(course_cache): Extension<Arc<DiskCourseCache>>,
+    Extension(cache): Extension<StatsCache>,
+) -> Result<Json<DashboardStats>, AppError> {
+    let courses = course_cache.get_all_courses().await;
+    let stats = cache.get_or_compute(&db, &courses, STATS_TTL).await?;
+    Ok(Json(stats))
 }

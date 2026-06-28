@@ -1,7 +1,9 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { GraduationCap, Calendar, Settings, Mail, ChevronRight, ChevronLeft } from "lucide-react";
+import { GraduationCap, Calendar, Settings, Mail, LayoutDashboard, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
+import { useUserState } from "@/hooks/use-user-state";
+import { UserPermissions } from "@/types/api";
 import { Hint } from "@/components/ui/hint";
 
 const navItems = [
@@ -11,10 +13,16 @@ const navItems = [
   { to: "/contact" as const, label: "צרו קשר", icon: Mail },
 ];
 
+const adminNavItem = { to: "/admin" as const, label: "לוח בקרה", icon: LayoutDashboard };
+
 export function Sidebar() {
   const location = useLocation();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const { data: user } = useUserState();
+  const isAdmin =
+    user?.permissions === UserPermissions.Admin || user?.permissions === UserPermissions.Owner;
+  const items = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   return (
     <aside
@@ -32,7 +40,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive = location.pathname === item.to;
           return (
             <Hint key={item.to} label={collapsed ? item.label : undefined} side="left">

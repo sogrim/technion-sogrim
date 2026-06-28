@@ -1,5 +1,5 @@
 import { apiClient } from "./api-client";
-import type { AcademicSemester, Catalog, Course, DegreeStatus, UserDetails, UserSettings, UserState } from "@/types/api";
+import type { AcademicSemester, AdminStats, Catalog, Course, DegreeStatus, UserDetails, UserSettings, UserState } from "@/types/api";
 
 export async function getCatalogs(faculty?: string): Promise<Catalog[]> {
   const params = faculty ? { faculty } : undefined;
@@ -50,6 +50,12 @@ export async function putUserSettings(settings: UserSettings): Promise<UserSetti
 
 export async function postParseAndCompute(payload: { catalogId: { $oid: string }; gradeSheetAsString: string }): Promise<DegreeStatus> {
   const { data } = await apiClient.post<DegreeStatus>("/admins/parse-compute", payload);
+  return data;
+}
+
+// Admin BI dashboard
+export async function getAdminStats(): Promise<AdminStats> {
+  const { data } = await apiClient.get<AdminStats>("/admins/stats");
   return data;
 }
 
