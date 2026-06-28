@@ -299,8 +299,7 @@ async fn compute_against_live_db_when_available() {
     assert!(stats.overview.wau <= stats.overview.mau);
     assert!(stats.overview.mau <= stats.overview.total_users);
     // The 3 recency buckets partition all users.
-    let recency_sum =
-        stats.activity.active + stats.activity.dormant + stats.activity.inactive;
+    let recency_sum = stats.activity.active + stats.activity.dormant + stats.activity.inactive;
     assert_eq!(recency_sum, stats.overview.total_users);
     assert_eq!(stats.activity.last_active_heatmap.len(), 7);
     assert_eq!(stats.academic.gpa_distribution.len(), GPA_BUCKETS.len());

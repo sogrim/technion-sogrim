@@ -590,10 +590,7 @@ fn build_pipeline(now_ms: i64) -> Vec<bson::Document> {
 impl DashboardStats {
     /// Run the aggregation against `Users` and shape the result, enriching course
     /// ids with names from the supplied course map (taken from the in-memory cache).
-    pub async fn compute(
-        db: &Db,
-        courses: &HashMap<CourseId, Course>,
-    ) -> Result<Self, AppError> {
+    pub async fn compute(db: &Db, courses: &HashMap<CourseId, Course>) -> Result<Self, AppError> {
         let now_ms = bson::DateTime::now().timestamp_millis();
         let pipeline = build_pipeline(now_ms);
         let mut results: Vec<FacetResult> = db.aggregate("Users", pipeline).await?;
@@ -691,7 +688,7 @@ impl DashboardStats {
             .collect();
         // Merge duplicate "Unknown" year labels (absent + year 0 both map there).
         by_catalog_year = merge_labels(by_catalog_year);
-        by_catalog_year.sort_by(|a, b| b.value.cmp(&a.value));
+        by_catalog_year.sort_by_key(|b| std::cmp::Reverse(b.value));
 
         let feature = f.feature_adoption.into_iter().next();
         let dark_mode = feature.as_ref().map(|x| x.dark_mode).unwrap_or(0);
@@ -736,7 +733,13 @@ impl DashboardStats {
                 let start_year = s.key.start_year?;
                 let order_key = start_year * 3 + season_order(&season);
                 let label = format!("{} {}", season_label(&season), start_year);
-                Some((order_key, CountBucket { label, value: s.count }))
+                Some((
+                    order_key,
+                    CountBucket {
+                        label,
+                        value: s.count,
+                    },
+                ))
             })
             .collect();
         per_semester.sort_by_key(|(k, _)| *k);
@@ -832,8 +835,10 @@ impl DashboardStats {
         hardest_courses.truncate(HARDEST_COURSES_N);
 
         // Best / worst by average grade (only courses that have a numeric average).
-        let mut by_avg: Vec<CourseStat> =
-            graded.into_iter().filter(|c| c.average_grade.is_some()).collect();
+        let mut by_avg: Vec<CourseStat> = graded
+            .into_iter()
+            .filter(|c| c.average_grade.is_some())
+            .collect();
         by_avg.sort_by(|a, b| {
             b.average_grade
                 .unwrap_or(f64::MIN)
@@ -842,8 +847,12 @@ impl DashboardStats {
         }); // highest average first
         let best_average_courses: Vec<CourseStat> =
             by_avg.iter().take(HARDEST_COURSES_N).cloned().collect();
-        let worst_average_courses: Vec<CourseStat> =
-            by_avg.iter().rev().take(HARDEST_COURSES_N).cloned().collect();
+        let worst_average_courses: Vec<CourseStat> = by_avg
+            .iter()
+            .rev()
+            .take(HARDEST_COURSES_N)
+            .cloned()
+            .collect();
 
         let mut bank_completion: Vec<BankCompletionStat> = f
             .bank_completion
@@ -930,7 +939,7 @@ fn labeled_from_group(groups: Vec<GroupCount>, null_label: &str) -> Vec<CountBuc
         })
         .collect();
     out = merge_labels(out);
-    out.sort_by(|a, b| b.value.cmp(&a.value));
+    out.sort_by_key(|b| std::cmp::Reverse(b.value));
     out
 }
 
