@@ -25,6 +25,7 @@ export function BankRequirementCard({
   const [expanded, setExpanded] = useState(false);
 
   const isAllBank = bank.bank_rule_name === "all";
+  const isSpecializationGroups = bank.bank_rule_name === "specialization groups";
 
   const bankCourses = courses.filter(
     (cs) => cs.type === bank.course_bank_name && !isReservedCourse(cs)
@@ -112,7 +113,7 @@ export function BankRequirementCard({
               {bank.course_requirement > 0 && (
                 <span>
                   {bank.course_completed}/{bank.course_requirement}{" "}
-                  {"קורסים"}
+                  {isSpecializationGroups ? "קבוצות" : "קורסים"}
                 </span>
               )}
             </div>
