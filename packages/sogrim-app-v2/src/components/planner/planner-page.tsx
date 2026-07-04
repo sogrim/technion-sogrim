@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearch } from "@tanstack/react-router";
 import { useUserState } from "@/hooks/use-user-state";
-import { useUpdateUserState } from "@/hooks/use-mutations";
+import { useUpdateUserState, useSetComputeInProgress } from "@/hooks/use-mutations";
 import { useUiStore } from "@/stores/ui-store";
 import {
   courseSemesterKey,
@@ -56,6 +56,7 @@ function getRegistrationState(details: UserDetails | undefined): number {
 export function PlannerPage() {
   const { data: userState, isLoading, error } = useUserState();
   const updateMutation = useUpdateUserState();
+  const computeInProgressMutation = useSetComputeInProgress();
   const currentSemesterIdx = useUiStore((s) => s.currentSemesterIdx);
   const setCurrentSemester = useUiStore((s) => s.setCurrentSemester);
   // Read optional ?tab=... search param so other pages can deep-link into
@@ -77,13 +78,12 @@ export function PlannerPage() {
     // react to external URL changes, not to user-driven tab clicks.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.tab]);
-  const [includeInProgress, setIncludeInProgress] = useState(
-    () => userState?.details?.compute_in_progress ?? false
-  );
   const [extraSemesters, setExtraSemesters] = useState<AcademicSemester[]>([]);
 
   const details = userState?.details;
   const registrationState = getRegistrationState(details);
+
+  const includeInProgress = details?.compute_in_progress ?? false;
 
   const courseStatuses = details?.degree_status.course_statuses ?? [];
   const bankNames = details?.catalog?.course_bank_names ?? [];
@@ -474,19 +474,14 @@ export function PlannerPage() {
         degreeStatus={details!.degree_status}
         catalog={details!.catalog}
         includeInProgress={includeInProgress}
+        isComputing={computeInProgressMutation.isPending}
         onToggleInProgress={(val) => {
-          setIncludeInProgress(val);
           if (!details) return;
-          const updatedDetails: UserDetails = {
+          computeInProgressMutation.mutate({
             ...details,
-            degree_status: {
-              ...details.degree_status,
-              course_statuses: courseStatuses,
-            },
             compute_in_progress: val,
             modified: true,
-          };
-          updateMutation.mutate(updatedDetails);
+          });
         }}
       />
 
@@ -521,7 +516,6 @@ export function PlannerPage() {
           <RequirementsPanel
             degreeStatus={details.degree_status}
             onIgnoreCourse={handleIgnoreCourse}
-            includeInProgress={includeInProgress}
           />
         )}
 

@@ -55,6 +55,40 @@ export function useComputeDegreeStatus() {
   });
 }
 
+export function useSetComputeInProgress() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (details: UserDetails) => {
+      await putUserState(details);
+      return getComputeEndGame();
+    },
+    onMutate: async (details) => {
+      await queryClient.cancelQueries({ queryKey: ["userState"] });
+      const previous = queryClient.getQueryData<UserState>(["userState"]);
+      if (previous) {
+        // Flip the toggle optimistically so the switch responds instantly.
+        queryClient.setQueryData<UserState>(["userState"], {
+          ...previous,
+          details: {
+            ...previous.details,
+            compute_in_progress: details.compute_in_progress,
+          },
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _details, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["userState"], context.previous);
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["userState"], data);
+    },
+  });
+}
+
 export function useUpdateSettings() {
   return useMutation({
     mutationFn: (settings: UserSettings) => putUserSettings(settings),
