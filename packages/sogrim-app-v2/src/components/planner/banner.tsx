@@ -316,7 +316,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
           <div className="flex items-start justify-between mb-1">
             <h3 className="text-sm font-bold text-foreground">סטטוס תואר</h3>
           </div>
-          <div className="flex items-center justify-end gap-2 mb-3">
+          <div className="flex items-center justify-start gap-2 mb-3">
             <span className="text-[10px] text-muted-foreground">כולל קורסים בתהליך</span>
             <button
               role="switch"
