@@ -15,14 +15,12 @@ interface BankRequirementCardProps {
   bank: CourseBankReq;
   courses: CourseStatus[];
   onIgnoreCourse: (courseId: string, action: "לא רלוונטי" | "לא הושלם") => void;
-  includeInProgress: boolean;
 }
 
 export function BankRequirementCard({
   bank,
   courses,
   onIgnoreCourse,
-  includeInProgress,
 }: BankRequirementCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -32,30 +30,20 @@ export function BankRequirementCard({
     (cs) => cs.type === bank.course_bank_name && !isReservedCourse(cs)
   );
 
-  // When includeInProgress, add in-progress courses' credits/count to the backend totals
-  const inProgressExtra = includeInProgress
-    ? bankCourses.filter((cs) => cs.state === "בתהליך")
-    : [];
-  const extraCredit = inProgressExtra.reduce(
-    (s, cs) => s + cs.course.credit,
-    0,
-  );
-  const extraCount = inProgressExtra.length;
-
-  const effectiveCreditCompleted = bank.credit_completed + extraCredit;
-  const effectiveCourseCompleted = bank.course_completed + extraCount;
-
+  // Credit/course totals come straight from the server. When the user enables
+  // "include in-progress", the server folds those courses into these totals, so
+  // the client must not add them again (doing so double-counted the credits).
   const percentage = (() => {
     if (bank.credit_requirement > 0) {
       return Math.min(
         100,
-        Math.round((effectiveCreditCompleted / bank.credit_requirement) * 100),
+        Math.round((bank.credit_completed / bank.credit_requirement) * 100),
       );
     }
     if (bank.course_requirement > 0) {
       return Math.min(
         100,
-        Math.round((effectiveCourseCompleted / bank.course_requirement) * 100),
+        Math.round((bank.course_completed / bank.course_requirement) * 100),
       );
     }
     return bank.completed ? 100 : 0;
@@ -119,12 +107,12 @@ export function BankRequirementCard({
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
                 {bank.credit_requirement > 0
-                  ? `השלמת ${effectiveCreditCompleted} מתוך ${bank.credit_requirement} נק״ז`
+                  ? `השלמת ${bank.credit_completed} מתוך ${bank.credit_requirement} נק״ז`
                   : "אין דרישת נק״ז בקטגוריה זו"}
               </span>
               {bank.course_requirement > 0 && (
                 <span>
-                  {effectiveCourseCompleted}/{bank.course_requirement}{" "}
+                  {bank.course_completed}/{bank.course_requirement}{" "}
                   {"קורסים"}
                 </span>
               )}

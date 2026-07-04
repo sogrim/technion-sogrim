@@ -7,10 +7,9 @@ import type { DegreeStatus } from "@/types/api";
 interface RequirementsPanelProps {
   degreeStatus: DegreeStatus;
   onIgnoreCourse: (courseId: string, action: "לא רלוונטי" | "לא הושלם") => void;
-  includeInProgress: boolean;
 }
 
-export function RequirementsPanel({ degreeStatus, onIgnoreCourse, includeInProgress }: RequirementsPanelProps) {
+export function RequirementsPanel({ degreeStatus, onIgnoreCourse }: RequirementsPanelProps) {
   const { course_bank_requirements, course_statuses } = degreeStatus;
 
   const sortedBanks = useMemo(
@@ -34,7 +33,6 @@ export function RequirementsPanel({ degreeStatus, onIgnoreCourse, includeInProgr
             bank={bank}
             courses={course_statuses}
             onIgnoreCourse={onIgnoreCourse}
-            includeInProgress={includeInProgress}
           />
         ))}
       </div>
