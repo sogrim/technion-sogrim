@@ -147,3 +147,42 @@ pub async fn download(db: &Db, name: &str, output: &Path) -> Result<(), anyhow::
     eprintln!("Downloaded \"{}\" to {}", name, output.display());
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Every catalog JSON under docs/ must deserialize into `Catalog` through the same
+    // extended-JSON normalization the CLI uses to upsert them.
+    #[test]
+    fn all_catalog_docs_deserialize() {
+        let mut checked = 0;
+        for entry in std::fs::read_dir("../docs").expect("read ../docs") {
+            let path = entry.unwrap().path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
+            }
+            let text = std::fs::read_to_string(&path).unwrap();
+            let mut value: serde_json::Value = match serde_json::from_str(&text) {
+                Ok(value) => value,
+                Err(_) => continue,
+            };
+            if value.get("course_banks").is_none() {
+                continue; // not a catalog file
+            }
+            if let Some(obj) = value.as_object_mut() {
+                obj.remove("_id");
+            }
+            normalize_extended_json(&mut value);
+            let result: Result<Catalog, _> = serde_json::from_value(value);
+            assert!(
+                result.is_ok(),
+                "failed to deserialize {}: {:?}",
+                path.display(),
+                result.err()
+            );
+            checked += 1;
+        }
+        assert!(checked > 0, "no catalog files were checked");
+    }
+}
