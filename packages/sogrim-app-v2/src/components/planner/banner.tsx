@@ -302,7 +302,12 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
                     includeInProgress ? "translate-x-0.5" : "translate-x-3.5"
                   )} />
                 </button>
-                {isComputing && <Loader2 className="h-3 w-3 animate-spin text-white/70" />}
+                <Loader2
+                  className={cn(
+                    "h-3 w-3 animate-spin text-white/70",
+                    isComputing ? "visible" : "invisible"
+                  )}
+                />
               </div>
             </div>
           </div>
@@ -316,7 +321,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
           <div className="flex items-start justify-between mb-1">
             <h3 className="text-sm font-bold text-foreground">סטטוס תואר</h3>
           </div>
-          <div className="flex items-center justify-start gap-2 mb-3">
+          <div className="flex items-center justify-end gap-2 mb-3">
             <span className="text-[10px] text-muted-foreground">כולל קורסים בתהליך</span>
             <button
               role="switch"
@@ -333,12 +338,12 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
                 includeInProgress ? "translate-x-0" : "-translate-x-4"
               )} />
             </button>
-            {isComputing && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                {"מחשב..."}
-              </span>
-            )}
+            <Loader2
+              className={cn(
+                "h-3 w-3 animate-spin text-muted-foreground",
+                isComputing ? "visible" : "invisible"
+              )}
+            />
           </div>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm font-bold text-foreground min-w-[40px]" dir="ltr">{pct}%</span>
