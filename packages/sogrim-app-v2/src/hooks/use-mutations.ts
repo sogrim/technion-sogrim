@@ -55,11 +55,6 @@ export function useComputeDegreeStatus() {
   });
 }
 
-// Toggling "include in-progress courses" persists the flag and then runs the
-// server-side degree computation, which reads the freshly-persisted flag and
-// folds in-progress courses into the totals (and clears `modified`). This makes
-// the toggle a single, self-persisting action — no separate "close degree" click
-// is needed, and the result survives a page refresh.
 export function useSetComputeInProgress() {
   const queryClient = useQueryClient();
 
@@ -72,8 +67,7 @@ export function useSetComputeInProgress() {
       await queryClient.cancelQueries({ queryKey: ["userState"] });
       const previous = queryClient.getQueryData<UserState>(["userState"]);
       if (previous) {
-        // Flip the toggle optimistically so the switch responds instantly; the
-        // real, in-progress-aware totals arrive when the computation resolves.
+        // Flip the toggle optimistically so the switch responds instantly.
         queryClient.setQueryData<UserState>(["userState"], {
           ...previous,
           details: {

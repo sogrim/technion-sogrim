@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarDays, ArrowUpRight } from "lucide-react";
+import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarDays, ArrowUpRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Hint } from "@/components/ui/hint";
 import { isSocialActivityCourse } from "@/lib/reserved-credits";
@@ -157,10 +157,11 @@ interface BannerProps {
   degreeStatus: DegreeStatus;
   catalog?: Catalog;
   includeInProgress: boolean;
+  isComputing: boolean;
   onToggleInProgress: (v: boolean) => void;
 }
 
-export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInProgress }: BannerProps) {
+export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, onToggleInProgress }: BannerProps) {
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const { course_bank_requirements, course_statuses, total_credit } = degreeStatus;
@@ -289,9 +290,10 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
                 <button
                   role="switch"
                   aria-checked={includeInProgress}
+                  disabled={isComputing}
                   onClick={(e) => { e.stopPropagation(); onToggleInProgress(!includeInProgress); }}
                   className={cn(
-                    "relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors",
+                    "relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors disabled:opacity-60",
                     includeInProgress ? "bg-blue-400" : "bg-white/30"
                   )}
                 >
@@ -300,6 +302,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
                     includeInProgress ? "translate-x-0.5" : "translate-x-3.5"
                   )} />
                 </button>
+                {isComputing && <Loader2 className="h-3 w-3 animate-spin text-white/70" />}
               </div>
             </div>
           </div>
@@ -318,9 +321,10 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
             <button
               role="switch"
               aria-checked={includeInProgress}
+              disabled={isComputing}
               onClick={() => onToggleInProgress(!includeInProgress)}
               className={cn(
-                "relative inline-flex h-4 w-8 shrink-0 rounded-full border-2 border-transparent transition-colors",
+                "relative inline-flex h-4 w-8 shrink-0 rounded-full border-2 border-transparent transition-colors disabled:opacity-60",
                 includeInProgress ? "bg-blue-500" : "bg-muted"
               )}
             >
@@ -329,6 +333,12 @@ export function Banner({ degreeStatus, catalog, includeInProgress, onToggleInPro
                 includeInProgress ? "translate-x-0" : "-translate-x-4"
               )} />
             </button>
+            {isComputing && (
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {"מחשב..."}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm font-bold text-foreground min-w-[40px]" dir="ltr">{pct}%</span>

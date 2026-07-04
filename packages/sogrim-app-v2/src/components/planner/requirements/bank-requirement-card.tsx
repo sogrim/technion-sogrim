@@ -30,9 +30,8 @@ export function BankRequirementCard({
     (cs) => cs.type === bank.course_bank_name && !isReservedCourse(cs)
   );
 
-  // Credit/course totals come straight from the server. When the user enables
-  // "include in-progress", the server folds those courses into these totals, so
-  // the client must not add them again (doing so double-counted the credits).
+  // Totals come from the server, which already includes in-progress courses
+  // when the toggle is on.
   const percentage = (() => {
     if (bank.credit_requirement > 0) {
       return Math.min(

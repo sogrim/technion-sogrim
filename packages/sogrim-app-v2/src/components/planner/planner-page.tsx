@@ -83,9 +83,6 @@ export function PlannerPage() {
   const details = userState?.details;
   const registrationState = getRegistrationState(details);
 
-  // Server-authoritative: `compute_in_progress` is persisted and the server folds
-  // in-progress courses into the totals when it's on. Deriving the toggle from the
-  // fetched user state (instead of local state) is what makes it survive a refresh.
   const includeInProgress = details?.compute_in_progress ?? false;
 
   const courseStatuses = details?.degree_status.course_statuses ?? [];
@@ -477,12 +474,9 @@ export function PlannerPage() {
         degreeStatus={details!.degree_status}
         catalog={details!.catalog}
         includeInProgress={includeInProgress}
+        isComputing={computeInProgressMutation.isPending}
         onToggleInProgress={(val) => {
           if (!details) return;
-          // Persist the flag and recompute the degree status in one action, so
-          // the in-progress credits are folded in by the server exactly once
-          // (no double counting) and the choice is saved without a second
-          // "close degree" click.
           computeInProgressMutation.mutate({
             ...details,
             compute_in_progress: val,
