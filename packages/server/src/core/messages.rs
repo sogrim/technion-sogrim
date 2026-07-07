@@ -69,13 +69,17 @@ pub fn completed_chain_msg(mut chain: Vec<String>) -> String {
     msg
 }
 
-pub fn completed_specialization_groups_msg(mut groups: Vec<String>, needed: usize) -> String {
-    let mut msg = if groups.len() == ZERO as usize {
+pub fn completed_specialization_groups_msg(
+    mut groups: Vec<String>,
+    completed: usize,
+    needed: usize,
+) -> String {
+    let mut msg = if completed == 0 {
         "לא השלמת אף קבוצת התמחות".to_string()
-    } else if groups.len() == SINGLE as usize {
+    } else if completed == 1 {
         format!("השלמת קבוצת התמחות אחת (מתוך {needed}): ")
     } else {
-        format!("השלמת {} (מתוך {}) קבוצות התמחות: ", groups.len(), needed)
+        format!("השלמת {completed} (מתוך {needed}) קבוצות התמחות: ")
     };
     while let Some(group) = groups.pop() {
         if groups.is_empty() {

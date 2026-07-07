@@ -7,6 +7,14 @@ use std::fmt;
 pub type Chain = Vec<CourseId>;
 pub type NumCourses = usize;
 
+// The extended requirement of a group completed as a "double": more courses and a stricter mandatory
+// selection than the single version. A group completed at this level counts as two groups.
+#[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
+pub struct DoubleGroup {
+    pub courses_sum: usize,
+    pub mandatory: Option<Vec<OptionalReplacements>>,
+}
+
 #[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroup {
     pub name: String,
@@ -20,12 +28,31 @@ pub struct SpecializationGroup {
     //  [5,6]]
     // The user needs to pass the courses: (1 or 2), and (3 or 4), and (5 or 6).
     pub mandatory: Option<Vec<OptionalReplacements>>,
+
+    // When present, the group may also be completed as a double group.
+    #[serde(default)]
+    pub double: Option<DoubleGroup>,
+}
+
+#[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
+pub enum SpecializationGroupsType {
+    // A mandatory course shared between groups satisfies the mandatory of every group it appears in;
+    // credit and course count are still attributed to a single group.
+    #[default]
+    Regular,
+    // Regular semantics, and a group carrying a `double` spec counts as two groups.
+    Double,
+    // A mandatory course satisfies at most one group, so distinct mandatory courses are required.
+    // Holds the full pool of mandatory courses in the rule.
+    MandatoryNotShared(Vec<CourseId>),
 }
 
 #[derive(Default, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct SpecializationGroups {
     pub groups_list: Vec<SpecializationGroup>,
     pub groups_number: usize,
+    #[serde(default)]
+    pub groups_type: SpecializationGroupsType,
 }
 
 #[derive(PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]

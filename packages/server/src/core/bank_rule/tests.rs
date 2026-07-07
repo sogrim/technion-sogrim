@@ -4,7 +4,9 @@ use std::sync::LazyLock;
 use crate::core::bank_rule::BankRuleHandler;
 use crate::core::degree_status::DegreeStatus;
 use crate::core::tests::create_degree_status;
-use crate::core::types::{Requirement, SpecializationGroup, SpecializationGroups};
+use crate::core::types::{
+    DoubleGroup, Requirement, SpecializationGroup, SpecializationGroups, SpecializationGroupsType,
+};
 use crate::create_bank_rule_handler;
 use crate::resources::course::{Course, CourseId, CourseState, CourseStatus, Grade};
 
@@ -506,6 +508,7 @@ async fn test_specialization_group() {
                 .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![CourseId::new("236334"), CourseId::new("236357")]]),
+                double: None,
             },
             SpecializationGroup {
                 name: "תורת התקשורת".to_string(),
@@ -522,6 +525,7 @@ async fn test_specialization_group() {
                     vec![CourseId::new("044202")],
                     vec![CourseId::new("046206"), CourseId::new("046204")],
                 ]),
+                double: None,
             },
             SpecializationGroup {
                 name: "אלגוריתמים, צפינה, קריפטוגרפיה וסיבוכיות".to_string(),
@@ -534,6 +538,7 @@ async fn test_specialization_group() {
                 .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![CourseId::new("236343")]]),
+                double: None,
             },
             SpecializationGroup {
                 name: "עיבוד אותות ותמונות".to_string(),
@@ -550,6 +555,7 @@ async fn test_specialization_group() {
                     vec![CourseId::new("044198")],
                     vec![CourseId::new("044202"), CourseId::new("236860")],
                 ]),
+                double: None,
             },
             SpecializationGroup {
                 name: "מערכות נבונות".to_string(),
@@ -566,6 +572,7 @@ async fn test_specialization_group() {
                     CourseId::new("236501"),
                     CourseId::new("236927"),
                 ]]),
+                double: None,
             },
             SpecializationGroup {
                 name: "מעגלים אלקטרוניים משולבים".to_string(),
@@ -581,6 +588,7 @@ async fn test_specialization_group() {
                     vec![CourseId::new("044231")],
                     vec![CourseId::new("046237")],
                 ]),
+                double: None,
             },
             SpecializationGroup {
                 name: "מערכות תוכנה ותכנות מתקדם".to_string(),
@@ -594,6 +602,7 @@ async fn test_specialization_group() {
                 .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: None,
+                double: None,
             },
             SpecializationGroup {
                 name: "בקרה ורובוטיקה".to_string(),
@@ -606,6 +615,7 @@ async fn test_specialization_group() {
                 .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![CourseId::new("044191")]]),
+                double: None,
             },
             SpecializationGroup {
                 name: "שפות תכנות, שפות פורמליות וטבעיות".to_string(),
@@ -618,9 +628,11 @@ async fn test_specialization_group() {
                 .map(CourseId::new)
                 .collect::<Vec<_>>(),
                 mandatory: Some(vec![vec![CourseId::new("234129")]]),
+                double: None,
             },
         ],
         groups_number: 3,
+        groups_type: SpecializationGroupsType::Regular,
     };
 
     let handle_bank_rule_processor = create_bank_rule_handler!(
@@ -635,7 +647,9 @@ async fn test_specialization_group() {
 
     assert_eq!(completed_groups.len(), 3);
     assert!(completed_groups.contains(&"תורת התקשורת".to_string()));
-    assert!(completed_groups.contains(&"מערכות נבונות".to_string()));
+    // Under the Regular (satisfy-all) policy the shared mandatory course 044202 satisfies both
+    // "תורת התקשורת" and "עיבוד אותות ותמונות", so both complete alongside "מערכות תוכנה ותכנות מתקדם".
+    assert!(completed_groups.contains(&"עיבוד אותות ותמונות".to_string()));
     assert!(completed_groups.contains(&"מערכות תוכנה ותכנות מתקדם".to_string()));
 
     // ---------------------------------------------------------------------------
@@ -655,4 +669,155 @@ async fn test_specialization_group() {
     assert_eq!(completed_groups.len(), 2);
     assert!(completed_groups.contains(&"מערכות נבונות".to_string()));
     assert!(completed_groups.contains(&"מערכות תוכנה ותכנות מתקדם".to_string()));
+}
+
+fn sg_completed_course(id: &str) -> CourseStatus {
+    CourseStatus {
+        course: Course {
+            id: CourseId::new(id),
+            credit: 3.0,
+            name: String::new(),
+            tags: None,
+        },
+        state: Some(CourseState::Complete),
+        grade: Some(Grade::Numeric(85)),
+        ..Default::default()
+    }
+}
+
+fn sg_ids(list: &[&str]) -> Vec<CourseId> {
+    list.iter().copied().map(CourseId::new).collect()
+}
+
+fn sg_mandatory(list: Vec<Vec<&str>>) -> Option<Vec<Vec<CourseId>>> {
+    Some(
+        list.into_iter()
+            .map(|sublist| sublist.into_iter().map(CourseId::new).collect())
+            .collect(),
+    )
+}
+
+fn run_specialization_group(completed: &[&str], sgs: &SpecializationGroups) -> (Vec<String>, usize) {
+    let mut degree_status = DegreeStatus {
+        course_statuses: completed.iter().map(|id| sg_completed_course(id)).collect(),
+        course_bank_requirements: Vec::new(),
+        overflow_msgs: Vec::new(),
+        total_credit: 0.0,
+    };
+    let course_list = sg_ids(completed);
+    let handler =
+        create_bank_rule_handler!(&mut degree_status, "spec".to_string(), course_list, 0.0, 0);
+    let mut groups_done = Vec::new();
+    let (_, weight) = handler.specialization_group(sgs, &mut groups_done);
+    (groups_done, weight)
+}
+
+#[test]
+fn test_specialization_group_double() {
+    let sgs = SpecializationGroups {
+        groups_list: vec![
+            SpecializationGroup {
+                name: "אנרגיה".to_string(),
+                courses_sum: 3,
+                course_list: sg_ids(&["a1", "a2", "a3", "a4", "a5", "a6", "a7"]),
+                mandatory: sg_mandatory(vec![vec!["a1"]]),
+                double: Some(DoubleGroup {
+                    courses_sum: 6,
+                    mandatory: sg_mandatory(vec![vec!["a1"], vec!["a2", "a3"], vec!["a2", "a3"]]),
+                }),
+            },
+            SpecializationGroup {
+                name: "מחשבים".to_string(),
+                courses_sum: 3,
+                course_list: sg_ids(&["b1", "b2", "b3"]),
+                mandatory: None,
+                double: None,
+            },
+        ],
+        groups_number: 3,
+        groups_type: SpecializationGroupsType::Double,
+    };
+
+    // Six courses in the double-able group make it count as two groups, so together with the single
+    // group the total weight is three.
+    let (groups, weight) =
+        run_specialization_group(&["a1", "a2", "a3", "a4", "a5", "a6", "b1", "b2", "b3"], &sgs);
+    assert_eq!(weight, 3);
+    assert!(groups.contains(&"אנרגיה (כפולה)".to_string()));
+    assert!(groups.contains(&"מחשבים".to_string()));
+
+    // Only three courses in the double-able group -> it counts as a single group (weight two total).
+    let (groups, weight) = run_specialization_group(&["a1", "a2", "a3", "b1", "b2", "b3"], &sgs);
+    assert_eq!(weight, 2);
+    assert!(groups.contains(&"אנרגיה".to_string()));
+    assert!(groups.contains(&"מחשבים".to_string()));
+
+    // Six courses but only one of {a2, a3} -> the double mandatory is unmet, so it stays single.
+    let (groups, weight) =
+        run_specialization_group(&["a1", "a2", "a4", "a5", "a6", "a7", "b1", "b2", "b3"], &sgs);
+    assert_eq!(weight, 2);
+    assert!(groups.contains(&"אנרגיה".to_string()));
+    assert!(!groups.contains(&"אנרגיה (כפולה)".to_string()));
+}
+
+#[test]
+fn test_specialization_group_shared_mandatory_policies() {
+    let build = |groups_type| SpecializationGroups {
+        groups_list: vec![
+            SpecializationGroup {
+                name: "a".to_string(),
+                courses_sum: 2,
+                course_list: sg_ids(&["m", "a1", "a2"]),
+                mandatory: sg_mandatory(vec![vec!["m"]]),
+                double: None,
+            },
+            SpecializationGroup {
+                name: "b".to_string(),
+                courses_sum: 2,
+                course_list: sg_ids(&["m", "b1", "b2"]),
+                mandatory: sg_mandatory(vec![vec!["m"]]),
+                double: None,
+            },
+        ],
+        groups_number: 2,
+        groups_type,
+    };
+
+    // Regular: the shared mandatory course `m` satisfies the mandatory of both groups, so both
+    // complete even though `m` is counted toward only one of them.
+    let (_, weight) = run_specialization_group(
+        &["m", "a1", "a2", "b1", "b2"],
+        &build(SpecializationGroupsType::Regular),
+    );
+    assert_eq!(weight, 2);
+
+    // MandatoryNotShared: `m` satisfies at most one group, so only one group completes.
+    let (_, weight) = run_specialization_group(
+        &["m", "a1", "a2", "b1", "b2"],
+        &build(SpecializationGroupsType::MandatoryNotShared(sg_ids(&["m"]))),
+    );
+    assert_eq!(weight, 1);
+}
+
+#[test]
+fn test_double_ignored_unless_groups_type_is_double() {
+    let sgs = SpecializationGroups {
+        groups_list: vec![SpecializationGroup {
+            name: "a".to_string(),
+            courses_sum: 3,
+            course_list: sg_ids(&["a1", "a2", "a3", "a4", "a5", "a6"]),
+            mandatory: sg_mandatory(vec![vec!["a1"]]),
+            double: Some(DoubleGroup {
+                courses_sum: 6,
+                mandatory: sg_mandatory(vec![vec!["a1"]]),
+            }),
+        }],
+        groups_number: 1,
+        groups_type: SpecializationGroupsType::Regular,
+    };
+
+    // Six courses reach the double threshold, but Regular never counts a group as double.
+    let (groups, weight) = run_specialization_group(&["a1", "a2", "a3", "a4", "a5", "a6"], &sgs);
+    assert_eq!(weight, 1);
+    assert!(groups.contains(&"a".to_string()));
 }
