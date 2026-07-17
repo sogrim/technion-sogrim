@@ -713,6 +713,58 @@ fn run_specialization_group(completed: &[&str], sgs: &SpecializationGroups) -> (
 }
 
 #[test]
+fn ee_2025_double_specialization_completes_from_catalog() {
+    // Guards the shipped EE 2025-2026 catalog: a transcript with a double מיקרואלקטרוניקה group
+    // (6 courses incl. both mandatory) plus the excellence group must reach weight 3.
+    let text = std::fs::read_to_string("../docs/ElectricalEngineering2025-2026.json").unwrap();
+    let mut v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    fn norm(v: &mut serde_json::Value) {
+        match v {
+            serde_json::Value::Object(m) => {
+                if m.len() == 1 {
+                    if let Some(serde_json::Value::String(s)) = m.get("$numberLong") {
+                        if let Ok(n) = s.parse::<i64>() {
+                            *v = serde_json::json!(n);
+                            return;
+                        }
+                    }
+                }
+                for x in m.values_mut() {
+                    norm(x);
+                }
+            }
+            serde_json::Value::Array(a) => {
+                for x in a {
+                    norm(x);
+                }
+            }
+            _ => {}
+        }
+    }
+    norm(&mut v);
+    let banks = v["course_banks"].as_array().unwrap();
+    let sgs_value = banks
+        .iter()
+        .find_map(|b| b.get("rule").and_then(|r| r.get("SpecializationGroups")))
+        .unwrap()
+        .clone();
+    let sgs: SpecializationGroups = serde_json::from_value(sgs_value).unwrap();
+
+    let completed = [
+        "01040012", "01040064", "01140032", "00440102", "01040013", "01040034", "01140071",
+        "02340117", "03240033", "01040038", "01040214", "01140073", "00440105", "00440127",
+        "01040136", "01040215", "01140075", "00440252", "00440124", "00440137", "00440158",
+        "00450100", "03240305", "03940802", "00440157", "01040220", "00440131", "00440148",
+        "00440268", "00450108", "00460225", "00460129", "03940803", "00440140", "00440202",
+        "00440231", "00440239", "01040142", "00440101", "00440173", "00460012", "00440180",
+        "00440175", "03250005", "00440176", "00460230", "01040158", "00460003",
+    ];
+    let (groups, weight) = run_specialization_group(&completed, &sgs);
+    assert_eq!(weight, 3, "expected double micro (2) + excellence (1); got {groups:?}");
+    assert!(groups.contains(&"מיקרואלקטרוניקה וננואלקטרוניקה (כפולה)".to_string()));
+}
+
+#[test]
 fn test_specialization_group_double() {
     let sgs = SpecializationGroups {
         groups_list: vec![
