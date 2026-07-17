@@ -29,7 +29,10 @@ fn empty_completion(groups_count: usize) -> Completion {
 
 // Each mandatory sublist must be satisfied by a distinct completed course, so a list repeated k times
 // requires k different courses from it.
-fn mandatory_satisfied(mandatory: &Option<Vec<Vec<CourseId>>>, courses: &HashSet<CourseId>) -> bool {
+fn mandatory_satisfied(
+    mandatory: &Option<Vec<Vec<CourseId>>>,
+    courses: &HashSet<CourseId>,
+) -> bool {
     match mandatory {
         None => true,
         Some(sublists) => match_sublists(sublists, courses, 0, &mut HashSet::new()),
@@ -78,7 +81,8 @@ fn group_weight(
             }
         }
     }
-    if assigned.len() >= group.courses_sum && mandatory_satisfied(&group.mandatory, mandatory_pool) {
+    if assigned.len() >= group.courses_sum && mandatory_satisfied(&group.mandatory, mandatory_pool)
+    {
         return 1;
     }
     0

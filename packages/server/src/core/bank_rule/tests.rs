@@ -697,7 +697,10 @@ fn sg_mandatory(list: Vec<Vec<&str>>) -> Option<Vec<Vec<CourseId>>> {
     )
 }
 
-fn run_specialization_group(completed: &[&str], sgs: &SpecializationGroups) -> (Vec<String>, usize) {
+fn run_specialization_group(
+    completed: &[&str],
+    sgs: &SpecializationGroups,
+) -> (Vec<String>, usize) {
     let mut degree_status = DegreeStatus {
         course_statuses: completed.iter().map(|id| sg_completed_course(id)).collect(),
         course_bank_requirements: Vec::new(),
@@ -760,7 +763,10 @@ fn ee_2025_double_specialization_completes_from_catalog() {
         "00440175", "03250005", "00440176", "00460230", "01040158", "00460003",
     ];
     let (groups, weight) = run_specialization_group(&completed, &sgs);
-    assert_eq!(weight, 3, "expected double micro (2) + excellence (1); got {groups:?}");
+    assert_eq!(
+        weight, 3,
+        "expected double micro (2) + excellence (1); got {groups:?}"
+    );
     assert!(groups.contains(&"מיקרואלקטרוניקה וננואלקטרוניקה (כפולה)".to_string()));
 }
 
@@ -792,8 +798,10 @@ fn test_specialization_group_double() {
 
     // Six courses in the double-able group make it count as two groups, so together with the single
     // group the total weight is three.
-    let (groups, weight) =
-        run_specialization_group(&["a1", "a2", "a3", "a4", "a5", "a6", "b1", "b2", "b3"], &sgs);
+    let (groups, weight) = run_specialization_group(
+        &["a1", "a2", "a3", "a4", "a5", "a6", "b1", "b2", "b3"],
+        &sgs,
+    );
     assert_eq!(weight, 3);
     assert!(groups.contains(&"אנרגיה (כפולה)".to_string()));
     assert!(groups.contains(&"מחשבים".to_string()));
@@ -805,8 +813,10 @@ fn test_specialization_group_double() {
     assert!(groups.contains(&"מחשבים".to_string()));
 
     // Six courses but only one of {a2, a3} -> the double mandatory is unmet, so it stays single.
-    let (groups, weight) =
-        run_specialization_group(&["a1", "a2", "a4", "a5", "a6", "a7", "b1", "b2", "b3"], &sgs);
+    let (groups, weight) = run_specialization_group(
+        &["a1", "a2", "a4", "a5", "a6", "a7", "b1", "b2", "b3"],
+        &sgs,
+    );
     assert_eq!(weight, 2);
     assert!(groups.contains(&"אנרגיה".to_string()));
     assert!(!groups.contains(&"אנרגיה (כפולה)".to_string()));
