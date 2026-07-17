@@ -72,16 +72,18 @@ impl DegreeStatusHandler<'_> {
             }
             Rule::SpecializationGroups(ref specialization_groups) => {
                 let mut groups_done_list = Vec::new();
-                sum_credit = bank_rule_handler
+                let completed_weight;
+                (sum_credit, completed_weight) = bank_rule_handler
                     .specialization_group(specialization_groups, &mut groups_done_list);
-                completed = groups_done_list.len() >= specialization_groups.groups_number;
+                completed = completed_weight >= specialization_groups.groups_number;
                 if bank.credit.is_none() {
                     requirement
                         .course_requirement(specialization_groups.groups_number)
-                        .course_completed(groups_done_list.len());
+                        .course_completed(completed_weight);
                 }
                 requirement.message(messages::completed_specialization_groups_msg(
                     groups_done_list,
+                    completed_weight,
                     specialization_groups.groups_number,
                 ));
             }

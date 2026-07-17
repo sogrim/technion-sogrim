@@ -142,26 +142,44 @@ Each inner array is one valid chain. The student must complete one full chain.
       {
         "name": "סיבוכיות של חישובים",
         "courses_sum": {"$numberLong": "3"},
-        "course_list": [
-          "02360306", "02360309", "02360313", "02360315",
-          "02360318", "02360359", "02360374", "02360377",
-          "02360378", "02360508", "02360518", "02360521",
-          "02360525", "02360755", "02360760"
-        ],
+        "course_list": ["02360306", "02360309", "02360313"],
         "mandatory": [["02360313"]]
-      },
-      {
-        "name": "תורת האלגוריתמים",
-        "courses_sum": {"$numberLong": "3"},
-        "course_list": ["02360315", "02360357", "02360359", "02360377", "02360521"],
-        "mandatory": null
       }
     ],
-    "groups_number": {"$numberLong": "3"}
+    "groups_number": {"$numberLong": "3"},
+    "groups_type": "Double"
   }
 }
 ```
 All course IDs in specialization groups must also be 8-digit zero-padded.
+
+**`groups_type`** (optional; omit to get the default `"Regular"` — never write `"Regular"` explicitly):
+- `"Regular"` (default) — a mandatory course shared between groups satisfies the mandatory requirement of
+  every group it appears in; credit/course-count is still attributed to a single group. Use for most tracks.
+- `"Double"` — Regular semantics, and a group carrying a `double` spec (below) may count as **two** groups.
+- `{"MandatoryNotShared": ["<id>", ...]}` — a mandatory course satisfies at most one group, so distinct
+  mandatory courses are required (e.g. biotech מגמות). The array is the pool of all mandatory courses.
+
+**`double`** (optional per-group; only honored when `groups_type` is `"Double"`): add it when a group can be
+completed as a "double" (PDF: "קבוצה בודדת/כפולה"). A double needs more courses and a stricter mandatory
+selection, and counts as two groups. "X and **two** of {list}" is encoded by repeating the list sublist —
+each mandatory sublist must be satisfied by a **distinct** course:
+```json
+{
+  "name": "תקשורת ואינפורמציה",
+  "courses_sum": {"$numberLong": "3"},
+  "course_list": ["00460206", "00460205", "02360309"],
+  "mandatory": [["00460206"], ["00460205", "02360309", "00460204"]],
+  "double": {
+    "courses_sum": {"$numberLong": "6"},
+    "mandatory": [["00460206"], ["00460205", "02360309", "00460204"], ["00460205", "02360309", "00460204"]]
+  }
+}
+```
+PDF cues: "קבוצה בודדת תמנה N מקצועות; קבוצה כפולה תמנה M מקצועות" gives single/double `courses_sum`
+(M is not always 2N — e.g. 4→7); "המקצועות המחייבים לקבוצה כפולה" gives the double `mandatory`. If a track
+states a double does not satisfy the requirement (e.g. הנדסת חשמל ומתמטיקה), keep `groups_type` `"Regular"`
+and omit `double`.
 
 #### `credit_overflows`
 Defines how excess credits overflow between banks:
