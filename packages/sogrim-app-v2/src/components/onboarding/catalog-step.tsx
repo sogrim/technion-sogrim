@@ -32,7 +32,7 @@ export function CatalogStep({ faculty, onBack, onError }: CatalogStepProps) {
   }
 
   const filteredCatalogs: Catalog[] = [...(catalogs ?? [])].sort(
-    (a, b) => a.year - b.year || a.name.localeCompare(b.name),
+    (a, b) => b.year - a.year || b.name.localeCompare(a.name),
   );
 
   if (isLoading) {
