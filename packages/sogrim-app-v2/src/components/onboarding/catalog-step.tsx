@@ -1,4 +1,5 @@
-import { BookOpen, Loader2, ArrowRight } from "lucide-react";
+import { BookOpen, Loader2, ArrowRight, Search } from "lucide-react";
+import { useState } from "react";
 import { useCatalogs } from "@/hooks/use-catalogs";
 import { useUpdateCatalog } from "@/hooks/use-mutations";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Faculty, FACULTY_LABELS } from "@/types/api";
 import type { Catalog } from "@/types/api";
@@ -22,6 +24,7 @@ interface CatalogStepProps {
 export function CatalogStep({ faculty, onBack, onError }: CatalogStepProps) {
   const { data: catalogs, isLoading } = useCatalogs(faculty);
   const updateCatalog = useUpdateCatalog();
+  const [search, setSearch] = useState("");
 
   function handleSelect(catalogId: string) {
     updateCatalog.mutate(catalogId, {
@@ -31,9 +34,15 @@ export function CatalogStep({ faculty, onBack, onError }: CatalogStepProps) {
     });
   }
 
-  const filteredCatalogs: Catalog[] = [...(catalogs ?? [])].sort(
-    (a, b) => b.year - a.year || b.name.localeCompare(a.name),
-  );
+  const query = search.trim().toLowerCase();
+  const filteredCatalogs: Catalog[] = [...(catalogs ?? [])]
+    .filter(
+      (catalog) =>
+        !query ||
+        catalog.name.toLowerCase().includes(query) ||
+        String(catalog.year).includes(query),
+    )
+    .sort((a, b) => b.year - a.year || b.name.localeCompare(a.name));
 
   if (isLoading) {
     return (
@@ -65,6 +74,19 @@ export function CatalogStep({ faculty, onBack, onError }: CatalogStepProps) {
           {FACULTY_LABELS[faculty] ?? faculty}. הקטלוג מגדיר את דרישות התואר.
         </p>
       </div>
+
+      {(catalogs ?? []).length > 0 && (
+        <div className="relative max-w-md mx-auto">
+          <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="חיפוש קטלוג לפי שם או שנה"
+            className="ps-9"
+          />
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {filteredCatalogs.map((catalog) => (
@@ -100,7 +122,9 @@ export function CatalogStep({ faculty, onBack, onError }: CatalogStepProps) {
         <div className="text-center py-8">
           <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">
-            לא נמצאו קטלוגים זמינים עבור פקולטה זו
+            {query
+              ? "לא נמצאו קטלוגים התואמים לחיפוש"
+              : "לא נמצאו קטלוגים זמינים עבור פקולטה זו"}
           </p>
         </div>
       )}
