@@ -37,7 +37,7 @@ export function SemesterFooter({ rows }: SemesterFooterProps) {
 
     return {
       avg,
-      doneCredit: doneCreditNoExemption !== 0 ? doneCredit : "-",
+      doneCredit,
       totalCredit,
     };
   }, [rows]);
