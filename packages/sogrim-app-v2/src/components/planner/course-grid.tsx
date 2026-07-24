@@ -75,6 +75,7 @@ function courseStatusToRow(cs: CourseStatus): RowData {
     semester: cs.semester,
     sg_name: cs.specialization_group_name,
     msg: cs.additional_msg,
+    is_repetition: cs.is_repetition,
   };
 }
 
@@ -142,6 +143,20 @@ export function CourseGrid({
         filter: true,
         headerClass: "ag-header-center",
         cellClass: "ag-cell-center",
+        cellRenderer: (params: { value: string; data?: RowData }) =>
+          params.data?.is_repetition && params.data?.state !== "בתהליך" ? (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="truncate">{params.value}</span>
+              <Badge
+                variant="muted-outline"
+                className="text-[10px] px-1.5 py-0 leading-5 shrink-0"
+              >
+                חזרה
+              </Badge>
+            </span>
+          ) : (
+            params.value
+          ),
       },
       {
         headerName: "מס׳ קורס",

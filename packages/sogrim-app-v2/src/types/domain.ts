@@ -10,6 +10,7 @@ export interface RowData {
   semester: AcademicSemester | null;
   sg_name?: string;
   msg?: string;
+  is_repetition?: boolean;
 }
 
 export const COURSE_STATE_OPTIONS = ["הושלם", "לא הושלם", "לא רלוונטי", "בתהליך"] as const;

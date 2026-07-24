@@ -55,6 +55,7 @@ export interface CourseStatus {
   specialization_group_name?: string;
   additional_msg?: string;
   times_repeated: number;
+  is_repetition?: boolean;
 }
 
 export interface CourseBankReq {

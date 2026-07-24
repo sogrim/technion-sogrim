@@ -72,6 +72,10 @@ impl DegreeStatus {
         self.overflow_msgs.clear();
         self.total_credit = 0.0;
 
+        self.course_statuses
+            .iter_mut()
+            .for_each(|course_status| course_status.is_repetition = false);
+
         self.remove_courses_added_by_algorithm();
         self.remove_irrelevant_courses_added_by_user();
         self.clear_type_for_unmodified_and_irrelevant_courses();

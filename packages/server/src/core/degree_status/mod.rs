@@ -120,11 +120,9 @@ impl DegreeStatusHandler<'_> {
 impl DegreeStatus {
     /// Collect social courses ("פעילות חברתית") from course_statuses.
     /// Social courses are used to let the user allocate the extra credit they have.
-    fn extract_social_courses(&self) -> Vec<CourseStatus> {
+    fn extract_social_courses(&mut self) -> Vec<CourseStatus> {
         self.course_statuses
-            .iter()
-            .filter(|cs| cs.is_social())
-            .cloned()
+            .extract_if(.., |cs| cs.is_social())
             .collect()
     }
 
@@ -161,7 +159,6 @@ impl DegreeStatus {
                     } else if course_status.grade.is_none() {
                         // The existing entry is graded, but the new course_status is ungraded, so we keep the existing entry.
                         removed.push(course_status.clone());
-                        return;
                     } else {
                         // Both attempts are graded — keep the one from the latest semester.
                         if course_status.semester_order_key() > entry.semester_order_key() {
@@ -184,7 +181,6 @@ impl DegreeStatus {
         // Extract social courses and superseded retake attempts, then remove them so they don't
         // affect the compute status logic; both are restored afterward for display.
         let social_courses = self.extract_social_courses();
-        self.course_statuses.retain(|cs| !cs.is_social());
         let repetitions = self.extract_repetitions();
 
         let course_banks = catalog.get_bank_traversal_order();
@@ -200,19 +196,13 @@ impl DegreeStatus {
         }
         .compute_status();
 
-        // Restore the courses that were pulled out of the computation so the frontend can still
-        // display them (e.g. in the semesters view). The superseded retake attempts were excluded
-        // above so their credit/grade is counted only once; we also clear their `type` so they are
-        // not attributed to any bank and therefore don't show up as duplicates in the requirements
-        // panel (which lists a bank's courses by matching `type == bank name`).
         self.course_statuses.extend(social_courses);
         self.course_statuses
             .extend(repetitions.into_iter().map(|mut repetition| {
-                repetition.r#type = None;
+                repetition.is_repetition = true;
                 repetition
             }));
 
-        // process the data after degree status computation
         self.postprocess(&catalog);
     }
 }

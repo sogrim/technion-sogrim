@@ -428,6 +428,8 @@ pub struct CourseStatus {
     pub additional_msg: Option<String>,
     pub modified: bool,
     pub times_repeated: usize,
+    #[serde(default)]
+    pub is_repetition: bool,
 }
 
 impl CourseStatus {
