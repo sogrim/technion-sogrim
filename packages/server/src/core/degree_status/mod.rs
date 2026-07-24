@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use crate::core::types::Requirement;
 use crate::resources::{
     catalog::Catalog,
-    course::{AcademicSemester, Course, CourseBank, CourseId, CourseState, CourseStatus},
+    course::{AcademicSemester, Course, CourseBank, CourseId, CourseState, CourseStatus, Grade},
 };
 use serde::{Deserialize, Serialize};
 
