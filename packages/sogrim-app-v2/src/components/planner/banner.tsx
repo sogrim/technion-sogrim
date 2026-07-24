@@ -167,16 +167,12 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
   const { course_bank_requirements, course_statuses, total_credit } = degreeStatus;
 
   const totalRequired = catalog?.total_credit ?? 0;
-  const completedCredit = course_statuses.reduce(
-    (sum, cs) => (cs.state === "הושלם" && !isSocialActivityCourse(cs) ? sum + cs.course.credit : sum),
-    0
-  );
-  const inProgressCredit = course_statuses.reduce(
-    (sum, cs) => ((cs.state === "הושלם" || cs.state === "בתהליך") && !isSocialActivityCourse(cs) ? sum + cs.course.credit : sum),
-    0
-  );
-  const effectiveCredit = Math.max(inProgressCredit, total_credit);
-  const displayedCredit = includeInProgress ? effectiveCredit : completedCredit;
+  // The backend already computes the credit that actually counts toward the degree in
+  // `total_credit`, respecting bank caps/overflow. It also honors the in-progress toggle:
+  // when it's on, the server recomputes with in-progress courses treated as complete
+  // (see students.rs). So we display that authoritative value instead of re-summing course
+  // credits on the client, which ignores the degree logic and over-counts.
+  const displayedCredit = total_credit;
   const pct = totalRequired > 0 ? Math.min(100, Math.round((displayedCredit / totalRequired) * 100)) : 0;
 
   const completedBanks = course_bank_requirements.filter(
