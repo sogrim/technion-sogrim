@@ -390,3 +390,10 @@
     color: var(--card-foreground);
   }
 }
+
+/* Superseded retake attempts (is_repetition) are dimmed via getRowStyle; strike
+   their values through here. A row-level text-decoration doesn't propagate to
+   AG Grid's flex-centered cells, so target the cell value element directly. */
+.ag-row.repetition-row .ag-cell-value {
+  text-decoration: line-through;
+}

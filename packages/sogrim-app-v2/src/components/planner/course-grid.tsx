@@ -98,6 +98,12 @@ function rowToCourseStatus(row: RowData, original: CourseStatus): CourseStatus {
   };
 }
 
+// A superseded retake attempt (an earlier take of a course that was retaken and
+// no longer counts toward the degree). In-progress rows are excluded.
+function isSupersededRepetition(data?: RowData): boolean {
+  return !!data?.is_repetition && data.state !== "בתהליך";
+}
+
 export function CourseGrid({
   courseStatuses,
   semester,
@@ -306,12 +312,18 @@ export function CourseGrid({
   );
 
   // Superseded retake attempts (is_repetition) no longer count toward the degree,
-  // so dim the whole row and strike its values through.
+  // so dim the whole row and strike its values through. The strikethrough is done
+  // via a row class (see `.repetition-row` in index.css) because a row-level
+  // text-decoration doesn't propagate to AG Grid's flex-centered cells.
   const getRowStyle = useCallback(
     (params: RowClassParams<RowData>): RowStyle | undefined =>
-      params.data?.is_repetition && params.data.state !== "בתהליך"
-        ? { opacity: 0.5, textDecoration: "line-through" }
-        : undefined,
+      isSupersededRepetition(params.data) ? { opacity: 0.5 } : undefined,
+    []
+  );
+
+  const getRowClass = useCallback(
+    (params: RowClassParams<RowData>): string | undefined =>
+      isSupersededRepetition(params.data) ? "repetition-row" : undefined,
     []
   );
 
@@ -326,6 +338,7 @@ export function CourseGrid({
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           getRowStyle={getRowStyle}
+          getRowClass={getRowClass}
           enableRtl={true}
           singleClickEdit={true}
           stopEditingWhenCellsLoseFocus={true}
