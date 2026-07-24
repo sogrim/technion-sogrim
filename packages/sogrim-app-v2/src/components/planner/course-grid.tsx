@@ -4,6 +4,8 @@ import {
   AllCommunityModule,
   type ColDef,
   type CellValueChangedEvent,
+  type RowClassParams,
+  type RowStyle,
   themeQuartz,
 } from "ag-grid-community";
 import { Trash2 } from "lucide-react";
@@ -143,20 +145,6 @@ export function CourseGrid({
         filter: true,
         headerClass: "ag-header-center",
         cellClass: "ag-cell-center",
-        cellRenderer: (params: { value: string; data?: RowData }) =>
-          params.data?.is_repetition && params.data?.state !== "בתהליך" ? (
-            <span className="inline-flex items-center gap-1.5">
-              <span className="truncate">{params.value}</span>
-              <Badge
-                variant="muted-outline"
-                className="text-[10px] px-1.5 py-0 leading-5 shrink-0"
-              >
-                חזרה
-              </Badge>
-            </span>
-          ) : (
-            params.value
-          ),
       },
       {
         headerName: "מס׳ קורס",
@@ -317,6 +305,16 @@ export function CourseGrid({
     []
   );
 
+  // Superseded retake attempts (is_repetition) no longer count toward the degree,
+  // so dim the whole row and strike its values through.
+  const getRowStyle = useCallback(
+    (params: RowClassParams<RowData>): RowStyle | undefined =>
+      params.data?.is_repetition && params.data.state !== "בתהליך"
+        ? { opacity: 0.5, textDecoration: "line-through" }
+        : undefined,
+    []
+  );
+
   return (
     <div className="space-y-0">
       <div className="w-full overflow-hidden rounded-t-lg border [&_.ag-center-cols-viewport]:!min-h-0 [&_.ag-body-viewport]:!min-h-0">
@@ -327,6 +325,7 @@ export function CourseGrid({
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
+          getRowStyle={getRowStyle}
           enableRtl={true}
           singleClickEdit={true}
           stopEditingWhenCellsLoseFocus={true}
