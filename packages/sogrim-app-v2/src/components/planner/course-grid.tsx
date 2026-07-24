@@ -95,6 +95,7 @@ function rowToCourseStatus(row: RowData, original: CourseStatus): CourseStatus {
     state: (row.state as CourseStatus["state"]) || original.state,
     type: row.type,
     modified: true,
+    is_repetition: row.is_repetition,
   };
 }
 
@@ -266,6 +267,10 @@ export function CourseGrid({
       // Recompute state if grade changed
       if (event.colDef.field === "grade") {
         updatedRow.state = determineState(updatedRow.grade);
+        // Changing the grade invalidates the server-computed repetition flag
+        // (which attempt is superseded depends on grades). Clear it so the row
+        // isn't shown as superseded until the next degree compute re-derives it.
+        updatedRow.is_repetition = false;
       }
 
       // Validate
