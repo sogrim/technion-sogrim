@@ -199,10 +199,16 @@ impl DegreeStatus {
         .compute_status();
 
         // Restore the courses that were pulled out of the computation so the frontend can still
-        // display them. The superseded attempts were excluded above so their credit/grade is
-        // counted only once.
+        // display them (e.g. in the semesters view). The superseded retake attempts were excluded
+        // above so their credit/grade is counted only once; we also clear their `type` so they are
+        // not attributed to any bank and therefore don't show up as duplicates in the requirements
+        // panel (which lists a bank's courses by matching `type == bank name`).
         self.course_statuses.extend(social_courses);
-        self.course_statuses.extend(repetitions);
+        self.course_statuses
+            .extend(repetitions.into_iter().map(|mut repetition| {
+                repetition.r#type = None;
+                repetition
+            }));
 
         // process the data after degree status computation
         self.postprocess(&catalog);
