@@ -7,7 +7,6 @@ pub mod preprocessing;
 use std::collections::{HashMap, HashSet};
 
 use crate::core::types::Requirement;
-use crate::resources::course;
 use crate::resources::{
     catalog::Catalog,
     course::{AcademicSemester, Course, CourseBank, CourseId, CourseState, CourseStatus},
