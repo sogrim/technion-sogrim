@@ -160,6 +160,12 @@ impl DegreeStatus {
                         // The existing entry is graded, but the new course_status is ungraded, so we keep the existing entry.
                         removed.push(course_status.clone());
                     } else {
+                        if course_status.grade == Some(Grade::NotComplete) {
+                            // The new course_status is not complete (usually means the student didn't take the test), so we keep the existing entry.
+                            removed.push(course_status.clone());
+                            return;
+                        }
+
                         // Both attempts are graded — keep the one from the latest semester.
                         if course_status.semester_order_key() > entry.semester_order_key() {
                             removed.push(entry.clone());
