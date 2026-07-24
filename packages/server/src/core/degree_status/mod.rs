@@ -212,3 +212,7 @@ impl DegreeStatus {
         self.postprocess(&catalog);
     }
 }
+
+#[cfg(test)]
+#[path = "repetitions_tests.rs"]
+mod repetitions_tests;
