@@ -154,14 +154,16 @@ impl DegreeStatus {
                         return;
                     };
 
-                    let Some(_) = &entry.grade else {
+                    if entry.grade.is_none() {
+                        // The existing entry is ungraded, so we replace it with the new one which may be graded.
                         removed.push(entry.clone());
                         *entry = course_status.clone();
+                    } else if course_status.grade.is_none() {
+                        // The existing entry is graded, but the new course_status is ungraded, so we keep the existing entry.
+                        removed.push(course_status.clone());
                         return;
-                    };
-
-                    if let Some(_) = &course_status.grade {
-                        // take the one in the last semester
+                    } else {
+                        // Both attempts are graded — keep the one from the latest semester.
                         if course_status.semester_order_key() > entry.semester_order_key() {
                             removed.push(entry.clone());
                             *entry = course_status.clone();
