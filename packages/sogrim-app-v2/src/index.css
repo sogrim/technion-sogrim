@@ -391,9 +391,13 @@
   }
 }
 
-/* Superseded retake attempts (is_repetition) are dimmed via getRowStyle; strike
-   their values through here. A row-level text-decoration doesn't propagate to
-   AG Grid's flex-centered cells, so target the cell value element directly. */
+/* Superseded retake attempts (is_repetition) — the `repetition-row` class is
+   toggled by rowClassRules. Dim the whole row and strike its values through.
+   The line-through targets `.ag-cell-value` because a row-level text-decoration
+   doesn't propagate to AG Grid's flex-centered cells. */
+.ag-row.repetition-row {
+  opacity: 0.5;
+}
 .ag-row.repetition-row .ag-cell-value {
   text-decoration: line-through;
 }

@@ -4,8 +4,7 @@ import {
   AllCommunityModule,
   type ColDef,
   type CellValueChangedEvent,
-  type RowClassParams,
-  type RowStyle,
+  type RowClassRules,
   themeQuartz,
 } from "ag-grid-community";
 import { Trash2 } from "lucide-react";
@@ -135,7 +134,17 @@ export function CourseGrid({
   );
 
   const rowData = useMemo(
-    () => semesterCourses.map(courseStatusToRow),
+    () =>
+      semesterCourses.map(courseStatusToRow).sort((a, b) => {
+        // Deterministic order: non-repetition courses first, superseded retakes
+        // last; then by course number ascending (numeric-aware).
+        const aRepetition = isSupersededRepetition(a);
+        const bRepetition = isSupersededRepetition(b);
+        if (aRepetition !== bRepetition) return aRepetition ? 1 : -1;
+        return a.courseNumber.localeCompare(b.courseNumber, undefined, {
+          numeric: true,
+        });
+      }),
     [semesterCourses]
   );
 
@@ -317,18 +326,16 @@ export function CourseGrid({
   );
 
   // Superseded retake attempts (is_repetition) no longer count toward the degree,
-  // so dim the whole row and strike its values through. The strikethrough is done
-  // via a row class (see `.repetition-row` in index.css) because a row-level
-  // text-decoration doesn't propagate to AG Grid's flex-centered cells.
-  const getRowStyle = useCallback(
-    (params: RowClassParams<RowData>): RowStyle | undefined =>
-      isSupersededRepetition(params.data) ? { opacity: 0.5 } : undefined,
-    []
-  );
-
-  const getRowClass = useCallback(
-    (params: RowClassParams<RowData>): string | undefined =>
-      isSupersededRepetition(params.data) ? "repetition-row" : undefined,
+  // so dim the whole row and strike its values through (see `.repetition-row` in
+  // index.css). We use rowClassRules rather than getRowClass/getRowStyle: the
+  // latter only apply on row creation and getRowClass never removes a stale class
+  // when the flag flips (e.g. after the user grades an in-progress retake), so the
+  // strike would linger. rowClassRules is re-evaluated on every data change and
+  // toggles the class off when the condition becomes false.
+  const rowClassRules = useMemo<RowClassRules<RowData>>(
+    () => ({
+      "repetition-row": (params) => isSupersededRepetition(params.data),
+    }),
     []
   );
 
@@ -342,8 +349,7 @@ export function CourseGrid({
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
-          getRowStyle={getRowStyle}
-          getRowClass={getRowClass}
+          rowClassRules={rowClassRules}
           enableRtl={true}
           singleClickEdit={true}
           stopEditingWhenCellsLoseFocus={true}
