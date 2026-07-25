@@ -64,7 +64,14 @@ fn not_complete(id: &str, year: i32) -> CourseStatus {
 }
 
 fn sport(id: &str, year: i32) -> CourseStatus {
-    let mut cs = graded(id, 90, year);
+    // Sport courses are 1-credit and identified by the Sport tag (not by id).
+    let mut cs = course_status(
+        id,
+        1.0,
+        Some(Grade::Numeric(90)),
+        Some(CourseState::Complete),
+        sem(year),
+    );
     cs.course.tags = Some(vec![Tag::Sport]);
     cs
 }
@@ -191,14 +198,15 @@ fn three_attempts_keep_latest_and_remove_the_other_two() {
 }
 
 #[test]
-fn sport_retakes_are_not_treated_as_repetitions() {
-    // Sport courses bypass the repetition logic: a same-id retake is never reported
-    // as a repetition (`removed` stays empty). Because `kept` is keyed by course id,
-    // only the last-seen attempt survives — this is by design, sport may repeat.
+fn sport_courses_with_same_id_are_all_kept() {
+    // A student may take the same sport course id more than once (e.g. in different
+    // semesters). Every attempt must be preserved: sport courses are exempt from the
+    // repetition dedup and are never reported as repetitions.
     let (kept, removed) = extract(vec![sport("s1", 2022), sport("s1", 2023)]);
 
     assert!(removed.is_empty());
-    assert_eq!(count_id(&kept, "s1"), 1);
+    assert_eq!(count_id(&kept, "s1"), 2);
+    assert_eq!(kept.len(), 2);
 }
 
 #[test]
@@ -214,12 +222,14 @@ fn multiple_distinct_sport_courses_are_all_kept() {
 }
 
 #[test]
-fn social_courses_bypass_repetition_extraction() {
-    // Social-activity courses ("פעילות חברתית") are exempt just like sport courses.
+fn social_courses_with_same_id_are_all_kept() {
+    // Social-activity courses ("פעילות חברתית") may also repeat and are exempt from
+    // the dedup just like sport courses.
     let (kept, removed) = extract(vec![social("soc", 2022), social("soc", 2023)]);
 
     assert!(removed.is_empty());
-    assert_eq!(count_id(&kept, "soc"), 1);
+    assert_eq!(count_id(&kept, "soc"), 2);
+    assert_eq!(kept.len(), 2);
 }
 
 #[test]
@@ -421,4 +431,44 @@ fn compute_takes_latest_failed_attempt_and_marks_course_incomplete() {
 
     // The failed course contributes no credit; only u1 (4.0) counts.
     assert_eq!(degree_status.total_credit, 4.0);
+}
+
+fn sport_catalog() -> Catalog {
+    Catalog {
+        id: bson::oid::ObjectId::new(),
+        name: "catalog".to_string(), // no year → English requirement is skipped
+        faculty: Faculty::Unknown,
+        total_credit: 0.0,
+        description: String::new(),
+        course_banks: vec![CourseBank {
+            name: "sport".to_string(),
+            rule: Rule::Sport,
+            credit: Some(2.0),
+        }],
+        credit_overflows: vec![],
+        course_to_bank: HashMap::new(),
+        catalog_replacements: HashMap::new(),
+        common_replacements: HashMap::new(),
+    }
+}
+
+#[test]
+fn compute_keeps_all_same_id_sport_courses_and_counts_each_one() {
+    // Regression test for the sport-duplication bug: two attempts of the same sport
+    // course id must both survive compute() — previously the id-keyed dedup map
+    // silently dropped the older one — and both must count toward the sport bank.
+    let mut degree_status = DegreeStatus {
+        course_statuses: vec![sport("0394001", 2022), sport("0394001", 2023)],
+        ..Default::default()
+    };
+
+    degree_status.compute(sport_catalog(), HashMap::new());
+
+    assert_eq!(count_id(&degree_status.course_statuses, "0394001"), 2);
+    assert!(degree_status
+        .course_statuses
+        .iter()
+        .all(|course_status| !course_status.is_repetition));
+    // Both 1.0-credit sport attempts are counted (2.0), matching the bank credit.
+    assert_eq!(degree_status.total_credit, 2.0);
 }

@@ -127,6 +127,19 @@ impl DegreeStatus {
     }
 
     fn extract_repetitions(&mut self) -> Vec<CourseStatus> {
+        // Sport and social courses may legitimately repeat — a student can take
+        // several of them, sometimes sharing the same course id across semesters —
+        // so they must bypass the dedup below. They can't go through `kept`, which is
+        // keyed by course id, because same-id entries would silently overwrite each
+        // other and drop all but one. Sport courses in particular must stay in
+        // `course_statuses` so the Sport bank can count them during compute_status.
+        let exempt_courses = self
+            .course_statuses
+            .extract_if(.., |course_status| {
+                course_status.course.is_sport() || course_status.is_social()
+            })
+            .collect::<Vec<_>>();
+
         let mut kept = HashMap::new();
         let mut removed = Vec::new();
 
@@ -141,12 +154,6 @@ impl DegreeStatus {
                 .iter()
                 .filter(|course_status| &course_status.course.id == unique_course_id)
                 .for_each(|course_status| {
-                    if course_status.course.is_sport() || course_status.is_social() {
-                        // keep all sport courses
-                        kept.insert(unique_course_id.clone(), course_status.clone());
-                        return;
-                    }
-
                     let Some(entry) = kept.get_mut(unique_course_id) else {
                         kept.insert(unique_course_id.clone(), course_status.clone());
                         return;
@@ -178,6 +185,8 @@ impl DegreeStatus {
         });
 
         self.course_statuses = kept.into_values().collect();
+        // Sport/social courses were never deduped — put every one of them back.
+        self.course_statuses.extend(exempt_courses);
         removed
     }
 
