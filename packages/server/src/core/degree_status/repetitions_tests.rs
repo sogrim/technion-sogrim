@@ -233,6 +233,33 @@ fn social_courses_with_same_id_are_all_kept() {
 }
 
 #[test]
+fn repeatable_prefix_courses_are_kept_even_without_a_sport_tag() {
+    // A physical-education / arts course identified only by its faculty prefix
+    // (here 0324, an ensemble) carries no Sport tag, yet Course::is_repeatable
+    // exempts it from the dedup — both same-id attempts across semesters survive.
+    let (kept, removed) = extract(vec![
+        course_status(
+            "03240236",
+            2.0,
+            Some(Grade::Numeric(100)),
+            Some(CourseState::Complete),
+            sem(2022),
+        ),
+        course_status(
+            "03240236",
+            2.0,
+            Some(Grade::Numeric(100)),
+            Some(CourseState::Complete),
+            sem(2023),
+        ),
+    ]);
+
+    assert!(removed.is_empty());
+    assert_eq!(count_id(&kept, "03240236"), 2);
+    assert_eq!(kept.len(), 2);
+}
+
+#[test]
 fn only_the_duplicated_course_is_deduped_in_a_mixed_list() {
     let (kept, removed) = extract(vec![
         graded("a", 80, 2021),

@@ -17,6 +17,12 @@ use crate::sap::CourseDetails;
 
 const NON_STANDARD_PREFIXES: [&str; 4] = ["51", "52", "61", "97"];
 
+/// Course-id prefixes (canonical 8-digit form) for faculties whose courses may
+/// legitimately be taken more than once for credit: physical education / sport
+/// (0320, 0394) and the humanities-and-arts ensembles (0324 — orchestra, choir,
+/// jazz band, etc.). See [`Course::is_repeatable`].
+const REPEATABLE_PREFIXES: [&str; 3] = ["0320", "0324", "0394"];
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SemesterSeason {
@@ -358,6 +364,25 @@ impl Course {
     pub fn is_malag(&self) -> bool {
         self.is(Tag::Malag)
     }
+
+    /// True for social-activity courses ("פעילות חברתית"), identified by name.
+    pub fn is_social(&self) -> bool {
+        self.name.contains("פעילות חברתית")
+    }
+
+    /// Best-effort check for courses a student may legitimately take more than
+    /// once, and which therefore must NOT be collapsed as repetitions: sport and
+    /// social courses, and physical-education / humanities-arts ensembles
+    /// (identified by faculty prefix). This intentionally over-includes some
+    /// non-repeatable enrichment courses under those faculties, which is harmless
+    /// in practice because students don't retake them (e.g. malags).
+    pub fn is_repeatable(&self) -> bool {
+        self.is_sport()
+            || self.is_social()
+            || REPEATABLE_PREFIXES
+                .iter()
+                .any(|&prefix| self.id.starts_with(prefix))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -488,10 +513,6 @@ impl CourseStatus {
     pub fn set_type(&mut self, r#type: impl AsRef<str>) -> &mut Self {
         self.r#type = Some(r#type.as_ref().to_owned());
         self
-    }
-
-    pub fn is_social(&self) -> bool {
-        self.course.name.contains("פעילות חברתית")
     }
 
     pub fn set_msg(&mut self, msg: impl AsRef<str>) -> &mut Self {

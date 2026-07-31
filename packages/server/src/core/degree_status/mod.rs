@@ -122,22 +122,21 @@ impl DegreeStatus {
     /// Social courses are used to let the user allocate the extra credit they have.
     fn extract_social_courses(&mut self) -> Vec<CourseStatus> {
         self.course_statuses
-            .extract_if(.., |cs| cs.is_social())
+            .extract_if(.., |cs| cs.course.is_social())
             .collect()
     }
 
     fn extract_repetitions(&mut self) -> Vec<CourseStatus> {
-        // Sport and social courses may legitimately repeat — a student can take
-        // several of them, sometimes sharing the same course id across semesters —
-        // so they must bypass the dedup below. They can't go through `kept`, which is
-        // keyed by course id, because same-id entries would silently overwrite each
-        // other and drop all but one. Sport courses in particular must stay in
-        // `course_statuses` so the Sport bank can count them during compute_status.
+        // Repeatable courses (sport, social, and physical-education / arts
+        // ensembles — see Course::is_repeatable) may legitimately recur — a
+        // student can take several of them, sometimes sharing the same course id
+        // across semesters — so they must bypass the dedup below. They can't go
+        // through `kept`, which is keyed by course id, because same-id entries
+        // would silently overwrite each other and drop all but one. They also stay
+        // in `course_statuses` so their bank can count them during compute_status.
         let exempt_courses = self
             .course_statuses
-            .extract_if(.., |course_status| {
-                course_status.course.is_sport() || course_status.is_social()
-            })
+            .extract_if(.., |course_status| course_status.course.is_repeatable())
             .collect::<Vec<_>>();
 
         let mut kept = HashMap::new();
