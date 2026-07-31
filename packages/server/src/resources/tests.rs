@@ -492,3 +492,45 @@ fn test_enrich_prefix_multiple_prefixes() {
         .course_to_bank
         .contains_key(&CourseId::new("09990001")));
 }
+
+// --- is_repeatable tests ---
+
+fn course_with(id: &str, tags: Option<Vec<Tag>>) -> Course {
+    Course {
+        id: CourseId::new(id),
+        credit: 2.0,
+        name: id.to_string(),
+        tags,
+    }
+}
+
+#[test]
+fn test_is_repeatable() {
+    // Sport tag makes a course repeatable regardless of its id.
+    assert!(course_with("12345678", Some(vec![Tag::Sport])).is_repeatable());
+
+    // Repeatable faculty prefixes: 0320/0394 (sport/PE) and 0324 (arts ensembles).
+    assert!(course_with("03940902", None).is_repeatable()); // נבחרות ספורט
+    assert!(course_with("03940800", None).is_repeatable()); // חינוך גופני
+    assert!(course_with("03200019", None).is_repeatable()); // נבחרת ספורט
+    assert!(course_with("03240236", None).is_repeatable()); // תזמורת נשיפה
+
+    // Regular academic courses are not repeatable.
+    assert!(!course_with("02340114", None).is_repeatable()); // מבוא למדמ"ח
+    assert!(!course_with("01040031", None).is_repeatable()); // אינפי 1
+
+    // A malag under a non-arts faculty is not repeatable, but a 0324 malag is —
+    // an intentional, harmless over-inclusion (students never retake malags).
+    assert!(!course_with("02140119", Some(vec![Tag::Malag])).is_repeatable());
+    assert!(course_with("03240282", Some(vec![Tag::Malag])).is_repeatable());
+
+    // Social-activity courses are folded into is_repeatable (matched by name).
+    let social = Course {
+        id: CourseId::new("09710101"),
+        credit: 1.0,
+        name: "פעילות חברתית".to_string(),
+        tags: None,
+    };
+    assert!(social.is_social());
+    assert!(social.is_repeatable());
+}

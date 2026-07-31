@@ -28,7 +28,7 @@ export function BankRequirementCard({
   const isSpecializationGroups = bank.bank_rule_name === "specialization groups";
 
   const bankCourses = courses.filter(
-    (cs) => cs.type === bank.course_bank_name && !isReservedCourse(cs)
+    (cs) => cs.type === bank.course_bank_name && !isReservedCourse(cs) && !cs.is_repetition
   );
 
   // Totals come from the server, which already includes in-progress courses

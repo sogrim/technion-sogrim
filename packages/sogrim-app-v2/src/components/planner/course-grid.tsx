@@ -4,6 +4,7 @@ import {
   AllCommunityModule,
   type ColDef,
   type CellValueChangedEvent,
+  type RowClassRules,
   themeQuartz,
 } from "ag-grid-community";
 import { Trash2 } from "lucide-react";
@@ -75,6 +76,7 @@ function courseStatusToRow(cs: CourseStatus): RowData {
     semester: cs.semester,
     sg_name: cs.specialization_group_name,
     msg: cs.additional_msg,
+    is_repetition: cs.is_repetition,
   };
 }
 
@@ -92,7 +94,14 @@ function rowToCourseStatus(row: RowData, original: CourseStatus): CourseStatus {
     state: (row.state as CourseStatus["state"]) || original.state,
     type: row.type,
     modified: true,
+    is_repetition: row.is_repetition,
   };
+}
+
+// A superseded retake attempt (an earlier take of a course that was retaken and
+// no longer counts toward the degree). In-progress rows are excluded.
+function isSupersededRepetition(data?: RowData): boolean {
+  return !!data?.is_repetition && data.state !== "בתהליך";
 }
 
 export function CourseGrid({
@@ -125,7 +134,17 @@ export function CourseGrid({
   );
 
   const rowData = useMemo(
-    () => semesterCourses.map(courseStatusToRow),
+    () =>
+      semesterCourses.map(courseStatusToRow).sort((a, b) => {
+        // Deterministic order: non-repetition courses first, superseded retakes
+        // last; then by course number ascending (numeric-aware).
+        const aRepetition = isSupersededRepetition(a);
+        const bRepetition = isSupersededRepetition(b);
+        if (aRepetition !== bRepetition) return aRepetition ? 1 : -1;
+        return a.courseNumber.localeCompare(b.courseNumber, undefined, {
+          numeric: true,
+        });
+      }),
     [semesterCourses]
   );
 
@@ -257,6 +276,10 @@ export function CourseGrid({
       // Recompute state if grade changed
       if (event.colDef.field === "grade") {
         updatedRow.state = determineState(updatedRow.grade);
+        // Changing the grade invalidates the server-computed repetition flag
+        // (which attempt is superseded depends on grades). Clear it so the row
+        // isn't shown as superseded until the next degree compute re-derives it.
+        updatedRow.is_repetition = false;
       }
 
       // Validate
@@ -302,6 +325,20 @@ export function CourseGrid({
     []
   );
 
+  // Superseded retake attempts (is_repetition) no longer count toward the degree,
+  // so dim the whole row and strike its values through (see `.repetition-row` in
+  // index.css). We use rowClassRules rather than getRowClass/getRowStyle: the
+  // latter only apply on row creation and getRowClass never removes a stale class
+  // when the flag flips (e.g. after the user grades an in-progress retake), so the
+  // strike would linger. rowClassRules is re-evaluated on every data change and
+  // toggles the class off when the condition becomes false.
+  const rowClassRules = useMemo<RowClassRules<RowData>>(
+    () => ({
+      "repetition-row": (params) => isSupersededRepetition(params.data),
+    }),
+    []
+  );
+
   return (
     <div className="space-y-0">
       <div className="w-full overflow-hidden rounded-t-lg border [&_.ag-center-cols-viewport]:!min-h-0 [&_.ag-body-viewport]:!min-h-0">
@@ -312,6 +349,7 @@ export function CourseGrid({
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
+          rowClassRules={rowClassRules}
           enableRtl={true}
           singleClickEdit={true}
           stopEditingWhenCellsLoseFocus={true}

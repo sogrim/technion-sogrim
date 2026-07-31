@@ -4,12 +4,12 @@ pub mod overflow;
 pub mod postprocessing;
 pub mod preprocessing;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::core::types::Requirement;
 use crate::resources::{
     catalog::Catalog,
-    course::{AcademicSemester, Course, CourseBank, CourseId, CourseState, CourseStatus},
+    course::{AcademicSemester, Course, CourseBank, CourseId, CourseState, CourseStatus, Grade},
 };
 use serde::{Deserialize, Serialize};
 
@@ -120,20 +120,82 @@ impl DegreeStatusHandler<'_> {
 impl DegreeStatus {
     /// Collect social courses ("פעילות חברתית") from course_statuses.
     /// Social courses are used to let the user allocate the extra credit they have.
-    fn extract_social_courses(&self) -> Vec<CourseStatus> {
+    fn extract_social_courses(&mut self) -> Vec<CourseStatus> {
         self.course_statuses
-            .iter()
-            .filter(|cs| cs.is_social())
-            .cloned()
+            .extract_if(.., |cs| cs.course.is_social())
             .collect()
+    }
+
+    fn extract_repetitions(&mut self) -> Vec<CourseStatus> {
+        // Repeatable courses (sport, social, and physical-education / arts
+        // ensembles — see Course::is_repeatable) may legitimately recur — a
+        // student can take several of them, sometimes sharing the same course id
+        // across semesters — so they must bypass the dedup below. They can't go
+        // through `kept`, which is keyed by course id, because same-id entries
+        // would silently overwrite each other and drop all but one. They also stay
+        // in `course_statuses` so their bank can count them during compute_status.
+        let exempt_courses = self
+            .course_statuses
+            .extract_if(.., |course_status| course_status.course.is_repeatable())
+            .collect::<Vec<_>>();
+
+        let mut kept = HashMap::new();
+        let mut removed = Vec::new();
+
+        let unique_course_ids = self
+            .course_statuses
+            .iter()
+            .map(|course_status| course_status.course.id.clone())
+            .collect::<HashSet<CourseId>>();
+
+        unique_course_ids.iter().for_each(|unique_course_id| {
+            self.course_statuses
+                .iter()
+                .filter(|course_status| &course_status.course.id == unique_course_id)
+                .for_each(|course_status| {
+                    let Some(entry) = kept.get_mut(unique_course_id) else {
+                        kept.insert(unique_course_id.clone(), course_status.clone());
+                        return;
+                    };
+
+                    if entry.grade.is_none() {
+                        // The existing entry is ungraded, so we replace it with the new one which may be graded.
+                        removed.push(entry.clone());
+                        *entry = course_status.clone();
+                    } else if course_status.grade.is_none() {
+                        // The existing entry is graded, but the new course_status is ungraded, so we keep the existing entry.
+                        removed.push(course_status.clone());
+                    } else {
+                        if course_status.grade == Some(Grade::NotComplete) {
+                            // The new course_status is not complete (usually means the student didn't take the test), so we keep the existing entry.
+                            removed.push(course_status.clone());
+                            return;
+                        }
+
+                        // Both attempts are graded — keep the one from the latest semester.
+                        if course_status.semester_order_key() > entry.semester_order_key() {
+                            removed.push(entry.clone());
+                            *entry = course_status.clone();
+                        } else {
+                            removed.push(course_status.clone());
+                        }
+                    }
+                });
+        });
+
+        self.course_statuses = kept.into_values().collect();
+        // Sport/social courses were never deduped — put every one of them back.
+        self.course_statuses.extend(exempt_courses);
+        removed
     }
 
     pub fn compute(&mut self, mut catalog: Catalog, mut courses: HashMap<CourseId, Course>) {
         self.preprocess(&mut catalog, &mut courses);
 
-        // Extract social courses, then remove them so they don't affect the compute status logic
+        // Extract social courses and superseded retake attempts, then remove them so they don't
+        // affect the compute status logic; both are restored afterward for display.
         let social_courses = self.extract_social_courses();
-        self.course_statuses.retain(|cs| !cs.is_social());
+        let repetitions = self.extract_repetitions();
 
         let course_banks = catalog.get_bank_traversal_order();
 
@@ -148,10 +210,17 @@ impl DegreeStatus {
         }
         .compute_status();
 
-        // Restore social courses so the frontend can display them
         self.course_statuses.extend(social_courses);
+        self.course_statuses
+            .extend(repetitions.into_iter().map(|mut repetition| {
+                repetition.is_repetition = true;
+                repetition
+            }));
 
-        // process the data after degree status computation
         self.postprocess(&catalog);
     }
 }
+
+#[cfg(test)]
+#[path = "repetitions_tests.rs"]
+mod repetitions_tests;
