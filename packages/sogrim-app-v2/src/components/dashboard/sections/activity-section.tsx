@@ -15,8 +15,8 @@ const DAY_LABELS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
 export function ActivitySection({ data }: { data: ActivityStats }) {
   const recency = [
     { label: "פעילים (עד 7 ימים)", value: data.active, color: chartColor(2) },
-    { label: "רדומים (7–30 ימים)", value: data.dormant, color: chartColor(3) },
-    { label: "לא פעילים (30 ימים+)", value: data.inactive, color: chartColor(4) },
+    { label: "רדומים (7 ימים–4 חודשים)", value: data.dormant, color: chartColor(3) },
+    { label: "לא פעילים (מעל 4 חודשים)", value: data.inactive, color: chartColor(4) },
   ];
   const recencyTotal = recency.reduce((s, r) => s + r.value, 0);
 

@@ -93,9 +93,9 @@ pub struct Overview {
 pub struct Activity {
     /// `last_seen` within the last 7 days.
     pub active: i64,
-    /// `last_seen` between 7 and 30 days ago.
+    /// `last_seen` between 7 days and 4 months ago.
     pub dormant: i64,
-    /// `last_seen` older than 30 days, or never logged in.
+    /// `last_seen` older than 4 months, or never logged in.
     pub inactive: i64,
     /// Last-active proxy heatmap: 7 rows (Sun..Sat) x 24 cols (hour 0..23) in
     /// Israel local time (Asia/Jerusalem, DST-aware).
@@ -354,6 +354,7 @@ fn build_pipeline(now_ms: i64) -> Vec<bson::Document> {
     let one_day_ago = bson::DateTime::from_millis(now_ms - day_ms);
     let seven_days_ago = bson::DateTime::from_millis(now_ms - 7 * day_ms);
     let thirty_days_ago = bson::DateTime::from_millis(now_ms - 30 * day_ms);
+    let four_months_ago = bson::DateTime::from_millis(now_ms - 120 * day_ms);
 
     // A numeric-grade detector: a grade string that parses as a double. MongoDB's
     // `$convert` with `onError` returns the fallback when the string isn't numeric.
@@ -400,9 +401,9 @@ fn build_pipeline(now_ms: i64) -> Vec<bson::Document> {
                                 { "case": { "$eq": [ { "$type": "$last_seen" }, "missing" ] }, "then": "never" },
                                 { "case": { "$eq": [ "$last_seen", bson::Bson::Null ] }, "then": "never" },
                                 { "case": { "$gte": [ "$last_seen", seven_days_ago ] }, "then": "active7d" },
-                                { "case": { "$gte": [ "$last_seen", thirty_days_ago ] }, "then": "dormant7to30d" }
+                                { "case": { "$gte": [ "$last_seen", four_months_ago ] }, "then": "dormant7d_to4m" }
                             ],
-                            "default": "inactive30d_plus"
+                            "default": "inactive4m_plus"
                         }
                     }
                 } },
@@ -644,16 +645,16 @@ impl DashboardStats {
         };
 
         // Recency buckets. The frontend collapses these into 3:
-        //   active = active7d; dormant = dormant7to30d; inactive = inactive30d_plus + never.
+        //   active = active7d; dormant = dormant7d_to4m; inactive = inactive4m_plus + never.
         let mut active7d = 0;
-        let mut dormant7to30d = 0;
-        let mut inactive30d_plus = 0;
+        let mut dormant7d_to4m = 0;
+        let mut inactive4m_plus = 0;
         let mut never = 0;
         for r in &f.recency {
             match r.bucket.as_str() {
                 "active7d" => active7d = r.count,
-                "dormant7to30d" => dormant7to30d = r.count,
-                "inactive30d_plus" => inactive30d_plus = r.count,
+                "dormant7d_to4m" => dormant7d_to4m = r.count,
+                "inactive4m_plus" => inactive4m_plus = r.count,
                 "never" => never = r.count,
                 _ => {}
             }
@@ -667,8 +668,8 @@ impl DashboardStats {
         }
         let activity = Activity {
             active: active7d,
-            dormant: dormant7to30d,
-            inactive: inactive30d_plus + never,
+            dormant: dormant7d_to4m,
+            inactive: inactive4m_plus + never,
             last_active_heatmap,
         };
 
