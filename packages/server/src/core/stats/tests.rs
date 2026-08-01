@@ -90,8 +90,8 @@ fn recency_collapses_to_three_buckets_and_heatmap() {
     let f = facet_from_bson(bson::doc! {
         "recency": [
             { "_id": "active7d", "count": 5i64 },
-            { "_id": "dormant7to30d", "count": 3i64 },
-            { "_id": "inactive30d_plus", "count": 2i64 },
+            { "_id": "dormant7d_to4m", "count": 3i64 },
+            { "_id": "inactive4m_plus", "count": 2i64 },
             { "_id": "never", "count": 7i64 },
         ],
         "heatmap": [
@@ -102,7 +102,7 @@ fn recency_collapses_to_three_buckets_and_heatmap() {
     let stats = DashboardStats::from_facet(f, &HashMap::new());
     assert_eq!(stats.activity.active, 5);
     assert_eq!(stats.activity.dormant, 3);
-    // inactive = inactive30d_plus + never = 2 + 7.
+    // inactive = inactive4m_plus + never = 2 + 7.
     assert_eq!(stats.activity.inactive, 9);
     assert_eq!(stats.activity.last_active_heatmap[0][9], 4);
     assert_eq!(stats.activity.last_active_heatmap[6][23], 1);
