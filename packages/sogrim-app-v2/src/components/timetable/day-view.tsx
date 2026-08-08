@@ -9,7 +9,7 @@ import {
   computeVisibleRange,
   totalSlots,
   timeToRow,
-  timeSpanRows,
+  layoutEvents,
 } from "@/lib/timetable-utils";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { CourseBlock } from "./course-block";
@@ -52,6 +52,12 @@ export function DayView({ events }: DayViewProps) {
   const dayEvents = useMemo(
     () => events.filter((e) => e.day === selectedDay),
     [events, selectedDay],
+  );
+
+  // Same column-packing as the week grid, so overlapping options stay visible.
+  const positionedEvents = useMemo(
+    () => layoutEvents(dayEvents, startHour, slotCount),
+    [dayEvents, startHour, slotCount],
   );
 
   const getRowFromY = (clientY: number): number => {
@@ -188,30 +194,25 @@ export function DayView({ events }: DayViewProps) {
               />
             )}
 
-            {/* Course blocks — absolutely positioned */}
-            {dayEvents.map((event) => {
-              const row = timeToRow(event.startTime, startHour);
-              const span = timeSpanRows(event.startTime, event.endTime);
-              const topPct = (row / slotCount) * 100;
-              const heightPct = (span / slotCount) * 100;
-
-              return (
-                <div
-                  key={`${event.courseId}-${event.groupId}-${event.startTime}`}
-                  className="absolute inset-x-1 z-[2]"
-                  style={{
-                    top: `${topPct}%`,
-                    height: `${heightPct}%`,
-                  }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                >
-                  <CourseBlock
-                    event={event}
-                    onCustomEventClick={handleCustomEventClick}
-                  />
-                </div>
-              );
-            })}
+            {/* Course blocks — absolutely positioned, with column layout for overlaps */}
+            {positionedEvents.map(({ event, topPct, heightPct, leftPct, widthPct }) => (
+              <div
+                key={`${event.courseId}-${event.groupId}-${event.startTime}-${event.isPreview}`}
+                className="absolute z-[2] px-0.5"
+                style={{
+                  top: `${topPct}%`,
+                  height: `${heightPct}%`,
+                  right: `${leftPct}%`,
+                  width: `${widthPct}%`,
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <CourseBlock
+                  event={event}
+                  onCustomEventClick={handleCustomEventClick}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>

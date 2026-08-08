@@ -11,7 +11,7 @@ import type {
 } from "@/types/timetable";
 import { getProvider } from "@/data/course-schedule-provider";
 import { generateDraftId } from "@/lib/timetable-utils";
-import { getConflictingEventKeys, eventKey } from "@/lib/timetable-conflicts";
+import { chosenEvents, getConflictingEventKeys, eventKey } from "@/lib/timetable-conflicts";
 import { semesterKey, semestersEqual } from "@/lib/semester-utils";
 import type { AcademicSemester } from "@/types/api";
 
@@ -20,9 +20,8 @@ interface TimetableState {
   viewMode: ViewMode;
   selectedDay: Day;
   searchOpen: boolean;
-  previewingCourse: string | null;
-  previewingType: LessonType | null;
   detailCourseId: string | null;
+  hiddenCourseIds: Set<string>;
 
   // Persistent state (saved to backend)
   currentSemester: AcademicSemester | null;
@@ -40,8 +39,8 @@ interface TimetableState {
   setViewMode: (mode: ViewMode) => void;
   setSelectedDay: (day: Day) => void;
   setSearchOpen: (open: boolean) => void;
-  setPreview: (courseId: string | null, type: LessonType | null) => void;
   setDetailCourse: (courseId: string | null) => void;
+  toggleCourseHidden: (courseId: string) => void;
 
   // Actions: semester
   setSemester: (semester: AcademicSemester) => void;
@@ -86,9 +85,8 @@ export const useTimetableStore = create<TimetableState>()(
       viewMode: "week",
       selectedDay: 0,
       searchOpen: false,
-      previewingCourse: null,
-      previewingType: null,
       detailCourseId: null,
+      hiddenCourseIds: new Set(),
       currentSemester: null,
       drafts: [],
       activeDraftId: null,
@@ -101,8 +99,14 @@ export const useTimetableStore = create<TimetableState>()(
       setViewMode: (mode) => set({ viewMode: mode }),
       setSelectedDay: (day) => set({ selectedDay: day }),
       setSearchOpen: (open) => set({ searchOpen: open }),
-      setPreview: (courseId, type) => set({ previewingCourse: courseId, previewingType: type }),
       setDetailCourse: (courseId) => set({ detailCourseId: courseId }),
+
+      toggleCourseHidden: (courseId) => {
+        const next = new Set(get().hiddenCourseIds);
+        if (next.has(courseId)) next.delete(courseId);
+        else next.add(courseId);
+        set({ hiddenCourseIds: next });
+      },
 
       setSemester: (semester) => {
         const state = get();
@@ -188,7 +192,11 @@ export const useTimetableStore = create<TimetableState>()(
         const draft = getActiveDraft(state);
         if (!draft) return;
 
+        const nextHidden = new Set(state.hiddenCourseIds);
+        nextHidden.delete(courseId);
+
         set({
+          hiddenCourseIds: nextHidden,
           drafts: updateDraft(state.drafts, draft.id, (d) => ({
             courses: d.courses.filter((c) => c.courseId !== courseId),
             isPublished: false,
@@ -215,8 +223,6 @@ export const useTimetableStore = create<TimetableState>()(
             }),
             isPublished: false,
           })),
-          previewingCourse: null,
-          previewingType: null,
         });
       },
 
@@ -266,12 +272,12 @@ export const useTimetableStore = create<TimetableState>()(
 
 /**
  * Resolve current draft's course selections into renderable TimetableEvents.
- * Includes ghost preview events when previewing group alternatives.
+ * Unselected lesson types render all their groups as ghost preview events.
+ * Courses in `hiddenCourseIds` are skipped entirely.
  */
 export function resolveEvents(
   draft: TimetableDraft | undefined,
-  previewingCourse?: string | null,
-  previewingType?: LessonType | null,
+  hiddenCourseIds?: Set<string> | null,
 ): TimetableEvent[] {
   if (!draft) return [];
 
@@ -279,12 +285,11 @@ export function resolveEvents(
   const events: TimetableEvent[] = [];
 
   draft.courses.forEach((selection, courseIndex) => {
+    if (hiddenCourseIds?.has(selection.courseId)) return;
     const course = provider.getCourse(selection.courseId);
     if (!course) return;
 
     const colorIndex = courseIndex;
-    const isPreviewTarget =
-      previewingCourse === course.id && previewingType != null;
 
     const typeSet = new Set(course.groups.map((g) => g.type));
 
@@ -312,30 +317,6 @@ export function resolveEvents(
             colorIndex,
             hasConflict: false,
           });
-        }
-
-        if (isPreviewTarget && previewingType === type) {
-          for (const altGroup of typeGroups.filter((g) => g.id !== selectedGroupId)) {
-            const altKindLabel = `${altGroup.kindLabel} ${altGroup.id.split("-")[0].split("/").map((n) => n.replace(/^0+/, "") || "0").join("/")}`;
-            for (const lesson of altGroup.lessons) {
-              events.push({
-                courseId: course.id,
-                courseName: course.name,
-                type: altGroup.type,
-                kindLabel: altKindLabel,
-                groupId: altGroup.id,
-                day: lesson.day,
-                startTime: lesson.startTime,
-                endTime: lesson.endTime,
-                building: lesson.building,
-                room: lesson.room,
-                instructor: lesson.instructor,
-                colorIndex,
-                hasConflict: false,
-                isPreview: true,
-              });
-            }
-          }
         }
       } else {
         for (const group of typeGroups) {
@@ -383,8 +364,7 @@ export function resolveEvents(
     });
   });
 
-  const realEvents = events.filter((e) => !e.isPreview);
-  const conflictKeys = getConflictingEventKeys(realEvents);
+  const conflictKeys = getConflictingEventKeys(chosenEvents(events));
   return events.map((e) => ({
     ...e,
     hasConflict: e.isPreview ? false : conflictKeys.has(eventKey(e)),

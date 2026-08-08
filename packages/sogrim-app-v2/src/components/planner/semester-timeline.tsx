@@ -309,7 +309,7 @@ function OrdinalChip({
             "absolute top-0.5 end-0.5 flex items-center justify-center",
             "h-4 w-4 rounded-sm cursor-pointer",
             "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-            "opacity-0 group-hover:opacity-100 transition-opacity",
+            "opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100 transition-opacity",
           )}
         >
           <X className="h-3 w-3" />
@@ -466,7 +466,7 @@ function EmptySlotView({
         <button
           onClick={onRemoveAnnotation}
           className={cn(
-            "absolute top-0.5 end-0.5 opacity-0 group-hover:opacity-100",
+            "absolute top-0.5 end-0.5 opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100",
             "transition-opacity flex items-center justify-center",
             "h-4 w-4 rounded bg-amber-500/20 hover:bg-amber-500/40",
             "text-amber-700 dark:text-amber-400",
@@ -536,7 +536,7 @@ function EmptySlotView({
             </span>
           </>
         ) : (
-          <Plus className="h-3.5 w-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-80 transition-opacity" />
+          <Plus className="h-3.5 w-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-80 pointer-coarse:opacity-80 transition-opacity" />
         )}
       </button>
       {menuOpen && menuPos && typeof document !== "undefined" && createPortal(

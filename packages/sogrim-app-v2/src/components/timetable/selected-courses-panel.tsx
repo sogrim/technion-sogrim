@@ -5,7 +5,7 @@ import { useProviderUpdates } from "@/hooks/use-api-provider";
 import { getCourseColor } from "@/lib/timetable-colors";
 import { useUiStore } from "@/stores/ui-store";
 import { GroupSelector } from "./group-selector";
-import { Trash2, BookOpen, Search, ChevronDown } from "lucide-react";
+import { Trash2, BookOpen, Search, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function SelectedCoursesPanel() {
@@ -14,6 +14,8 @@ export function SelectedCoursesPanel() {
   const removeCourse = useTimetableStore((s) => s.removeCourse);
   const setSearchOpen = useTimetableStore((s) => s.setSearchOpen);
   const setDetailCourse = useTimetableStore((s) => s.setDetailCourse);
+  const hiddenCourseIds = useTimetableStore((s) => s.hiddenCourseIds);
+  const toggleCourseHidden = useTimetableStore((s) => s.toggleCourseHidden);
   const theme = useUiStore((s) => s.theme);
   const isDark = theme === "dark";
 
@@ -81,6 +83,7 @@ export function SelectedCoursesPanel() {
             const color = getCourseColor(colorIndex);
             const bgColor = isDark ? color.bgDark : color.bg;
             const isExpanded = !collapsedIds.has(selection.courseId);
+            const isHidden = hiddenCourseIds.has(selection.courseId);
 
             return (
               <div
@@ -98,15 +101,39 @@ export function SelectedCoursesPanel() {
                 >
                   {/* Color dot */}
                   <div
-                    className="w-3 h-3 rounded-full shrink-0"
+                    className={cn(
+                      "w-3 h-3 rounded-full shrink-0 transition-opacity",
+                      isHidden && "opacity-30",
+                    )}
                     style={{ backgroundColor: bgColor }}
                   />
 
                   {/* Course name + credits */}
-                  <div className="flex-1 min-w-0">
+                  <div className={cn("flex-1 min-w-0 transition-opacity", isHidden && "opacity-40")}>
                     <div className="text-sm font-medium truncate">{course.name}</div>
                     <div className="text-[0.7rem] text-muted-foreground">{course.credit} נק״ז</div>
                   </div>
+
+                  {/* Hide/show on the calendar */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCourseHidden(selection.courseId);
+                    }}
+                    aria-label={isHidden ? "הצג במערכת השעות" : "הסתר ממערכת השעות"}
+                    className={cn(
+                      "p-1 rounded shrink-0 transition-opacity",
+                      isHidden
+                        ? "opacity-100 text-primary hover:bg-primary/10"
+                        : "opacity-50 hover:opacity-100 text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    {isHidden ? (
+                      <EyeOff className="h-3.5 w-3.5" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5" />
+                    )}
+                  </button>
 
                   {/* Delete — always visible */}
                   <button

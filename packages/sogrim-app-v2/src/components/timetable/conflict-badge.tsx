@@ -1,5 +1,5 @@
 import type { TimetableEvent } from "@/types/timetable";
-import { findConflicts } from "@/lib/timetable-conflicts";
+import { chosenEvents, findConflicts } from "@/lib/timetable-conflicts";
 import { useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 
@@ -9,7 +9,7 @@ interface ConflictBadgeProps {
 
 export function ConflictBadge({ events }: ConflictBadgeProps) {
   const conflictCount = useMemo(
-    () => findConflicts(events).length,
+    () => findConflicts(chosenEvents(events)).length,
     [events],
   );
 

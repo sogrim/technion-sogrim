@@ -466,7 +466,7 @@ export function PlannerPage() {
   // --- Ready state: full planner ---
   return (
     <div className="space-y-0">
-      {/* Modified Toast - always reserves space, content shown when modified */}
+      {/* Modified Toast - reserves space on desktop, hidden entirely on mobile when idle */}
       <ModifiedToast visible={isModified} />
 
       {/* Top Banner */}
@@ -475,6 +475,7 @@ export function PlannerPage() {
         catalog={details!.catalog}
         includeInProgress={includeInProgress}
         isComputing={computeInProgressMutation.isPending}
+        flushTop={!isModified}
         onToggleInProgress={(val) => {
           if (!details) return;
           computeInProgressMutation.mutate({
