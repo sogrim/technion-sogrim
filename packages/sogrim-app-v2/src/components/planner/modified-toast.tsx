@@ -1,6 +1,7 @@
 import { Loader2, Info } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useComputeDegreeStatus } from "@/hooks/use-mutations";
 
 export function ModifiedToast({ visible = true }: { visible?: boolean }) {
@@ -9,8 +10,15 @@ export function ModifiedToast({ visible = true }: { visible?: boolean }) {
 
   return (
     <div
-      className="flex flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg mb-2 md:rounded-none md:-mx-6 md:px-6 md:mb-0 md:-mt-6 md:-mb-3 relative z-10 bg-notice-bg text-notice-fg"
-      style={{ visibility: visible ? "visible" : "hidden" }}
+      className={cn(
+        "flex-wrap items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg mb-2 md:rounded-none md:-mx-6 md:px-6 md:mb-0 md:-mt-6 md:-mb-3 relative z-10 bg-notice-bg text-notice-fg",
+        // When idle, desktop keeps reserving the strip's space (the negative
+        // margins absorb it) but mobile drops it entirely — reserving it there
+        // leaves a big blank gap between the header and the banner.
+        // `invisible` also keeps the button out of the tab order.
+        visible ? "flex" : "hidden md:flex invisible",
+      )}
+      aria-hidden={!visible}
     >
       <span className="text-center font-medium text-xs md:text-sm">
         {"סטטוס התואר שלך אינו מעודכן - עלייך להריץ שוב את חישוב סגירת התואר."}

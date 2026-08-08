@@ -64,13 +64,12 @@ function TimetableContent() {
     }
   }, [currentSemester, createDraft]);
 
-  const previewingCourse = useTimetableStore((s) => s.previewingCourse);
-  const previewingType = useTimetableStore((s) => s.previewingType);
+  const hiddenCourseIds = useTimetableStore((s) => s.hiddenCourseIds);
 
   const activeDraft = drafts.find((d) => d.id === activeDraftId);
   const events = useMemo(
-    () => resolveEvents(activeDraft, previewingCourse, previewingType),
-    [activeDraft, previewingCourse, previewingType, providerVersion],
+    () => resolveEvents(activeDraft, hiddenCourseIds),
+    [activeDraft, hiddenCourseIds, providerVersion],
   );
 
   const hasCourses = (activeDraft?.courses.length ?? 0) > 0;

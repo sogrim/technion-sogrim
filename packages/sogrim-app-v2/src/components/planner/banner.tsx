@@ -159,9 +159,12 @@ interface BannerProps {
   includeInProgress: boolean;
   isComputing: boolean;
   onToggleInProgress: (v: boolean) => void;
+  /** Pull the banner up under the header on mobile. Only safe when nothing
+   *  (i.e. the modified notice) is rendered above it. */
+  flushTop?: boolean;
 }
 
-export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, onToggleInProgress }: BannerProps) {
+export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, onToggleInProgress, flushTop = false }: BannerProps) {
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const { course_bank_requirements, course_statuses, total_credit } = degreeStatus;
@@ -233,7 +236,12 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
 
   return (
     <div
-      className="md:-mx-6 md:px-6 md:py-5"
+      className={cn(
+        // Full-bleed on mobile so the panel meets the header and screen edges,
+        // mirroring the desktop treatment instead of floating inside main's padding.
+        "-mx-4 md:-mx-6 md:px-6 md:py-5",
+        flushTop && "-mt-4 md:mt-0",
+      )}
       style={{ background: "var(--banner-bg, var(--banner))" }}
     >
       {/* ===== MOBILE: Compact summary strip ===== */}

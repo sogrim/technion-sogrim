@@ -1,4 +1,4 @@
-import type { Day, LessonType } from "@/types/timetable";
+import type { Day, LessonType, TimetableEvent } from "@/types/timetable";
 
 /** Day names in Hebrew, indexed by Day (0=Sunday) */
 export const DAY_NAMES: Record<Day, string> = {
@@ -97,7 +97,7 @@ export function timeToRow(time: string, startHour?: number): number {
 }
 
 /** Number of grid rows a time range spans */
-export function timeSpanRows(startTime: string, endTime: string): number {
+function timeSpanRows(startTime: string, endTime: string): number {
   const start = parseTime(startTime);
   const end = parseTime(endTime);
   return (end - start) / SLOT_MINUTES;
@@ -129,5 +129,81 @@ export function hasFridayEvents(events: { day: number }[]): boolean {
 /** Generate a unique draft ID */
 export function generateDraftId(): string {
   return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/** A single event positioned within a day column, as percentages of the column box. */
+export interface PositionedEvent {
+  event: TimetableEvent;
+  topPct: number;
+  heightPct: number;
+  leftPct: number;
+  widthPct: number;
+}
+
+/** Lay out events into non-overlapping columns (like FullCalendar's slotEventOverlap:false).
+ *  Returns positioned events with left/width percentages within the column. */
+export function layoutEvents(
+  events: TimetableEvent[],
+  startHour: number,
+  slotCount: number,
+): PositionedEvent[] {
+  if (events.length === 0) return [];
+
+  // Sort by start time, then by duration (longer first for stable layout).
+  const sorted = [...events].sort((a, b) => {
+    const aStart = parseTime(a.startTime);
+    const bStart = parseTime(b.startTime);
+    if (aStart !== bStart) return aStart - bStart;
+    return parseTime(b.endTime) - parseTime(a.endTime);
+  });
+
+  // Assign each event to a column, tracking end times per column.
+  const columns: number[] = []; // end time (in minutes) of each column
+  const eventCols: number[] = [];
+  const eventGroups: number[] = []; // which overlap group each event belongs to
+  const groupMaxCols: number[] = []; // max columns used per group
+
+  let currentGroupEnd = 0;
+  let groupIndex = -1;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const ev = sorted[i];
+    const evStart = parseTime(ev.startTime);
+    const evEnd = parseTime(ev.endTime);
+
+    // Check if this event starts a new non-overlapping group
+    if (evStart >= currentGroupEnd) {
+      groupIndex++;
+      currentGroupEnd = evEnd;
+      columns.length = 0; // reset columns for new group
+    } else {
+      currentGroupEnd = Math.max(currentGroupEnd, evEnd);
+    }
+
+    // Find first column where the event fits (no overlap)
+    let col = 0;
+    while (col < columns.length && columns[col] > evStart) {
+      col++;
+    }
+    columns[col] = evEnd;
+    eventCols[i] = col;
+    eventGroups[i] = groupIndex;
+    groupMaxCols[groupIndex] = Math.max(groupMaxCols[groupIndex] ?? 0, col + 1);
+  }
+
+  return sorted.map((event, i) => {
+    const row = timeToRow(event.startTime, startHour);
+    const span = timeSpanRows(event.startTime, event.endTime);
+    const totalCols = groupMaxCols[eventGroups[i]];
+    const col = eventCols[i];
+
+    return {
+      event,
+      topPct: (row / slotCount) * 100,
+      heightPct: (span / slotCount) * 100,
+      leftPct: (col / totalCols) * 100,
+      widthPct: (1 / totalCols) * 100,
+    };
+  });
 }
 

@@ -60,65 +60,92 @@ export function ExemptionsTab({
   return (
     <div className="max-w-4xl mx-auto">
       <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        {/* Table header */}
-        <div className="grid grid-cols-12 gap-2 bg-muted px-4 py-3 text-sm font-medium text-muted-foreground border-b">
+        {/* Table header — the 6-column grid only fits from sm up */}
+        <div className="hidden sm:grid grid-cols-12 gap-2 bg-muted px-4 py-3 text-sm font-medium text-muted-foreground border-b">
           <div className="col-span-4 text-right">שם הקורס</div>
           <div className="col-span-2 text-right">מס׳ קורס</div>
           <div className="col-span-2 text-center">נק״ז</div>
-          <div className="col-span-2 text-center">ציון</div>
-          <div className="col-span-1 text-center">סטטוס</div>
+          <div className="col-span-1 text-center">ציון</div>
+          <div className="col-span-2 text-center">סטטוס</div>
           <div className="col-span-1 text-center">מחק</div>
         </div>
 
         {/* Table rows */}
-        {exemptionCourses.map((cs) => (
-          <div
-            key={courseSemesterKey(cs.course._id, cs.semester)}
-            className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b last:border-b-0 hover:bg-muted transition-colors"
-          >
-            <div className="col-span-4 text-right font-medium text-foreground truncate">
-              {cs.course.name}
-            </div>
-            <div
-              className="col-span-2 text-right text-muted-foreground"
-              dir="ltr"
+        {exemptionCourses.map((cs) => {
+          const statusBadge = (
+            <Badge
+              variant={
+                cs.state === "הושלם"
+                  ? "success-muted"
+                  : cs.state === "לא הושלם"
+                    ? "destructive-outline"
+                    : cs.state === "בתהליך"
+                      ? "info-outline"
+                      : "muted-outline"
+              }
+              className="text-[10px] whitespace-nowrap"
             >
-              {cs.course._id}
-            </div>
-            <div className="col-span-2 text-center text-foreground">
-              {cs.course.credit}
-            </div>
-            <div className="col-span-2 text-center text-foreground">
-              {cs.grade ?? "-"}
-            </div>
-            <div className="col-span-1 text-center">
-              <Badge
-                variant={
-                  cs.state === "הושלם"
-                    ? "success-muted"
-                    : cs.state === "לא הושלם"
-                      ? "destructive-outline"
-                      : cs.state === "בתהליך"
-                        ? "info-outline"
-                        : "muted-outline"
-                }
-                className="text-[10px]"
+              {cs.state}
+            </Badge>
+          );
+
+          const deleteButton = (
+            <Hint label="מחק קורס">
+              <button
+                onClick={() => onDeleteCourse(cs.course._id, null)}
+                className="flex items-center justify-center p-1 text-muted-foreground hover:text-destructive transition-colors"
+                aria-label={`מחק את ${cs.course.name}`}
               >
-                {cs.state}
-              </Badge>
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </Hint>
+          );
+
+          return (
+            <div
+              key={courseSemesterKey(cs.course._id, cs.semester)}
+              className="px-4 py-3 text-sm border-b last:border-b-0 hover:bg-muted transition-colors"
+            >
+              {/* Mobile: two stacked lines — six columns can't fit on a phone */}
+              <div className="sm:hidden">
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 min-w-0 font-medium text-foreground truncate">
+                    {cs.course.name}
+                  </span>
+                  {statusBadge}
+                  <span className="shrink-0">{deleteButton}</span>
+                </div>
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span dir="ltr">{cs.course._id}</span>
+                  <span aria-hidden>·</span>
+                  <span>{cs.course.credit} נק״ז</span>
+                  <span aria-hidden>·</span>
+                  <span className="truncate">{cs.grade ?? "-"}</span>
+                </div>
+              </div>
+
+              {/* Desktop: table row matching the header above */}
+              <div className="hidden sm:grid grid-cols-12 gap-2">
+                <div className="col-span-4 text-right font-medium text-foreground truncate">
+                  {cs.course.name}
+                </div>
+                <div className="col-span-2 text-right text-muted-foreground" dir="ltr">
+                  {cs.course._id}
+                </div>
+                <div className="col-span-2 text-center text-foreground">
+                  {cs.course.credit}
+                </div>
+                <div className="col-span-1 text-center text-foreground">
+                  {cs.grade ?? "-"}
+                </div>
+                <div className="col-span-2 text-center">{statusBadge}</div>
+                <div className="col-span-1 flex justify-center items-center">
+                  {deleteButton}
+                </div>
+              </div>
             </div>
-            <div className="col-span-1 flex justify-center items-center">
-              <Hint label="מחק קורס">
-                <button
-                  onClick={() => onDeleteCourse(cs.course._id, null)}
-                  className="flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </Hint>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {exemptionCourses.length > 0 && (

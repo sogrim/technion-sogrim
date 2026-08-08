@@ -23,6 +23,12 @@ function timesOverlap(
   return sA < eB && sB < eA;
 }
 
+/** Events the user has actually chosen. Ghost previews of unselected groups are
+ *  excluded — those are only shown as options and must not count as conflicts. */
+export function chosenEvents(events: TimetableEvent[]): TimetableEvent[] {
+  return events.filter((e) => !e.isPreview);
+}
+
 /** Find all conflicting pairs among timetable events */
 export function findConflicts(events: TimetableEvent[]): Conflict[] {
   const conflicts: Conflict[] = [];

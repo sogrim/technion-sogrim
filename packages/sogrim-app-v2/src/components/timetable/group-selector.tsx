@@ -2,7 +2,6 @@ import type { CourseSchedule, LessonType } from "@/types/timetable";
 import { LESSON_TYPE_NAMES, DAY_LABELS } from "@/lib/timetable-utils";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { cn } from "@/lib/utils";
-import { Eye } from "lucide-react";
 import { Hint } from "@/components/ui/hint";
 
 interface GroupSelectorProps {
@@ -12,9 +11,6 @@ interface GroupSelectorProps {
 
 export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
   const setGroup = useTimetableStore((s) => s.setGroup);
-  const previewingCourse = useTimetableStore((s) => s.previewingCourse);
-  const previewingType = useTimetableStore((s) => s.previewingType);
-  const setPreview = useTimetableStore((s) => s.setPreview);
 
   // Group the course's groups by type
   const groupsByType = new Map<LessonType, { id: string; summary: string }[]>();
@@ -34,14 +30,10 @@ export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
     });
   }
 
-  const isPreviewing = previewingCourse === course.id;
-
   return (
     <div className="flex flex-col gap-1.5">
       {Array.from(groupsByType.entries()).map(([type, groups]) => {
-        if (groups.length <= 1) return null;
         const selectedId = selectedGroups[type];
-        const isTypePreview = isPreviewing && previewingType === type;
 
         return (
           <div key={type} className="flex items-center gap-1.5 flex-wrap">
@@ -52,14 +44,18 @@ export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
               {groups.map((g) => (
                 <Hint key={g.id} label={g.summary}>
                   <button
-                    onClick={() => setGroup(course.id, type, g.id)}
+                    onClick={() =>
+                      setGroup(
+                        course.id,
+                        type,
+                        g.id === selectedId ? "" : g.id,
+                      )
+                    }
                     className={cn(
                       "px-1.5 py-0.5 rounded text-[0.65rem] font-medium transition-all",
                       g.id === selectedId
                         ? "bg-primary text-primary-foreground"
-                        : isTypePreview
-                          ? "bg-primary/20 text-primary ring-1 ring-primary/30"
-                          : "bg-secondary text-secondary-foreground hover:bg-accent",
+                        : "bg-secondary text-secondary-foreground hover:bg-accent",
                     )}
                   >
                     {g.id.split("-")[0]}
@@ -67,26 +63,6 @@ export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
                 </Hint>
               ))}
             </div>
-            {/* Preview all button */}
-            <Hint label="הצג את כל האפשרויות על המערכת">
-              <button
-                onClick={() => {
-                  if (isTypePreview) {
-                    setPreview(null, null);
-                  } else {
-                    setPreview(course.id, type);
-                  }
-                }}
-                className={cn(
-                  "p-0.5 rounded transition-colors",
-                  isTypePreview
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-primary",
-                )}
-              >
-                <Eye className="h-3 w-3" />
-              </button>
-            </Hint>
           </div>
         );
       })}
