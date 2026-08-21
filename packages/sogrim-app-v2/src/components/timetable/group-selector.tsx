@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { CourseSchedule, LessonType } from "@/types/timetable";
-import { LESSON_TYPE_NAMES, DAY_LABELS, eventGroupKey } from "@/lib/timetable-utils";
+import { LESSON_TYPE_NAMES, eventGroupKey } from "@/lib/timetable-utils";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { cn } from "@/lib/utils";
-import { Hint } from "@/components/ui/hint";
 
 interface GroupSelectorProps {
   course: CourseSchedule;
@@ -27,26 +26,17 @@ export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
   }, []);
 
   // Group the course's groups by type
-  const groupsByType = new Map<LessonType, { id: string; summary: string }[]>();
+  const groupsByType = new Map<LessonType, string[]>();
   for (const group of course.groups) {
     if (!groupsByType.has(group.type)) {
       groupsByType.set(group.type, []);
     }
-    // Build a short summary: day + time
-    const firstLesson = group.lessons[0];
-    const dayLabel = firstLesson ? DAY_LABELS[firstLesson.day] : "";
-    const timeLabel = firstLesson ? firstLesson.startTime : "";
-    const summary = firstLesson ? `${dayLabel} ${timeLabel}` : "";
-
-    groupsByType.get(group.type)!.push({
-      id: group.id,
-      summary,
-    });
+    groupsByType.get(group.type)!.push(group.id);
   }
 
   return (
     <div className="flex flex-col gap-1.5">
-      {Array.from(groupsByType.entries()).map(([type, groups]) => {
+      {Array.from(groupsByType.entries()).map(([type, groupIds]) => {
         const selectedId = selectedGroups[type];
 
         return (
@@ -55,39 +45,38 @@ export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
               {LESSON_TYPE_NAMES[type]}
             </span>
             <div className="flex gap-0.5 flex-wrap">
-              {groups.map((g) => (
-                <Hint key={g.id} label={g.summary}>
-                  <button
-                    onClick={() =>
-                      setGroup(
-                        course.id,
-                        type,
-                        g.id === selectedId ? "" : g.id,
-                      )
-                    }
-                    onMouseEnter={() => {
-                      const key = eventGroupKey({
-                        courseId: course.id,
-                        type,
-                        groupId: g.id,
-                      });
-                      ownedKeyRef.current = key;
-                      setHoveredGroup(key);
-                    }}
-                    onMouseLeave={() => {
-                      ownedKeyRef.current = null;
-                      setHoveredGroup(null);
-                    }}
-                    className={cn(
-                      "px-1.5 py-0.5 rounded text-[0.65rem] font-medium transition-all",
-                      g.id === selectedId
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground hover:bg-accent",
-                    )}
-                  >
-                    {g.id.split("-")[0]}
-                  </button>
-                </Hint>
+              {groupIds.map((groupId) => (
+                <button
+                  key={groupId}
+                  onClick={() =>
+                    setGroup(
+                      course.id,
+                      type,
+                      groupId === selectedId ? "" : groupId,
+                    )
+                  }
+                  onMouseEnter={() => {
+                    const key = eventGroupKey({
+                      courseId: course.id,
+                      type,
+                      groupId,
+                    });
+                    ownedKeyRef.current = key;
+                    setHoveredGroup(key);
+                  }}
+                  onMouseLeave={() => {
+                    ownedKeyRef.current = null;
+                    setHoveredGroup(null);
+                  }}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded text-[0.65rem] font-medium transition-all",
+                    groupId === selectedId
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-accent",
+                  )}
+                >
+                  {groupId.split("-")[0]}
+                </button>
               ))}
             </div>
           </div>

@@ -6,7 +6,6 @@ import { useTimetableStore } from "@/stores/timetable-store";
 import { useUiStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
 import { Star } from "lucide-react";
-import { Hint } from "@/components/ui/hint";
 
 interface CourseBlockProps {
   event: TimetableEvent;
@@ -71,39 +70,27 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
 
   const isPreview = !!event.isPreview;
 
-  const blockTitle = [
-    event.courseName,
-    !event.isCustom && event.kindLabel,
-    location,
-    event.instructor,
-    meetingCount > 1 && `${meetingCount} מפגשים בשבוע`,
-    isPreview && "לחצו לבחור",
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
   const previewBg = isDark ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.85)";
 
   return (
-    <Hint label={blockTitle}>
-      <div
-        onClick={handleClick}
-        onMouseEnter={
-          hoverSourceKey
-            ? () => {
-                ownsHoverRef.current = true;
-                setHoveredGroup(hoverSourceKey);
-              }
-            : undefined
-        }
-        onMouseLeave={
-          hoverSourceKey
-            ? () => {
-                ownsHoverRef.current = false;
-                setHoveredGroup(null);
-              }
-            : undefined
-        }
+    <div
+      onClick={handleClick}
+      onMouseEnter={
+        hoverSourceKey
+          ? () => {
+              ownsHoverRef.current = true;
+              setHoveredGroup(hoverSourceKey);
+            }
+          : undefined
+      }
+      onMouseLeave={
+        hoverSourceKey
+          ? () => {
+              ownsHoverRef.current = false;
+              setHoveredGroup(null);
+            }
+          : undefined
+      }
       className={cn(
         "rounded-sm cursor-pointer h-full overflow-hidden",
         "flex flex-col items-start justify-start text-start",
@@ -135,7 +122,7 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
         outline: isHighlighted ? "2px solid var(--course-border)" : undefined,
         outlineOffset: isHighlighted ? "1px" : undefined,
       }}
-      >
+    >
       {event.isCustom && !compact && (
         <Star className="absolute top-0.5 left-0.5 h-2 w-2 opacity-60" />
       )}
@@ -152,7 +139,6 @@ export function CourseBlock({ event, compact = false, onCustomEventClick }: Cour
           {event.courseName}
         </div>
       )}
-      </div>
-    </Hint>
+    </div>
   );
 }
