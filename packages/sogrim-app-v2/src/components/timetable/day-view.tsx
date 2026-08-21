@@ -82,12 +82,15 @@ export function DayView({ events }: DayViewProps) {
   const handleMouseUp = () => {
     if (!dragState) return;
     const startRow = Math.min(dragState.startRow, dragState.currentRow);
-    const endRow = Math.max(dragState.startRow, dragState.currentRow) + 2;
+    const lastRow = Math.max(dragState.startRow, dragState.currentRow);
+    // A plain click has no range — fall back to the dialog's duration buttons.
+    const isClick = dragState.startRow === dragState.currentRow;
     setCustomDialog({
       open: true,
       day: selectedDay,
       startRow,
-      endRow: Math.min(endRow, slotCount),
+      // +1 so the end is exclusive and matches the selection overlay exactly.
+      endRow: isClick ? undefined : Math.min(lastRow + 1, slotCount),
     });
     setDragState(null);
   };
@@ -223,6 +226,7 @@ export function DayView({ events }: DayViewProps) {
         day={customDialog.day}
         startRow={customDialog.startRow}
         endRow={customDialog.endRow}
+        startHour={startHour}
         editingEventId={customDialog.editId}
         editingTitle={customDialog.editTitle}
       />

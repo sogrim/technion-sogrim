@@ -131,6 +131,22 @@ export function generateDraftId(): string {
   return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+/** Generate a unique custom event ID */
+let customEventSeq = 0;
+export function generateCustomEventId(): string {
+  customEventSeq += 1;
+  return `ce-${Date.now()}-${customEventSeq}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/** Identifies a lesson group; all weekly meetings of a group share this key. */
+export function eventGroupKey(event: {
+  courseId: string;
+  type: string;
+  groupId: string;
+}): string {
+  return `${event.courseId}|${event.type}|${event.groupId}`;
+}
+
 /** A single event positioned within a day column, as percentages of the column box. */
 export interface PositionedEvent {
   event: TimetableEvent;

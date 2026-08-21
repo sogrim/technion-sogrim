@@ -10,7 +10,7 @@ import type {
   ViewMode,
 } from "@/types/timetable";
 import { getProvider } from "@/data/course-schedule-provider";
-import { generateDraftId } from "@/lib/timetable-utils";
+import { eventGroupKey, generateCustomEventId, generateDraftId } from "@/lib/timetable-utils";
 import { chosenEvents, getConflictingEventKeys, eventKey } from "@/lib/timetable-conflicts";
 import { semesterKey, semestersEqual } from "@/lib/semester-utils";
 import type { AcademicSemester } from "@/types/api";
@@ -22,6 +22,8 @@ interface TimetableState {
   searchOpen: boolean;
   detailCourseId: string | null;
   hiddenCourseIds: Set<string>;
+  /** Group key (see eventGroupKey) currently hovered, on the grid or in the panel */
+  hoveredGroupKey: string | null;
 
   // Persistent state (saved to backend)
   currentSemester: AcademicSemester | null;
@@ -41,6 +43,7 @@ interface TimetableState {
   setSearchOpen: (open: boolean) => void;
   setDetailCourse: (courseId: string | null) => void;
   toggleCourseHidden: (courseId: string) => void;
+  setHoveredGroup: (groupKey: string | null) => void;
 
   // Actions: semester
   setSemester: (semester: AcademicSemester) => void;
@@ -87,6 +90,7 @@ export const useTimetableStore = create<TimetableState>()(
       searchOpen: false,
       detailCourseId: null,
       hiddenCourseIds: new Set(),
+      hoveredGroupKey: null,
       currentSemester: null,
       drafts: [],
       activeDraftId: null,
@@ -100,6 +104,11 @@ export const useTimetableStore = create<TimetableState>()(
       setSelectedDay: (day) => set({ selectedDay: day }),
       setSearchOpen: (open) => set({ searchOpen: open }),
       setDetailCourse: (courseId) => set({ detailCourseId: courseId }),
+
+      setHoveredGroup: (groupKey) => {
+        if (get().hoveredGroupKey === groupKey) return;
+        set({ hoveredGroupKey: groupKey });
+      },
 
       toggleCourseHidden: (courseId) => {
         const next = new Set(get().hiddenCourseIds);
@@ -127,12 +136,25 @@ export const useTimetableStore = create<TimetableState>()(
         const next = (state.draftCounters[semKey] ?? 0) + 1;
         const id = generateDraftId();
         const now = new Date().toISOString();
+
+        // A new option starts as a copy of the option the user is currently on.
+        // Only same-semester sources qualify — courses differ between semesters.
+        const source = state.drafts.find(
+          (d) => d.id === state.activeDraftId && semestersEqual(d.semester, sem),
+        );
+
         const newDraft: TimetableDraft = {
           id,
           name: `אפשרות ${next}`,
           semester: sem,
-          courses: [],
-          customEvents: [],
+          courses: (source?.courses ?? []).map((c) => ({
+            courseId: c.courseId,
+            selectedGroups: { ...c.selectedGroups },
+          })),
+          customEvents: (source?.customEvents ?? []).map((e) => ({
+            ...e,
+            id: generateCustomEventId(),
+          })),
           createdAt: now,
           updatedAt: now,
           isPublished: false,
@@ -230,7 +252,7 @@ export const useTimetableStore = create<TimetableState>()(
         const state = get();
         const draft = getActiveDraft(state);
         if (!draft) return;
-        const id = `ce-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+        const id = generateCustomEventId();
         set({
           drafts: updateDraft(state.drafts, draft.id, (d) => ({
             customEvents: [...(d.customEvents ?? []), { ...event, id }],
@@ -274,10 +296,15 @@ export const useTimetableStore = create<TimetableState>()(
  * Resolve current draft's course selections into renderable TimetableEvents.
  * Unselected lesson types render all their groups as ghost preview events.
  * Courses in `hiddenCourseIds` are skipped entirely.
+ *
+ * `hoveredGroupKey` (see eventGroupKey) previews a hovered option even when
+ * its lesson type is already decided — otherwise hovering it would show
+ * nothing, since only the selected group of a decided type is rendered.
  */
 export function resolveEvents(
   draft: TimetableDraft | undefined,
   hiddenCourseIds?: Set<string> | null,
+  hoveredGroupKey?: string | null,
 ): TimetableEvent[] {
   if (!draft) return [];
 
@@ -291,6 +318,32 @@ export function resolveEvents(
 
     const colorIndex = courseIndex;
 
+    const pushGroup = (
+      group: (typeof course.groups)[number],
+      isPreview: boolean,
+    ) => {
+      const kindLabel = `${group.kindLabel} ${group.id.split("-")[0].split("/").map((n) => n.replace(/^0+/, "") || "0").join("/")}`;
+      for (const lesson of group.lessons) {
+        events.push({
+          courseId: course.id,
+          courseName: course.name,
+          type: group.type,
+          kindLabel,
+          groupId: group.id,
+          day: lesson.day,
+          startTime: lesson.startTime,
+          endTime: lesson.endTime,
+          building: lesson.building,
+          room: lesson.room,
+          instructor: lesson.instructor,
+          colorIndex,
+          hasConflict: false,
+          groupLessonCount: group.lessons.length,
+          ...(isPreview ? { isPreview: true as const } : {}),
+        });
+      }
+    };
+
     const typeSet = new Set(course.groups.map((g) => g.type));
 
     for (const type of typeSet) {
@@ -299,47 +352,19 @@ export function resolveEvents(
 
       if (selectedGroupId) {
         const group = typeGroups.find((g) => g.id === selectedGroupId);
-        if (!group) continue;
-        const kindLabel = `${group.kindLabel} ${group.id.split("-")[0].split("/").map((n) => n.replace(/^0+/, "") || "0").join("/")}`;
-        for (const lesson of group.lessons) {
-          events.push({
-            courseId: course.id,
-            courseName: course.name,
-            type: group.type,
-            kindLabel,
-            groupId: group.id,
-            day: lesson.day,
-            startTime: lesson.startTime,
-            endTime: lesson.endTime,
-            building: lesson.building,
-            room: lesson.room,
-            instructor: lesson.instructor,
-            colorIndex,
-            hasConflict: false,
-          });
-        }
+        if (group) pushGroup(group, false);
+
+        const peeked = hoveredGroupKey
+          ? typeGroups.find(
+              (g) =>
+                g.id !== selectedGroupId &&
+                eventGroupKey({ courseId: course.id, type, groupId: g.id }) ===
+                  hoveredGroupKey,
+            )
+          : undefined;
+        if (peeked) pushGroup(peeked, true);
       } else {
-        for (const group of typeGroups) {
-          const kindLabel = `${group.kindLabel} ${group.id.split("-")[0].split("/").map((n) => n.replace(/^0+/, "") || "0").join("/")}`;
-          for (const lesson of group.lessons) {
-            events.push({
-              courseId: course.id,
-              courseName: course.name,
-              type: group.type,
-              kindLabel,
-              groupId: group.id,
-              day: lesson.day,
-              startTime: lesson.startTime,
-              endTime: lesson.endTime,
-              building: lesson.building,
-              room: lesson.room,
-              instructor: lesson.instructor,
-              colorIndex,
-              hasConflict: false,
-              isPreview: true,
-            });
-          }
-        }
+        for (const group of typeGroups) pushGroup(group, true);
       }
     }
   });

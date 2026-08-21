@@ -1,5 +1,6 @@
+import { useEffect, useRef } from "react";
 import type { CourseSchedule, LessonType } from "@/types/timetable";
-import { LESSON_TYPE_NAMES, DAY_LABELS } from "@/lib/timetable-utils";
+import { LESSON_TYPE_NAMES, DAY_LABELS, eventGroupKey } from "@/lib/timetable-utils";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { cn } from "@/lib/utils";
 import { Hint } from "@/components/ui/hint";
@@ -11,6 +12,19 @@ interface GroupSelectorProps {
 
 export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
   const setGroup = useTimetableStore((s) => s.setGroup);
+  const setHoveredGroup = useTimetableStore((s) => s.setHoveredGroup);
+
+  // Buttons unmount mid-hover when the card is collapsed or the course is
+  // removed, and then no mouseleave ever fires.
+  const ownedKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    return () => {
+      const owned = ownedKeyRef.current;
+      if (!owned) return;
+      const store = useTimetableStore.getState();
+      if (store.hoveredGroupKey === owned) store.setHoveredGroup(null);
+    };
+  }, []);
 
   // Group the course's groups by type
   const groupsByType = new Map<LessonType, { id: string; summary: string }[]>();
@@ -51,6 +65,19 @@ export function GroupSelector({ course, selectedGroups }: GroupSelectorProps) {
                         g.id === selectedId ? "" : g.id,
                       )
                     }
+                    onMouseEnter={() => {
+                      const key = eventGroupKey({
+                        courseId: course.id,
+                        type,
+                        groupId: g.id,
+                      });
+                      ownedKeyRef.current = key;
+                      setHoveredGroup(key);
+                    }}
+                    onMouseLeave={() => {
+                      ownedKeyRef.current = null;
+                      setHoveredGroup(null);
+                    }}
                     className={cn(
                       "px-1.5 py-0.5 rounded text-[0.65rem] font-medium transition-all",
                       g.id === selectedId

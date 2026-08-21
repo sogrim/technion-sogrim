@@ -5,14 +5,13 @@ import { useProviderUpdates } from "@/hooks/use-api-provider";
 import { getCourseColor } from "@/lib/timetable-colors";
 import { useUiStore } from "@/stores/ui-store";
 import { GroupSelector } from "./group-selector";
-import { Trash2, BookOpen, Search, ChevronDown, Eye, EyeOff } from "lucide-react";
+import { Trash2, BookOpen, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function SelectedCoursesPanel() {
   const drafts = useTimetableStore((s) => s.drafts);
   const activeDraftId = useTimetableStore((s) => s.activeDraftId);
   const removeCourse = useTimetableStore((s) => s.removeCourse);
-  const setSearchOpen = useTimetableStore((s) => s.setSearchOpen);
   const setDetailCourse = useTimetableStore((s) => s.setDetailCourse);
   const hiddenCourseIds = useTimetableStore((s) => s.hiddenCourseIds);
   const toggleCourseHidden = useTimetableStore((s) => s.toggleCourseHidden);
@@ -65,18 +64,7 @@ export function SelectedCoursesPanel() {
         </div>
       </div>
 
-      {coursesWithData.length === 0 ? (
-        <button
-          onClick={() => setSearchOpen(true)}
-          className={cn(
-            "w-full flex flex-col items-center gap-2 p-6 rounded-lg border-2 border-dashed border-border",
-            "text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors cursor-pointer",
-          )}
-        >
-          <Search className="h-5 w-5" />
-          <span className="text-sm">חפשו והוסיפו קורסים</span>
-        </button>
-      ) : (
+      {coursesWithData.length > 0 && (
         <div className="space-y-1">
           {coursesWithData.map(({ selection, course, colorIndex }) => {
             if (!course) return null;

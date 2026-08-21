@@ -133,13 +133,13 @@ export function ExamTimeline() {
   if (examInfos.length === 0) return null;
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-card p-4 space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <CalendarCheck className="h-4 w-4 text-primary" />
+    <div className="mt-4 rounded-lg border border-border bg-card p-4 md:p-5 space-y-4 md:space-y-5">
+      <div className="flex items-center gap-2 text-sm md:text-base font-semibold">
+        <CalendarCheck className="h-4 w-4 md:h-5 md:w-5 text-primary" />
         <span>לוח מבחנים</span>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-4 md:gap-5">
         <ExamSession
           label="מועד א׳"
           timeline={timelineA}
@@ -180,17 +180,17 @@ function ExamSession({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+        <span className="text-xs md:text-sm font-semibold text-muted-foreground">{label}</span>
         {timeline.length > 1 && (
           <span className={cn(
-            "text-[0.65rem] px-1.5 py-0.5 rounded-full font-medium",
+            "text-[0.65rem] md:text-xs px-1.5 py-0.5 md:px-2 md:py-1 rounded-full font-medium",
             hasProblems
               ? "bg-destructive/10 text-destructive"
               : "bg-success/10 text-success",
           )}>
             {hasProblems ? (
               <span className="flex items-center gap-0.5">
-                <AlertTriangle className="h-2.5 w-2.5" />
+                <AlertTriangle className="h-2.5 w-2.5 md:h-3 md:w-3" />
                 מינימום {minGap} ימים בין מבחנים
               </span>
             ) : (
@@ -212,13 +212,13 @@ function ExamSession({
               {item.gapDays != null && (
                 <div className="flex items-center gap-2 py-0.5 px-3">
                   <div className={cn(
-                    "flex-1 border-r-2 border-dashed h-4",
+                    "flex-1 border-r-2 border-dashed h-4 md:h-5",
                     item.gapSeverity === "danger" ? "border-destructive" :
                     item.gapSeverity === "warning" ? "border-warning" :
                     "border-border",
                   )} />
                   <span className={cn(
-                    "text-[0.65rem] font-bold px-1.5 py-0.5 rounded",
+                    "text-[0.65rem] md:text-xs font-bold px-1.5 py-0.5 rounded",
                     item.gapSeverity === "danger" ? "text-destructive bg-destructive/10" :
                     item.gapSeverity === "warning" ? "text-warning bg-warning/10" :
                     "text-muted-foreground",
@@ -226,7 +226,7 @@ function ExamSession({
                     {item.gapDays} ימים
                   </span>
                   <div className={cn(
-                    "flex-1 border-r-2 border-dashed h-4",
+                    "flex-1 border-r-2 border-dashed h-4 md:h-5",
                     item.gapSeverity === "danger" ? "border-destructive" :
                     item.gapSeverity === "warning" ? "border-warning" :
                     "border-border",
@@ -235,21 +235,21 @@ function ExamSession({
               )}
 
               {/* Exam card */}
-              <div className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/50 transition-colors">
+              <div className="flex items-center gap-2 md:gap-3 p-2 md:p-2.5 rounded-md hover:bg-accent/50 transition-colors">
                 <div
-                  className="w-2 h-8 rounded-full shrink-0"
+                  className="w-2 h-8 md:w-2.5 md:h-10 rounded-full shrink-0"
                   style={{ backgroundColor: bg }}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{item.exam.courseName}</div>
-                  <div className="text-[0.65rem] text-muted-foreground">{item.exam.courseId}</div>
+                  <div className="text-xs md:text-sm font-medium truncate">{item.exam.courseName}</div>
+                  <div className="text-[0.65rem] md:text-xs text-muted-foreground">{item.exam.courseId}</div>
                 </div>
                 <div className="text-end shrink-0">
-                  <div className="text-sm font-mono font-semibold">
+                  <div className="text-sm md:text-base font-mono font-semibold">
                     {formatDate(item.date)}
                   </div>
                   {item.time && (
-                    <div className="text-[0.65rem] font-mono text-muted-foreground" dir="ltr">
+                    <div className="text-[0.65rem] md:text-xs font-mono text-muted-foreground" dir="ltr">
                       {item.time}
                     </div>
                   )}

@@ -65,11 +65,12 @@ function TimetableContent() {
   }, [currentSemester, createDraft]);
 
   const hiddenCourseIds = useTimetableStore((s) => s.hiddenCourseIds);
+  const hoveredGroupKey = useTimetableStore((s) => s.hoveredGroupKey);
 
   const activeDraft = drafts.find((d) => d.id === activeDraftId);
   const events = useMemo(
-    () => resolveEvents(activeDraft, hiddenCourseIds),
-    [activeDraft, hiddenCourseIds, providerVersion],
+    () => resolveEvents(activeDraft, hiddenCourseIds, hoveredGroupKey),
+    [activeDraft, hiddenCourseIds, hoveredGroupKey, providerVersion],
   );
 
   const hasCourses = (activeDraft?.courses.length ?? 0) > 0;

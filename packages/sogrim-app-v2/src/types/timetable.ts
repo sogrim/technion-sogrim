@@ -84,6 +84,8 @@ export interface TimetableEvent {
   instructor?: string;
   colorIndex: number;
   hasConflict: boolean;
+  /** How many weekly meetings this group has (a group can meet on several days) */
+  groupLessonCount?: number;
   /** Ghost preview block — not the selected group, just showing alternatives */
   isPreview?: boolean;
   /** Custom user event (not a course) */

@@ -23,6 +23,8 @@ interface CustomEventDialogProps {
   startRow: number;
   /** End row from drag selection (exclusive). If not provided, uses duration buttons. */
   endRow?: number;
+  /** Hour represented by the grid's first row — the grid range can expand past the default. */
+  startHour?: number;
   editingEventId?: string;
   editingTitle?: string;
 }
@@ -33,21 +35,23 @@ export function CustomEventDialog({
   day,
   startRow,
   endRow,
+  startHour,
   editingEventId,
   editingTitle,
 }: CustomEventDialogProps) {
   const [title, setTitle] = useState(editingTitle ?? "");
-  const [duration, setDuration] = useState(2);
+  const [duration, setDuration] = useState(0.5);
   const [selectedColor, setSelectedColor] = useState("blue");
   const inputRef = useRef<HTMLInputElement>(null);
   const addCustomEvent = useTimetableStore((s) => s.addCustomEvent);
   const updateCustomEvent = useTimetableStore((s) => s.updateCustomEvent);
   const removeCustomEvent = useTimetableStore((s) => s.removeCustomEvent);
 
-  const startMinutes = DEFAULT_START_HOUR * 60 + startRow * SLOT_MINUTES;
+  const gridStartHour = startHour ?? DEFAULT_START_HOUR;
+  const startMinutes = gridStartHour * 60 + startRow * SLOT_MINUTES;
   // If endRow provided (from drag), calculate duration from it. Otherwise use duration buttons.
   const effectiveEndMinutes = endRow != null
-    ? DEFAULT_START_HOUR * 60 + endRow * SLOT_MINUTES
+    ? gridStartHour * 60 + endRow * SLOT_MINUTES
     : startMinutes + duration * 60;
   const startTime = formatTime(startMinutes);
   const endTime = formatTime(Math.min(effectiveEndMinutes, MAX_END_HOUR * 60));
@@ -62,7 +66,8 @@ export function CustomEventDialog({
         const dragDuration = (endRow - startRow) * SLOT_MINUTES / 60;
         setDuration(dragDuration);
       } else {
-        setDuration(2);
+        // A single click selects one slot — default to that, adjustable below.
+        setDuration(SLOT_MINUTES / 60);
       }
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -142,7 +147,7 @@ export function CustomEventDialog({
           {!hasDragRange && !editingEventId && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">משך:</span>
-              {[1, 1.5, 2, 3, 4].map((d) => (
+              {[0.5, 1, 1.5, 2, 3].map((d) => (
                 <button
                   key={d}
                   onClick={() => setDuration(d)}
