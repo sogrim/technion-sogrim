@@ -5,6 +5,7 @@ import { useUiStore } from "@/stores/ui-store";
 import { useUserState } from "@/hooks/use-user-state";
 import { UserPermissions } from "@/types/api";
 import { Hint } from "@/components/ui/hint";
+import { Logo } from "@/components/common/logo";
 
 const navItems = [
   { to: "/planner" as const, label: "מעקב תואר", icon: GraduationCap },
@@ -31,12 +32,11 @@ export function Sidebar() {
         collapsed ? "w-16 p-2" : "w-[220px] p-4"
       )}
     >
-      <div className={cn("mb-6", collapsed ? "px-0 text-center" : "px-2")}>
-        <h1
-          className={cn("font-bold transition-all duration-300 text-foreground", collapsed ? "text-sm" : "text-xl")}
-        >
-          {collapsed ? <GraduationCap className="h-6 w-6" style={{ color: "var(--banner)" }} /> : "סוגרים"}
-        </h1>
+      <div className={cn("mb-6 flex justify-center", collapsed ? "px-0" : "px-2")}>
+        <Logo
+          variant={collapsed ? "icon" : "stacked"}
+          className={cn("w-auto transition-all duration-300", collapsed ? "h-8" : "h-32")}
+        />
       </div>
 
       <nav className="flex-1 space-y-1">

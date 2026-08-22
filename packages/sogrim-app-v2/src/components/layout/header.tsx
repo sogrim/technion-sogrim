@@ -7,6 +7,7 @@ import { useUserState } from "@/hooks/use-user-state";
 import { useUpdateSettings } from "@/hooks/use-mutations";
 import { exportCoursesToCsv } from "@/lib/export-csv";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/common/logo";
 
 export function Header() {
   const { userInfo, logout } = useAuthStore();
@@ -33,11 +34,12 @@ export function Header() {
 
   return (
     <header className="flex h-14 items-center justify-between bg-card px-3 shadow-sm md:h-[60px] md:px-6 shrink-0">
-      {/* Right side: Logo (mobile only) */}
+      {/* Right side: Logo (mobile only). The outer div stays mounted on desktop
+          so `justify-between` keeps the actions on the far side. */}
       <div className="flex items-center gap-2 shrink-0">
-        <h1 className="text-lg font-bold md:hidden text-foreground">
-          סוגרים
-        </h1>
+        <div className="md:hidden">
+          <Logo variant="horizontal" className="h-9 w-auto" />
+        </div>
       </div>
 
       {/* Left side: Actions */}
