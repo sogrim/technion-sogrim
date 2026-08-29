@@ -28,11 +28,12 @@ const PALETTE_LABELS: Record<PaletteId, string> = {
 
 /** Swatch fill — four forms:
  *   - string: solid color (unified palettes, single brand hue)
- *   - { primary, secondary }: half/half split (sogrim — coral + blue)
- *   - { primary, secondary, tertiary }: tri-band split (botanical — moss/amber/wine)
+ *   - { primary, secondary }: half/half split, for palettes whose identity
+ *     needs two hues (sogrim — coral + blue; botanical — amber + moss banner)
+ *   - { primary, secondary, tertiary }: tri-band split
  *   - { gradient }: full CSS gradient string for palettes that want to
- *     telegraph their multi-accent identity smoothly (midnight — the
- *     synthwave cyan→violet→magenta sweep).
+ *     telegraph their identity smoothly (midnight — the ink→violet sweep
+ *     that mirrors its banner gradient).
  *  Kept in sync with the actual values in index.css. */
 type SwatchSpec =
   | string
@@ -43,8 +44,8 @@ type SwatchSpec =
 const PALETTE_SWATCH_COLORS: Record<PaletteId, SwatchSpec> = {
   sogrim: { primary: "#d66563", secondary: "#3b82f6" },
   teal: "oklch(0.52 0.12 215)",
-  botanical: { primary: "#2d3d2a", secondary: "#a47332", tertiary: "#8b2e3d" },
-  midnight: { gradient: "linear-gradient(135deg, #22d3ee 0%, #a855f7 50%, #ec4899 100%)" },
+  botanical: { primary: "#a16100", secondary: "#2d3d2a" },
+  midnight: { gradient: "linear-gradient(135deg, #0e1130 0%, #7235d0 60%, #9d68ff 100%)" },
 };
 
 function swatchStyle(spec: SwatchSpec): React.CSSProperties {

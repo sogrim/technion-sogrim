@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef } from "react";
-import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarDays, ArrowUpRight, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, BookOpenCheck, Target, CalendarRange, CalendarDays, ArrowUpRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Hint } from "@/components/ui/hint";
+import { useUiStore } from "@/stores/ui-store";
 import { isSocialActivityCourse } from "@/lib/reserved-credits";
 import { formatSemesterName, parseSemesterOrder, semesterKey, semestersEqual } from "@/lib/semester-utils";
 import type { AcademicSemester, DegreeStatus, Catalog, CourseStatus } from "@/types/api";
@@ -166,6 +167,8 @@ interface BannerProps {
 
 export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, onToggleInProgress, flushTop = false }: BannerProps) {
   const [mobileExpanded, setMobileExpanded] = useState(false);
+  const hideGpa = useUiStore((s) => s.hideGpa);
+  const toggleHideGpa = useUiStore((s) => s.toggleHideGpa);
 
   const { course_bank_requirements, course_statuses, total_credit } = degreeStatus;
 
@@ -191,6 +194,8 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
   const totalGC = gradedCourses.reduce((s, cs) => s + cs.course.credit, 0);
   const gpaNum = totalGC > 0 ? totalGP / totalGC : null;
   const gpa = gpaNum != null ? gpaNum.toFixed(2) : "--";
+  // Match the real glyph count so masking doesn't reflow the row.
+  const gpaDisplay = hideGpa ? "•".repeat(gpa.length) : gpa;
 
   const completedCount = course_statuses.filter(
     (cs) => cs.state === "הושלם" && !isSocialActivityCourse(cs),
@@ -275,8 +280,19 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
         {mobileExpanded && (
           <div className="mt-3 space-y-2 text-white text-sm">
             <div className="flex justify-between">
-              <span className="text-white/70">ממוצע</span>
-              <span className="font-bold">{gpa}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-white/70">ממוצע</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); toggleHideGpa(); }}
+                  aria-label={hideGpa ? "הצג ממוצע" : "הסתר ממוצע"}
+                  aria-pressed={hideGpa}
+                  className="text-white/50 hover:text-white transition-colors"
+                >
+                  {hideGpa ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <span className="font-bold">{gpaDisplay}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-white/70">דרישות</span>
@@ -301,9 +317,11 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
                     includeInProgress ? "bg-blue-400" : "bg-white/30"
                   )}
                 >
+                  {/* The track is an RTL flex container, so the thumb already sits
+                      flush right; travel is therefore negative (towards the left). */}
                   <span className={cn(
                     "inline-block h-3 w-3 mt-0.5 rounded-full bg-white shadow transition-transform",
-                    includeInProgress ? "translate-x-0.5" : "translate-x-3.5"
+                    includeInProgress ? "-translate-x-0.5" : "-translate-x-3.5"
                   )} />
                 </button>
                 <Loader2
@@ -366,14 +384,30 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
 
         {/* Stats card */}
         <div className="flex-1 rounded-xl bg-card border border-border px-5 py-4 flex flex-col">
-          <h3 className="text-sm font-bold text-foreground mb-3">סטטיסטיקות תואר</h3>
+          <div className="flex items-center gap-1.5 mb-3">
+            <h3 className="text-sm font-bold text-foreground">סטטיסטיקות תואר</h3>
+            <Hint label={hideGpa ? "הצג ממוצע" : "הסתר ממוצע"}>
+              <button
+                type="button"
+                onClick={toggleHideGpa}
+                aria-label={hideGpa ? "הצג ממוצע" : "הסתר ממוצע"}
+                aria-pressed={hideGpa}
+                className="rounded p-0.5 text-muted-foreground/70 hover:text-foreground transition-colors"
+              >
+                {hideGpa ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </button>
+            </Hint>
+          </div>
 
           <div className="flex items-baseline justify-center gap-2 mb-2">
-            <span className="text-3xl font-bold text-foreground tabular-nums">{gpa}</span>
+            <span className="text-3xl font-bold text-foreground tabular-nums">{gpaDisplay}</span>
             <span className="text-xs text-muted-foreground">ממוצע כללי</span>
             {gpaDelta != null && gpaDelta > 0 && (
               <Hint label="עלייה לעומת הסמסטר הקודם">
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium tabular-nums text-green-600 dark:text-green-400">
+                <span className={cn(
+                  "inline-flex items-center gap-0.5 text-[10px] font-medium tabular-nums text-green-600 dark:text-green-400",
+                  hideGpa && "invisible"
+                )}>
                   <ArrowUpRight className="h-3 w-3" />
                   +{gpaDelta.toFixed(1)}
                 </span>
@@ -381,8 +415,11 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
             )}
           </div>
 
+          {/* The sparkline plots per-semester GPA, so it has to go too — but it
+              stays mounted and merely invisible, otherwise the card loses ~76px
+              of height and the whole banner jumps when toggling. */}
           {semesterGPA.length >= 2 ? (
-            <div className="px-1 mb-3">
+            <div className={cn("px-1 mb-3", hideGpa && "invisible")}>
               <GPASparkline data={semesterGPA} />
             </div>
           ) : (
