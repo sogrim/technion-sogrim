@@ -490,6 +490,7 @@ fn build_pipeline(now_ms: i64) -> Vec<bson::Document> {
             // --- Academic: per-student weighted GPA -> histogram bucket ---------
             "gpa": [
                 { "$unwind": "$details.degree_status.course_statuses" },
+                { "$match": { "details.degree_status.course_statuses.is_repetition": { "$ne": true } } },
                 { "$project": {
                     "_id": 1,
                     "credit": { "$ifNull": [ "$details.degree_status.course_statuses.course.credit", 0 ] },

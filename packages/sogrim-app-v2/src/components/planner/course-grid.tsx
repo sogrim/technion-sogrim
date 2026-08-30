@@ -98,10 +98,17 @@ function rowToCourseStatus(row: RowData, original: CourseStatus): CourseStatus {
   };
 }
 
-// A superseded retake attempt (an earlier take of a course that was retaken and
-// no longer counts toward the degree). In-progress rows are excluded.
-function isSupersededRepetition(data?: RowData): boolean {
-  return !!data?.is_repetition && data.state !== "בתהליך";
+/** Anything carrying the server's repetition flag alongside a course state.
+ *  Covers both `CourseStatus` (API shape) and `RowData` (grid shape). */
+interface RepetitionAware {
+  is_repetition?: boolean;
+  state?: string;
+}
+
+export function isSupersededRepetition(
+  entry?: RepetitionAware | null,
+): boolean {
+  return !!entry?.is_repetition && entry.state !== "בתהליך";
 }
 
 export function CourseGrid({

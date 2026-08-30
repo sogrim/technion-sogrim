@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Hint } from "@/components/ui/hint";
 import { useUiStore } from "@/stores/ui-store";
 import { isSocialActivityCourse } from "@/lib/reserved-credits";
+import { isSupersededRepetition } from "@/components/planner/course-grid";
 import { formatSemesterName, parseSemesterOrder, semesterKey, semestersEqual } from "@/lib/semester-utils";
 import type { AcademicSemester, DegreeStatus, Catalog, CourseStatus } from "@/types/api";
 
@@ -188,6 +189,7 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
 
   const gradedCourses = course_statuses.filter((cs) => {
     if (cs.state !== "הושלם" || !cs.grade) return false;
+    if (isSupersededRepetition(cs)) return false;
     return !isNaN(parseFloat(cs.grade));
   });
   const totalGP = gradedCourses.reduce((s, cs) => s + parseFloat(cs.grade!) * cs.course.credit, 0);
@@ -197,8 +199,13 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
   // Match the real glyph count so masking doesn't reflow the row.
   const gpaDisplay = hideGpa ? "•".repeat(gpa.length) : gpa;
 
+  // Count each course once: a retaken course has one row per attempt, and only
+  // the surviving take counts toward the degree.
   const completedCount = course_statuses.filter(
-    (cs) => cs.state === "הושלם" && !isSocialActivityCourse(cs),
+    (cs) =>
+      cs.state === "הושלם" &&
+      !isSocialActivityCourse(cs) &&
+      !isSupersededRepetition(cs),
   ).length;
   const semesterGPA = useMemo(
     () => computePerSemesterGPA(course_statuses),
@@ -234,7 +241,8 @@ export function Banner({ degreeStatus, catalog, includeInProgress, isComputing, 
       .filter((cs) =>
         semestersEqual(cs.semester, lastSemester) &&
         cs.state !== "לא רלוונטי" &&
-        !isSocialActivityCourse(cs),
+        !isSocialActivityCourse(cs) &&
+        !isSupersededRepetition(cs),
       )
       .reduce((sum, cs) => sum + cs.course.credit, 0);
   }, [course_statuses, lastSemester]);
