@@ -719,7 +719,10 @@ fn run_specialization_group(
 fn ee_2025_double_specialization_completes_from_catalog() {
     // Guards the shipped EE 2025-2026 catalog: a transcript with a double מיקרואלקטרוניקה group
     // (6 courses incl. both mandatory) plus the excellence group must reach weight 3.
-    let text = std::fs::read_to_string("../docs/ElectricalEngineering2025-2026.json").unwrap();
+    let text = std::fs::read_to_string(
+        "../docs/ElectricalEngineering/ElectricalEngineering2025-2026.json",
+    )
+    .unwrap();
     let mut v: serde_json::Value = serde_json::from_str(&text).unwrap();
     fn norm(v: &mut serde_json::Value) {
         match v {

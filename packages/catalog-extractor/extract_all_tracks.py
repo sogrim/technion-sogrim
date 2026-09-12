@@ -16,7 +16,7 @@ import sys
 import copy
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DOCS_DIR = os.path.join(SCRIPT_DIR, "..", "docs")
+DOCS_DIR = os.path.join(SCRIPT_DIR, "..", "docs", "ComputerScience")
 
 REF_4YEAR = os.path.join(DOCS_DIR, "ComputerScience4years2024-2025.json")
 REF_3YEAR = os.path.join(DOCS_DIR, "ComputerScience3years2024-2025.json")

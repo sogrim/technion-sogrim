@@ -26,7 +26,7 @@ Extract academic degree catalogs from Technion PDF course catalogs into structur
 
 ### Quick pipeline
 ```bash
-uv run --project packages/catalog-extractor main.py <pdf_url_or_path> --name "Hebrew catalog name" --reference ../docs/ComputerScience3years2024-2025.json --output ../docs/NewCatalog.json --save-text raw_text.txt --save-sections sections.json
+uv run --project packages/catalog-extractor main.py <pdf_url_or_path> --name "Hebrew catalog name" --reference ../docs/ComputerScience/ComputerScience3years2024-2025.json --output ../docs/<Faculty>/NewCatalog.json --save-text raw_text.txt --save-sections sections.json
 ```
 
 ## Workflow
@@ -44,7 +44,7 @@ uv run --project packages/catalog-extractor main.py <pdf_url_or_path> --name "He
    - `catalog_replacements` — from replacement notes in the PDF
 6. **Validate schema**: Run `uv run --project packages/catalog-extractor validate_catalog.py <output.json>`
 7. **Cross-validate against PDF**: Run `uv run --project packages/catalog-extractor validate_against_pdf.py <output.json> <pdf_url> --verbose` to compare courses, credits, banks, chains, and overflows against the source PDF. Fix any ERRORs before proceeding.
-8. **Output JSON**: Save to `packages/docs/{Faculty}{Track}{Year}.json`
+8. **Output JSON**: Save to `packages/docs/{Faculty}/{Faculty}{Track}{Year}.json`
 
 ### Improving the scripts
 If the PDF format has changed or the scripts miss something, **update the scripts in `packages/catalog-extractor/`** rather than writing one-off code. This keeps the tooling reusable for future catalogs.
@@ -471,7 +471,7 @@ See the "Handling 'או' (Or) Course Alternatives" section above for detailed gu
 
 ## Existing Examples
 
-Reference these files in `packages/docs/` for format examples:
+Reference these files in `packages/docs/ComputerScience/` for format examples:
 - `ComputerScience3years2024-2025.json` — 3-year CS catalog (**current standard** with 8-digit IDs)
 - `ComputerScience4years2022-2023.json` — 4-year CS catalog (uses older 6-digit IDs — **do NOT follow this ID format**, always use 8-digit zero-padded IDs in new catalogs)
 - `ComputerScience3years2019-2020.json` — 3-year CS catalog (older format, 6-digit IDs)

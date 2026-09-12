@@ -15,7 +15,7 @@
 
 </div>
 
-![Sogrim preview](/packages/docs/preview.png)
+![Sogrim preview](/packages/docs/Shared/preview.png)
 
 **Sogrim** is an open-source system that tells Technion students exactly where they
 stand on the way to graduation. Paste in your grade sheet. Sogrim audits it against
@@ -23,7 +23,7 @@ your catalog and shows which requirements you've met, what's still missing, and 
 you're ready to close your degree.
 
 It currently supports the faculties of **Computer Science**, **Electrical Engineering**,
-and **Industrial Engineering & Management**.
+**Biology**, and **Industrial Engineering & Management**.
 
 > **Soon! 💃🏼💃🏼💃🏼**: More faculties!
 
@@ -39,7 +39,7 @@ and **Industrial Engineering & Management**.
 
 ## Tech stack
 
-<img src="/packages/docs/rrlove.png" alt="React + Rust" align="right" />
+<img src="/packages/docs/Shared/rrlove.png" alt="React + Rust" align="right" />
 
 - **Backend**: [Rust](https://www.rust-lang.org/) with [Axum](https://github.com/tokio-rs/axum)
   and [tower-http](https://github.com/tower-rs/tower-http), [MongoDB](https://www.mongodb.com/),
@@ -99,7 +99,11 @@ technion-sogrim/
 │   ├── sogrim-app-v2/   # React 19 frontend (current)
 │   ├── sogrim-app/      # Legacy V1 frontend
 │   ├── infra/           # Pulumi (Oracle Cloud) infrastructure as code
-│   └── docs/            # Sample catalogs, mocks & assets
+│   └── docs/            # Catalogs and grade sheets grouped by faculty
+│       ├── Biology/
+│       ├── ComputerScience/
+│       ├── ElectricalEngineering/
+│       └── Shared/      # Shared parser fixtures, API docs, mocks & assets
 └── .github/workflows/   # CI/CD pipelines
 ```
 

@@ -20,7 +20,7 @@ python extract_pdf.py <pdf_url_or_path> [--output raw_text.txt]
 ### Step 2: Build catalog JSON
 
 ```bash
-python build_catalog.py <raw_text.txt> --name "CatalogName" [--reference ../docs/existing.json]
+python build_catalog.py <raw_text.txt> --name "CatalogName" [--reference ../docs/<Faculty>/existing.json]
 ```
 
 ### Step 3: Validate
@@ -32,5 +32,5 @@ python validate_catalog.py <catalog.json>
 ### All-in-one
 
 ```bash
-python main.py <pdf_url_or_path> --name "ComputerScienceSoftwareEngineerCourse2024-2025" [--reference ../docs/ComputerScience3years2024-2025.json]
+python main.py <pdf_url_or_path> --name "ComputerScienceSoftwareEngineerCourse2024-2025" [--reference ../docs/ComputerScience/ComputerScience3years2024-2025.json]
 ```

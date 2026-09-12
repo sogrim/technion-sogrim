@@ -40,7 +40,7 @@ async fn test_year_catalog() {
 
 #[tokio::test]
 async fn test_pdf_parser() {
-    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
+    let from_pdf = std::fs::read_to_string("../docs/Shared/pdf_ctrl_c_ctrl_v.txt")
         .expect("Something went wrong reading the file");
     let courses_display_from_pdf =
         parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
@@ -59,7 +59,7 @@ async fn test_pdf_parser() {
 
 #[tokio::test]
 async fn test_asterisk_course_input_from_edge_browser() {
-    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_5.txt")
+    let from_pdf = std::fs::read_to_string("../docs/Shared/pdf_ctrl_c_ctrl_v_5.txt")
         .expect("Something went wrong reading the file");
     let courses_display_from_pdf =
         parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
@@ -81,7 +81,7 @@ async fn test_asterisk_course_input_from_edge_browser() {
 
 #[tokio::test]
 async fn test_asterisk_course_input_from_chrome_browser() {
-    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_3.txt")
+    let from_pdf = std::fs::read_to_string("../docs/Shared/pdf_ctrl_c_ctrl_v_3.txt")
         .expect("Something went wrong reading the file");
     let courses_display_from_pdf =
         parser::parse_copy_paste_data(&from_pdf).expect("failed to parse pdf data");
@@ -106,7 +106,7 @@ async fn test_asterisk_course_input_from_chrome_browser() {
 
 #[tokio::test]
 async fn test_parser_copy_paste_from_acrobat_reader() {
-    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
+    let from_pdf = std::fs::read_to_string("../docs/Shared/pdf_ctrl_c_ctrl_v_6.txt")
         .expect("Something went wrong reading the file");
 
     let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
@@ -119,7 +119,7 @@ async fn test_parser_copy_paste_from_acrobat_reader() {
     assert_eq!(course_status.course.name, "גרפיקה ממוחשבת1");
     assert!(course_status.grade.is_none());
 
-    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_8.txt")
+    let from_pdf = std::fs::read_to_string("../docs/Shared/pdf_ctrl_c_ctrl_v_8.txt")
         .expect("Something went wrong reading the file");
 
     let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
@@ -138,7 +138,7 @@ async fn test_parser_copy_paste_from_acrobat_reader() {
 
 #[tokio::test]
 async fn test_parser_copy_paste_med_status() {
-    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_7.txt")
+    let from_pdf = std::fs::read_to_string("../docs/Shared/pdf_ctrl_c_ctrl_v_7.txt")
         .expect("Something went wrong reading the file");
 
     let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
@@ -157,7 +157,7 @@ async fn test_parser_copy_paste_med_status() {
 
 #[tokio::test]
 async fn test_parser_course_status_repetitions() {
-    let from_pdf = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v.txt")
+    let from_pdf = std::fs::read_to_string("../docs/Shared/pdf_ctrl_c_ctrl_v.txt")
         .expect("Something went wrong reading the file");
 
     let courses = parser::parse_copy_paste_data(&from_pdf).unwrap();
@@ -631,7 +631,7 @@ async fn run_degree_status(mut degree_status: DegreeStatus, catalog: Catalog) ->
 async fn run_degree_status_full_flow(file_name: &str, catalog: &str) -> DegreeStatus {
     let catalog = get_catalog(catalog).await;
 
-    let contents = std::fs::read_to_string(format!("../docs/{file_name}"))
+    let contents = std::fs::read_to_string(format!("../docs/Shared/{file_name}"))
         .expect("Something went wrong reading the file");
     let course_statuses =
         parser::parse_copy_paste_data(&contents).expect("failed to parse courses data");
