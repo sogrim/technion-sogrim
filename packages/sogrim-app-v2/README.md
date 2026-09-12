@@ -1,3 +1,29 @@
+# Releases
+
+The app version in `package.json` is shared by Settings and the release announcement.
+Clicking the version in Settings opens the release history, newest first.
+The history and startup announcement share notes from `src/data/release-notes.ts`.
+For a release:
+
+1. Run `npm version <version> --no-git-tag-version` in this directory to update
+   `package.json` and any local `package-lock.json` (ignored by Git). The tracked
+   Bun lockfile does not store the root package version.
+2. In `src/data/release-notes.ts`, archive the previous `CURRENT_RELEASE` at the
+   start of the older entries in `RELEASE_HISTORY`, using its explicit old version
+   number. Update `CURRENT_RELEASE.changes` with the new announcement copy; its
+   version comes from `package.json`.
+3. Merge into `master` to trigger the existing deployment workflow.
+
+The announcement appears on startup for new and returning visitors until dismissed
+using its close icon, Escape, or backdrop. Dismissal saves the current version
+under `sogrim-last-seen-version` in localStorage, so it stays hidden on subsequent
+visits in that browser until the version changes. It is not tied to an account.
+Clearing storage or using another browser shows it again; if storage is blocked or
+full, dismissal still works for the current page but cannot be remembered.
+Already-open tabs need a reload to load a new release.
+Opening or closing the history does not change the startup announcement's saved
+version, so it can be revisited at any time.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

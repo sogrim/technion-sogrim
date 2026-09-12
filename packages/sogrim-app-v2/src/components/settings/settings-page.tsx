@@ -82,7 +82,7 @@ import { Combobox } from "@/components/ui/combobox";
 import type { ComboboxOption } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { ReleaseHistory } from "@/components/common/release-history";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast } from "@/components/ui/toast";
 import { ResetUserDialog } from "./reset-user-dialog";
@@ -635,7 +635,7 @@ export function SettingsPage() {
             <span className="text-sm text-muted-foreground">
               גרסה
             </span>
-            <Badge variant="outline">2.0.0</Badge>
+            <ReleaseHistory />
           </div>
           <Separator />
           <p className="text-xs text-muted-foreground">
