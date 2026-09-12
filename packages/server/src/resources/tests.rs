@@ -317,6 +317,22 @@ fn make_course_status(course_id: &str, credit: f32) -> CourseStatus {
     }
 }
 
+#[test]
+fn test_biology_faculty_serialization() {
+    let faculty: Faculty = serde_json::from_value(json!("Biology")).unwrap();
+    assert!(matches!(faculty, Faculty::Biology));
+    assert_eq!(serde_json::to_value(&faculty).unwrap(), json!("Biology"));
+}
+
+#[test]
+fn test_biology_faculty_does_not_enable_prefix_enrichment() {
+    let catalog = Catalog {
+        faculty: Faculty::Biology,
+        ..Default::default()
+    };
+    assert!(catalog.course_prefixes().is_empty());
+}
+
 // --- course_prefixes tests ---
 
 #[test]

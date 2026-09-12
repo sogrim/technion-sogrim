@@ -25,6 +25,7 @@ pub enum Faculty {
     DataAndDecisionScience,
     ElectricalEngineering,
     Medicine,
+    Biology,
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]

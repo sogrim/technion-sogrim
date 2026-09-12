@@ -4,6 +4,7 @@ export const Faculty = {
   DataAndDecisionScience: "DataAndDecisionScience",
   Medicine: "Medicine",
   ElectricalEngineering: "ElectricalEngineering",
+  Biology: "Biology",
 } as const;
 export type Faculty = (typeof Faculty)[keyof typeof Faculty];
 
@@ -15,6 +16,7 @@ export const FACULTY_LABELS: Record<Faculty, string> = {
   DataAndDecisionScience: "מדעי הנתונים וקבלת החלטות",
   Medicine: "רפואה",
   ElectricalEngineering: "הנדסת חשמל",
+  Biology: "ביולוגיה",
 };
 
 export const UserPermissions = {

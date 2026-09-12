@@ -1,4 +1,4 @@
-import { GraduationCap, Monitor, BarChart3 } from "lucide-react";
+import { GraduationCap, Monitor, BarChart3, Dna } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Faculty, FACULTY_LABELS } from "@/types/api";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const FACULTIES: {
   // Medicine is intentionally omitted: it has no released catalogs, so showing
   // it would dead-end on an empty catalog list after selection.
   { key: Faculty.ElectricalEngineering, icon: Monitor },
+  { key: Faculty.Biology, icon: Dna },
 ];
 
 interface FacultyStepProps {
