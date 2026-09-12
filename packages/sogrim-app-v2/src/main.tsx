@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/common/error-boundary";
+import { ReleaseAnnouncement } from "@/components/common/release-announcement";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { startAuthRefreshLoop } from "@/lib/google-auth";
 import { queryClient } from "@/lib/query-client";
@@ -17,6 +18,7 @@ createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={200} skipDelayDuration={300}>
           <RouterProvider router={router} />
+          <ReleaseAnnouncement />
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

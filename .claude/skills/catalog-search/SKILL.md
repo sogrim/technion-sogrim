@@ -150,8 +150,8 @@ For **each track** found in Step 2, spawn a **teammate** that runs the catalog-e
 
 1. **Determine the track parameters**:
    - `name`: Hebrew catalog name (e.g., `"מדמח תלת שנתי 2024-2025"`)
-   - `output`: File path following the naming convention: `packages/docs/{Faculty}{Track}{Year}.json`
-   - `reference`: Use the most recent existing catalog of the same track as a reference (if available in `packages/docs/`)
+   - `output`: File path following the naming convention: `packages/docs/{Faculty}/{Faculty}{Track}{Year}.json`
+   - `reference`: Use the most recent existing catalog of the same track as a reference (if available in `packages/docs/{Faculty}/`)
 
 2. **Spawn extraction teammates** — one per track, all in parallel. Each teammate prompt MUST include:
    - A pointer to read `.claude/skills/catalog-extractor/SKILL.md` for extraction guidelines
@@ -161,7 +161,7 @@ For **each track** found in Step 2, spawn a **teammate** that runs the catalog-e
    - The relevant line range in the raw text for this track's section
    ```
    Create an agent team. Spawn an extractor teammate for each track:
-   - Extractor-4yr: "Read .claude/skills/catalog-extractor/SKILL.md for guidelines. Extract the 4-year track. Raw text at /tmp/cs_raw.txt lines 418-3044. Reference: packages/docs/ComputerScience4years2024-2025.json. Output: packages/docs/ComputerScience4years2025-2026.json"
+   - Extractor-4yr: "Read .claude/skills/catalog-extractor/SKILL.md for guidelines. Extract the 4-year track. Raw text at /tmp/cs_raw.txt lines 418-3044. Reference: packages/docs/ComputerScience/ComputerScience4years2024-2025.json. Output: packages/docs/ComputerScience/ComputerScience4years2025-2026.json"
    - Extractor-3yr: "Read .claude/skills/catalog-extractor/SKILL.md for guidelines. Extract the 3-year track ..."
    - (one per track)
    ```
@@ -177,7 +177,7 @@ For **each track** found in Step 2, spawn a **teammate** that runs the catalog-e
 
 When extracting a track, use the most recent existing catalog of the **same track type** as a reference:
 
-Look for the most recent existing catalog of the **same track type** in `packages/docs/` using glob patterns like `{Faculty}{Track}*.json`. For example:
+Look for the most recent existing catalog of the **same track type** in `packages/docs/{Faculty}/` using glob patterns like `{Faculty}{Track}*.json`. For example:
 - CS 4-year → `ComputerScience4years*.json`
 - EE main → `ElectricalEngineering*.json`
 
@@ -196,8 +196,8 @@ After all tracks are extracted in Steps 1-3, create an agent team for validation
 1. **Spawn a validator teammate** for each extracted catalog. Each prompt MUST include a pointer to read `.claude/skills/catalog-validation/SKILL.md` for validation guidelines:
    ```
    Create an agent team. Spawn a validator teammate for each catalog:
-   - Validator-3yr: "Read .claude/skills/catalog-validation/SKILL.md for guidelines. Validate packages/docs/ComputerScience3years2025-2026.json against <pdf_url>. Run uv run --project packages/catalog-validation validate_all.py ... --verbose. Fix any ERRORs and re-validate until clean."
-   - Validator-4yr: "Read .claude/skills/catalog-validation/SKILL.md for guidelines. Validate packages/docs/ComputerScience4years2025-2026.json against <pdf_url> ..."
+   - Validator-3yr: "Read .claude/skills/catalog-validation/SKILL.md for guidelines. Validate packages/docs/ComputerScience/ComputerScience3years2025-2026.json against <pdf_url>. Run uv run --project packages/catalog-validation validate_all.py ... --verbose. Fix any ERRORs and re-validate until clean."
+   - Validator-4yr: "Read .claude/skills/catalog-validation/SKILL.md for guidelines. Validate packages/docs/ComputerScience/ComputerScience4years2025-2026.json against <pdf_url> ..."
    - (one per catalog)
    ```
 

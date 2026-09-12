@@ -6,6 +6,7 @@ fn get_chrome_data() -> String {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("..")
             .join("docs")
+            .join("Shared")
             .join("grade_sheet_new_format_chrome.txt"),
     )
     .expect("Failed to read Chrome grade sheet test file")
@@ -16,9 +17,41 @@ fn get_edge_data() -> String {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("..")
             .join("docs")
+            .join("Shared")
             .join("grade_sheet_new_format_edge.txt"),
     )
     .expect("Failed to read Edge grade sheet test file")
+}
+
+#[test]
+fn biology_sample_parses_successfully() {
+    let text = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("docs")
+            .join("Biology")
+            .join("biology-test-grade-sheet.txt"),
+    )
+    .expect("Failed to read Biology grade sheet");
+    let courses = parse_copy_paste_data(&text).unwrap();
+    assert_eq!(courses.len(), 36);
+    assert!(courses.iter().all(|course| course.semester.is_some()));
+    assert!(courses.iter().all(|course| course.course.credit > 0.0));
+
+    let seminar = find_course(&courses, "01340124").unwrap();
+    assert_eq!(seminar.course.credit, 2.0);
+    assert_eq!(seminar.grade, Some(Grade::Numeric(94)));
+
+    let english = find_course(&courses, "03240033").unwrap();
+    assert_eq!(english.course.credit, 3.0);
+    assert_eq!(english.grade, Some(Grade::ExemptionWithCredit));
+    assert_eq!(
+        courses
+            .iter()
+            .filter(|course| *course.course.id == *"03940807")
+            .count(),
+        2
+    );
 }
 
 #[test]

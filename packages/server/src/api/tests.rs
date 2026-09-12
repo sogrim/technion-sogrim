@@ -205,7 +205,7 @@ async fn test_students_api_full_flow() {
     assert!(resp.status().is_success());
 
     // post /students/courses
-    let from_pdf = std::fs::read_to_string("../docs/grade_sheet_new_format_chrome.txt")
+    let from_pdf = std::fs::read_to_string("../docs/Shared/grade_sheet_new_format_chrome.txt")
         .expect("Something went wrong reading the file");
     let req = Request::builder()
         .method(Method::POST)
@@ -514,7 +514,7 @@ async fn test_admins_parse_and_compute_api() {
         .layer(Extension(decoder))
         .layer(Extension(test_course_cache_with_tagged_courses()));
 
-    let copy_paste_data = std::fs::read_to_string("../docs/pdf_ctrl_c_ctrl_v_6.txt")
+    let copy_paste_data = std::fs::read_to_string("../docs/Shared/pdf_ctrl_c_ctrl_v_6.txt")
         .expect("Something went wrong reading the file");
 
     let req = Request::builder()

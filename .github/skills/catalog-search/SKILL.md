@@ -153,16 +153,16 @@ For **each track** found in Step 2, invoke the **catalog-extractor** skill (see 
 
 1. **Determine the track parameters**:
    - `name`: Hebrew catalog name (e.g., `"מדמח תלת שנתי 2024-2025"`)
-   - `output`: File path following the naming convention: `packages/docs/{Faculty}{Track}{Year}.json`
-   - `reference`: Use the most recent existing catalog of the same track as a reference (if available in `packages/docs/`)
+   - `output`: File path following the naming convention: `packages/docs/{Faculty}/{Faculty}{Track}{Year}.json`
+   - `reference`: Use the most recent existing catalog of the same track as a reference (if available in `packages/docs/{Faculty}/`)
 
 2. **Run the extraction pipeline** for the track:
    ```bash
    cd packages/catalog-extractor
    python main.py "<pdf_url>" \
      --name "<hebrew_name>" \
-     --reference ../docs/<ReferenceFile>.json \
-     --output ../docs/<OutputFile>.json \
+     --reference ../docs/<Faculty>/<ReferenceFile>.json \
+     --output ../docs/<Faculty>/<OutputFile>.json \
      --save-text raw_text_<track>.txt \
      --save-sections sections_<track>.json
    ```
@@ -178,7 +178,7 @@ For **each track** found in Step 2, invoke the **catalog-extractor** skill (see 
 
 When extracting a track, use the most recent existing catalog of the **same track type** as a reference:
 
-Look for the most recent existing catalog of the **same track type** in `packages/docs/` using glob patterns like `{Faculty}{Track}*.json`. For example:
+Look for the most recent existing catalog of the **same track type** in `packages/docs/{Faculty}/` using glob patterns like `{Faculty}{Track}*.json`. For example:
 - CS 4-year → `ComputerScience4years*.json`
 - EE main → `ElectricalEngineering*.json`
 
@@ -194,7 +194,7 @@ Validation **MUST** run in a **separate, clean conversation** with no history fr
 1. After all tracks are extracted in Steps 1-3, **stop the current conversation**.
 2. **Start a new Copilot conversation** (new thread / new chat session).
 3. In the new conversation, provide **only**:
-   - The path(s) to the generated JSON file(s) (e.g., `packages/docs/ComputerScience3years2025-2026.json`)
+   - The path(s) to the generated JSON file(s) (e.g., `packages/docs/ComputerScience/ComputerScience3years2025-2026.json`)
    - The PDF URL
    - The instruction: "Validate these catalog JSONs against the PDF using the catalog-validation skill"
 4. The validator independently reads the JSON and PDF with fresh eyes — no extraction context leaking in.
@@ -212,7 +212,7 @@ For **each extracted catalog**, invoke the **catalog-validation** skill (see `.g
 2. **Run full validation**:
    ```bash
    cd packages/catalog-validation
-   python validate_all.py ../docs/<CatalogFile>.json "<pdf_url>" --verbose
+   python validate_all.py ../docs/<Faculty>/<CatalogFile>.json "<pdf_url>" --verbose
    ```
 
 3. **Review findings**:

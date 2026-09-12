@@ -157,8 +157,14 @@ mod tests {
     #[test]
     fn all_catalog_docs_deserialize() {
         let mut checked = 0;
-        for entry in std::fs::read_dir("../docs").expect("read ../docs") {
-            let path = entry.unwrap().path();
+        let mut pending = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs")];
+        while let Some(path) = pending.pop() {
+            if path.is_dir() {
+                for entry in std::fs::read_dir(&path).expect("read docs directory") {
+                    pending.push(entry.unwrap().path());
+                }
+                continue;
+            }
             if path.extension().and_then(|e| e.to_str()) != Some("json") {
                 continue;
             }

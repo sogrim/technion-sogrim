@@ -32,19 +32,19 @@ pip install -r requirements.txt
 2. **Run full validation**:
    ```bash
    cd packages/catalog-validation
-   python validate_all.py ../docs/<CatalogFile>.json <pdf_url> --verbose
+   python validate_all.py ../docs/<Faculty>/<CatalogFile>.json <pdf_url> --verbose
    ```
 3. **Review findings**: Fix all ERRORs. Review WARNINGs manually.
 4. **Re-run** until 0 errors.
 
 ### Schema-only validation (no PDF needed)
 ```bash
-python validate_schema.py ../docs/<CatalogFile>.json
+python validate_schema.py ../docs/<Faculty>/<CatalogFile>.json
 ```
 
 ### PDF cross-validation only
 ```bash
-python validate_pdf.py ../docs/<CatalogFile>.json <pdf_url> --verbose
+python validate_pdf.py ../docs/<Faculty>/<CatalogFile>.json <pdf_url> --verbose
 ```
 
 ## Validation Checks
@@ -92,7 +92,7 @@ The script **automatically detects** the track type from the JSON catalog name (
 
 Use `--json-output findings.json` to save machine-readable results:
 ```bash
-python validate_all.py ../docs/CatalogFile.json <pdf_url> --json-output findings.json
+python validate_all.py ../docs/<Faculty>/CatalogFile.json <pdf_url> --json-output findings.json
 ```
 
 Each finding is:
@@ -150,13 +150,13 @@ cd packages/catalog-validation
 
 # Validate the Cyber Security 2024-2025 catalog
 python validate_all.py \
-  ../docs/ComputerScienceCyberSecurity2024-2025.json \
+  ../docs/ComputerScience/ComputerScienceCyberSecurity2024-2025.json \
   "https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-%D7%94%D7%A4%D7%A7%D7%95%D7%9C%D7%98%D7%94-%D7%9C%D7%9E%D7%93%D7%A2%D7%99-%D7%94%D7%9E%D7%97%D7%A9%D7%91-%D7%AA%D7%A9%D7%A4%D7%B4%D7%94-.pdf" \
   --verbose
 
 # Validate the SE 2024-2025 catalog (same PDF, different JSON)
 python validate_all.py \
-  ../docs/ComputerScienceSoftwareEngineerCourse2024-2025.json \
+  ../docs/ComputerScience/ComputerScienceSoftwareEngineerCourse2024-2025.json \
   "https://undergraduate.cs.technion.ac.il/wp-content/uploads/2024/12/23-%D7%94%D7%A4%D7%A7%D7%95%D7%9C%D7%98%D7%94-%D7%9C%D7%9E%D7%93%D7%A2%D7%99-%D7%94%D7%9E%D7%97%D7%A9%D7%91-%D7%AA%D7%A9%D7%A4%D7%B4%D7%94-.pdf" \
   --verbose
 ```

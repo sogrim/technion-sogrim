@@ -3,6 +3,7 @@ export enum Faculty {
   ComputerScience = "ComputerScience",
   DataAndDecisionScience = "DataAndDecisionScience",
   Medicine = "Medicine",
+  Biology = "Biology",
 }
 
 export enum UserPermissions {

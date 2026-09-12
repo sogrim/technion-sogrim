@@ -30,6 +30,7 @@ VALID_FACULTIES = [
     "DataAndDecisionScience",
     "ElectricalEngineering",
     "Medicine",
+    "Biology",
     "Unknown",
 ]
 
