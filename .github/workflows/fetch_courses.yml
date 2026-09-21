@@ -47,7 +47,11 @@ jobs:
 
           echo ""
           echo "=== Latest log file ==="
-          LATEST_LOG=$(ls -t "$LOG_DIR"/fetcher_*.log 2>/dev/null | head -1)
+          # NB: `ls | head -1` makes ls die with SIGPIPE (exit 141) once enough
+          # log files accumulate in _logs, which aborts the whole step under
+          # `set -o pipefail` even when the fetch itself succeeded. `sed -n 1p`
+          # reads the entire stream, so ls never gets SIGPIPE.
+          LATEST_LOG=$(ls -t "$LOG_DIR"/fetcher_*.log 2>/dev/null | sed -n '1p')
           if [ -n "$LATEST_LOG" ]; then
             echo "  $LATEST_LOG"
             echo ""
